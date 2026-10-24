@@ -1,0 +1,43 @@
+{#- Galerie de PV (gallery.php, consultation). Données : `view` (presenters/galleryPage.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/navigation.njk" as navigation %}
+
+{% block main %}
+<h1 class="page-title">{{ lang.gallery.pageTitle }}</h1>
+<p class="page-intro">{{ lang.gallery.pageDesc }}</p>
+{% if view.addUrl or view.moderationUrl %}
+<p class="page-bar__actions">
+	{% if view.addUrl %}<a class="button button--primary" href="{{ url(view.addUrl) }}">{{ lang.gallery.addPicture }}</a>{% endif %}
+	{% if view.moderationUrl %}<a class="button" href="{{ url(view.moderationUrl) }}">{{ lang.gallery.moderation }}</a>{% endif %}
+</p>
+{% endif %}
+<div class="page-bar">{{ navigation.pagination(view.pagination, lang) }}</div>
+
+{% if view.images.length %}
+<ul class="gallery">
+{% for image in view.images %}
+	<li class="gallery__item">
+		<figure class="gallery__figure">
+			<a class="gallery__link" href="{{ url(image.fullUrl) }}" aria-label="{{ lang.gallery.open(image.title) }}">
+				<img class="gallery__thumb" src="{{ url(image.thumbUrl) }}" alt="" loading="lazy">
+			</a>
+			<figcaption class="gallery__caption">
+				<strong class="gallery__title">{{ image.title }}</strong>
+				<span>{{ lang.gallery.addedBy }} {{ image.author }}</span>
+				<span>{{ lang.gallery.addedAt }} {{ image.addedAt }}</span>
+				<details class="gallery__description">
+					<summary>{{ lang.gallery.description }}</summary>
+					{#- HTML de parseMessage() : échappé par construction (services/bbcode.ts). #}
+					<div class="bbcode">{{ image.descriptionHtml | safe }}</div>
+				</details>
+			</figcaption>
+		</figure>
+	</li>
+{% endfor %}
+</ul>
+{% else %}
+<p class="message-box">{{ lang.gallery.empty }}</p>
+{% endif %}
+
+<div class="page-bar">{{ navigation.pagination(view.pagination, lang) }}</div>
+{% endblock %}

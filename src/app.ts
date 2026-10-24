@@ -11,6 +11,7 @@ import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply, ty
 import nunjucks from 'nunjucks';
 import { ExternController, type ExternQuery } from './controllers/ExternController.ts';
 import { ForumController, type ForumQuery } from './controllers/ForumController.ts';
+import { GalleryController, type GalleryQuery } from './controllers/GalleryController.ts';
 import { HelpController } from './controllers/HelpController.ts';
 import { IndexController } from './controllers/IndexController.ts';
 import { ProfileController, type ProfileQuery } from './controllers/ProfileController.ts';
@@ -25,6 +26,7 @@ import type { BanReader } from './repositories/BanRepository.ts';
 import type { CensorReader } from './repositories/CensorRepository.ts';
 import type { ConfigReader } from './repositories/ConfigLoader.ts';
 import type { FeedReader } from './repositories/FeedRepository.ts';
+import type { GalleryReader } from './repositories/GalleryRepository.ts';
 import type { PostReader } from './repositories/PostRepository.ts';
 import type { SearchReader } from './repositories/SearchRepository.ts';
 import type { StatsReader } from './repositories/StatsRepository.ts';
@@ -58,6 +60,7 @@ export interface AppDeps extends LayoutDeps {
 	stats: StatsReader;
 	search: SearchReader;
 	feeds: FeedReader;
+	gallery: GalleryReader;
 	stopwords: StopwordsReader;
 	usersInfo: UsersInfoReader;
 	legacyCookie: { name: string; seed: string };
@@ -71,6 +74,7 @@ export interface AppDeps extends LayoutDeps {
 /** Pages déjà servies par Node ; les autres liens partent vers l'installation PHP. */
 const PORTED_PAGES = new Set([
 	'extern.php',
+	'gallery.php',
 	'help.php',
 	'index.php',
 	'profile.php',
@@ -146,6 +150,9 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 
 	const extern = new ExternController(deps);
 	app.get<{ Querystring: ExternQuery }>('/extern.php', { preHandler: authenticate }, extern.show);
+
+	const gallery = new GalleryController(deps);
+	app.get<{ Querystring: GalleryQuery }>('/gallery.php', { preHandler: authenticate }, gallery.show);
 
 	const help = new HelpController(deps);
 	app.get('/help.php', { preHandler: authenticate }, help.show);

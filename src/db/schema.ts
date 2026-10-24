@@ -77,6 +77,16 @@ export interface ForumPermsTable {
 	post_topics: number;
 }
 
+/** Galerie de PV (mod de Pokemon_JOJO) : fichiers img/gallery/<date_ajout><ext> et mini_<date_ajout><ext>. */
+export interface GalleryTable {
+	id: Generated<number>;
+	titre: string;
+	user_id: number;
+	description: string | null;
+	date_ajout: number;
+	ext: string;
+}
+
 export interface GroupsTable {
 	g_id: Generated<number>;
 	g_title: string;
@@ -222,6 +232,7 @@ export interface Database {
 	forums: ForumsTable;
 	forum_perms: ForumPermsTable;
 	forum_subscriptions: ForumSubscriptionsTable;
+	gallery: GalleryTable;
 	groups: GroupsTable;
 	messages: MessagesTable;
 	online: OnlineTable;
@@ -245,6 +256,7 @@ export const TABLE_NAMES: readonly (keyof Database)[] = [
 	'forums',
 	'forum_perms',
 	'forum_subscriptions',
+	'gallery',
 	'groups',
 	'messages',
 	'online',

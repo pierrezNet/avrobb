@@ -7,6 +7,7 @@ import {
 	type BoardConfig,
 	type ForumCategory,
 	type ForumInfo,
+	type GalleryImage,
 	type Group,
 	GroupId,
 	type IndexCategory,
@@ -206,6 +207,7 @@ export interface FakeData {
 	labelDefinitions?: TopicLabel[];
 	members?: MemberSummary[];
 	profiles?: UserProfile[];
+	galleryImages?: GalleryImage[];
 	recentTopics?: RecentTopic[];
 	online?: OnlineVisitor[];
 }
@@ -271,6 +273,10 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			findCachedSearch: async () => null,
 		},
 		stopwords: { load: async () => new Set(['les', 'pour']) },
+		gallery: {
+			countImages: async () => (data.galleryImages ?? []).length,
+			listImages: async (offset, limit) => (data.galleryImages ?? []).slice(offset, offset + limit),
+		},
 		feeds: {
 			findTopic: async () => null,
 			listTopicPosts: async () => [],

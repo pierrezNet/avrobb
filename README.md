@@ -57,5 +57,8 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
 - Recherche : pas d'écriture dans `search_cache` ni de contrôle anti-flood (`g_search_flood`) ; les
   résultats sont recalculés à chaque page à partir des paramètres. Les liens `?search_id=` du PHP
   restent lisibles. Pas de recherche « CJK » par LIKE (inutile sur un forum francophone).
+- Galerie : informations visibles sous chaque vignette (le PHP les montrait au survol, inaccessible
+  au clavier et au toucher) ; envoi et modération restent en PHP.
+- extern.php : pas d'authentification HTTP Basic ni de cache des flux (`o_feed_ttl`).
 - Le jeton du lien « Déconnexion » dépend de l'IP vue par le serveur : derrière un proxy, régler
   `TRUST_PROXY=1` (et `FORUM_BEHIND_REVERSE_PROXY` côté PHP) pour que les deux voient la même.

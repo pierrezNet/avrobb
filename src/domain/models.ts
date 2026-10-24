@@ -358,3 +358,15 @@ export interface SearchPost {
 	forumId: number;
 	forumName: string;
 }
+
+/** Image de la galerie de PV. */
+export interface GalleryImage {
+	id: number;
+	title: string;
+	username: string;
+	description: string;
+	/** Horodatage d'envoi, qui sert aussi de nom de fichier. */
+	addedAt: number;
+	/** Extension du fichier, « .jpg » ou « .gif ». */
+	extension: '.jpg' | '.gif';
+}

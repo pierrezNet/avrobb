@@ -45,7 +45,7 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
 - [x] **help** (aide BBCode et émoticônes, exemples rendus par le parseur) — `balises.php` n'est pas une page mais l'inclusion qui colore les balises dans viewforum (fait, `styleSubject()`)
 - [x] **search** : formulaire et résultats (lecture de l'index existant `search_*`, `search_cache`) — sans écriture : résultats recalculés à chaque page, anti-flood et `search_cache` à reprendre au lot 3
 - [x] **extern.php** : flux RSS/Atom/XML et HTML externe (identiques au PHP) — authentification HTTP Basic (lot 2) et cache `o_feed_ttl` non repris
-- [ ] **gallery** (consultation) **(PV)**
+- [x] **gallery** (consultation) **(PV)** — envoi et modération renvoyés vers le PHP (lot 5) ; table `fo_gallery` absente du schéma local, reconstituée pour les tests
 
 ## Lot 2 — Authentification et session
 

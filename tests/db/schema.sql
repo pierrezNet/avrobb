@@ -297,3 +297,14 @@ CREATE TABLE `fo_messages` (
   PRIMARY KEY (`id`),
   KEY `fo_messages_owner_idx` (`owner`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Galerie de PV : absente de la base locale, reconstituée d'après les requêtes de gallery.php.
+CREATE TABLE `fo_gallery` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `titre` varchar(255) NOT NULL DEFAULT '',
+  `user_id` int(10) unsigned NOT NULL DEFAULT 0,
+  `description` text DEFAULT NULL,
+  `date_ajout` int(10) unsigned NOT NULL DEFAULT 0,
+  `ext` varchar(10) NOT NULL DEFAULT '',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

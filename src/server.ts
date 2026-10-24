@@ -14,6 +14,7 @@ import { ConfigLoader } from './repositories/ConfigLoader.ts';
 import { ConfigRepository } from './repositories/ConfigRepository.ts';
 import { FeedRepository } from './repositories/FeedRepository.ts';
 import { ForumRepository } from './repositories/ForumRepository.ts';
+import { GalleryRepository } from './repositories/GalleryRepository.ts';
 import { PhpCacheFiles } from './repositories/PhpCacheFiles.ts';
 import { PostRepository } from './repositories/PostRepository.ts';
 import { PrivateMessageRepository } from './repositories/PrivateMessageRepository.ts';
@@ -51,6 +52,7 @@ const app = await buildApp({
 	stats,
 	search: new SearchRepository(db),
 	feeds: new FeedRepository(db),
+	gallery: new GalleryRepository(db),
 	stopwords: new StopwordsLoader(config.legacyRoot),
 	usersInfo: new UsersInfoLoader(stats, phpCache, clock),
 	avatars: new FileAvatarLocator(config.legacyRoot, config.legacyBaseUrl),

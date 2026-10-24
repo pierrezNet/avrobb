@@ -15,6 +15,7 @@ import { ConfigLoader } from '../../src/repositories/ConfigLoader.ts';
 import { ConfigRepository } from '../../src/repositories/ConfigRepository.ts';
 import { FeedRepository } from '../../src/repositories/FeedRepository.ts';
 import { ForumRepository } from '../../src/repositories/ForumRepository.ts';
+import { GalleryRepository } from '../../src/repositories/GalleryRepository.ts';
 import { PostRepository } from '../../src/repositories/PostRepository.ts';
 import { PrivateMessageRepository } from '../../src/repositories/PrivateMessageRepository.ts';
 import { ReportRepository } from '../../src/repositories/ReportRepository.ts';
@@ -235,6 +236,17 @@ describe('FeedRepository', () => {
 	});
 });
 
+describe('GalleryRepository', () => {
+	it('liste les images, plus récentes d’abord, en écartant une extension inattendue', async () => {
+		const gallery = new GalleryRepository(db);
+		expect(await gallery.countImages()).toBe(3);
+		expect((await gallery.listImages(0, 10)).map((i) => [i.id, i.username, i.extension])).toEqual([
+			[2, 'MaxDUO', '.gif'],
+			[1, 'Tessy', '.jpg'],
+		]);
+	});
+});
+
 describe('SearchRepository', () => {
 	const search = new SearchRepository(db);
 
@@ -365,6 +377,7 @@ describe('viewtopic de bout en bout', () => {
 			stats: new StatsRepository(db),
 			search: new SearchRepository(db),
 			feeds: new FeedRepository(db),
+			gallery: new GalleryRepository(db),
 			stopwords: { load: async () => new Set<string>() },
 			usersInfo: new UsersInfoLoader(new StatsRepository(db), null, () => NOW),
 			avatars: { urlFor: async () => null },

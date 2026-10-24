@@ -96,3 +96,8 @@ INSERT INTO fo_search_matches (post_id, word_id, subject_match) VALUES
 	(100, 1, 1), (101, 1, 0), (101, 2, 0), (110, 2, 0), (110, 3, 0);
 INSERT INTO fo_topic_subscriptions (user_id, topic_id) VALUES (3, 10);
 INSERT INTO fo_search_cache (id, ident, search_data) VALUES (77, 'Tessy', 'a:1:{s:3:"foo";i:1;}');
+
+INSERT INTO fo_gallery (id, titre, user_id, description, date_ajout, ext) VALUES
+	(1, 'Coucher de soleil', 3, 'Au-dessus de [b]Hyères[/b]', 1705145502, '.jpg'),
+	(2, 'DR400', 5, '', 1705159954, '.gif'),
+	(3, 'Fichier suspect', 5, '', 1705100000, '.php');

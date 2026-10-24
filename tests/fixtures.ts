@@ -5,6 +5,7 @@
 import type { AppDeps } from '../src/app.ts';
 import {
 	type BoardConfig,
+	type Draft,
 	type ForumCategory,
 	type ForumInfo,
 	type GalleryImage,
@@ -26,6 +27,7 @@ import {
 	type Viewer,
 } from '../src/domain/models.ts';
 import { fr, frDateWords } from '../src/lang/fr/index.ts';
+import type { DraftStore, NewDraft } from '../src/repositories/DraftRepository.ts';
 import type { OnlineWriter } from '../src/repositories/OnlineRepository.ts';
 import type { PostEditStore, PostUpdate } from '../src/repositories/PostEditRepository.ts';
 import type { NewReply, NewTopic, PostingStore } from '../src/repositories/PostingRepository.ts';
@@ -278,6 +280,9 @@ export interface FakeData {
 	postUpdates?: PostUpdate[];
 	deletedPosts?: number[];
 	deletedTopics?: number[];
+	/** Brouillons (table brouillons), modifiés en place. */
+	drafts?: Draft[];
+	createdDrafts?: NewDraft[];
 }
 
 /** Liste des présents en mémoire : chaque écriture est consignée dans `log` pour les tests. */
@@ -307,6 +312,26 @@ const sortKey = (sort: MemberSort): 'username' | 'registered' | 'numPosts' => (s
 function matchMember(member: MemberSummary, filter: MemberFilter): boolean {
 	const pattern = filter.username === null ? null : new RegExp(`^${filter.username.replaceAll('*', '.*')}$`, 'i');
 	return (pattern === null || pattern.test(member.username)) && (filter.groupId === null || member.groupId === filter.groupId);
+}
+
+/** Brouillons en mémoire. */
+function fakeDrafts(data: FakeData): DraftStore {
+	return {
+		create: async (draft) => {
+			data.createdDrafts = [...(data.createdDrafts ?? []), draft];
+			return 700 + data.createdDrafts.length;
+		},
+		listByPoster: async (posterId) => (data.drafts ?? []).filter((d) => d.posterId === posterId),
+		find: async (id) => (data.drafts ?? []).find((d) => d.id === id) ?? null,
+		update: async (id, changes) => {
+			data.drafts = (data.drafts ?? []).map((d) =>
+				d.id === id ? { ...d, message: changes.message, subject: changes.subject ?? d.subject } : d,
+			);
+		},
+		delete: async (id, posterId) => {
+			data.drafts = (data.drafts ?? []).filter((d) => !(d.id === id && d.posterId === posterId));
+		},
+	};
 }
 
 /** Modification et suppression en mémoire, à partir des sujets et messages de `data`. */
@@ -497,6 +522,7 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 		posting: fakePosting(data),
 		toolbar: { load: async () => null },
 		postEdits: fakePostEdits(data),
+		drafts: fakeDrafts(data),
 		forums: {
 			listReadable: async () => forumCategories,
 			listIndex: async () => data.indexCategories ?? [],

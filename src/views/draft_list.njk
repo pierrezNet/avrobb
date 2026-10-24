@@ -1,0 +1,55 @@
+{#- Brouillons de PV (draft_list.php). Données : `view` (presenters/draftPage.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/forms.njk" as forms %}
+{% import "partials/navigation.njk" as navigation %}
+
+{% block main %}
+{{ navigation.breadcrumbs(view.crumbs, lang) }}
+<h1 class="page-title">{{ lang.drafts.title }}</h1>
+
+{% if view.confirmDelete %}
+<form class="form-box form" method="post" action="{{ url('draft_list.php') }}">
+	{{ forms.csrf(layout) }}
+	<input type="hidden" name="action" value="delete">
+	<input type="hidden" name="id" value="{{ view.confirmDelete.id }}">
+	<input type="hidden" name="delete_comply" value="1">
+	<h2 class="form-box__title">{{ lang.drafts.deleteMessage }}</h2>
+	<p><strong>{{ lang.drafts.deleteComply }}</strong></p>
+	<p class="form__buttons">
+		<button type="submit" class="button button--primary">{{ lang.drafts.delete }}</button>
+		<a class="button" href="{{ url('draft_list.php?id=' ~ view.confirmDelete.id) }}">{{ lang.common.goBack }}</a>
+	</p>
+</form>
+{% endif %}
+
+{% if view.opened %}
+<article class="post post--draft" id="message" aria-labelledby="draft-title">
+	<h2 class="post__meta" id="draft-title"><span>{{ view.opened.postedAt }}</span></h2>
+	<div class="post__content">
+		{#- HTML de parseMessage() : échappé par construction (services/bbcode.ts). #}
+		<div class="post__message bbcode">{{ view.opened.messageHtml | safe }}</div>
+	</div>
+	<footer class="post__footer">
+		<ul class="post__actions">
+			{% for action in view.opened.actions %}<li class="{{ action.kind }}"><a href="{{ url(action.href) }}">{{ action.label }}</a></li>{% endfor %}
+		</ul>
+	</footer>
+</article>
+{% endif %}
+
+<section class="draft-list" aria-labelledby="drafts-title">
+	<h2 id="drafts-title" class="visually-hidden">{{ lang.drafts.title }}</h2>
+	{% if view.rows.length %}
+	<ul class="draft-list__items">
+		{% for row in view.rows %}
+		<li class="draft-list__item">
+			<a class="draft-list__subject" href="{{ url(row.href) }}"{% if row.selected %} aria-current="true"{% endif %}>{% if row.selected %}<strong>{{ row.subject }}</strong>{% else %}{{ row.subject }}{% endif %}</a>
+			<span class="draft-list__meta"><span class="visually-hidden">{{ lang.drafts.forum }} : </span><a href="{{ url(row.forumHref) }}">{{ row.forumName }}</a> · <span class="visually-hidden">{{ lang.drafts.date }} : </span>{{ row.postedAt }}</span>
+		</li>
+		{% endfor %}
+	</ul>
+	{% else %}
+	<p class="form-box">{{ lang.drafts.noDraft }}</p>
+	{% endif %}
+</section>
+{% endblock %}

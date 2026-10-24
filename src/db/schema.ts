@@ -26,6 +26,21 @@ export interface BalisesModoTable {
 	npost: string;
 }
 
+/**
+ * Brouillons de PV (draft_list.php) : sujet renseigné et topic_id 0 pour une nouvelle discussion,
+ * sujet vide pour une réponse.
+ */
+export interface BrouillonsTable {
+	id: Generated<number>;
+	poster: string;
+	poster_id: number;
+	subject: string | null;
+	message: string | null;
+	posted: number;
+	topic_id: number;
+	forum_id: number;
+}
+
 export interface BansTable {
 	id: Generated<number>;
 	username: string | null;
@@ -267,6 +282,7 @@ export interface Database {
 	balises: BalisesTable;
 	balises_modo: BalisesModoTable;
 	bans: BansTable;
+	brouillons: BrouillonsTable;
 	categories: CategoriesTable;
 	censoring: CensoringTable;
 	config: ConfigTable;
@@ -293,6 +309,7 @@ export const TABLE_NAMES: readonly (keyof Database)[] = [
 	'balises',
 	'balises_modo',
 	'bans',
+	'brouillons',
 	'categories',
 	'censoring',
 	'config',

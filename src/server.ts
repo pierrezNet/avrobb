@@ -13,6 +13,7 @@ import { BanRepository } from './repositories/BanRepository.ts';
 import { CensorRepository } from './repositories/CensorRepository.ts';
 import { ConfigLoader } from './repositories/ConfigLoader.ts';
 import { ConfigRepository } from './repositories/ConfigRepository.ts';
+import { DraftRepository } from './repositories/DraftRepository.ts';
 import { FeedRepository } from './repositories/FeedRepository.ts';
 import { ForumRepository } from './repositories/ForumRepository.ts';
 import { GalleryRepository } from './repositories/GalleryRepository.ts';
@@ -59,6 +60,7 @@ const app = await buildApp({
 	posts: new PostRepository(db),
 	posting: new PostingRepository(db),
 	postEdits: new PostEditRepository(db),
+	drafts: new DraftRepository(db),
 	toolbar: new ToolbarRepository(db),
 	forums: new ForumRepository(db),
 	reports: new ReportRepository(db),

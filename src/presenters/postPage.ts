@@ -22,6 +22,10 @@ export interface PostFormState {
 	hideSmilies: boolean;
 	subscribe: boolean;
 	stickTopic: boolean;
+	/** Case « Enregistrer comme brouillon » (membres). */
+	draft: boolean;
+	/** Brouillon repris (post.php?brouillon) : supprimé une fois le message publié. */
+	draftId: number | null;
 }
 
 export interface PostPageInput {
@@ -43,7 +47,7 @@ export interface PostPageInput {
 }
 
 export interface Checkbox {
-	name: 'stick_topic' | 'hide_smilies' | 'subscribe' | 'silent';
+	name: 'stick_topic' | 'hide_smilies' | 'subscribe' | 'silent' | 'brouillon';
 	label: string;
 	checked: boolean;
 }
@@ -67,6 +71,8 @@ export interface PostPageView {
 	bbcodeStatus: BbcodeStatus;
 	toolbar: ToolbarView | null;
 	checkboxes: Checkbox[];
+	/** Lien vers les brouillons du membre (draft_list.php), à côté de la case « brouillon ». */
+	draftsUrl: string | null;
 	review: { poster: string; postedAt: string; messageHtml: string }[];
 }
 
@@ -81,6 +87,7 @@ function checkboxes(input: PostPageInput, isNewTopic: boolean): Checkbox[] {
 	if (config.smilies) boxes.push({ name: 'hide_smilies', label: t.hideSmilies, checked: form.hideSmilies });
 	if (!viewer.isGuest && config.topicSubscriptions)
 		boxes.push({ name: 'subscribe', label: target.topic?.isSubscribed === true ? t.staySubscribed : t.subscribe, checked: form.subscribe });
+	if (!viewer.isGuest) boxes.push({ name: 'brouillon', label: t.saveAsDraft, checked: form.draft });
 	return boxes;
 }
 
@@ -152,6 +159,7 @@ export function buildPostPage(input: PostPageInput): PostPageView {
 		bbcodeStatus: bbcodeStatus(config, viewer, lang),
 		toolbar: toolbarView(input.toolbar, 'form', config, lang),
 		checkboxes: checkboxes(input, isNewTopic),
+		draftsUrl: viewer.isGuest ? null : 'draft_list.php',
 		review: input.review.map((post) => ({
 			poster: post.poster,
 			postedAt: formatTime(post.posted, time, input.dateWords, input.now),
@@ -166,7 +174,7 @@ export interface EditPageInput {
 	post: EditablePost;
 	/** Modérateur du forum : épinglage et modification silencieuse. */
 	isForumModerator: boolean;
-	form: PostFormState & { silent: boolean };
+	form: Omit<PostFormState, 'draft' | 'draftId'> & { silent: boolean };
 	errors: readonly string[];
 	preview: string | null;
 	toolbar: ToolbarSettings;
@@ -198,7 +206,7 @@ export function buildEditPage(input: EditPageInput): PostPageView {
 		legend: t.editPostLegend,
 		showSubject: isTopicPost,
 		guest: null,
-		form,
+		form: { ...form, draft: false, draftId: null },
 		errors: input.errors,
 		previewHtml:
 			input.preview !== null ? parseMessage(input.preview, messageParserOptions(config, viewer, lang, censor, form.hideSmilies)) : null,
@@ -206,6 +214,7 @@ export function buildEditPage(input: EditPageInput): PostPageView {
 		bbcodeStatus: bbcodeStatus(config, viewer, lang),
 		toolbar: toolbarView(input.toolbar, 'form', config, lang),
 		checkboxes,
+		draftsUrl: null,
 		review: [],
 	};
 }

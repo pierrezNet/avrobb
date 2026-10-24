@@ -52,11 +52,16 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   héritage d'une base en utf8 sur 3 octets) ; redirection immédiate vers le message ; boutons de
   préfixe du sujet en JavaScript et seulement pour une nouvelle discussion ; pas de réponse dans le
   lien d'un sujet déplacé ; un échec d'envoi des notifications n'annule pas le message ; modèles
-  d'e-mail en français pour tous ; brouillons encore servis par le PHP.
+  d'e-mail en français pour tous.
 - Modification (`edit.php`) : un membre peut modifier son message pendant 30 minutes, comme PV le
   voulait (son code comparait `strtotime()` d'un timestamp, toujours faux : seuls les modérateurs
   pouvaient modifier) ; le lien « Modifier » de viewtopic suit la même règle. Le lien « Supprimer »
   suit exactement la règle de `delete.php` (le PHP pouvait afficher un lien refusé ensuite).
+- Brouillons (PV) : table `brouillons` absente de la base locale, reconstituée d'après le code PHP
+  (`tests/db/schema.sql`). Publier un brouillon repris le supprime ; sa modification suit les
+  contrôles de `post.php` ; lien « Mes brouillons » sous les options du formulaire (le PHP n'y
+  menait qu'après un enregistrement) ; la case est proposée à tout membre (le PHP la cachait quand
+  les abonnements aux sujets étaient désactivés).
 - Le menu mobile est un `<details>` sans JavaScript (PV : bouton burger en JS) ; pas d'icônes rapides.
 - `profile.php` : Node ne sert que la consultation ; tout cas de modification est redirigé vers
   `LEGACY_BASE_URL`, qui doit donc désigner une adresse servie par le PHP (sinon boucle).

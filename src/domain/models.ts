@@ -469,3 +469,15 @@ export interface EditablePost {
 	topic: { id: number; subject: string; sticky: boolean; closed: boolean; firstPostId: number };
 	forum: { id: number; name: string; moderators: ReadonlyMap<string, number> };
 }
+
+/** Brouillon de PV : nouvelle discussion (topicId null, sujet propre) ou réponse à un sujet. */
+export interface Draft {
+	id: number;
+	posterId: number;
+	/** Sujet du brouillon, ou celui de la discussion pour une réponse. */
+	subject: string;
+	message: string;
+	posted: number;
+	topicId: number | null;
+	forum: { id: number; name: string };
+}

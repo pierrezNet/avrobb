@@ -248,13 +248,6 @@ describe('GET /post.php', () => {
 		expect(await status('/post.php?tid=11')).toBe(403);
 		expect(await status('/post.php?tid=10', '')).toBe(403);
 	});
-
-	it('renvoie la reprise d’un brouillon vers le PHP', async () => {
-		app = await buildApp(fakeDeps(data()));
-		const res = await app.inject({ url: '/post.php?brouillon&id=3', headers: { cookie: memberCookie } });
-		expect(res.statusCode).toBe(302);
-		expect(res.headers.location).toBe('http://php.test/post.php?brouillon&id=3');
-	});
 });
 
 describe('POST /post.php', () => {

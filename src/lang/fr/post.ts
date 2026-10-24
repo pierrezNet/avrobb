@@ -106,6 +106,8 @@ export const post = {
 	options: 'Options',
 	submit: 'Valider',
 	stickTopic: 'Épingler la discussion',
+	/** Mod brouillon de PV (lang/French/draft.php). */
+	saveAsDraft: 'Enregistrer comme brouillon. Décocher pour poster le message.',
 	/** Boutons de préfixe du sujet (simulateur, autre) propres à PV. */
 	subjectPrefixes: 'Préfixe du sujet',
 	simulators: 'Simu :',

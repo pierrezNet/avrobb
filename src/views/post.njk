@@ -24,6 +24,7 @@
 <form id="post" class="form-box form post-form" method="post" action="{{ url(view.formAction) }}">
 	{{ forms.csrf(layout) }}
 	<input type="hidden" name="form_sent" value="1">
+	{% if view.form.draftId %}<input type="hidden" name="brouillon_id" value="{{ view.form.draftId }}">{% endif %}
 	<fieldset class="form__fieldset">
 		<legend class="form__legend">{{ view.legend }}</legend>
 		{% if view.guest %}{{ postFields.guestFields(view.guest, view.form, lang) }}{% endif %}
@@ -56,6 +57,7 @@
 		{% for box in view.checkboxes %}
 		<p class="form__check"><label><input type="checkbox" name="{{ box.name }}" value="1"{% if box.checked %} checked{% endif %}> {{ box.label }}</label></p>
 		{% endfor %}
+		{% if view.draftsUrl %}<p class="form__links"><a href="{{ url(view.draftsUrl) }}">{{ lang.drafts.myDrafts }}</a></p>{% endif %}
 	</fieldset>
 	{% endif %}
 

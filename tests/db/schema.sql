@@ -308,3 +308,17 @@ CREATE TABLE `fo_gallery` (
   `ext` varchar(10) NOT NULL DEFAULT '',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Brouillons de PV : absents de la base locale, reconstitués d'après post.php, draft_list.php et draft_edit.php.
+CREATE TABLE `fo_brouillons` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `poster` varchar(200) NOT NULL DEFAULT '',
+  `poster_id` int(10) unsigned NOT NULL DEFAULT 1,
+  `subject` varchar(255) DEFAULT NULL,
+  `message` mediumtext DEFAULT NULL,
+  `posted` int(10) unsigned NOT NULL DEFAULT 0,
+  `topic_id` int(10) unsigned NOT NULL DEFAULT 0,
+  `forum_id` int(10) unsigned NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `fo_brouillons_poster_id_idx` (`poster_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

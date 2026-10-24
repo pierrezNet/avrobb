@@ -1761,3 +1761,51 @@ a.site-status__alert {
 	opacity: 0;
 	pointer-events: none;
 }
+
+/* ---------- Brouillons (draft_list.php) ---------- */
+
+.post--draft {
+	grid-template-areas: "meta" "content" "footer";
+	grid-template-columns: minmax(0, 1fr);
+	margin-bottom: 1rem;
+}
+
+.draft-list__items {
+	margin: 0;
+	padding: 0;
+	border: 1px solid var(--color-border);
+	border-radius: 0.5rem;
+	background: var(--color-surface);
+	list-style: none;
+}
+
+.draft-list__item {
+	display: flex;
+	flex-direction: column;
+	gap: 0.125rem;
+	padding: 0.625rem 0.75rem;
+}
+
+.draft-list__item + .draft-list__item {
+	border-top: 1px solid var(--color-border);
+}
+
+.draft-list__subject {
+	display: inline-flex;
+	align-items: center;
+	min-height: 2.75rem;
+}
+
+.draft-list__meta {
+	color: var(--color-muted);
+	font-size: 0.875rem;
+}
+
+@media (min-width: 40rem) {
+	.draft-list__item {
+		flex-direction: row;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+	}
+}

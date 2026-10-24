@@ -11,6 +11,7 @@ import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply, ty
 import nunjucks from 'nunjucks';
 import type { Mailer } from './adapters/mailer.ts';
 import { DeleteController, type DeleteQuery } from './controllers/DeleteController.ts';
+import { DraftController, type DraftQuery } from './controllers/DraftController.ts';
 import { EditController, type EditQuery } from './controllers/EditController.ts';
 import { ExternController, type ExternQuery } from './controllers/ExternController.ts';
 import { ForumController, type ForumQuery } from './controllers/ForumController.ts';
@@ -34,6 +35,7 @@ import { type LayoutDeps, renderBlock, renderMessage, renderMinimalMessage } fro
 import { checkAccess, purgeOnline, type SessionDeps, startSession } from './http/session.ts';
 import type { CensorReader } from './repositories/CensorRepository.ts';
 import type { ConfigReader } from './repositories/ConfigLoader.ts';
+import type { DraftStore } from './repositories/DraftRepository.ts';
 import type { FeedReader } from './repositories/FeedRepository.ts';
 import type { GalleryReader } from './repositories/GalleryRepository.ts';
 import type { MailTemplateReader } from './repositories/MailTemplateFiles.ts';
@@ -76,6 +78,7 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	posts: PostReader;
 	posting: PostingStore;
 	postEdits: PostEditStore;
+	drafts: DraftStore;
 	toolbar: ToolbarReader;
 	avatars: AvatarLocator;
 	censorship: CensorReader;
@@ -96,6 +99,8 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 /** Pages déjà servies par Node ; les autres liens partent vers l'installation PHP. */
 const PORTED_PAGES = new Set([
 	'delete.php',
+	'draft_edit.php',
+	'draft_list.php',
 	'edit.php',
 	'extern.php',
 	'gallery.php',
@@ -240,6 +245,12 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 	const edit = new EditController(deps);
 	app.get<{ Querystring: EditQuery }>('/edit.php', { preHandler: authenticate }, edit.show);
 	app.post<{ Querystring: EditQuery; Body: FormBody }>('/edit.php', { preHandler: [authenticate, verifyCsrf] }, edit.submit);
+
+	const drafts = new DraftController(deps);
+	app.get<{ Querystring: DraftQuery }>('/draft_list.php', { preHandler: authenticate }, drafts.list);
+	app.post<{ Body: FormBody }>('/draft_list.php', { preHandler: [authenticate, verifyCsrf] }, drafts.remove);
+	app.get<{ Querystring: DraftQuery }>('/draft_edit.php', { preHandler: authenticate }, drafts.edit);
+	app.post<{ Querystring: DraftQuery; Body: FormBody }>('/draft_edit.php', { preHandler: [authenticate, verifyCsrf] }, drafts.save);
 
 	const deletion = new DeleteController(deps);
 	app.get<{ Querystring: DeleteQuery }>('/delete.php', { preHandler: authenticate }, deletion.show);

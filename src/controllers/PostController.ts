@@ -2,8 +2,9 @@
  * Contrôleur de post.php : formulaire de réponse ou de nouvelle discussion (avec citation),
  * prévisualisation, puis enregistrement et notifications.
  *
- * Les brouillons de PV (post.php?brouillon, case « Enregistrer comme brouillon ») ne sont pas
- * encore portés : le lien d'un brouillon est renvoyé vers le PHP, et la case n'est pas proposée.
+ * Brouillons de PV : la case « Enregistrer comme brouillon » range le message dans la table
+ * brouillons au lieu de le publier ; post.php?brouillon&id=… le reprend en prévisualisation.
+ * Écart assumé : publier un brouillon repris le supprime (le PHP le laissait dans la liste).
  */
 
 import type { FastifyReply, FastifyRequest } from 'fastify';
@@ -16,6 +17,7 @@ import { setForumCookie } from '../http/session.ts';
 import { buildPostPage, type PostFormState } from '../presenters/postPage.ts';
 import type { BanReader } from '../repositories/BanRepository.ts';
 import type { CensorReader } from '../repositories/CensorRepository.ts';
+import type { DraftStore } from '../repositories/DraftRepository.ts';
 import type { MailTemplateReader } from '../repositories/MailTemplateFiles.ts';
 import type { NewPostAuthor, PostingStore } from '../repositories/PostingRepository.ts';
 import type { RegistrationStore } from '../repositories/RegistrationRepository.ts';
@@ -45,6 +47,7 @@ export interface PostControllerDeps extends LayoutDeps {
 	trackCookieName: string;
 	legacyBaseUrl: string;
 	toolbar: ToolbarReader;
+	drafts: DraftStore;
 }
 
 export interface PostQuery {
@@ -53,6 +56,8 @@ export interface PostQuery {
 	qid?: string;
 	action?: string;
 	brouillon?: string;
+	/** Brouillon à reprendre (post.php?brouillon&id=…). */
+	id?: string;
 }
 
 type PostRequest = FastifyRequest<{ Querystring: PostQuery; Body?: FormBody }>;
@@ -64,14 +69,9 @@ export class PostController {
 
 	show = async (request: FastifyRequest<{ Querystring: PostQuery }>, reply: FastifyReply): Promise<FastifyReply> => {
 		const { viewer } = request;
+		if (request.query.brouillon !== undefined) return this.resumeDraft(request, reply);
 
-		// Reprise d'un brouillon (mod de PV) : pas encore portée.
-		if (request.query.brouillon !== undefined && this.deps.legacyBaseUrl !== '') {
-			const search = request.url.slice(request.url.indexOf('?'));
-			return reply.redirect(`${this.deps.legacyBaseUrl}/post.php${search}`);
-		}
-
-		const target = await this.resolveTarget(request, reply);
+		const target = await this.resolveTarget(request, reply, this.queryIds(request));
 		if (!('forum' in target)) return target;
 		const censor = await this.censor(request.board);
 
@@ -90,18 +90,73 @@ export class PostController {
 			hideSmilies: false,
 			subscribe: viewer.autoNotify || target.topic?.isSubscribed === true,
 			stickTopic: false,
+			draft: false,
+			draftId: null,
 		};
 		return this.renderForm(request, reply, target, censor, form, [], null);
 	};
+
+	/** post.php?brouillon&id=… : le brouillon de son auteur, prévisualisé dans le formulaire. */
+	private async resumeDraft(request: FastifyRequest<{ Querystring: PostQuery }>, reply: FastifyReply): Promise<FastifyReply> {
+		const { viewer } = request;
+		const { lang } = this.deps.page;
+		const id = positiveInt(request.query.id);
+		const draft = id > 0 && !viewer.isGuest ? await this.deps.drafts.find(id) : null;
+		if (draft === null) return renderMessage(request, reply, this.deps, 404, lang.common.badRequest);
+		if (draft.posterId !== viewer.id) return renderMessage(request, reply, this.deps, 403, lang.common.noPermission);
+
+		const target = await this.resolveTarget(
+			request,
+			reply,
+			draft.topicId !== null ? { tid: draft.topicId, fid: 0 } : { tid: 0, fid: draft.forum.id },
+		);
+		if (!('forum' in target)) return target;
+		const censor = await this.censor(request.board);
+		const form: PostForm = {
+			subject: target.topic === null ? draft.subject : null,
+			message: draft.message,
+			username: '',
+			email: '',
+			hideSmilies: false,
+			subscribe: viewer.autoNotify || target.topic?.isSubscribed === true,
+			stickTopic: false,
+			preview: true,
+		};
+		const post = await this.validate(request, target, form, censor);
+		const errors = post.errors.map((error) => lang.post.postError(error));
+		return this.renderForm(
+			request,
+			reply,
+			target,
+			censor,
+			{ ...this.stateOf(form, post), draft: false, draftId: draft.id },
+			errors,
+			errors.length === 0 ? post.message : null,
+		);
+	}
+
+	private stateOf(form: PostForm, post: ValidatedPost): Omit<PostFormState, 'draft' | 'draftId'> {
+		return {
+			subject: form.subject ?? '',
+			message: post.originalMessage,
+			username: form.username,
+			email: form.email,
+			hideSmilies: form.hideSmilies,
+			subscribe: form.subscribe,
+			stickTopic: form.stickTopic,
+		};
+	}
 
 	submit = async (request: FastifyRequest<{ Querystring: PostQuery; Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> => {
 		const { viewer, board: config, body } = request;
 		const { lang } = this.deps.page;
 
-		const target = await this.resolveTarget(request, reply);
+		const target = await this.resolveTarget(request, reply, this.queryIds(request));
 		if (!('forum' in target)) return target;
 		const censor = await this.censor(config);
 		const now = this.deps.page.clock();
+		const draftId = positiveInt(field(body, 'brouillon_id'));
+		const asDraft = !viewer.isGuest && checked(body, 'brouillon');
 
 		const form: PostForm = {
 			subject: target.topic === null ? field(body, 'req_subject') : null,
@@ -114,13 +169,56 @@ export class PostController {
 			preview: checked(body, 'preview'),
 		};
 
+		const post = await this.validate(request, target, form, censor);
+
+		if (post.errors.length > 0 || form.preview) {
+			const errors = post.errors.map((error) => lang.post.postError(error));
+			const state: PostFormState = { ...this.stateOf(form, post), draft: asDraft, draftId: draftId > 0 ? draftId : null };
+			return this.renderForm(request, reply, target, censor, state, errors, errors.length === 0 ? post.message : null);
+		}
+
+		if (asDraft) {
+			const id = await this.deps.drafts.create({
+				poster: viewer.username,
+				posterId: viewer.id,
+				subject: target.topic === null ? post.subject : null,
+				message: post.message,
+				posted: now,
+				topicId: target.topic?.id ?? null,
+				forumId: target.forum.id,
+			});
+			return reply.redirect(`draft_list.php?id=${id}`);
+		}
+
+		const { topicId, postId } = await this.save(request, target, post, now);
+		if (draftId > 0 && !viewer.isGuest) await this.deps.drafts.delete(draftId, viewer.id);
+		await this.notify(request, target, post, censor, { topicId, postId });
+
+		if (!viewer.isGuest) {
+			const tracked = markRead(parseTrackedTopics(request.cookies[this.deps.trackCookieName]), 'topics', topicId, now);
+			setForumCookie(
+				reply,
+				this.deps.legacyCookie,
+				this.deps.trackCookieName,
+				serializeTrackedTopics(tracked),
+				now + config.timeoutVisit,
+				now,
+				config.timeoutVisit,
+			);
+		}
+		return reply.redirect(`viewtopic.php?pid=${postId}#p${postId}`);
+	};
+
+	/** Validation de post.php pour ce visiteur et cette cible. */
+	private async validate(request: PostRequest, target: PostingTarget, form: PostForm, censor: Censor | null): Promise<ValidatedPost> {
+		const { viewer, board: config } = request;
 		const [bans, similarUsername] = await Promise.all([
 			this.deps.bans.listBans(),
 			viewer.isGuest ? this.similarUsername(form.username) : null,
 		]);
-		const post = validatePost(form, {
+		return validatePost(form, {
 			viewer,
-			now,
+			now: this.deps.page.clock(),
 			isAnyModerator: isAnyModerator(viewer),
 			isForumModerator: isForumModerator(viewer, target.forum),
 			config: {
@@ -139,49 +237,24 @@ export class PostController {
 			censor,
 			bans,
 			similarUsername,
-			guestLabel: lang.common.guest,
+			guestLabel: this.deps.page.lang.common.guest,
 		});
+	}
 
-		if (post.errors.length > 0 || form.preview) {
-			const state: PostFormState = {
-				subject: form.subject ?? '',
-				message: post.originalMessage,
-				username: form.username,
-				email: form.email,
-				hideSmilies: form.hideSmilies,
-				subscribe: form.subscribe,
-				stickTopic: form.stickTopic,
-			};
-			const errors = post.errors.map((error) => lang.post.postError(error));
-			return this.renderForm(request, reply, target, censor, state, errors, errors.length === 0 ? post.message : null);
-		}
-
-		const { topicId, postId } = await this.save(request, target, post, now);
-		await this.notify(request, target, post, censor, { topicId, postId });
-
-		if (!viewer.isGuest) {
-			const tracked = markRead(parseTrackedTopics(request.cookies[this.deps.trackCookieName]), 'topics', topicId, now);
-			setForumCookie(
-				reply,
-				this.deps.legacyCookie,
-				this.deps.trackCookieName,
-				serializeTrackedTopics(tracked),
-				now + config.timeoutVisit,
-				now,
-				config.timeoutVisit,
-			);
-		}
-		return reply.redirect(`viewtopic.php?pid=${postId}#p${postId}`);
-	};
+	private queryIds(request: PostRequest): { tid: number; fid: number } {
+		return { tid: positiveInt(request.query.tid), fid: positiveInt(request.query.fid) };
+	}
 
 	/** tid ou fid (l'un des deux), cible lisible, pas une redirection, et droit d'y écrire. */
-	private async resolveTarget(request: PostRequest, reply: FastifyReply): Promise<PostingTarget | FastifyReply> {
+	private async resolveTarget(
+		request: PostRequest,
+		reply: FastifyReply,
+		{ tid, fid }: { tid: number; fid: number },
+	): Promise<PostingTarget | FastifyReply> {
 		const { viewer } = request;
 		const { lang } = this.deps.page;
 		if (!viewer.group.canReadBoard) return renderMessage(request, reply, this.deps, 403, lang.common.noView);
 
-		const tid = positiveInt(request.query.tid);
-		const fid = positiveInt(request.query.fid);
 		if ((tid === 0) === (fid === 0)) return renderMessage(request, reply, this.deps, 404, lang.common.badRequest);
 
 		const target = await this.deps.posting.findTarget(tid > 0 ? { topicId: tid } : { forumId: fid }, {

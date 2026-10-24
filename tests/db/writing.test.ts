@@ -8,6 +8,7 @@ import type { Kysely } from 'kysely';
 import { afterAll, describe, expect, it } from 'vitest';
 import { createDatabase } from '../../src/db/database.ts';
 import type { Database } from '../../src/db/schema.ts';
+import { DraftRepository } from '../../src/repositories/DraftRepository.ts';
 import { updateForum } from '../../src/repositories/forumCounters.ts';
 import { PostEditRepository } from '../../src/repositories/PostEditRepository.ts';
 import { PostingRepository } from '../../src/repositories/PostingRepository.ts';
@@ -350,6 +351,61 @@ describe('PostEditRepository', () => {
 				num_posts: 0,
 				last_post: null,
 			});
+		});
+	});
+});
+
+describe('DraftRepository', () => {
+	it('crée, liste, modifie et supprime les brouillons de leur auteur', async () => {
+		await inRollback(async (trx) => {
+			const drafts = new DraftRepository(trx);
+			const topicDraft = await drafts.create({
+				poster: 'Tessy',
+				posterId: 3,
+				subject: 'Récit',
+				message: 'à finir',
+				posted: 1782900000,
+				topicId: null,
+				forumId: 2,
+			});
+			const replyDraft = await drafts.create({
+				poster: 'Tessy',
+				posterId: 3,
+				subject: null,
+				message: 'réponse',
+				posted: 1782900100,
+				topicId: 10,
+				forumId: 2,
+			});
+
+			expect(await drafts.listByPoster(3)).toEqual([
+				{
+					id: replyDraft,
+					posterId: 3,
+					subject: 'Postez un « vintage »',
+					message: 'réponse',
+					posted: 1782900100,
+					topicId: 10,
+					forum: { id: 2, name: "Captures d'écran & Vidéos" },
+				},
+				{
+					id: topicDraft,
+					posterId: 3,
+					subject: 'Récit',
+					message: 'à finir',
+					posted: 1782900000,
+					topicId: null,
+					forum: { id: 2, name: "Captures d'écran & Vidéos" },
+				},
+			]);
+
+			await drafts.update(topicDraft, { subject: 'Récit complet', message: 'fini' });
+			expect(await drafts.find(topicDraft)).toMatchObject({ subject: 'Récit complet', message: 'fini' });
+
+			await drafts.delete(topicDraft, 5);
+			expect(await drafts.find(topicDraft)).not.toBeNull();
+			await drafts.delete(topicDraft, 3);
+			expect(await drafts.find(topicDraft)).toBeNull();
 		});
 	});
 });

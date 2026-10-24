@@ -67,7 +67,7 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
 - [x] Réponse rapide sous viewtopic
 - [x] Barre d’outils BBCode (FluxToolBar : `toolbar_conf`, `toolbar_tags`) en JS progressif
 - [x] **edit** et **delete** (message, sujet)
-- [ ] Brouillons (`brouillons`, `draft_list`, `draft_edit`) **(PV)**
+- [x] Brouillons (`brouillons`, `draft_list`, `draft_edit`) **(PV)**
 - [ ] Abonnements aux sujets et forums + notifications par e-mail
 - [ ] Signalement d'un message (`misc.php?report`) et e-mail à un membre (`misc.php?email`)
 - [ ] Création et vote dans les sondages **(PV)**

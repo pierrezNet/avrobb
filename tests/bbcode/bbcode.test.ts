@@ -35,8 +35,8 @@ const options: BbcodeOptions = {
 
 const render = (c: Case, opts = options): string => (c.signature === true ? parseSignature(c.text, opts) : parseMessage(c.text, opts));
 
-/** Seul ajout systématique de Node : le chargement différé des images. */
-const normalize = (html: string): string => html.replaceAll(' loading="lazy"', '');
+/** Ajouts systématiques de Node : chargement différé des images, espace après un retour à la ligne. */
+const normalize = (html: string): string => html.replaceAll(' loading="lazy"', '').replaceAll('<span class="bbcode-gap"></span>', '');
 
 const DEVIATIONS = new Set([
 	'émoticônes',
@@ -150,5 +150,33 @@ describe('options', () => {
 		expect(parseMessage('Zut, zutalors, flûtiau flûteries <zut>', { ...options, censor })).toBe(
 			'<p>***, zutalors, flûtiau [censuré] &lt;***&gt;</p>',
 		);
+	});
+});
+
+describe('espace après un retour à la ligne (Node)', () => {
+	it('entre deux lignes, pas entre deux paragraphes', () => {
+		expect(parseMessage('a\nb\n\nc', options)).toBe('<p>a<br /><span class="bbcode-gap"></span>b</p><p>c</p>');
+		expect(parseMessage('a\n\n\n\nb', options)).not.toContain('bbcode-gap');
+	});
+});
+
+describe('adresses en texte brut transformées en liens (Node)', () => {
+	const linking = { ...options, makeLinks: true };
+	it('http et www deviennent des liens, hors balises et [code]', () => {
+		expect(parseMessage('voir https://www.pilote-virtuel.com/forum.', linking)).toBe(
+			'<p>voir <a href="https://www.pilote-virtuel.com/forum" rel="nofollow">https://www.pilote-virtuel.com/forum</a>.</p>',
+		);
+		expect(parseMessage('www.a.fr', linking)).toContain('<a href="http://www.a.fr" rel="nofollow">www.a.fr</a>');
+		const untouched = parseMessage('[url=http://b.fr]lien[/url] [img]http://c.fr/i.png[/img] [code]http://d.fr[/code]', linking);
+		expect(untouched.match(/<a /g)).toHaveLength(1);
+		expect(untouched).toContain('<code>http://d.fr</code>');
+		expect(parseMessage('[video]https://www.youtube.com/watch?v=dQw4w9WgXcQ[/video]', linking)).toContain(
+			'youtube-nocookie.com/embed/dQw4w9WgXcQ',
+		);
+	});
+
+	it('pas de lien sans BBCode ni si o_make_links est désactivé', () => {
+		expect(parseMessage('https://a.fr', { ...linking, bbcode: false })).toBe('<p>https://a.fr</p>');
+		expect(parseMessage('https://a.fr', options)).toBe('<p>https://a.fr</p>');
 	});
 });

@@ -55,6 +55,9 @@ export const common = {
 	breadcrumbs: "Fil d'Ariane",
 	index: 'Accueil',
 	userList: 'Liste des membres',
+	/** Ajouts au menu de PV. */
+	gallery: 'Galerie',
+	drafts: 'Brouillons',
 	rules: 'Règles',
 	search: 'Recherche',
 	register: 'Inscription',

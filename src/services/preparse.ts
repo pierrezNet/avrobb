@@ -166,15 +166,20 @@ function listTag(source: string, type: string): string {
 
 // --- Liens automatiques (do_clickable()) ------------------------------------------------------
 
-/** handle_url_tag($url, $link, true) : [url=…] seulement si l'adresse complétée diffère du texte. */
-function urlBbcode(rawUrl: string, baseUrl: string): string {
+/**
+ * handle_url_tag($url, $link, true) : [url=…] seulement si l'adresse complétée diffère du texte.
+ * PV renvoie alors le texte nu (« return $link; //'[url]'.$link.'[/url]' ») ; `wrapPlain` rétablit
+ * le [url]…[/url] de FluxBB, pour l'affichage (linkBareUrls()).
+ */
+function urlBbcode(rawUrl: string, baseUrl: string, wrapPlain = false): string {
 	const url = punTrim(rawUrl);
 	let fullUrl = url.replaceAll(' ', '%20').replace(/['`"]/g, '');
 	if (url.startsWith('www.')) fullUrl = `http://${fullUrl}`;
 	else if (url.startsWith('ftp.')) fullUrl = `ftp://${fullUrl}`;
 	else if (url.startsWith('/')) fullUrl = baseUrl + fullUrl;
 	else if (!/^[a-z0-9]{3,6}:\/\//.test(url)) fullUrl = `http://${fullUrl}`;
-	return fullUrl === rawUrl ? rawUrl : `[url=${fullUrl}]${rawUrl}[/url]`;
+	if (fullUrl === rawUrl) return wrapPlain ? `[url]${rawUrl}[/url]` : rawUrl;
+	return `[url=${fullUrl}]${rawUrl}[/url]`;
 }
 
 const PATH = `(?:/(?:[^${WS}\\[]*[^${WS}.,?!\\[;:-])?)?`;
@@ -184,7 +189,7 @@ const PATH = `(?:/(?:[^${WS}\\[]*[^${WS}.,?!\\[;:-])?)?`;
  * exigée si une parenthèse ouvrante précède) ; on les déplie en 8 variantes essayées dans l'ordre
  * où PCRE revient en arrière.
  */
-function clickablePattern(scheme: string, separator: string, host: string): RegExp {
+function clickablePattern(scheme: string, separator: string, host: string, skipTags = 'url|img'): RegExp {
 	const variants: string[] = [];
 	for (const lt of [true, false])
 		for (const bracket of [true, false])
@@ -193,7 +198,7 @@ function clickablePattern(scheme: string, separator: string, host: string): RegE
 					`${lt ? '<' : ''}${bracket ? '\\[' : ''}${paren ? '\\(' : ''}(?<q>['"]?)(?<url>${scheme}${separator}${host}(?::[0-9]+)?${PATH})\\k<q>` +
 						`${paren ? '\\)' : ''}${bracket ? '\\]' : ''}${lt ? '>' : ''}`,
 				);
-	return new RegExp(`(?<=[${WS}\\]\\)])(?:${variants.join('|')})(?![^${WS}]*\\[/(?:url|img)\\])`, 'giu');
+	return new RegExp(`(?<=[${WS}\\]\\)])(?:${variants.join('|')})(?![^${WS}]*\\[/(?:${skipTags})\\])`, 'giu');
 }
 
 const CLICKABLE = [
@@ -201,15 +206,32 @@ const CLICKABLE = [
 	clickablePattern('(?:www|ftp)', '\\.', '(?:[\\p{L}\\p{N}\\-]+\\.)+[\\p{L}\\p{N}]+'),
 ];
 
-function doClickable(text: string, baseUrl: string): string {
+/** Mêmes motifs pour l'affichage : on ne touche pas non plus aux adresses d'une [video]. */
+const CLICKABLE_DISPLAY = [
+	clickablePattern('(?:https?|ftp|news)', '://', '[\\p{L}\\p{N}\\-]+\\.(?:[\\p{L}\\p{N}\\-]+\\.)*[\\p{L}\\p{N}]+', 'url|img|video'),
+	clickablePattern('(?:www|ftp)', '\\.', '(?:[\\p{L}\\p{N}\\-]+\\.)+[\\p{L}\\p{N}]+', 'url|img|video'),
+];
+
+function doClickable(text: string, baseUrl: string, patterns = CLICKABLE, wrapPlain = false): string {
 	let out = ` ${text}`;
-	for (const pattern of CLICKABLE)
+	for (const pattern of patterns)
 		out = out.replace(pattern, (whole: string, ...args: unknown[]) => {
 			const groups = args.at(-1) as { url?: string };
 			const url = groups.url ?? '';
-			return whole.replace(url, () => urlBbcode(url, baseUrl));
+			return whole.replace(url, () => urlBbcode(url, baseUrl, wrapPlain));
 		});
 	return out.slice(1);
+}
+
+/**
+ * Adresses laissées en texte brut (http://…, www.…) balisées en [url] avant l'affichage, hors
+ * [code]. Écart assumé avec PV, qui ne transformait plus les adresses http en liens : les anciens
+ * messages en profitent aussi, sans modifier la base.
+ */
+export function linkBareUrls(source: string, baseUrl: string): string {
+	if (!hasCode(source)) return doClickable(source, baseUrl, CLICKABLE_DISPLAY, true);
+	const { inside, text } = extractBlocks(source, 8);
+	return restoreBlocks(doClickable(text, baseUrl, CLICKABLE_DISPLAY, true), inside);
 }
 
 // --- Structure des balises (preparse_tags()) --------------------------------------------------

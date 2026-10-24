@@ -42,14 +42,14 @@ describe('pageTitle', () => {
 describe('buildLayout', () => {
 	it('menu invité : inscription et identification, pas de profil', () => {
 		const layout = buildLayout(input({ viewer: guest }));
-		expect(navIds(layout)).toEqual(['navindex', 'navuserlist', 'navsearch', 'navregister', 'navlogin']);
+		expect(navIds(layout)).toEqual(['navindex', 'navuserlist', 'navsearch', 'navgallery', 'navregister', 'navlogin']);
 		expect(layout.status).toBeNull();
 		expect(layout.quickSearches.map((s) => s.label)).toEqual(['Récentes', 'Sans réponse']);
 	});
 
 	it('menu membre : profil et déconnexion avec le jeton de login.php', () => {
 		const layout = buildLayout(input({ options: { pageId: 'x', titleParts: [], activeNav: 'index' } }));
-		expect(navIds(layout)).toEqual(['navindex', 'navuserlist', 'navsearch', 'navprofile', 'navlogout']);
+		expect(navIds(layout)).toEqual(['navindex', 'navuserlist', 'navsearch', 'navprofile', 'navgallery', 'navdrafts', 'navlogout']);
 		expect(layout.nav[0]?.active).toBe(true);
 		expect(layout.nav.at(-1)?.href).toBe(`login.php?action=out&id=3&csrf_token=${logoutToken(3, '127.0.0.1')}`);
 		expect(layout.quickSearches).toHaveLength(4);
@@ -59,14 +59,23 @@ describe('buildLayout', () => {
 	it('masque liste des membres et recherche selon le groupe, affiche les règles si activées', () => {
 		const restricted = viewer({ group: group({ canViewUsers: false, canSearch: false }) });
 		const layout = buildLayout(input({ viewer: restricted, config: { ...boardConfig, rules: true } }));
-		expect(navIds(layout)).toEqual(['navindex', 'navrules', 'navprofile', 'navlogout']);
+		expect(navIds(layout)).toEqual(['navindex', 'navrules', 'navprofile', 'navgallery', 'navdrafts', 'navlogout']);
 		expect(layout.quickSearches).toEqual([]);
 	});
 
 	it('insère les liens additionnels à la position demandée', () => {
 		const config = { ...boardConfig, additionalNavlinks: '1 = <a href="/wiki">Wiki</a>\n10 = <a href="/x">X</a>' };
 		const layout = buildLayout(input({ viewer: guest, config }));
-		expect(navIds(layout)).toEqual(['navindex', 'navextra1', 'navuserlist', 'navsearch', 'navregister', 'navlogin', 'navextra2']);
+		expect(navIds(layout)).toEqual([
+			'navindex',
+			'navextra1',
+			'navuserlist',
+			'navsearch',
+			'navgallery',
+			'navregister',
+			'navlogin',
+			'navextra2',
+		]);
 		expect(layout.nav[1]?.trustedHtml).toBe('<a href="/wiki">Wiki</a>');
 	});
 

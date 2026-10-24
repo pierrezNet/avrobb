@@ -14,7 +14,7 @@ import { canSearch, canUsePrivateMessages, isAnyModerator, isForumModerator } fr
 import { resolveTheme, type Theme } from '../services/themes.ts';
 
 /** Onglet du menu principal mis en évidence (PUN_ACTIVE_PAGE). */
-export type NavId = 'index' | 'userlist' | 'rules' | 'search' | 'register' | 'login' | 'profile' | 'pm' | 'none';
+export type NavId = 'index' | 'userlist' | 'rules' | 'search' | 'gallery' | 'drafts' | 'register' | 'login' | 'profile' | 'pm' | 'none';
 
 /** Pied de page propre à certaines pages ($footer_style de footer.php). */
 export type FooterContext =
@@ -158,11 +158,17 @@ function buildNav(input: LayoutInput): NavLink[] {
 
 	if (canSearch(viewer)) links.push(link('navsearch', 'search.php', t.search, active === 'search'));
 
+	// Ajouts au menu de PV, dans son ordre : galerie après le profil, puis brouillons (membres).
+	const gallery = viewer.group.canReadBoard ? [link('navgallery', 'gallery.php', t.gallery, active === 'gallery')] : [];
+
 	if (viewer.isGuest) {
+		links.push(...gallery);
 		links.push(link('navregister', 'register.php', t.register, active === 'register'));
 		links.push(link('navlogin', 'login.php', t.login, active === 'login'));
 	} else {
 		links.push(link('navprofile', `profile.php?id=${viewer.id}`, t.profile, active === 'profile'));
+		links.push(...gallery);
+		links.push(link('navdrafts', 'draft_list.php', t.drafts, active === 'drafts'));
 
 		if (canUsePrivateMessages(viewer, config)) {
 			const unread = input.unreadPrivateMessages;

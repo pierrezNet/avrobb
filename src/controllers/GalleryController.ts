@@ -66,7 +66,13 @@ export class GalleryController {
 			reply,
 			this.deps,
 			'gallery.njk',
-			{ pageId: 'gallery', titleParts: [config.boardTitle, lang.gallery.pageTitle], allowIndex: true, canonicalUrl: galleryUrl(page) },
+			{
+				pageId: 'gallery',
+				titleParts: [config.boardTitle, lang.gallery.pageTitle],
+				activeNav: 'gallery',
+				allowIndex: true,
+				canonicalUrl: galleryUrl(page),
+			},
 			view,
 		);
 	};

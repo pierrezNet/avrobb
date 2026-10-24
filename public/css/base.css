@@ -151,7 +151,8 @@ abbr[title] {
 	justify-content: space-between;
 	gap: 0.5rem;
 	padding: 0.5rem 0.75rem;
-	background: var(--color-header-bg);
+	/* Même dégradé que le menu déplié, comme l'en-tête de PV. */
+	background: linear-gradient(90deg, var(--color-header-bg) 12%, var(--color-accent) 75%);
 	color: var(--color-header-text);
 }
 
@@ -192,29 +193,43 @@ abbr[title] {
 	content: "✕";
 }
 
-/* Mobile : le menu se déplie sous l'en-tête, par-dessus le contenu. */
+/*
+ * Mobile : le menu se déplie sous l'en-tête, par-dessus le contenu, comme le menu burger de PV :
+ * dégradé du fond de l'en-tête vers la couleur d'accent du thème, libellés à droite séparés par
+ * des filets clairs.
+ */
 .site-nav nav {
 	position: absolute;
 	top: 100%;
 	right: 0;
 	left: 0;
 	z-index: 10;
-	background: var(--color-header-bg);
+	background: linear-gradient(90deg, var(--color-header-bg) 12%, var(--color-accent) 75%);
 	box-shadow: 0 0.5rem 1rem rgb(0 0 0 / 25%);
 }
 
 .site-nav__list {
 	margin: 0;
-	padding: 0.25rem 0;
+	padding: 0 0 0.25rem;
 	list-style: none;
+}
+
+.site-nav__item {
+	margin-left: 1rem;
+}
+
+.site-nav__item + .site-nav__item {
+	border-top: 2px solid rgb(255 255 255 / 75%);
 }
 
 .site-nav__item a {
 	display: flex;
 	align-items: center;
+	justify-content: flex-end;
 	min-height: 2.75rem;
 	padding: 0.5rem 1rem;
 	color: var(--color-header-text);
+	font-size: 1.0625rem;
 	text-decoration: none;
 }
 
@@ -223,9 +238,9 @@ abbr[title] {
 	text-decoration: underline;
 }
 
+/* Page courante : en gras sur mobile (le fond rouge est réservé au menu de grand écran). */
 .site-nav__item.is-active a {
-	background: var(--color-active);
-	font-weight: 600;
+	font-weight: 700;
 }
 
 .site-status {
@@ -578,6 +593,12 @@ a.site-status__alert {
 
 .bbcode p {
 	margin: 0 0 0.75rem;
+}
+
+/* Retour à la ligne simple (Entrée) : demi-interligne d'écart (services/bbcode.ts). */
+.bbcode-gap {
+	display: block;
+	height: 0.4em;
 }
 
 .bbcode > :last-child {
@@ -1607,8 +1628,22 @@ a.site-status__alert {
 			padding: 0;
 		}
 
+		.site-nav__item {
+			margin-left: 0;
+		}
+
+		.site-nav__item + .site-nav__item {
+			border-top: 0;
+		}
+
 		.site-nav__item a {
 			border-radius: 0.375rem;
+			font-size: 1rem;
+		}
+
+		.site-nav__item.is-active a {
+			background: var(--color-active);
+			font-weight: 600;
 		}
 	}
 }

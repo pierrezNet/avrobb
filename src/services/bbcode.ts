@@ -14,10 +14,13 @@
  * - [video] devient un lecteur intégré YouTube, Dailymotion ou Vimeo construit à partir d'un
  *   identifiant validé (le PHP produisait surtout des objets Flash) ; sinon un simple lien ;
  * - [spoiler] devient un <details> (sans JavaScript), [acronym] un <abbr>, et les alignements des
- *   classes CSS plutôt que des styles en ligne.
+ *   classes CSS plutôt que des styles en ligne ;
+ * - dans un message, chaque retour à la ligne simple est suivi d'un espace vertical
+ *   (<span class="bbcode-gap">) : une ligne tapée avec Entrée se lit comme un petit paragraphe.
  */
 
 import type { Censor } from './censor.ts';
+import { linkBareUrls } from './preparse.ts';
 import { doSmilies } from './smilies.ts';
 
 export interface BbcodeLabels {
@@ -45,6 +48,8 @@ export interface BbcodeOptions {
 	/** o_indent_num_spaces : remplacement des tabulations hors [code]. */
 	indentSpaces: number;
 	labels: BbcodeLabels;
+	/** o_make_links : adresses en texte brut transformées en liens à l'affichage (messages). */
+	makeLinks?: boolean;
 }
 
 /** pun_htmlspecialchars() : htmlspecialchars(ENT_QUOTES). */
@@ -296,7 +301,8 @@ function prepare(source: string, options: BbcodeOptions): string {
 
 /** parse_message() : corps d'un message. */
 export function parseMessage(source: string, options: BbcodeOptions): string {
-	let text = prepare(source, options);
+	const linked = options.bbcode && options.makeLinks === true ? linkBareUrls(source, options.baseUrl) : source;
+	let text = prepare(linked, options);
 
 	let blocks: string[] = [];
 	if (text.includes('[code]') && text.includes('[/code]')) {
@@ -318,7 +324,15 @@ export function parseMessage(source: string, options: BbcodeOptions): string {
 		return `</p><div class="codebox"><pre${scroll}><code>${code}</code></pre></div><p>`;
 	});
 
-	return cleanParagraphs(text);
+	return spaceLineBreaks(cleanParagraphs(text));
+}
+
+/**
+ * Espace après un retour à la ligne simple (ni suivi d'un autre retour, ni en bordure de
+ * paragraphe). Une marge sur <br> n'est pas prise en compte par les navigateurs, d'où l'élément vide.
+ */
+function spaceLineBreaks(html: string): string {
+	return html.replace(/(?<!<br \/>)<br \/>(?!<br \/>|<\/?p>|<div)/g, '<br /><span class="bbcode-gap"></span>');
 }
 
 /** parse_signature() : pas de [code] ni de listes, images selon p_sig_img_tag. */

@@ -43,6 +43,11 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
 - BBCode : écarts volontaires listés en tête de `src/services/bbcode.ts` (émojis au lieu des images,
   `[video]` en lecteur intégré, `[spoiler]` en `<details>`, liens `[topic]`… corrigés, balises
   déséquilibrées laissées en texte). Tout le reste est comparé au parseur PHP (`tests/bbcode/`).
+- Affichage des messages : adresses en texte brut (`http://…`, `www.…`) transformées en liens, y
+  compris dans les anciens messages (PV avait désactivé ce [url] de `do_clickable()`) ; un retour à
+  la ligne simple est suivi d'un demi-interligne d'espace (`<span class="bbcode-gap">`).
+- Menu : liens « Galerie » et « Brouillons » ajoutés après « Profil », comme le menu burger de PV
+  (à retirer de `o_additional_navlinks` s'ils y figurent en production).
 - Renommée : la condition PHP sur `reputation_enable_adm` (colonne absente du schéma local) est ignorée.
 - Site web du profil : préfixé de `http://` s'il n'a pas de schéma (le PHP laissait passer `javascript:`).
 - Textes en français seulement.

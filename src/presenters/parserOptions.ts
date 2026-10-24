@@ -29,5 +29,6 @@ export function messageParserOptions(
 		baseUrl: config.baseUrl,
 		indentSpaces: config.indentSpaces,
 		labels: bbcodeLabels(lang),
+		makeLinks: config.posting.makeLinks,
 	};
 }

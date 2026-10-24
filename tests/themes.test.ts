@@ -41,6 +41,8 @@ const PAIRS: [foreground: string, background: string][] = [
 	['link', 'quote-bg'],
 	['accent-text', 'accent'],
 	['header-text', 'header-bg'],
+	// Fin du dégradé de l'en-tête et du menu mobile.
+	['header-text', 'accent'],
 	['header-text', 'active'],
 	['button-text', 'button-bg'],
 ];

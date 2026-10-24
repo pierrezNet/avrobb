@@ -68,7 +68,7 @@ export class DraftController {
 			reply,
 			this.deps,
 			'draft_list.njk',
-			{ pageId: 'draft_list', titleParts: [lang.drafts.title, config.boardTitle] },
+			{ pageId: 'draft_list', titleParts: [lang.drafts.title, config.boardTitle], activeNav: 'drafts' },
 			view,
 		);
 	};
@@ -187,6 +187,13 @@ export class DraftController {
 			censor: await this.censor(config),
 			lang,
 		});
-		return renderPage(request, reply, this.deps, 'post.njk', { pageId: 'draft_edit', titleParts: [config.boardTitle, view.heading] }, view);
+		return renderPage(
+			request,
+			reply,
+			this.deps,
+			'post.njk',
+			{ pageId: 'draft_edit', titleParts: [config.boardTitle, view.heading], activeNav: 'drafts' },
+			view,
+		);
 	}
 }

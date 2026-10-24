@@ -20,13 +20,13 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
 
 - [x] `git init` et premier commit du POC (le projet PHP n'est pas versionné : se protéger ici)
 - [x] Lint et formatage (Biome : une seule dépendance, configuré pour tabulations et apostrophes simples) + script `npm run check` (lint, typecheck, test)
-- [ ] Gestion d'erreurs centralisée (`setErrorHandler`, 404 et 500 rendus avec `message.njk`, journalisation sans fuite d'informations)
-- [ ] Mise en page commune complète : en-tête (menu selon droits, bienvenue, nouveaux MP, liens de modération), pied (quickjump, « Propulsé par »), fil d'Ariane réutilisable
-- [ ] **CSS responsive** : feuille de base mobile d'abord + 6 thèmes FluxBB réduits à des variables CSS ; choix du thème utilisateur (`users.style`)
-- [ ] Chargement de `config` (table) avec invalidation, lecture des caches PHP
-- [ ] Langue : structurer `src/lang/fr.ts` par page (fichiers `lang/French/*.php` comme source)
-- [ ] Tests d'intégration contre une vraie base (conteneur `pv_db`, base de test dédiée) en complément des doublures
-- [ ] Mesure de parité : script qui compare le HTML ou le texte utile d'une page PHP et de son équivalent Node
+- [x] Gestion d'erreurs centralisée (`setErrorHandler`, 404 et 500 rendus avec `message.njk`, journalisation sans fuite d'informations)
+- [x] Mise en page commune complète : en-tête (menu selon droits, bienvenue, nouveaux MP, liens de modération), pied (quickjump, « Propulsé par »), fil d'Ariane réutilisable
+- [x] **CSS responsive** : feuille de base mobile d'abord + 6 thèmes FluxBB réduits à des variables CSS ; choix du thème utilisateur (`users.style`)
+- [x] Chargement de `config` (table) avec invalidation, lecture des caches PHP
+- [x] Langue : structurer `src/lang/fr.ts` par page → `src/lang/fr/` (fichiers `lang/French/*.php` comme source)
+- [x] Tests d'intégration contre une vraie base (conteneur `pv_db`, base de test dédiée) en complément des doublures
+- [x] Mesure de parité : script qui compare le HTML ou le texte utile d'une page PHP et de son équivalent Node
 
 ## Lot 1 — Lecture publique
 
@@ -118,6 +118,8 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
 ---
 
 ## Écarts connus du POC (rappel du README)
+
+- Dates du POC au format de la config au lieu de `d/m/Y H:i` de PV → corrigé au lot 0 (trouvé par `npm run parity`)
 
 - Pas d'écriture (vues, sujets lus) → lot 2
 - BBCode partiel, smileys, censure, balises PV → lot 1

@@ -20,11 +20,14 @@ npm run typecheck  # tsc --noEmit (TypeScript strict)
 npm run lint       # Biome (lint + format, vérification seule)
 npm run format     # Biome : corrige le formatage et l'ordre des imports
 npm run check      # lint + typecheck + test : à lancer avant chaque commit
+npm run test:db    # tests d'intégration sur une vraie base (pv_forum_test, recréée à chaque lancement)
+npm run parity -- 'viewtopic.php?id=4' [--cookie punbb_cookie_local=…]   # écarts de texte/liens PHP ↔ Node
+npm run screenshot -- 'http://localhost:3000/viewtopic.php?id=4' --widths 320,375,768,1280 [--cookie …]
 ```
 
 Pré-requis : la pile Docker du projet PHP (`cd /var/www/html/PiloteVirtuel && sg docker -c "docker compose up -d"`) : MariaDB sur `127.0.0.1:3307`, forum PHP sur `:8080`, phpMyAdmin sur `:8081`. `.env` est copié depuis `.env.example` ; `LEGACY_COOKIE_SEED` = `$cookie_seed` du `config.php` PHP.
 
-**Définition de « terminé »** : `npm run check` passe, et la page a été vérifiée à la main dans le navigateur face à la page PHP équivalente, sur mobile comme sur bureau.
+**Définition de « terminé »** : `npm run check` et `npm run test:db` passent, `npm run parity` ne montre que des écarts assumés (notés dans le README), et la page a été vérifiée à la main dans le navigateur face à la page PHP équivalente, sur mobile comme sur bureau.
 
 ## Pile technique
 
@@ -46,13 +49,15 @@ Principes :
 - **Injection de dépendances** : chaque contrôleur reçoit ses dépendances sous forme d'interfaces `XxxReader` / `XxxWriter` (voir `AppDeps` dans `src/app.ts`). `server.ts` câble les vraies, les tests passent des doublures en mémoire (`tests/fixtures.ts`).
 - **Découpage par fonctionnalité** à mesure que le projet grossit : un contrôleur, un presenter et une vue par page ; les repositories sont organisés par table ou agrégat.
 - Les **règles de droits** vivent dans `services/permissions.ts` (ou un fichier par domaine) et ne sont jamais recopiées dans une vue ou un contrôleur.
-- **Dates** : timestamps Unix (secondes) jusqu'au presenter ; formatage en dernier ; horloge injectée (`PageContext.clock`).
-- **Textes** : tous dans `src/lang/fr.ts`, aucune chaîne en dur dans les vues ou les presenters.
+- **Dates** : timestamps Unix (secondes) jusqu'au presenter ; formatage en dernier ; horloge injectée (`PageContext.clock`). PV a modifié `format_time()` : formats fixes `d/m/Y` et `H:i` (`viewerTimeSettings()`), pas `o_date_format`.
+- **Mise en page** : un contrôleur rend sa page avec `renderPage(request, reply, deps, 'page.njk', options, view)` ; `options` (`PageOptions`) décrit le titre, l'onglet actif et le pied (`footer`). Réglages et utilisateur sont sur `request.board` et `request.viewer` (hook `authenticate` déclaré par route).
+- **Configuration** : `ConfigLoader` lit `cache/cache_config.php` comme `common.php` (sinon la table) ; après une écriture dans `config`, appeler `invalidate()`.
+- **Textes** : tous dans `src/lang/fr/` (un fichier par page), aucune chaîne en dur dans les vues ou les presenters.
 
 ## Cohabitation avec le PHP (critique)
 
 - **Base partagée** : on ne modifie **pas** le schéma FluxBB. Une écriture faite par Node doit laisser la base dans un état que le PHP comprend : compteurs `num_posts`/`num_replies`/`last_post*`, index de recherche (`search_words` / `search_matches`), `online`, abonnements… Reproduire fidèlement les effets de bord du PHP équivalent.
-- **Caches PHP** (`cache/cache_*.php`) : si Node modifie `config`, `bans`, `censoring`, `forums`, `smilies` ou `users_info`, il doit **supprimer le fichier de cache PHP correspondant** (le PHP le régénère). Node ne met pas `config` en cache sans invalidation.
+- **Caches PHP** (`cache/cache_*.php`) : si Node modifie `config`, `bans`, `censoring`, `forums`, `smilies` ou `users_info`, il doit **supprimer le fichier de cache PHP correspondant** via `PhpCacheStore.invalidate()` (le PHP le régénère). Ces fichiers se lisent avec `parsePhpCacheVariable()` (sous-ensemble de `var_export`, jamais d'évaluation).
 - **Session** : le cookie FluxBB (`services/legacySession.ts`) est la source de vérité. Une connexion faite par Node doit émettre exactement le même format de cookie que `pun_setcookie()`.
 - **Liens** : utiliser `url('page.php?…')` dans les vues ; ajouter la page à `PORTED_PAGES` (`src/app.ts`) quand elle est portée. On conserve les **mêmes URL** (`viewtopic.php?id=…`) pour ne casser ni les liens externes ni le référencement.
 - **Mots de passe** : FluxBB stocke du SHA-1. Il faut rester compatible tant que le PHP tourne (évolution vers argon2 possible uniquement après la bascule, voir TODO).
@@ -60,7 +65,7 @@ Principes :
 
 ## Sécurité (non négociable)
 
-- Échappement automatique Nunjucks ; `| safe` seulement sur du HTML produit par `parseBbcode` (sûr par construction) et commenté.
+- Échappement automatique Nunjucks ; `| safe` seulement sur du HTML produit par `parseBbcode` (sûr par construction) et commenté. Seule autre exception : le HTML saisi par l'administrateur dans les options (`o_announcement_message`, `o_additional_navlinks`), affiché tel quel comme le fait le PHP ; ces champs portent le préfixe `trustedHtml`/`…Html` dans les modèles de vue.
 - Requêtes uniquement via Kysely (paramétrées) ; jamais de SQL concaténé avec des entrées utilisateur.
 - **Jeton CSRF** sur tout formulaire en POST ; aucune écriture en GET.
 - Valider et typer toutes les entrées (paramètres de requête, corps de formulaire) dès le contrôleur, avec des schémas Fastify ou de petites fonctions dédiées (`positiveInt`…).

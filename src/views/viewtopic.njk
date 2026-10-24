@@ -24,7 +24,7 @@
 <article id="p{{ post.id }}" class="post{% if post.isFirstPost %} post--first{% endif %}" aria-labelledby="p{{ post.id }}-title">
 	<h2 class="post__meta" id="p{{ post.id }}-title">
 		<a class="post__date" href="{{ post.permalink }}">{{ post.postedAt }}</a>
-		<span class="post__number"><span class="visually-hidden">{{ lang.topic.postNumber(post.number) }}</span><span aria-hidden="true">#{{ post.number }}</span></span>
+		<span class="post__number">#{{ post.number }}</span>
 	</h2>
 
 	<div class="post__author">
@@ -41,7 +41,7 @@
 		</dl>
 		{% if post.ip or post.emailUrl or post.websiteUrl %}
 		<ul class="post__contacts">
-			{% if post.ip %}<li><a href="{{ url('moderate.php?get_host=' ~ post.id) }}" title="{{ post.ip }}">{{ lang.topic.ipAddressLogged }}</a></li>{% endif %}
+			{% if post.ip %}<li><a href="{{ url(post.ip.href) }}" title="{{ post.ip.address }}">{{ lang.topic.ipAddressLogged }}</a></li>{% endif %}
 			{% if post.emailUrl %}<li><a href="{{ url(post.emailUrl) }}">{{ lang.topic.email }}</a></li>{% endif %}
 			{% if post.websiteUrl %}<li><a href="{{ post.websiteUrl }}" rel="nofollow ugc">{{ lang.topic.website }}</a></li>{% endif %}
 		</ul>
@@ -59,12 +59,9 @@
 
 	<footer class="post__footer">
 		{% if post.isOnline !== null %}<p class="post__presence{% if post.isOnline %} post__presence--online{% endif %}">{% if post.isOnline %}{{ lang.topic.online }}{% else %}{{ lang.topic.offline }}{% endif %}</p>{% endif %}
-		{% if post.actions.report or post.actions.delete or post.actions.edit or post.actions.quote %}
+		{% if post.actions.length %}
 		<ul class="post__actions">
-			{% if post.actions.report %}<li class="postreport"><a href="{{ url('misc.php?report=' ~ post.id) }}">{{ lang.topic.report }}</a></li>{% endif %}
-			{% if post.actions.delete %}<li class="postdelete"><a href="{{ url('delete.php?id=' ~ post.id) }}">{{ lang.topic.delete }}</a></li>{% endif %}
-			{% if post.actions.edit %}<li class="postedit"><a href="{{ url('edit.php?id=' ~ post.id) }}">{{ lang.topic.edit }}</a></li>{% endif %}
-			{% if post.actions.quote %}<li class="postquote"><a href="{{ url('post.php?tid=' ~ view.topic.id ~ '&qid=' ~ post.id) }}">{{ lang.topic.quote }}</a></li>{% endif %}
+			{% for action in post.actions %}<li class="{{ action.kind }}"><a href="{{ url(action.href) }}">{{ action.label }}</a></li>{% endfor %}
 		</ul>
 		{% endif %}
 	</footer>

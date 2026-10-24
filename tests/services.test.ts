@@ -5,7 +5,7 @@ import { TablePrefixPlugin } from '../src/db/TablePrefixPlugin.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { frDateWords } from '../src/lang/fr/index.ts';
 import { parseBbcode } from '../src/services/bbcode.ts';
-import { formatTime } from '../src/services/dateFormat.ts';
+import { formatTime, viewerTimeSettings } from '../src/services/dateFormat.ts';
 import { forumHmac, isCookiePasswordValid, isCookieSignatureValid, parseLegacyCookie } from '../src/services/legacySession.ts';
 import { clampPage, paginate } from '../src/services/pagination.ts';
 import { canReply, postActions } from '../src/services/permissions.ts';
@@ -119,6 +119,15 @@ describe('formatTime', () => {
 		expect(formatTime(now - 86400, settings, frDateWords, now)).toBe('Hier 14:00');
 		expect(formatTime(now - 3 * 86400, settings, frDateWords, now)).toBe('21/10/2026 14:00');
 		expect(formatTime(null, settings, frDateWords, now)).toBe('Jamais');
+	});
+});
+
+describe('viewerTimeSettings', () => {
+	it('impose les formats de format_time() de PV (d/m/Y H:i), pas ceux de la config', () => {
+		const now = Date.UTC(2026, 9, 24, 12, 0, 0) / 1000;
+		const settings = viewerTimeSettings({ timezone: 0, dst: false });
+		expect(formatTime(now - 3 * 86400, settings, frDateWords, now)).toBe('21/10/2026 12:00');
+		expect(formatTime(now - 3 * 86400, settings, frDateWords, now, true)).toBe('21/10/2026');
 	});
 });
 

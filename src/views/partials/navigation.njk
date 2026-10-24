@@ -4,7 +4,7 @@
 <nav class="breadcrumbs" aria-label="{{ lang.common.breadcrumbs }}">
 	<ol>
 	{% for crumb in items %}
-		<li>{% if crumb.current %}<a href="{{ url(crumb.href) }}" aria-current="page"><strong>{{ crumb.label }}</strong></a>{% else %}<a href="{{ url(crumb.href) }}">{{ crumb.label }}</a>{% endif %}</li>
+		<li>{% if not loop.first %}<span class="breadcrumbs__separator" aria-hidden="true">»&#160;</span>{% endif %}{% if crumb.current %}<a href="{{ url(crumb.href) }}" aria-current="page"><strong>{{ crumb.label }}</strong></a>{% else %}<a href="{{ url(crumb.href) }}">{{ crumb.label }}</a>{% endif %}</li>
 	{% endfor %}
 	</ol>
 </nav>

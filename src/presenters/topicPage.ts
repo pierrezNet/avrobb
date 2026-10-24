@@ -9,9 +9,16 @@
 import { type BoardConfig, GroupId, type Post, type Topic, type Viewer } from '../domain/models.ts';
 import type { Lang } from '../lang/fr/index.ts';
 import { parseBbcode } from '../services/bbcode.ts';
-import { type DateWords, formatTime, type TimeSettings } from '../services/dateFormat.ts';
+import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
 import { canReply, isAnyModerator, type PostActionRights, postActions } from '../services/permissions.ts';
 import { type Crumb, crumbs, type PaginationLink, paginationLinks } from './navigation.ts';
+
+/** Lien d'action sous un message ; `kind` sert aussi de classe CSS (postreport…, comme FluxBB). */
+export interface PostAction {
+	kind: 'postreport' | 'postdelete' | 'postedit' | 'postquote';
+	href: string;
+	label: string;
+}
 
 export interface PostView {
 	id: number;
@@ -28,14 +35,15 @@ export interface PostView {
 	numPosts: number | null;
 	emailUrl: string | null;
 	websiteUrl: string | null;
-	ip: string | null;
+	/** IP de l'auteur (modérateurs seulement) et lien vers sa résolution. */
+	ip: { address: string; href: string } | null;
 	adminNote: string | null;
 	isOnline: boolean | null;
 	/** HTML produit par parseBbcode (échappé par construction). */
 	messageHtml: string;
 	signatureHtml: string | null;
 	edited: { by: string; at: string } | null;
-	actions: PostActionRights;
+	actions: PostAction[];
 }
 
 export interface TopicPageView {
@@ -70,6 +78,16 @@ function userTitle(post: Post, lang: Lang): string {
 	return lang.common.member;
 }
 
+function actionLinks(rights: PostActionRights, postId: number, topicId: number, lang: Lang): PostAction[] {
+	const t = lang.topic;
+	const links: PostAction[] = [];
+	if (rights.report) links.push({ kind: 'postreport', href: `misc.php?report=${postId}`, label: t.report });
+	if (rights.delete) links.push({ kind: 'postdelete', href: `delete.php?id=${postId}`, label: t.delete });
+	if (rights.edit) links.push({ kind: 'postedit', href: `edit.php?id=${postId}`, label: t.edit });
+	if (rights.quote) links.push({ kind: 'postquote', href: `post.php?tid=${topicId}&qid=${postId}`, label: t.quote });
+	return links;
+}
+
 /** URL d'une page du sujet (la page 1 n'a pas de paramètre p, comme dans FluxBB). */
 export function topicUrl(topicId: number, page = 1): string {
 	return page > 1 ? `viewtopic.php?id=${topicId}&p=${page}` : `viewtopic.php?id=${topicId}`;
@@ -77,12 +95,7 @@ export function topicUrl(topicId: number, page = 1): string {
 
 export function buildTopicPage(input: TopicPageInput): TopicPageView {
 	const { viewer, config, topic, lang } = input;
-	const time: TimeSettings = {
-		timezone: viewer.timezone,
-		dst: viewer.dst,
-		dateFormat: config.dateFormat,
-		timeFormat: config.timeFormat,
-	};
+	const time = viewerTimeSettings(viewer);
 	const format = (ts: number | null, dateOnly = false): string => formatTime(ts, time, input.dateWords, input.now, dateOnly);
 
 	const viewerIsMod = isAnyModerator(viewer);
@@ -118,7 +131,7 @@ export function buildTopicPage(input: TopicPageInput): TopicPageView {
 			numPosts: showInfo && (config.showPostCount || viewerIsMod) ? author.numPosts : null,
 			emailUrl,
 			websiteUrl: showInfo && author.url !== '' ? author.url : null,
-			ip: viewerIsMod ? post.posterIp : null,
+			ip: viewerIsMod ? { address: post.posterIp, href: `moderate.php?get_host=${post.id}` } : null,
 			adminNote: viewerIsMod && author !== null && author.adminNote !== '' ? author.adminNote : null,
 			isOnline: author !== null ? author.isOnline : null,
 			messageHtml: parseBbcode(post.message, { bbcode: config.bbcode, showImages: config.imgTag }),
@@ -127,7 +140,12 @@ export function buildTopicPage(input: TopicPageInput): TopicPageView {
 					? parseBbcode(author.signature, { bbcode: config.bbcode, showImages: config.imgTag })
 					: null,
 			edited: post.edited !== null ? { by: post.editedBy, at: format(post.edited) } : null,
-			actions: postActions(viewer, topic, author?.id ?? 0, position, author?.groupId === GroupId.Admin),
+			actions: actionLinks(
+				postActions(viewer, topic, author?.id ?? 0, position, author?.groupId === GroupId.Admin),
+				post.id,
+				topic.id,
+				lang,
+			),
 		};
 	});
 

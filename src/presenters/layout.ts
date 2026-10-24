@@ -8,7 +8,7 @@
 
 import type { BoardConfig, ForumCategory, Topic, Viewer } from '../domain/models.ts';
 import type { Lang } from '../lang/fr/index.ts';
-import { type DateWords, formatTime } from '../services/dateFormat.ts';
+import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
 import { logoutToken } from '../services/legacySession.ts';
 import { canSearch, canUsePrivateMessages, isAnyModerator, isForumModerator } from '../services/permissions.ts';
 import { resolveTheme, type Theme } from '../services/themes.ts';
@@ -197,7 +197,7 @@ function buildStatus(input: LayoutInput): StatusView | null {
 
 	if (viewer.isGuest) return null;
 
-	const time = { timezone: viewer.timezone, dst: viewer.dst, dateFormat: config.dateFormat, timeFormat: config.timeFormat };
+	const time = viewerTimeSettings(viewer);
 	const isAdmMod = isAnyModerator(viewer);
 	const pms = canUsePrivateMessages(viewer, config);
 	const unread = input.unreadPrivateMessages;

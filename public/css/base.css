@@ -288,9 +288,7 @@ a.site-status__alert {
 	font-size: 0.9375rem;
 }
 
-.breadcrumbs li + li::before {
-	content: "»";
-	margin-right: 0.25rem;
+.breadcrumbs__separator {
 	color: var(--color-muted);
 }
 

@@ -24,7 +24,7 @@ export const common = {
 	previous: 'Précédent',
 	next: 'Suivant',
 	spacer: '…',
-	pages: 'Pages\u00a0:',
+	pages: 'Pages',
 	page: (n: number) => `Page ${n}`,
 
 	// Titres

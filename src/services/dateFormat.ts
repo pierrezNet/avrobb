@@ -19,6 +19,19 @@ export interface DateWords {
 	months: readonly string[];
 }
 
+/**
+ * Formats par défaut de format_time() chez Pilote-Virtuel : la fonction a été modifiée pour
+ * prendre « d/m/Y » et « H:i » au lieu de o_date_format / o_time_format (et des préférences du
+ * membre), qui ne servent plus que si l'appelant passe explicitement null.
+ */
+export const PV_DATE_FORMAT = 'd/m/Y';
+export const PV_TIME_FORMAT = 'H:i';
+
+/** Réglages d'affichage des dates d'un membre, avec les formats de PV. */
+export function viewerTimeSettings(viewer: { timezone: number; dst: boolean }): TimeSettings {
+	return { timezone: viewer.timezone, dst: viewer.dst, dateFormat: PV_DATE_FORMAT, timeFormat: PV_TIME_FORMAT };
+}
+
 const pad = (n: number): string => String(n).padStart(2, '0');
 
 type DatePart = (date: Date, words: DateWords) => string | number;

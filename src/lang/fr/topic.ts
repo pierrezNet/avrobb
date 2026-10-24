@@ -20,7 +20,5 @@ export const topic = {
 	edit: 'Modifier',
 	quote: 'Citer',
 	re: 'Re\u00a0:',
-	/** Absent de FluxBB : libellé accessible du numéro de message. */
-	postNumber: (n: number) => `Message n°\u00a0${n}`,
 	wrote: (author: string) => `${author} a écrit\u00a0:`,
 };

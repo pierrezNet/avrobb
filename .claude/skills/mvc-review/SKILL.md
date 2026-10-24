@@ -24,7 +24,7 @@ Passer chaque point sur le diff. Corriger directement ce qui est simple, signale
 - [ ] Pas de duplication avec un service existant (`pagination`, `dateFormat`, `permissions`, `bbcode`…).
 - [ ] Commentaires en français, sur le _pourquoi_ ; en-tête de fichier présent.
 - [ ] Style respecté : tabulations, apostrophes simples, imports `.ts`.
-- [ ] Textes dans `src/lang/fr.ts`, pas en dur.
+- [ ] Textes dans `src/lang/fr/` (un fichier par page), pas en dur.
 
 ## Sécurité
 
@@ -52,4 +52,4 @@ Passer chaque point sur le diff. Corriger directement ce qui est simple, signale
 
 - [ ] Services et presenter testés, y compris les cas de droits limites.
 - [ ] Test d'intégration `app.inject()` de la page.
-- [ ] `npm run typecheck && npm test` passent.
+- [ ] `npm run check` et `npm run test:db` passent.

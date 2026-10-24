@@ -29,17 +29,19 @@ Le code PHP de référence se trouve dans `/var/www/html/PiloteVirtuel`. Il est 
 6. **Contrôleur** : validation des entrées → droits → repositories → presenter → `reply.view()`, `redirect()` ou `renderMessage()`. En POST : vérifier le jeton CSRF puis appliquer le motif POST → redirection → GET.
 7. **Vue** Nunjucks : `{% extends "layout.njk" %}`, aucun calcul, textes via `lang.*`, liens via `url()`. Appliquer le skill `responsive-ui`.
 8. **Câblage** : route dans `src/app.ts` (même URL que le PHP, par exemple `/viewforum.php`), dépendances dans `AppDeps` et `server.ts`, page ajoutée à `PORTED_PAGES`.
-9. **Langue** : nouvelles chaînes dans `src/lang/fr.ts`, reprises du fichier `lang/French/` correspondant (converti en UTF-8).
+9. **Langue** : nouvelles chaînes dans `src/lang/fr/` (un fichier par page), reprises du fichier `lang/French/` correspondant (converti en UTF-8).
 
 ## 3. Tester
 
 - Tests unitaires des services et du presenter (cas de droits : invité, membre, modérateur du forum, administrateur, sujet fermé…).
 - Test d'intégration avec `app.inject()` et les doublures de `tests/fixtures.ts` : statut, redirections, présence ou absence des actions.
 - Pour les écritures : test contre la base de test, puis vérification que **la page PHP équivalente affiche correctement** le résultat.
-- Vérification manuelle : `npm run dev`, comparer avec `http://localhost:8080/<page>.php` en vue mobile (375 px) et bureau.
+- Test d'intégration sur base réelle dans `tests/db/` (compléter `tests/db/seed.sql` si besoin) : `npm run test:db`.
+- Parité : `npm run parity -- '<page>.php?…'` en invité puis avec `--cookie` (membre, modérateur) ; chaque écart restant est soit corrigé, soit noté dans le README.
+- Vérification visuelle : `npm run screenshot -- 'http://localhost:3000/<page>.php?…' --widths 320,375,768,1280` (avec `--cookie` et `--open-menu` au besoin), à comparer avec `http://localhost:8080/<page>.php`, en thème clair (Air) et sombre (GreenDark).
 
 ## 4. Clore
 
-- `npm run typecheck && npm test` passent.
+- `npm run check` et `npm run test:db` passent.
 - Passer le skill `mvc-review`.
 - Cocher la ligne dans `TODO.md` et mettre à jour les « Écarts connus » du README.

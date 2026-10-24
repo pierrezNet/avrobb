@@ -167,6 +167,9 @@ export interface BoardConfig {
 	timeoutVisit: number;
 	timeoutOnline: number;
 	adminEmail: string;
+	/** Expéditeur des e-mails automatiques (o_webmaster_email). */
+	webmasterEmail: string;
+	smtp: { host: string; user: string; pass: string; ssl: boolean };
 	/** Groupe des nouveaux membres (o_default_user_group). */
 	defaultUserGroup: number;
 	/** Annonce affichée en haut de chaque page ; null si désactivée (HTML saisi par l'administrateur). */

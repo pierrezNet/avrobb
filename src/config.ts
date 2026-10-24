@@ -29,6 +29,8 @@ export interface AppConfig {
 	legacyRoot: string;
 	/** Node est derrière un reverse proxy (IP du client lue dans X-Forwarded-For). */
 	trustProxy: boolean;
+	/** Sans SMTP configuré : dossier où écrire les e-mails (.eml) au lieu de sendmail ; null sinon. */
+	mailOutbox: string | null;
 }
 
 function required(env: NodeJS.ProcessEnv, name: string): string {
@@ -60,5 +62,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
 		legacyBaseUrl: (env.LEGACY_BASE_URL ?? '').replace(/\/$/, ''),
 		legacyRoot: env.LEGACY_ROOT ?? '',
 		trustProxy: env.TRUST_PROXY === '1',
+		mailOutbox: env.MAIL_OUTBOX !== undefined && env.MAIL_OUTBOX !== '' ? env.MAIL_OUTBOX : null,
 	};
 }

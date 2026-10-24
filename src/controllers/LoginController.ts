@@ -1,6 +1,6 @@
 /**
  * Contrôleur de login.php : formulaire, connexion (action=in), déconnexion (action=out).
- * Le mot de passe oublié (action=forget) est servi par PasswordResetController.
+ * Le mot de passe oublié (action=forget, forget_2) est servi par PasswordResetController.
  *
  * Écarts assumés : jeton CSRF sur le formulaire, adresse de retour limitée aux pages du forum,
  * redirection HTTP immédiate au lieu de la page « Redirection… » (o_redirect_delay).
@@ -25,7 +25,6 @@ export interface LoginControllerDeps extends LayoutDeps {
 	online: OnlineWriter;
 	phpCache: PhpCacheStore | null;
 	legacyCookie: LegacyCookieConfig;
-	legacyBaseUrl: string;
 }
 
 export interface LoginQuery {
@@ -43,9 +42,6 @@ export class LoginController {
 	/** GET login.php : formulaire, ou déconnexion (action=out). */
 	show = async (request: FastifyRequest<{ Querystring: LoginQuery }>, reply: FastifyReply): Promise<FastifyReply> => {
 		if (request.query.action === 'out') return this.logout(request, reply);
-		// Mot de passe oublié : encore servi par le PHP (porté avec le service d'e-mail).
-		if ((request.query.action === 'forget' || request.query.action === 'forget_2') && this.deps.legacyBaseUrl !== '')
-			return reply.redirect(`${this.deps.legacyBaseUrl}/login.php?action=forget`);
 		if (!request.viewer.isGuest) return reply.redirect('index.php');
 
 		const { lang } = this.deps.page;

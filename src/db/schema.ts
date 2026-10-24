@@ -218,6 +218,9 @@ export interface UsersTable {
 	registered: number;
 	last_visit: number;
 	admin_note: string | null;
+	activate_string: string | null;
+	activate_key: string | null;
+	last_email_sent: number | null;
 	style: string;
 	use_pm: number;
 	num_pms: number;

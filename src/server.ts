@@ -4,6 +4,7 @@
  */
 
 import path from 'node:path';
+import { NodeMailer } from './adapters/mailer.ts';
 import { buildApp } from './app.ts';
 import { loadConfig } from './config.ts';
 import { createDatabase } from './db/database.ts';
@@ -15,6 +16,7 @@ import { ConfigRepository } from './repositories/ConfigRepository.ts';
 import { FeedRepository } from './repositories/FeedRepository.ts';
 import { ForumRepository } from './repositories/ForumRepository.ts';
 import { GalleryRepository } from './repositories/GalleryRepository.ts';
+import { MailTemplateFiles } from './repositories/MailTemplateFiles.ts';
 import { OnlineRepository } from './repositories/OnlineRepository.ts';
 import { PhpCacheFiles } from './repositories/PhpCacheFiles.ts';
 import { PostRepository } from './repositories/PostRepository.ts';
@@ -43,6 +45,9 @@ const app = await buildApp({
 	users,
 	members: users,
 	credentials: users,
+	passwordResets: users,
+	mailTemplates: new MailTemplateFiles(config.legacyRoot),
+	mailer: new NodeMailer(config.mailOutbox),
 	profiles: users,
 	topics,
 	topicWriter: topics,

@@ -28,11 +28,13 @@
 		"fastify": "^5.12.7",
 		"kysely": "^0.29.7",
 		"mysql2": "^3.24.6",
+		"nodemailer": "^7.0.13",
 		"nunjucks": "^3.2.4"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.6.3",
 		"@types/node": "^26.6.5",
+		"@types/nodemailer": "^8.0.2",
 		"@types/nunjucks": "^3.2.6",
 		"tsx": "^4.23.15",
 		"typescript": "^7.0.2",

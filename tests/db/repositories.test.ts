@@ -93,6 +93,17 @@ describe('liste des membres', () => {
 		expect(await members.findProfile(999)).toBeNull();
 	});
 
+	it('retrouve les comptes par e-mail et enregistre un mot de passe en attente', async () => {
+		expect(await members.findByEmail('tessy@example.test')).toEqual([{ id: 3, username: 'Tessy', lastEmailSent: null }]);
+		await members.setPendingPassword(5, 'hash', 'cle12345', NOW);
+		const row = await db
+			.selectFrom('users')
+			.select(['activate_string', 'activate_key', 'last_email_sent'])
+			.where('id', '=', 5)
+			.executeTakeFirstOrThrow();
+		expect(row).toEqual({ activate_string: 'hash', activate_key: 'cle12345', last_email_sent: NOW });
+	});
+
 	it('propose tous les groupes sauf les invités', async () => {
 		expect((await members.listGroups()).map((g) => g.id)).toEqual([1, 2, 4]);
 	});
@@ -407,6 +418,9 @@ describe('viewtopic de bout en bout', () => {
 			users: new UserRepository(db),
 			members: new UserRepository(db),
 			credentials: new UserRepository(db),
+			passwordResets: new UserRepository(db),
+			mailTemplates: { load: async () => ({ subject: '', body: '' }) },
+			mailer: { send: async () => undefined },
 			profiles: new UserRepository(db),
 			topics: new TopicRepository(db),
 			topicWriter: new TopicRepository(db),

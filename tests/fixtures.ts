@@ -29,6 +29,7 @@ import type { PostLocation } from '../src/repositories/TopicRepository.ts';
 import type { ViewerRecord } from '../src/repositories/UserRepository.ts';
 import type { Ban } from '../src/services/bans.ts';
 import type { CensoredWord } from '../src/services/censor.ts';
+import type { MailMessage } from '../src/services/mail.ts';
 
 export const NOW = 1_782_900_000;
 
@@ -173,6 +174,8 @@ export const boardConfig: BoardConfig = {
 	timeoutVisit: 1800,
 	timeoutOnline: 300,
 	adminEmail: 'admin@forum.test',
+	webmasterEmail: 'webmaster@forum.test',
+	smtp: { host: '', user: '', pass: '', ssl: false },
 	defaultUserGroup: 4,
 	announcement: null,
 	quickjump: true,
@@ -217,6 +220,10 @@ export interface FakeData {
 	forumTopics?: Map<number, TopicSummary[]>;
 	labelDefinitions?: TopicLabel[];
 	members?: MemberSummary[];
+	/** Comptes trouvables par e-mail (mot de passe oublié). */
+	accounts?: { id: number; username: string; email: string; lastEmailSent: number | null }[];
+	pendingPasswords?: { userId: number; passwordHash: string; key: string; now: number }[];
+	sentMails?: MailMessage[];
 	/** Sujets dont le compteur de vues a été incrémenté. */
 	viewedTopics?: number[];
 	profiles?: UserProfile[];
@@ -280,6 +287,24 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			setGroup: async (userId, groupId) => {
 				const found = data.users.find((u) => u.viewer.id === userId);
 				if (found !== undefined) found.viewer = { ...found.viewer, group: { ...found.viewer.group, id: groupId } };
+			},
+		},
+		passwordResets: {
+			findByEmail: async (email) =>
+				(data.accounts ?? []).filter((a) => a.email === email).map(({ id, username, lastEmailSent }) => ({ id, username, lastEmailSent })),
+			setPendingPassword: async (userId, passwordHash, key, now) => {
+				data.pendingPasswords = [...(data.pendingPasswords ?? []), { userId, passwordHash, key, now }];
+			},
+		},
+		mailTemplates: {
+			load: async (name) => ({
+				subject: `Sujet ${name}`,
+				body: 'Bonjour <username>, mot de passe <new_password>, lien <activation_url> -- <board_mailer>',
+			}),
+		},
+		mailer: {
+			send: async (message) => {
+				data.sentMails = [...(data.sentMails ?? []), message];
 			},
 		},
 		profiles: { findProfile: async (id) => data.profiles?.find((p) => p.id === id) ?? null },

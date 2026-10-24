@@ -43,6 +43,8 @@ export function toBoardConfig(values: ReadonlyMap<string, string>): BoardConfig 
 		timeoutVisit: Number(text('o_timeout_visit', '1800')) || 1800,
 		timeoutOnline: Number(text('o_timeout_online', '300')) || 300,
 		adminEmail: text('o_admin_email'),
+		webmasterEmail: text('o_webmaster_email'),
+		smtp: { host: text('o_smtp_host'), user: text('o_smtp_user'), pass: text('o_smtp_pass'), ssl: flag('o_smtp_ssl') },
 		defaultUserGroup: Number(text('o_default_user_group', '4')) || 4,
 		announcement: flag('o_announcement') ? text('o_announcement_message') : null,
 		quickjump: flag('o_quickjump'),

@@ -31,7 +31,7 @@ Pré-requis : la pile Docker du projet PHP (`cd /var/www/html/PiloteVirtuel && s
 
 ## Pile technique
 
-Node ≥ 24 (ESM, `"type": "module"`), TypeScript exécuté par `tsx` (imports avec extension `.ts`), **Fastify 5**, **Kysely** + `mysql2` (SQL typé), **Nunjucks** (échappement automatique, `throwOnUndefined`), **Vitest**. N'ajoute pas de dépendance sans raison claire : on préfère la bibliothèque standard de Node et ce qui est déjà installé.
+Node ≥ 24 (ESM, `"type": "module"`), TypeScript exécuté par `tsx` (imports avec extension `.ts`), **Fastify 5**, **Kysely** + `mysql2` (SQL typé), **Nunjucks** (échappement automatique, `throwOnUndefined`), **nodemailer** (e-mails : SMTP, boîte de sortie `MAIL_OUTBOX` en développement, sendmail), **Vitest**. N'ajoute pas de dépendance sans raison claire : on préfère la bibliothèque standard de Node et ce qui est déjà installé.
 
 ## Architecture MVC (règles strictes)
 
@@ -70,7 +70,7 @@ Principes :
 
 - Échappement automatique Nunjucks ; `| safe` seulement sur du HTML produit par `parseBbcode` (sûr par construction) et commenté. Seule autre exception : le HTML saisi par l'administrateur dans les options (`o_announcement_message`, `o_additional_navlinks`), affiché tel quel comme le fait le PHP ; ces champs portent le préfixe `trustedHtml`/`…Html` dans les modèles de vue.
 - Requêtes uniquement via Kysely (paramétrées) ; jamais de SQL concaténé avec des entrées utilisateur.
-- **Jeton CSRF** sur tout formulaire en POST ; aucune écriture en GET.
+- **Jeton CSRF** sur tout formulaire en POST (`{{ forms.csrf(layout) }}` et `preHandler: [session, verifyCsrf]`) ; aucune écriture en GET (exceptions documentées : présence, cookie de suivi et compteur de vues à l'affichage, lien de déconnexion du PHP protégé par son jeton).
 - Valider et typer toutes les entrées (paramètres de requête, corps de formulaire) dès le contrôleur, avec des schémas Fastify ou de petites fonctions dédiées (`positiveInt`…).
 - Vérifier les droits côté serveur dans le contrôleur, même quand la vue masque déjà le lien.
 - Fichiers téléversés (avatars, uploads, galerie) : contrôler type, taille et chemin (pas de traversée de répertoire).

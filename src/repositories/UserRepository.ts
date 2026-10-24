@@ -57,10 +57,24 @@ export interface CredentialsStore {
 	setGroup(userId: number, groupId: number): Promise<void>;
 }
 
+/** Compte retrouvé par son adresse, pour le mot de passe oublié. */
+export interface EmailAccount {
+	id: number;
+	username: string;
+	/** Dernier e-mail de réinitialisation (users.last_email_sent), anti-flood d'une heure. */
+	lastEmailSent: number | null;
+}
+
+export interface PasswordResetStore {
+	findByEmail(email: string): Promise<EmailAccount[]>;
+	/** Nouveau mot de passe en attente (activate_string = son hash) et clé du lien d'activation. */
+	setPendingPassword(userId: number, passwordHash: string, key: string, now: number): Promise<void>;
+}
+
 /** Comptes en attente de validation (PUN_UNVERIFIED) : jamais listés. */
 const UNVERIFIED_GROUP = 0;
 
-export class UserRepository implements UserReader, MemberListReader, ProfileReader, CredentialsStore {
+export class UserRepository implements UserReader, MemberListReader, ProfileReader, CredentialsStore, PasswordResetStore {
 	constructor(private readonly db: Db) {}
 
 	async findViewer(userId: number): Promise<ViewerRecord | null> {
@@ -292,5 +306,23 @@ export class UserRepository implements UserReader, MemberListReader, ProfileRead
 
 	async setGroup(userId: number, groupId: number): Promise<void> {
 		await this.db.updateTable('users').set({ group_id: groupId }).where('id', '=', userId).execute();
+	}
+
+	async findByEmail(email: string): Promise<EmailAccount[]> {
+		const rows = await this.db
+			.selectFrom('users')
+			.select(['id', 'username', 'last_email_sent'])
+			.where('email', '=', email)
+			.where('id', '>', GUEST_USER_ID)
+			.execute();
+		return rows.map((row) => ({ id: row.id, username: row.username, lastEmailSent: row.last_email_sent }));
+	}
+
+	async setPendingPassword(userId: number, passwordHash: string, key: string, now: number): Promise<void> {
+		await this.db
+			.updateTable('users')
+			.set({ activate_string: passwordHash, activate_key: key, last_email_sent: now })
+			.where('id', '=', userId)
+			.execute();
 	}
 }

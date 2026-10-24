@@ -9,6 +9,7 @@ import fastifyStatic from '@fastify/static';
 import fastifyView from '@fastify/view';
 import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import nunjucks from 'nunjucks';
+import type { Mailer } from './adapters/mailer.ts';
 import { ExternController, type ExternQuery } from './controllers/ExternController.ts';
 import { ForumController, type ForumQuery } from './controllers/ForumController.ts';
 import { GalleryController, type GalleryQuery } from './controllers/GalleryController.ts';
@@ -16,6 +17,7 @@ import { HelpController } from './controllers/HelpController.ts';
 import { IndexController } from './controllers/IndexController.ts';
 import { LoginController, type LoginQuery } from './controllers/LoginController.ts';
 import { MiscController, type MiscQuery } from './controllers/MiscController.ts';
+import { PasswordResetController } from './controllers/PasswordResetController.ts';
 import { ProfileController, type ProfileQuery } from './controllers/ProfileController.ts';
 import { SearchController, type SearchQuery } from './controllers/SearchController.ts';
 import { TopicController, type TopicQuery } from './controllers/TopicController.ts';
@@ -30,13 +32,14 @@ import type { CensorReader } from './repositories/CensorRepository.ts';
 import type { ConfigReader } from './repositories/ConfigLoader.ts';
 import type { FeedReader } from './repositories/FeedRepository.ts';
 import type { GalleryReader } from './repositories/GalleryRepository.ts';
+import type { MailTemplateReader } from './repositories/MailTemplateFiles.ts';
 import type { PostReader } from './repositories/PostRepository.ts';
 import type { SearchReader } from './repositories/SearchRepository.ts';
 import type { StatsReader } from './repositories/StatsRepository.ts';
 import type { StopwordsReader } from './repositories/StopwordsLoader.ts';
 import type { TopicLabelReader } from './repositories/TopicLabelRepository.ts';
 import type { TopicReader, TopicWriter } from './repositories/TopicRepository.ts';
-import type { CredentialsStore, MemberListReader, ProfileReader } from './repositories/UserRepository.ts';
+import type { CredentialsStore, MemberListReader, PasswordResetStore, ProfileReader } from './repositories/UserRepository.ts';
 import type { UsersInfoReader } from './repositories/UsersInfoLoader.ts';
 import type { AvatarLocator } from './services/avatars.ts';
 
@@ -55,6 +58,9 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	config: ConfigReader;
 	members: MemberListReader;
 	credentials: CredentialsStore;
+	passwordResets: PasswordResetStore;
+	mailTemplates: MailTemplateReader;
+	mailer: Mailer;
 	profiles: ProfileReader;
 	topics: TopicReader;
 	topicWriter: TopicWriter;
@@ -184,12 +190,16 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 	// maintenance pour qu'un administrateur puisse se connecter (le PHP le bloquait aussi).
 	const loginSession = session({ quiet: (request) => (request.query as LoginQuery).action !== undefined, allowDuringMaintenance: true });
 	const login = new LoginController(deps);
-	app.get<{ Querystring: LoginQuery }>('/login.php', { preHandler: loginSession }, login.show);
-	app.post<{ Querystring: LoginQuery; Body: FormBody }>('/login.php', { preHandler: [loginSession, verifyCsrf] }, (request, reply) =>
-		request.query.action === 'in'
-			? login.login(request, reply)
-			: renderMessage(request, reply, deps, 400, deps.page.lang.common.badRequest),
+	const passwordReset = new PasswordResetController(deps);
+	const isForget = (action: string | undefined): boolean => action === 'forget' || action === 'forget_2';
+	app.get<{ Querystring: LoginQuery }>('/login.php', { preHandler: loginSession }, (request, reply) =>
+		isForget(request.query.action) ? passwordReset.form(request, reply) : login.show(request, reply),
 	);
+	app.post<{ Querystring: LoginQuery; Body: FormBody }>('/login.php', { preHandler: [loginSession, verifyCsrf] }, (request, reply) => {
+		if (request.query.action === 'in') return login.login(request, reply);
+		if (isForget(request.query.action)) return passwordReset.submit(request, reply);
+		return renderMessage(request, reply, deps, 400, deps.page.lang.common.badRequest);
+	});
 
 	// misc.php : visite discrète dès qu'une action est demandée (PUN_QUIET_VISIT).
 	const miscSession = session({ quiet: (request) => (request.query as MiscQuery).action !== undefined });

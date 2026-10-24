@@ -51,7 +51,7 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
 
 - [x] Émission du cookie FluxBB par Node (`pun_setcookie()`), renouvellement et expiration (vérifié dans les deux sens avec le PHP)
 - [x] **login** / **logout**, « se souvenir de moi », redirection (limitée aux pages du forum), MD5 hérité mis à niveau
-- [ ] Mot de passe oublié (e-mail, jeton d'activation) : service d'envoi d'e-mails et modèles `mail_templates`
+- [x] Mot de passe oublié (e-mail, jeton d'activation) : service d'envoi d'e-mails (nodemailer) et modèles `mail_templates` ; activation finalisée par le PHP (`profile.php?action=change_pass`)
 - [ ] **register** : règles, validation, vérification par e-mail, `check_username()`
 - [x] Jeton CSRF commun à tous les formulaires (double soumission + Origin, `partials/forms.njk`)
 - [x] Bannissements (`bans` : pseudo, IP, expiration ; l'e-mail ne sert qu'à l'inscription) + mode maintenance

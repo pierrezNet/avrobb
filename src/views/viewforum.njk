@@ -1,0 +1,73 @@
+{#- Liste des sujets d'un forum (viewforum.php). Données : `view` (presenters/forumPage.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/navigation.njk" as navigation %}
+
+{% macro forumBar(view, lang) %}
+<div class="page-bar">
+	{{ navigation.pagination(view.pagination, lang) }}
+	{% if view.postTopicUrl %}<p class="page-bar__actions"><a class="button button--primary" href="{{ url(view.postTopicUrl) }}">{{ lang.forum.postTopic }}</a></p>{% endif %}
+</div>
+{% endmacro %}
+
+{% block main %}
+{{ navigation.breadcrumbs(view.crumbs, lang) }}
+<h1 class="page-title">{{ view.forum.name }}</h1>
+{{ forumBar(view, lang) }}
+
+<section class="category" id="vf" aria-labelledby="vf-title">
+	<h2 class="category__title" id="vf-title">{{ view.forum.name }}</h2>
+	{% if view.topics.length %}
+	<div class="forum-list__head" aria-hidden="true">
+		<span>{{ lang.forum.replies }}</span> <span>{{ lang.forum.views }}</span> <span>{{ lang.forum.lastPost }}</span>
+	</div>
+	<ul class="forum-list">
+	{% for topic in view.topics %}
+		<li class="forum-row topic-row{% if topic.sticky %} topic-row--sticky{% endif %}{% if topic.newPostsUrl %} forum-row--new{% endif %}{% if topic.closed %} topic-row--closed{% endif %}">
+			<div class="forum-row__main">
+				<h3 class="forum-row__name topic-row__subject">
+					{%- if topic.hasPosted %}<span class="topic-row__dot" title="{{ lang.forum.posted }}">·</span><span class="visually-hidden">{{ lang.forum.posted }}</span> {% endif -%}
+					{%- if topic.sticky %}<span class="visually-hidden">{{ lang.forum.sticky }} </span>{% endif -%}
+					{%- if topic.moved %}<span class="badge">{{ lang.forum.moved }}</span> {% endif -%}
+					{%- if topic.closed %}<span class="badge">{{ lang.forum.closed }}</span> {% endif -%}
+					<a href="{{ url(topic.href) }}">
+						{%- if topic.newPostsUrl %}<strong>{% endif -%}
+						{%- for part in topic.subject %}{% if part.css %}<span style="{{ part.css }}">{{ part.text }}</span>{% else %}{{ part.text }}{% endif %}{% endfor -%}
+						{%- if topic.newPostsUrl %}</strong>{% endif -%}
+					</a>
+					<span class="forum-row__by"> {{ lang.forum.by }} {{ topic.poster }}</span>
+					{% if topic.newPostsUrl %} <a class="badge badge--new" href="{{ url(topic.newPostsUrl) }}" title="{{ lang.forum.newPostsInfo }}">{{ lang.forum.newPosts }}</a>{% endif %}
+				</h3>
+				{% if topic.pages.length %}
+				<nav class="topic-row__pages" aria-label="{{ lang.forum.topicPages }}">
+					{% for link in topic.pages %}{% if link.kind == 'page' %}<a href="{{ url(link.href) }}">{{ link.page }}</a>{% elif link.kind == 'gap' %}<span>{{ lang.common.spacer }}</span>{% endif %}{% endfor %}
+				</nav>
+				{% endif %}
+			</div>
+			<dl class="forum-row__stats">
+				<div class="forum-row__count"><dt>{{ lang.forum.replies }}</dt> <dd>{{ topic.replies }}</dd></div>
+				<div class="forum-row__count"><dt>{{ lang.forum.views }}</dt> <dd>{{ topic.views }}</dd></div>
+				<div class="forum-row__last">
+					<dt>{{ lang.forum.lastPost }}</dt>
+					<dd>{% if topic.lastPost %}<a href="{{ url(topic.lastPost.href) }}">{{ topic.lastPost.at }}</a> <span class="forum-row__by">{{ lang.forum.by }} {{ topic.lastPost.by }}</span>{% else %}- - -{% endif %}</dd>
+				</div>
+			</dl>
+		</li>
+	{% endfor %}
+	</ul>
+	{% else %}
+	<p class="forum-row">{{ lang.forum.emptyForum }}</p>
+	{% endif %}
+</section>
+
+{{ forumBar(view, lang) }}
+{{ navigation.breadcrumbs(view.crumbs, lang) }}
+
+{% if view.subscription or view.markReadUrl %}
+<p class="forum-actions">
+	{% if view.subscription %}
+		{% if view.subscription.subscribed %}<span>{{ lang.forum.isSubscribed }} - </span><a href="{{ url(view.subscription.href) }}">{{ lang.forum.unsubscribe }}</a>{% else %}<a href="{{ url(view.subscription.href) }}">{{ lang.forum.subscribe }}</a>{% endif %}
+	{% endif %}
+	{% if view.markReadUrl %}<a href="{{ url(view.markReadUrl) }}">{{ lang.forum.markForumRead }}</a>{% endif %}
+</p>
+{% endif %}
+{% endblock %}

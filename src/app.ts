@@ -9,6 +9,7 @@ import fastifyStatic from '@fastify/static';
 import fastifyView from '@fastify/view';
 import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import nunjucks from 'nunjucks';
+import { ForumController, type ForumQuery } from './controllers/ForumController.ts';
 import { IndexController } from './controllers/IndexController.ts';
 import { TopicController, type TopicQuery } from './controllers/TopicController.ts';
 import type { BoardConfig, Viewer } from './domain/models.ts';
@@ -55,7 +56,7 @@ export interface AppDeps extends LayoutDeps {
 }
 
 /** Pages déjà servies par Node ; les autres liens partent vers l'installation PHP. */
-const PORTED_PAGES = new Set(['index.php', 'viewtopic.php']);
+const PORTED_PAGES = new Set(['index.php', 'viewforum.php', 'viewtopic.php']);
 
 const ROOT_DIR = path.join(import.meta.dirname, '..');
 
@@ -107,9 +108,13 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 		renderMessage(request, reply, deps, 404, deps.page.lang.common.badRequest),
 	);
 
-	const index = new IndexController({ ...deps, trackCookieName: `${deps.legacyCookie.name}_track` });
+	const trackCookieName = `${deps.legacyCookie.name}_track`;
+	const index = new IndexController({ ...deps, trackCookieName });
 	app.get('/', { preHandler: authenticate }, index.show);
 	app.get('/index.php', { preHandler: authenticate }, index.show);
+
+	const forums = new ForumController({ ...deps, trackCookieName });
+	app.get<{ Querystring: ForumQuery }>('/viewforum.php', { preHandler: authenticate }, forums.show);
 
 	const topics = new TopicController(deps);
 	app.get<{ Querystring: TopicQuery }>('/viewtopic.php', { preHandler: authenticate }, topics.show);

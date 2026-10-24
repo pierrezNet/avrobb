@@ -4,7 +4,7 @@
  */
 
 import type { Db } from '../db/database.ts';
-import type { ForumCategory, IndexCategory } from '../domain/models.ts';
+import type { ForumCategory, ForumInfo, IndexCategory, TopicSort } from '../domain/models.ts';
 import { parseModerators } from '../services/phpSerialize.ts';
 
 export interface ForumReader {
@@ -12,7 +12,11 @@ export interface ForumReader {
 	listReadable(groupId: number): Promise<ForumCategory[]>;
 	/** Catégories et forums lisibles, avec compteurs et dernier message (requête de index.php). */
 	listIndex(groupId: number): Promise<IndexCategory[]>;
+	/** Forum lisible par le groupe, avec l'abonnement du membre (null pour un invité) ; sinon null. */
+	findReadable(forumId: number, groupId: number, userId: number | null): Promise<ForumInfo | null>;
 }
+
+const SORTS: readonly TopicSort[] = ['lastPost', 'posted', 'subject'];
 
 /** Regroupe des lignes triées par catégorie. */
 function groupByCategory<Row extends { cid: number; cat_name: string }, Item>(rows: readonly Row[], toItem: (row: Row) => Item) {
@@ -82,5 +86,38 @@ export class ForumRepository implements ForumReader {
 					? { postedAt: row.last_post, postId: row.last_post_id ?? 0, poster: row.last_poster ?? '' }
 					: null,
 		}));
+	}
+
+	async findReadable(forumId: number, groupId: number, userId: number | null): Promise<ForumInfo | null> {
+		const row = await this.db
+			.selectFrom('forums as f')
+			.leftJoin('forum_perms as fp', (join) => join.onRef('fp.forum_id', '=', 'f.id').on('fp.group_id', '=', groupId))
+			.leftJoin('forum_subscriptions as s', (join) => join.onRef('s.forum_id', '=', 'f.id').on('s.user_id', '=', userId ?? 0))
+			.select([
+				'f.id',
+				'f.forum_name',
+				'f.redirect_url',
+				'f.moderators',
+				'f.num_topics',
+				'f.sort_by',
+				'fp.post_topics',
+				's.user_id as subscriber',
+			])
+			.where('f.id', '=', forumId)
+			.where((eb) => eb.or([eb('fp.read_forum', 'is', null), eb('fp.read_forum', '=', 1)]))
+			.executeTakeFirst();
+
+		if (row === undefined) return null;
+
+		return {
+			id: row.id,
+			name: row.forum_name,
+			redirectUrl: (row.redirect_url ?? '') !== '' ? (row.redirect_url ?? '') : null,
+			moderators: parseModerators(row.moderators),
+			numTopics: row.num_topics,
+			sortBy: SORTS[row.sort_by] ?? 'lastPost',
+			topicPermission: row.post_topics === null ? null : row.post_topics === 1,
+			isSubscribed: userId !== null && row.subscriber === userId,
+		};
 	}
 }

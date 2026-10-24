@@ -3,15 +3,20 @@
  * (viewtopic.php les recopiait en trois endroits, header.php et les mods en ajoutaient d'autres).
  */
 
-import { type BoardConfig, GroupId, type Topic, type Viewer } from '../domain/models.ts';
+import { type BoardConfig, type ForumInfo, GroupId, type Topic, type Viewer } from '../domain/models.ts';
 
 export function isAdmin(viewer: Viewer): boolean {
 	return viewer.group.id === GroupId.Admin;
 }
 
-/** Administrateur, ou modérateur de groupe désigné sur le forum de ce sujet. */
-export function isForumModerator(viewer: Viewer, topic: Topic): boolean {
-	return isAdmin(viewer) || (viewer.group.isModerator && topic.forum.moderators.has(viewer.username));
+/** Administrateur, ou modérateur de groupe désigné sur ce forum ($is_admmod de viewforum/viewtopic). */
+export function isForumModerator(viewer: Viewer, forum: { moderators: ReadonlyMap<string, number> }): boolean {
+	return isAdmin(viewer) || (viewer.group.isModerator && forum.moderators.has(viewer.username));
+}
+
+/** Lien « Nouvelle discussion » de viewforum.php. */
+export function canPostTopic(viewer: Viewer, forum: ForumInfo): boolean {
+	return isForumModerator(viewer, forum) || (forum.topicPermission ?? viewer.group.canPostTopics);
 }
 
 /** Administrateur ou membre d'un groupe modérateur, quel que soit le forum ($pun_user['is_admmod']). */
@@ -25,7 +30,7 @@ function hasReplyPermission(viewer: Viewer, topic: Topic): boolean {
 }
 
 export function canReply(viewer: Viewer, topic: Topic): boolean {
-	if (isForumModerator(viewer, topic)) return true;
+	if (isForumModerator(viewer, topic.forum)) return true;
 
 	return !topic.closed && hasReplyPermission(viewer, topic);
 }
@@ -43,7 +48,7 @@ export interface PostActionRights {
  * @param posterIsAdmin l'auteur est-il administrateur (un modérateur ne peut pas toucher à ses messages)
  */
 export function postActions(viewer: Viewer, topic: Topic, posterId: number, position: number, posterIsAdmin: boolean): PostActionRights {
-	if (isForumModerator(viewer, topic)) {
+	if (isForumModerator(viewer, topic.forum)) {
 		const canModify = isAdmin(viewer) || !posterIsAdmin;
 		return { report: true, delete: canModify, edit: canModify, quote: true };
 	}

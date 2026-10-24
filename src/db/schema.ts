@@ -59,8 +59,14 @@ export interface ForumsTable {
 	last_post_id: number | null;
 	last_poster: string | null;
 	moderators: string | null;
+	sort_by: number;
 	disp_position: number;
 	cat_id: number;
+}
+
+export interface ForumSubscriptionsTable {
+	user_id: number;
+	forum_id: number;
 }
 
 export interface ForumPermsTable {
@@ -84,6 +90,7 @@ export interface GroupsTable {
 	g_delete_posts: number;
 	g_delete_topics: number;
 	g_send_email: number;
+	g_post_topics: number;
 	g_search: number;
 	g_pm: number;
 	g_pm_limit: number;
@@ -126,8 +133,12 @@ export interface ReportsTable {
 
 export interface TopicsTable {
 	id: Generated<number>;
+	poster: string;
 	subject: string;
 	posted: number;
+	last_post_id: number | null;
+	last_poster: string | null;
+	num_views: number;
 	first_post_id: number;
 	num_replies: number;
 	closed: number;
@@ -147,6 +158,7 @@ export interface UsersTable {
 	url: string | null;
 	location: string | null;
 	signature: string | null;
+	disp_topics: number | null;
 	disp_posts: number | null;
 	email_setting: number;
 	show_avatars: number;
@@ -177,6 +189,7 @@ export interface Database {
 	config: ConfigTable;
 	forums: ForumsTable;
 	forum_perms: ForumPermsTable;
+	forum_subscriptions: ForumSubscriptionsTable;
 	groups: GroupsTable;
 	messages: MessagesTable;
 	online: OnlineTable;
@@ -195,6 +208,7 @@ export const TABLE_NAMES: readonly (keyof Database)[] = [
 	'config',
 	'forums',
 	'forum_perms',
+	'forum_subscriptions',
 	'groups',
 	'messages',
 	'online',

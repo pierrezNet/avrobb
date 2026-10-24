@@ -81,7 +81,8 @@ describe('GET /viewtopic.php', () => {
 		expect(res.body).toContain('id="p225"');
 		expect(res.body).not.toContain('id="p224"');
 		expect(res.body).toContain('<strong aria-current="page">2</strong>');
-		expect(res.body).toContain('href="http://php.test/viewforum.php?id=1"');
+		expect(res.body).toContain('href="viewforum.php?id=1"');
+		expect(res.body).toContain('href="http://php.test/profile.php?id=3"');
 		expect(res.body).toContain('href="viewtopic.php?id=20"');
 	});
 });

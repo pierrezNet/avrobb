@@ -67,13 +67,15 @@ describe('permissions', () => {
 });
 
 describe('pagination', () => {
-	it('reproduit paginate() de FluxBB', () => {
+	it('reproduit paginate() de PV (pages voisines ±1, page 1 toujours affichée)', () => {
 		const shape = (n: number, p: number) =>
 			paginate(n, p).map((l) => (l.kind === 'page' ? (l.current ? `[${l.page}]` : String(l.page)) : l.kind));
 		expect(shape(1, 1)).toEqual(['[1]']);
-		expect(shape(10, 1)).toEqual(['[1]', '2', '3', 'gap', '10', 'next']);
-		expect(shape(10, 6)).toEqual(['previous', '1', 'gap', '4', '5', '[6]', '7', '8', 'gap', '10', 'next']);
-		expect(shape(10, 10)).toEqual(['previous', '1', 'gap', '8', '9', '[10]']);
+		expect(shape(10, 1)).toEqual(['[1]', '2', 'gap', '10', 'next']);
+		expect(shape(10, 6)).toEqual(['previous', '1', 'gap', '5', '[6]', '7', 'gap', '10', 'next']);
+		expect(shape(10, 10)).toEqual(['previous', '1', 'gap', '9', '[10]']);
+		expect(shape(2, 1)).toEqual(['[1]', '2', 'next']);
+		expect(shape(3, 3)).toEqual(['previous', '1', '2', '[3]']);
 	});
 
 	it('ramène une page invalide à 1', () => {

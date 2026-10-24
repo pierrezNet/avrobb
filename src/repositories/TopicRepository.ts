@@ -4,7 +4,7 @@
 
 import { sql } from 'kysely';
 import type { Db } from '../db/database.ts';
-import type { RecentTopic, Topic } from '../domain/models.ts';
+import type { RecentTopic, Topic, TopicSort, TopicSummary } from '../domain/models.ts';
 import { parseModerators } from '../services/phpSerialize.ts';
 
 export interface PostLocation {
@@ -20,7 +20,14 @@ export interface TopicReader {
 	findLastPostId(topicId: number): Promise<number | null>;
 	/** Sujets lisibles par le groupe dont le dernier message est postérieur à `since` (index.php). */
 	listUpdatedSince(groupId: number, since: number): Promise<RecentTopic[]>;
+	/**
+	 * Sujets d'une page de forum : épinglés d'abord, puis l'ordre du forum, puis id décroissant.
+	 * @param dotUserId membre pour qui calculer « le point » (o_show_dot), ou null
+	 */
+	listForumPage(forumId: number, sort: TopicSort, offset: number, limit: number, dotUserId: number | null): Promise<TopicSummary[]>;
 }
+
+const SORT_COLUMNS = { lastPost: 't.last_post', posted: 't.posted', subject: 't.subject' } as const;
 
 export class TopicRepository implements TopicReader {
 	constructor(private readonly db: Db) {}
@@ -102,5 +109,52 @@ export class TopicRepository implements TopicReader {
 			.execute();
 
 		return rows.map((row) => ({ forumId: row.forum_id, topicId: row.id, lastPost: row.last_post }));
+	}
+
+	async listForumPage(forumId: number, sort: TopicSort, offset: number, limit: number, dotUserId: number | null): Promise<TopicSummary[]> {
+		const rows = await this.db
+			.selectFrom('topics as t')
+			.select([
+				't.id',
+				't.poster',
+				't.subject',
+				't.posted',
+				't.last_post',
+				't.last_post_id',
+				't.last_poster',
+				't.num_views',
+				't.num_replies',
+				't.closed',
+				't.sticky',
+				't.moved_to',
+			])
+			// « Le point » : EXISTS plutôt que la jointure + GROUP BY du PHP, même résultat.
+			.select((eb) =>
+				(dotUserId !== null
+					? eb.exists(eb.selectFrom('posts as p').select('p.id').whereRef('p.topic_id', '=', 't.id').where('p.poster_id', '=', dotUserId))
+					: eb.val(false)
+				).as('has_posted'),
+			)
+			.where('t.forum_id', '=', forumId)
+			.orderBy('t.sticky', 'desc')
+			.orderBy(SORT_COLUMNS[sort], sort === 'subject' ? 'asc' : 'desc')
+			.orderBy('t.id', 'desc')
+			.limit(limit)
+			.offset(offset)
+			.execute();
+
+		return rows.map((row) => ({
+			id: row.id,
+			poster: row.poster,
+			subject: row.subject,
+			posted: row.posted,
+			lastPost: row.last_post > 0 ? { postedAt: row.last_post, postId: row.last_post_id ?? 0, poster: row.last_poster ?? '' } : null,
+			numViews: row.num_views,
+			numReplies: row.num_replies,
+			closed: row.closed === 1,
+			sticky: row.sticky === 1,
+			movedTo: row.moved_to !== null && row.moved_to !== 0 ? row.moved_to : null,
+			hasPosted: Boolean(Number(row.has_posted)),
+		}));
 	}
 }

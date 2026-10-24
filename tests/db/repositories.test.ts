@@ -141,6 +141,38 @@ describe('index : forums, sujets récents, statistiques', () => {
 	});
 });
 
+describe('viewforum : forum et sujets', () => {
+	it('lit le forum avec permissions et abonnement', async () => {
+		const forums = new ForumRepository(db);
+		expect(await forums.findReadable(2, GroupId.Member, 3)).toMatchObject({
+			id: 2,
+			numTopics: 1,
+			sortBy: 'lastPost',
+			topicPermission: true,
+			isSubscribed: true,
+		});
+		expect(await forums.findReadable(2, GroupId.Guest, null)).toMatchObject({ topicPermission: null, isSubscribed: false });
+		expect(await forums.findReadable(3, GroupId.Guest, null)).toBeNull();
+		expect((await forums.findReadable(4, GroupId.Guest, null))?.redirectUrl).toBe('https://example.test');
+	});
+
+	it('liste les sujets du forum, épinglés d’abord, avec le point', async () => {
+		const topics = new TopicRepository(db);
+		const rows = await topics.listForumPage(1, 'lastPost', 0, 10, 3);
+		expect(rows.map((t) => [t.id, t.sticky, t.movedTo, t.hasPosted])).toEqual([
+			[13, true, null, false],
+			[12, false, 10, false],
+		]);
+		expect((await topics.listForumPage(2, 'subject', 0, 10, 3))[0]).toMatchObject({
+			id: 10,
+			numViews: 42,
+			hasPosted: true,
+			lastPost: { postId: 102 },
+		});
+		expect((await topics.listForumPage(2, 'subject', 0, 10, null))[0]?.hasPosted).toBe(false);
+	});
+});
+
 describe('ReportRepository et PrivateMessageRepository', () => {
 	it('détecte les signalements non traités', async () => {
 		expect(await new ReportRepository(db).hasPending()).toBe(true);

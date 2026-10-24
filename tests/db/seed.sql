@@ -44,10 +44,13 @@ INSERT INTO fo_forum_perms (group_id, forum_id, read_forum, post_replies, post_t
 	(3, 3, 0, 0, 0),
 	(4, 2, 1, 0, 1);
 
-INSERT INTO fo_topics (id, poster, subject, posted, first_post_id, last_post, last_post_id, last_poster, num_replies, closed, sticky, moved_to, forum_id) VALUES
-	(10, 'Tessy', 'Postez un « vintage »', 1782800000, 100, 1782800200, 102, 'admin', 2, 0, 0, NULL, 2),
-	(11, 'admin', 'Réservé à l''équipe', 1782800000, 110, 1782800000, 110, 'admin', 0, 0, 0, NULL, 3),
-	(12, 'Tessy', 'Postez un « vintage »', 1782800000, 100, 1782800200, 102, 'admin', 2, 0, 0, 10, 1);
+INSERT INTO fo_topics (id, poster, subject, posted, first_post_id, last_post, last_post_id, last_poster, num_replies, num_views, closed, sticky, moved_to, forum_id) VALUES
+	(10, 'Tessy', 'Postez un « vintage »', 1782800000, 100, 1782800200, 102, 'admin', 2, 42, 0, 0, NULL, 2),
+	(11, 'admin', 'Réservé à l''équipe', 1782800000, 110, 1782800000, 110, 'admin', 0, 1, 0, 0, NULL, 3),
+	(12, 'Tessy', 'Postez un « vintage »', 1782800000, 100, 1782800200, 102, 'admin', 2, 0, 0, 0, 10, 1),
+	(13, 'admin', 'Règles du forum', 1782700000, 0, 1782700000, 0, 'admin', 0, 0, 1, 1, NULL, 1);
+
+INSERT INTO fo_forum_subscriptions (user_id, forum_id) VALUES (3, 2);
 
 INSERT INTO fo_posts (id, poster, poster_id, poster_ip, message, posted, edited, edited_by, topic_id) VALUES
 	(100, 'Tessy', 3, '192.0.2.1', 'Premier message [b]gras[/b]', 1782800000, NULL, NULL, 10),

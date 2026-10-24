@@ -20,7 +20,7 @@ export type NavId = 'index' | 'userlist' | 'rules' | 'search' | 'register' | 'lo
 export type FooterContext =
 	| { kind: 'default' }
 	| { kind: 'index' }
-	| { kind: 'viewforum'; forumId: number; page: number }
+	| { kind: 'viewforum'; forum: { id: number; moderators: ReadonlyMap<string, number> }; page: number }
 	| { kind: 'viewtopic'; topic: Topic; page: number };
 
 export interface PageOptions {
@@ -241,7 +241,7 @@ function buildFeed(footer: FooterContext, config: BoardConfig, lang: Lang): Feed
 		viewforum: rss ? t.rssForumFeed : t.atomForumFeed,
 		viewtopic: rss ? t.rssTopicFeed : t.atomTopicFeed,
 	};
-	const scope = footer.kind === 'viewforum' ? `&fid=${footer.forumId}` : footer.kind === 'viewtopic' ? `&tid=${footer.topic.id}` : '';
+	const scope = footer.kind === 'viewforum' ? `&fid=${footer.forum.id}` : footer.kind === 'viewtopic' ? `&tid=${footer.topic.id}` : '';
 
 	return {
 		href: `extern.php?action=feed${scope}&type=${config.feedType}`,
@@ -258,10 +258,10 @@ function buildFeed(footer: FooterContext, config: BoardConfig, lang: Lang): Feed
 function buildModControls(footer: FooterContext, viewer: Viewer, lang: Lang): { href: string; label: string }[] {
 	const t = lang.common;
 
-	if (footer.kind === 'viewforum' && isAnyModerator(viewer))
-		return [{ href: `moderate.php?fid=${footer.forumId}&p=${footer.page}`, label: t.moderateForum }];
+	if (footer.kind === 'viewforum' && isForumModerator(viewer, footer.forum))
+		return [{ href: `moderate.php?fid=${footer.forum.id}&p=${footer.page}`, label: t.moderateForum }];
 
-	if (footer.kind !== 'viewtopic' || !isForumModerator(viewer, footer.topic)) return [];
+	if (footer.kind !== 'viewtopic' || !isForumModerator(viewer, footer.topic.forum)) return [];
 
 	const { topic, page } = footer;
 	const fid = topic.forum.id;
@@ -279,7 +279,7 @@ function buildModControls(footer: FooterContext, viewer: Viewer, lang: Lang): { 
 }
 
 function currentForumId(footer: FooterContext): number {
-	if (footer.kind === 'viewforum') return footer.forumId;
+	if (footer.kind === 'viewforum') return footer.forum.id;
 	if (footer.kind === 'viewtopic') return footer.topic.forum.id;
 	return 0;
 }

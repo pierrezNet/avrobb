@@ -6,6 +6,7 @@ import type { AppDeps } from '../src/app.ts';
 import {
 	type BoardConfig,
 	type ForumCategory,
+	type ForumInfo,
 	type Group,
 	GroupId,
 	type IndexCategory,
@@ -14,6 +15,7 @@ import {
 	type RecentTopic,
 	type Topic,
 	type TopicLabel,
+	type TopicSummary,
 	type Viewer,
 } from '../src/domain/models.ts';
 import { fr, frDateWords } from '../src/lang/fr/index.ts';
@@ -37,6 +39,7 @@ export function group(overrides: Partial<Group> = {}): Group {
 		canDeletePosts: true,
 		canDeleteTopics: true,
 		canSendEmail: true,
+		canPostTopics: true,
 		canSearch: true,
 		canUsePrivateMessages: true,
 		privateMessageLimit: 0,
@@ -52,6 +55,7 @@ export function viewer(overrides: Partial<Viewer> = {}): Viewer {
 		isGuest: false,
 		group: group(),
 		postsPerPage: null,
+		topicsPerPage: null,
 		timezone: 0,
 		dst: false,
 		showAvatars: true,
@@ -133,6 +137,9 @@ export function post(id: number, overrides: Partial<Post> = {}): Post {
 export const boardConfig: BoardConfig = {
 	boardTitle: 'Forum de test',
 	defaultPostsPerPage: 25,
+	defaultTopicsPerPage: 30,
+	showDot: false,
+	forumSubscriptions: true,
 	dateFormat: 'Y-m-d',
 	timeFormat: 'H:i:s',
 	showUserInfo: true,
@@ -185,6 +192,10 @@ export interface FakeData {
 	/** Balises PV posées, par sujet. */
 	topicLabels?: Map<number, TopicLabel[]>;
 	indexCategories?: IndexCategory[];
+	forumInfos?: ForumInfo[];
+	/** Sujets par forum, déjà dans l'ordre d'affichage. */
+	forumTopics?: Map<number, TopicSummary[]>;
+	labelDefinitions?: TopicLabel[];
 	recentTopics?: RecentTopic[];
 	online?: OnlineVisitor[];
 }
@@ -208,9 +219,18 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			},
 			findLastPostId: async (topicId) => data.posts.get(topicId)?.at(-1)?.id ?? null,
 			listUpdatedSince: async (_groupId, since) => (data.recentTopics ?? []).filter((t) => t.lastPost > since),
+			listForumPage: async (forumId, _sort, offset, limit) => (data.forumTopics?.get(forumId) ?? []).slice(offset, offset + limit),
 		},
 		posts: { listPage: async (topicId, offset, limit) => (data.posts.get(topicId) ?? []).slice(offset, offset + limit) },
-		forums: { listReadable: async () => forumCategories, listIndex: async () => data.indexCategories ?? [] },
+		forums: {
+			listReadable: async () => forumCategories,
+			listIndex: async () => data.indexCategories ?? [],
+			findReadable: async (forumId, groupId) => {
+				const readers = data.forumReaders?.get(forumId);
+				if (readers !== undefined && !readers.includes(groupId)) return null;
+				return data.forumInfos?.find((f) => f.id === forumId) ?? null;
+			},
+		},
 		stats: { countTopicsAndPosts: async () => ({ topics: 1234, posts: 56789 }), listOnline: async () => data.online ?? [] },
 		usersInfo: { load: async () => ({ totalUsers: 5, newestUser: { id: 6, username: 'valdefsx' } }) },
 		reports: { hasPending: async () => data.pendingReports ?? false },
@@ -220,6 +240,7 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 		censorship: { listWords: async () => data.censoredWords ?? [] },
 		topicLabels: {
 			listForTopics: async (ids) => new Map([...(data.topicLabels ?? [])].filter(([id]) => ids.includes(id))),
+			listDefinitions: async () => data.labelDefinitions ?? [],
 		},
 		page: { lang: fr, dateWords: frDateWords, clock: () => NOW },
 		legacyCookie: { name: 'punbb_cookie', seed: 'graine-de-test' },

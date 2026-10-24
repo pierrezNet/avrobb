@@ -1,5 +1,5 @@
 /**
- * Liste des liens de pagination, comme paginate() de FluxBB, mais sous forme de données :
+ * Liste des liens de pagination, comme paginate() de PV, mais sous forme de données :
  * la vue décide du balisage.
  */
 
@@ -19,25 +19,25 @@ export function clampPage(requested: unknown, numPages: number): number {
 	return Number.isNaN(page) || page < 1 || page > numPages ? 1 : page;
 }
 
+/**
+ * paginate() de PV (réécrit par rapport à FluxBB) : page précédente, page 1 toujours, « … », pages
+ * voisines (±1), « … », dernière page, page suivante.
+ */
 export function paginate(numPages: number, current: number): PageLink[] {
-	const links: PageLink[] = [];
-
 	if (numPages <= 1) return [{ kind: 'page', page: 1, current: true }];
+
+	const links: PageLink[] = [];
+	const page = (n: number): PageLink => ({ kind: 'page', page: n, current: n === current });
 
 	if (current > 1) links.push({ kind: 'previous', page: current - 1 });
 
-	if (current > 3) {
-		links.push({ kind: 'page', page: 1, current: false });
-		if (current > 4) links.push({ kind: 'gap' });
-	}
+	links.push(page(1));
+	if (current > 3 && numPages > 3) links.push({ kind: 'gap' });
 
-	for (let page = Math.max(1, current - 2); page <= Math.min(numPages, current + 2); page++)
-		links.push({ kind: 'page', page, current: page === current });
+	for (let n = Math.max(2, current - 1); n <= Math.min(numPages - 1, current + 1); n++) links.push(page(n));
 
-	if (current < numPages - 2) {
-		if (current < numPages - 3) links.push({ kind: 'gap' });
-		links.push({ kind: 'page', page: numPages, current: false });
-	}
+	if (current < numPages - 2 && numPages > 3) links.push({ kind: 'gap' });
+	links.push(page(numPages));
 
 	if (current < numPages) links.push({ kind: 'next', page: current + 1 });
 

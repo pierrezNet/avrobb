@@ -25,6 +25,7 @@ export interface Group {
 	canDeletePosts: boolean;
 	canDeleteTopics: boolean;
 	canSendEmail: boolean;
+	canPostTopics: boolean;
 	canSearch: boolean;
 	/** Messagerie privée autorisée au groupe (g_pm, mod APMS). */
 	canUsePrivateMessages: boolean;
@@ -42,6 +43,8 @@ export interface Viewer {
 	group: Group;
 	/** Nombre de messages par page ; null = valeur par défaut du forum. */
 	postsPerPage: number | null;
+	/** Nombre de sujets par page ; null = valeur par défaut du forum. */
+	topicsPerPage: number | null;
 	timezone: number;
 	dst: boolean;
 	showAvatars: boolean;
@@ -125,6 +128,10 @@ export interface BoardConfig {
 	boardTitle: string;
 	defaultStyle: string;
 	defaultPostsPerPage: number;
+	defaultTopicsPerPage: number;
+	/** « Le point » devant les sujets où le membre a écrit (o_show_dot). */
+	showDot: boolean;
+	forumSubscriptions: boolean;
 	dateFormat: string;
 	timeFormat: string;
 	showUserInfo: boolean;
@@ -235,4 +242,38 @@ export interface UsersInfo {
 export interface OnlineVisitor {
 	userId: number;
 	ident: string;
+}
+
+/** Ordre des sujets d'un forum (forums.sort_by). */
+export type TopicSort = 'lastPost' | 'posted' | 'subject';
+
+/** Forum consulté (viewforum). */
+export interface ForumInfo {
+	id: number;
+	name: string;
+	redirectUrl: string | null;
+	moderators: ReadonlyMap<string, number>;
+	numTopics: number;
+	sortBy: TopicSort;
+	/** Permission « nouvelle discussion » propre au forum pour le groupe ; null = celle du groupe. */
+	topicPermission: boolean | null;
+	/** Le membre suit ce forum (forum_subscriptions). */
+	isSubscribed: boolean;
+}
+
+/** Sujet dans la liste d'un forum. */
+export interface TopicSummary {
+	id: number;
+	poster: string;
+	subject: string;
+	posted: number;
+	lastPost: LastPost | null;
+	numViews: number;
+	numReplies: number;
+	closed: boolean;
+	sticky: boolean;
+	/** Sujet déplacé : id du sujet de destination, sinon null. */
+	movedTo: number | null;
+	/** Le membre a écrit dans ce sujet (« le point ») ; toujours faux si o_show_dot est désactivé. */
+	hasPosted: boolean;
 }

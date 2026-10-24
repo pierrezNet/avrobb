@@ -941,6 +941,46 @@ a.site-status__alert {
 	overflow-wrap: anywhere;
 }
 
+/* ---------- Aide ---------- */
+
+.help-section {
+	margin-bottom: 1rem;
+	padding: 0.75rem 1rem;
+	border: 1px solid var(--color-border);
+	border-radius: 0.5rem;
+	background: var(--color-surface);
+}
+
+.help-section__title {
+	margin: 0 0 0.5rem;
+	font-size: 1.125rem;
+}
+
+.help-examples {
+	margin: 0;
+}
+
+.help-example {
+	padding: 0.5rem 0;
+	border-top: 1px solid var(--color-border);
+}
+
+.help-example dt code {
+	padding: 0.0625rem 0.25rem;
+	border-radius: 0.25rem;
+	background: var(--color-code-bg);
+	overflow-wrap: anywhere;
+}
+
+.help-example__produces {
+	color: var(--color-muted);
+	font-size: 0.875rem;
+}
+
+.help-example dd {
+	margin: 0.25rem 0 0;
+}
+
 /* ---------- Formulaires ---------- */
 
 .form-box {

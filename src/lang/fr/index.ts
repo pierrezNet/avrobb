@@ -6,13 +6,14 @@
 import type { DateWords } from '../../services/dateFormat.ts';
 import { common } from './common.ts';
 import { forum } from './forum.ts';
+import { help } from './help.ts';
 import { indexPage } from './indexPage.ts';
 import { pms } from './pms.ts';
 import { profile } from './profile.ts';
 import { topic } from './topic.ts';
 import { userlist } from './userlist.ts';
 
-export const fr = { common, index: indexPage, forum, topic, userlist, profile, pms };
+export const fr = { common, index: indexPage, forum, topic, userlist, profile, help, pms };
 
 export const frDateWords: DateWords = {
 	today: "Aujourd'hui",

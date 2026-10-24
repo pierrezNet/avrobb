@@ -42,7 +42,7 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
 - [x] **viewforum** : liste des sujets, pagination, épinglés, déplacés, icônes lu/non lu (lecture seule)
 - [x] **userlist** : recherche, tri, pagination
 - [x] **profile** (consultation) : sections publiques, biographie (`UP_Ma_biographie`) **(PV)** ; la modification (soi-même, modérateurs autorisés, `section`, `action`, autres plugiles) est renvoyée vers le PHP
-- [ ] **help** (aide BBCode et émoticônes) — `balises.php` n'est pas une page mais l'inclusion qui colore les balises dans viewforum (fait, `styleSubject()`)
+- [x] **help** (aide BBCode et émoticônes, exemples rendus par le parseur) — `balises.php` n'est pas une page mais l'inclusion qui colore les balises dans viewforum (fait, `styleSubject()`)
 - [ ] **search** : formulaire et résultats (lecture de l'index existant `search_*`, `search_cache`)
 - [ ] **extern.php** : flux RSS/Atom et HTML externe
 - [ ] **gallery** (consultation) **(PV)**

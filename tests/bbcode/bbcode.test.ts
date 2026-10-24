@@ -103,7 +103,7 @@ describe('écarts volontaires', () => {
 	it('liens internes corrigés (le PHP de PV produit « id=.$matches[1] »)', () => {
 		expect(reference['lien interne']).toContain('.$matches[1]');
 		expect(render(byName('lien interne'))).toBe(
-			'<p><a href="viewtopic.php?id=4">viewtopic.php?id=4</a> <a href="viewtopic.php?pid=12#p12">message</a></p>',
+			'<p><a href="http://forum.test/viewtopic.php?id=4" rel="nofollow">http://forum.test/viewtopic.php?id=4</a> <a href="http://forum.test/viewtopic.php?pid=12#p12" rel="nofollow">message</a></p>',
 		);
 	});
 });

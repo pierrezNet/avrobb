@@ -186,7 +186,7 @@ const SIMPLE_TAGS: readonly [RegExp, string][] = [
 	[/\[email=([^[]+?)\](.*?)\[\/email\]/gs, '<a href="mailto:$1">$2</a>'],
 ];
 
-/** Liens internes [topic], [post], [forum], [user] : relatifs, donc valables côté PHP comme côté Node. */
+/** Liens internes [topic], [post], [forum], [user] : relatifs, préfixés de o_base_url comme dans FluxBB. */
 const INTERNAL_LINKS: readonly [tag: string, url: (id: string) => string][] = [
 	['topic', (id) => `viewtopic.php?id=${id}`],
 	['post', (id) => `viewtopic.php?pid=${id}#p${id}`],
@@ -258,10 +258,10 @@ function doBbcode(input: string, isSignature: boolean, options: BbcodeOptions): 
 	text = text.replace(/\[url=([^[]+?)\](.*?)\[\/url\]/gs, (_w, url: string, label: string) => urlTag(url, label, options.baseUrl));
 
 	for (const [tag, url] of INTERNAL_LINKS) {
-		text = text.replace(new RegExp(`\\[${tag}\\]([1-9]\\d*)\\[/${tag}\\]`, 'g'), (_w, id: string) => `<a href="${url(id)}">${url(id)}</a>`);
-		text = text.replace(
-			new RegExp(`\\[${tag}=([1-9]\\d*)\\](.*?)\\[/${tag}\\]`, 'gs'),
-			(_w, id: string, label: string) => `<a href="${url(id)}">${label}</a>`,
+		const href = (id: string): string => (options.baseUrl !== '' ? `${options.baseUrl}/${url(id)}` : url(id));
+		text = text.replace(new RegExp(`\\[${tag}\\]([1-9]\\d*)\\[/${tag}\\]`, 'g'), (_w, id: string) => urlTag(href(id), '', options.baseUrl));
+		text = text.replace(new RegExp(`\\[${tag}=([1-9]\\d*)\\](.*?)\\[/${tag}\\]`, 'gs'), (_w, id: string, label: string) =>
+			urlTag(href(id), label, options.baseUrl),
 		);
 	}
 

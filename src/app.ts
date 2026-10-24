@@ -10,6 +10,7 @@ import fastifyView from '@fastify/view';
 import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import nunjucks from 'nunjucks';
 import { ForumController, type ForumQuery } from './controllers/ForumController.ts';
+import { HelpController } from './controllers/HelpController.ts';
 import { IndexController } from './controllers/IndexController.ts';
 import { ProfileController, type ProfileQuery } from './controllers/ProfileController.ts';
 import { TopicController, type TopicQuery } from './controllers/TopicController.ts';
@@ -60,7 +61,7 @@ export interface AppDeps extends LayoutDeps {
 }
 
 /** Pages déjà servies par Node ; les autres liens partent vers l'installation PHP. */
-const PORTED_PAGES = new Set(['index.php', 'profile.php', 'userlist.php', 'viewforum.php', 'viewtopic.php']);
+const PORTED_PAGES = new Set(['help.php', 'index.php', 'profile.php', 'userlist.php', 'viewforum.php', 'viewtopic.php']);
 
 const ROOT_DIR = path.join(import.meta.dirname, '..');
 
@@ -122,6 +123,9 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 
 	const userlist = new UserlistController(deps);
 	app.get<{ Querystring: UserlistParams }>('/userlist.php', { preHandler: authenticate }, userlist.show);
+
+	const help = new HelpController(deps);
+	app.get('/help.php', { preHandler: authenticate }, help.show);
 
 	const profiles = new ProfileController(deps);
 	app.get<{ Querystring: ProfileQuery }>('/profile.php', { preHandler: authenticate }, profiles.show);

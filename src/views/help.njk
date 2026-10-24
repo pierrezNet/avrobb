@@ -1,0 +1,39 @@
+{#- Aide BBCode (help.php). Données : `view` (presenters/helpPage.ts). -#}
+{% extends "layout.njk" %}
+
+{% block main %}
+<h1 class="page-title">{{ lang.help.help }}</h1>
+
+{% for section in view.sections %}
+<section class="help-section" id="{{ section.id }}" aria-labelledby="help-{{ section.id }}">
+	<h2 class="help-section__title" id="help-{{ section.id }}">{{ section.title }}</h2>
+	{% for paragraph in section.intro %}<p>{{ paragraph }}</p>{% endfor %}
+	{% if section.examples.length %}
+	<dl class="help-examples">
+	{% for example in section.examples %}
+		<div class="help-example">
+			<dt><code>{{ example.code }}</code> <span class="help-example__produces">{{ lang.help.produces }}</span></dt>
+			{#- Rendu de parseMessage() : échappé par construction (services/bbcode.ts). #}
+			<dd class="bbcode">{{ example.html | safe }}</dd>
+		</div>
+	{% endfor %}
+	</dl>
+	{% endif %}
+	{% for paragraph in section.outro %}<p>{{ paragraph }}</p>{% endfor %}
+</section>
+{% endfor %}
+
+<section class="help-section" id="smilies" aria-labelledby="help-smilies">
+	<h2 class="help-section__title" id="help-smilies">{{ lang.help.smilies }}</h2>
+	<p>{{ lang.help.smiliesInfo }}</p>
+	<dl class="help-examples">
+	{% for smiley in view.smilies %}
+		<div class="help-example">
+			<dt>{% for code in smiley.codes %}<code>{{ code }}</code>{% if not loop.last %} {{ lang.help.and }} {% endif %}{% endfor %} <span class="help-example__produces">{{ lang.help.produces }}</span></dt>
+			{#- Émoji produit par doSmilies() : balisage fixe (services/smilies.ts). #}
+			<dd class="bbcode">{{ smiley.html | safe }}</dd>
+		</div>
+	{% endfor %}
+	</dl>
+</section>
+{% endblock %}

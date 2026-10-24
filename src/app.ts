@@ -9,6 +9,7 @@ import fastifyStatic from '@fastify/static';
 import fastifyView from '@fastify/view';
 import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import nunjucks from 'nunjucks';
+import { ExternController, type ExternQuery } from './controllers/ExternController.ts';
 import { ForumController, type ForumQuery } from './controllers/ForumController.ts';
 import { HelpController } from './controllers/HelpController.ts';
 import { IndexController } from './controllers/IndexController.ts';
@@ -23,6 +24,7 @@ import { resolveViewer } from './http/session.ts';
 import type { BanReader } from './repositories/BanRepository.ts';
 import type { CensorReader } from './repositories/CensorRepository.ts';
 import type { ConfigReader } from './repositories/ConfigLoader.ts';
+import type { FeedReader } from './repositories/FeedRepository.ts';
 import type { PostReader } from './repositories/PostRepository.ts';
 import type { SearchReader } from './repositories/SearchRepository.ts';
 import type { StatsReader } from './repositories/StatsRepository.ts';
@@ -55,6 +57,7 @@ export interface AppDeps extends LayoutDeps {
 	topicLabels: TopicLabelReader;
 	stats: StatsReader;
 	search: SearchReader;
+	feeds: FeedReader;
 	stopwords: StopwordsReader;
 	usersInfo: UsersInfoReader;
 	legacyCookie: { name: string; seed: string };
@@ -66,7 +69,16 @@ export interface AppDeps extends LayoutDeps {
 }
 
 /** Pages déjà servies par Node ; les autres liens partent vers l'installation PHP. */
-const PORTED_PAGES = new Set(['help.php', 'index.php', 'profile.php', 'search.php', 'userlist.php', 'viewforum.php', 'viewtopic.php']);
+const PORTED_PAGES = new Set([
+	'extern.php',
+	'help.php',
+	'index.php',
+	'profile.php',
+	'search.php',
+	'userlist.php',
+	'viewforum.php',
+	'viewtopic.php',
+]);
 
 const ROOT_DIR = path.join(import.meta.dirname, '..');
 
@@ -131,6 +143,9 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 
 	const userlist = new UserlistController(deps);
 	app.get<{ Querystring: UserlistParams }>('/userlist.php', { preHandler: authenticate }, userlist.show);
+
+	const extern = new ExternController(deps);
+	app.get<{ Querystring: ExternQuery }>('/extern.php', { preHandler: authenticate }, extern.show);
 
 	const help = new HelpController(deps);
 	app.get('/help.php', { preHandler: authenticate }, help.show);

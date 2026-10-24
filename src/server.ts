@@ -12,6 +12,7 @@ import { BanRepository } from './repositories/BanRepository.ts';
 import { CensorRepository } from './repositories/CensorRepository.ts';
 import { ConfigLoader } from './repositories/ConfigLoader.ts';
 import { ConfigRepository } from './repositories/ConfigRepository.ts';
+import { FeedRepository } from './repositories/FeedRepository.ts';
 import { ForumRepository } from './repositories/ForumRepository.ts';
 import { PhpCacheFiles } from './repositories/PhpCacheFiles.ts';
 import { PostRepository } from './repositories/PostRepository.ts';
@@ -49,6 +50,7 @@ const app = await buildApp({
 	topicLabels: new TopicLabelRepository(db),
 	stats,
 	search: new SearchRepository(db),
+	feeds: new FeedRepository(db),
 	stopwords: new StopwordsLoader(config.legacyRoot),
 	usersInfo: new UsersInfoLoader(stats, phpCache, clock),
 	avatars: new FileAvatarLocator(config.legacyRoot, config.legacyBaseUrl),

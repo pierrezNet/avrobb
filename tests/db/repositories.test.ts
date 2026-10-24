@@ -13,6 +13,7 @@ import { BanRepository } from '../../src/repositories/BanRepository.ts';
 import { CensorRepository } from '../../src/repositories/CensorRepository.ts';
 import { ConfigLoader } from '../../src/repositories/ConfigLoader.ts';
 import { ConfigRepository } from '../../src/repositories/ConfigRepository.ts';
+import { FeedRepository } from '../../src/repositories/FeedRepository.ts';
 import { ForumRepository } from '../../src/repositories/ForumRepository.ts';
 import { PostRepository } from '../../src/repositories/PostRepository.ts';
 import { PrivateMessageRepository } from '../../src/repositories/PrivateMessageRepository.ts';
@@ -212,6 +213,28 @@ describe('viewforum : forum et sujets', () => {
 	});
 });
 
+describe('FeedRepository', () => {
+	const feeds = new FeedRepository(db);
+	it('flux d’une discussion et des discussions récentes, permissions et exclusions appliquées', async () => {
+		expect(await feeds.findTopic(11, GroupId.Guest)).toBeNull();
+		expect(await feeds.findTopic(10, GroupId.Guest)).toEqual({ subject: 'Postez un « vintage »', firstPostId: 100 });
+		expect((await feeds.listTopicPosts(10, 2)).map((p) => p.id)).toEqual([102, 101]);
+		expect(
+			(await feeds.listRecentTopics({ groupId: GroupId.Member, forumIds: [], excludedForumIds: [], orderPosted: false, limit: 15 })).map(
+				(t) => t.topicId,
+			),
+		).toEqual([10, 11]);
+		expect(
+			(await feeds.listRecentTopics({ groupId: GroupId.Member, forumIds: [], excludedForumIds: [2], orderPosted: true, limit: 15 }))[0],
+		).toMatchObject({
+			topicId: 11,
+			id: 110,
+			publicEmail: null,
+		});
+		expect(await feeds.findForumName(3, GroupId.Guest)).toBeNull();
+	});
+});
+
 describe('SearchRepository', () => {
 	const search = new SearchRepository(db);
 
@@ -341,6 +364,7 @@ describe('viewtopic de bout en bout', () => {
 			topicLabels: new TopicLabelRepository(db),
 			stats: new StatsRepository(db),
 			search: new SearchRepository(db),
+			feeds: new FeedRepository(db),
 			stopwords: { load: async () => new Set<string>() },
 			usersInfo: new UsersInfoLoader(new StatsRepository(db), null, () => NOW),
 			avatars: { urlFor: async () => null },

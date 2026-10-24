@@ -271,6 +271,12 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			findCachedSearch: async () => null,
 		},
 		stopwords: { load: async () => new Set(['les', 'pour']) },
+		feeds: {
+			findTopic: async () => null,
+			listTopicPosts: async () => [],
+			findForumName: async () => null,
+			listRecentTopics: async () => [],
+		},
 		stats: { countTopicsAndPosts: async () => ({ topics: 1234, posts: 56789 }), listOnline: async () => data.online ?? [] },
 		usersInfo: { load: async () => ({ totalUsers: 5, newestUser: { id: 6, username: 'valdefsx' } }) },
 		reports: { hasPending: async () => data.pendingReports ?? false },

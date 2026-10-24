@@ -92,6 +92,10 @@ export const common = {
 	rssTopicFeed: 'Flux RSS de la discussion',
 	atomTopicFeed: 'Flux Atom de la discussion',
 
+	rssDescription: (board: string) => `Les sujets les plus récents sur ${board}.`,
+	rssDescriptionTopic: (topic: string) => `Les sujets les plus récents dans ${topic}.`,
+	rssReply: 'Réponse à\u00a0:  ',
+
 	// Liens d'administration de l'en-tête
 	newReports: 'De nouveaux signalements ont été envoyés\u00a0!',
 	maintenanceModeEnabled: 'Le mode maintenance est activé\u00a0!',

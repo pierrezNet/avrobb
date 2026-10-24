@@ -117,6 +117,38 @@ describe('post.php et brouillons', () => {
 	});
 });
 
+describe('« Poster » depuis la liste des brouillons', () => {
+	it('publie directement le brouillon (POST) et le retire de la liste', async () => {
+		const fake = data();
+		app = await buildApp(fakeDeps(fake));
+		const list = await app.inject({ url: '/draft_list.php?id=6', headers: { cookie: tessy } });
+		expect(list.body).toContain('<form class="inline-form" method="post" action="post.php?id=6&amp;brouillon=1">');
+		const res = await submit(app, '/draft_list.php?id=6', '/post.php?id=6&brouillon=1', {});
+		expect(res.statusCode).toBe(302);
+		expect(res.headers.location).toBe('viewtopic.php?pid=901#p901');
+		expect(fake.savedReplies?.[0]).toMatchObject({ topicId: 10, message: '[b]Brouillon[/b] du récit' });
+		expect(fake.drafts?.map((d) => d.id)).toEqual([5, 7]);
+	});
+
+	it('réaffiche le formulaire en cas d’erreur, sans publier', async () => {
+		const fake = data({ drafts: [draft({ id: 6, subject: '', topicId: 10, message: '[b]non fermé' })] });
+		app = await buildApp(fakeDeps(fake));
+		const res = await submit(app, '/draft_list.php?id=6', '/post.php?id=6&brouillon=1', {});
+		expect(res.statusCode).toBe(200);
+		expect(res.body).toContain('La balise [b] a été trouvée sans balise [/b] correspondante');
+		expect(fake.savedReplies).toBeUndefined();
+		expect(fake.drafts).toHaveLength(1);
+	});
+
+	it('refuse le brouillon d’un autre', async () => {
+		const fake = data();
+		app = await buildApp(fakeDeps(fake));
+		const res = await submit(app, '/draft_list.php', '/post.php?id=7&brouillon=1', {});
+		expect(res.statusCode).toBe(403);
+		expect(fake.savedReplies).toBeUndefined();
+	});
+});
+
 describe('draft_list.php', () => {
 	it('liste les brouillons du membre et ouvre l’un d’eux', async () => {
 		app = await buildApp(fakeDeps(data()));
@@ -125,7 +157,7 @@ describe('draft_list.php', () => {
 		expect(res.body).toContain('Mon vol de nuit');
 		expect(res.body).not.toContain('Pas à moi');
 		expect(res.body).toContain('<strong>Brouillon</strong> du récit');
-		expect(res.body).toContain('href="post.php?id=5&amp;brouillon=1"');
+		expect(res.body).toContain('action="post.php?id=5&amp;brouillon=1"');
 		expect(res.body).toContain('href="draft_edit.php?id=5"');
 		expect((await app.inject({ url: '/draft_list.php?id=7', headers: { cookie: tessy } })).statusCode).toBe(403);
 	});

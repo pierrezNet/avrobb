@@ -2,6 +2,7 @@
 {% extends "layout.njk" %}
 {% import "partials/forms.njk" as forms %}
 {% import "partials/navigation.njk" as navigation %}
+{% import "partials/actions.njk" as actions %}
 
 {% block main %}
 {{ navigation.breadcrumbs(view.crumbs, lang) }}
@@ -31,7 +32,8 @@
 	</div>
 	<footer class="post__footer">
 		<ul class="post__actions">
-			{% for action in view.opened.actions %}<li class="{{ action.kind }}"><a href="{{ url(action.href) }}">{{ action.label }}</a></li>{% endfor %}
+			{#- « Poster » publie le brouillon (POST) ; « Modifier » permet de le revoir avant. #}
+			{% for action in view.opened.actions %}<li class="{{ action.kind }}">{% if action.kind == 'postsubmit' %}{{ actions.postButton(layout, action.href, action.label) }}{% else %}<a href="{{ url(action.href) }}">{{ action.label }}</a>{% endif %}</li>{% endfor %}
 		</ul>
 	</footer>
 </article>

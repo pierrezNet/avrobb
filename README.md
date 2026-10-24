@@ -65,7 +65,8 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   Le formulaire présente le texte d'origine (le PHP y mettait le texte censuré, qui remplaçait
   alors définitivement les mots d'origine en base).
 - Brouillons (PV) : table `brouillons` absente de la base locale, reconstituée d'après le code PHP
-  (`tests/db/schema.sql`). Publier un brouillon repris le supprime ; sa modification suit les
+  (`tests/db/schema.sql`). « Poster » publie directement le brouillon (le PHP ouvrait une
+  prévisualisation qu'il fallait encore valider) ; publier un brouillon le supprime ; sa modification suit les
   contrôles de `post.php` ; lien « Mes brouillons » sous les options du formulaire (le PHP n'y
   menait qu'après un enregistrement) ; la case est proposée à tout membre (le PHP la cachait quand
   les abonnements aux sujets étaient désactivés).

@@ -96,8 +96,14 @@ export class PostController {
 		return this.renderForm(request, reply, target, censor, form, [], null);
 	};
 
-	/** post.php?brouillon&id=… : le brouillon de son auteur, prévisualisé dans le formulaire. */
-	private async resumeDraft(request: FastifyRequest<{ Querystring: PostQuery }>, reply: FastifyReply): Promise<FastifyReply> {
+	/**
+	 * Brouillon de son auteur : prévisualisé dans le formulaire (GET post.php?brouillon&id=…), ou
+	 * publié directement par le bouton « Poster » de draft_list.php (POST, jeton CSRF vérifié).
+	 */
+	publishDraft = (request: FastifyRequest<{ Querystring: PostQuery; Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> =>
+		this.resumeDraft(request, reply, true);
+
+	private async resumeDraft(request: PostRequest, reply: FastifyReply, publish = false): Promise<FastifyReply> {
 		const { viewer } = request;
 		const { lang } = this.deps.page;
 		const id = positiveInt(request.query.id);
@@ -120,19 +126,9 @@ export class PostController {
 			hideSmilies: false,
 			subscribe: viewer.autoNotify || target.topic?.isSubscribed === true,
 			stickTopic: false,
-			preview: true,
+			preview: !publish,
 		};
-		const post = await this.validate(request, target, form, censor);
-		const errors = post.errors.map((error) => lang.post.postError(error));
-		return this.renderForm(
-			request,
-			reply,
-			target,
-			censor,
-			{ ...this.stateOf(form, post), draft: false, draftId: draft.id },
-			errors,
-			errors.length === 0 ? post.message : null,
-		);
+		return this.process(request, reply, target, censor, form, { asDraft: false, draftId: draft.id });
 	}
 
 	private stateOf(form: PostForm, post: ValidatedPost): Omit<PostFormState, 'draft' | 'draftId'> {
@@ -149,12 +145,9 @@ export class PostController {
 
 	submit = async (request: FastifyRequest<{ Querystring: PostQuery; Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> => {
 		const { viewer, board: config, body } = request;
-		const { lang } = this.deps.page;
-
 		const target = await this.resolveTarget(request, reply, this.queryIds(request));
 		if (!('forum' in target)) return target;
 		const censor = await this.censor(config);
-		const now = this.deps.page.clock();
 		const draftId = positiveInt(field(body, 'brouillon_id'));
 		const asDraft = !viewer.isGuest && checked(body, 'brouillon');
 
@@ -168,12 +161,29 @@ export class PostController {
 			stickTopic: checked(body, 'stick_topic'),
 			preview: checked(body, 'preview'),
 		};
+		return this.process(request, reply, target, censor, form, { asDraft, draftId: draftId > 0 ? draftId : null });
+	};
 
+	/**
+	 * Suite commune de l'envoi : formulaire réaffiché (erreurs, prévisualisation), brouillon
+	 * enregistré, ou message publié (le brouillon repris est alors supprimé).
+	 */
+	private async process(
+		request: PostRequest,
+		reply: FastifyReply,
+		target: PostingTarget,
+		censor: Censor | null,
+		form: PostForm,
+		{ asDraft, draftId }: { asDraft: boolean; draftId: number | null },
+	): Promise<FastifyReply> {
+		const { viewer, board: config } = request;
+		const { lang } = this.deps.page;
+		const now = this.deps.page.clock();
 		const post = await this.validate(request, target, form, censor);
 
 		if (post.errors.length > 0 || form.preview) {
 			const errors = post.errors.map((error) => lang.post.postError(error));
-			const state: PostFormState = { ...this.stateOf(form, post), draft: asDraft, draftId: draftId > 0 ? draftId : null };
+			const state: PostFormState = { ...this.stateOf(form, post), draft: asDraft, draftId };
 			return this.renderForm(request, reply, target, censor, state, errors, errors.length === 0 ? post.message : null);
 		}
 
@@ -191,7 +201,7 @@ export class PostController {
 		}
 
 		const { topicId, postId } = await this.save(request, target, post, now);
-		if (draftId > 0 && !viewer.isGuest) await this.deps.drafts.delete(draftId, viewer.id);
+		if (draftId !== null && !viewer.isGuest) await this.deps.drafts.delete(draftId, viewer.id);
 		await this.notify(request, target, post, censor, { topicId, postId });
 
 		if (!viewer.isGuest) {
@@ -207,7 +217,7 @@ export class PostController {
 			);
 		}
 		return reply.redirect(`viewtopic.php?pid=${postId}#p${postId}`);
-	};
+	}
 
 	/** Validation de post.php pour ce visiteur et cette cible. */
 	private async validate(request: PostRequest, target: PostingTarget, form: PostForm, censor: Censor | null): Promise<ValidatedPost> {

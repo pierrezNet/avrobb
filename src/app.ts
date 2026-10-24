@@ -262,7 +262,9 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 
 	const post = new PostController({ ...deps, trackCookieName });
 	app.get<{ Querystring: PostQuery }>('/post.php', { preHandler: authenticate }, post.show);
-	app.post<{ Querystring: PostQuery; Body: FormBody }>('/post.php', { preHandler: [authenticate, verifyCsrf] }, post.submit);
+	app.post<{ Querystring: PostQuery; Body: FormBody }>('/post.php', { preHandler: [authenticate, verifyCsrf] }, (request, reply) =>
+		request.query.brouillon !== undefined ? post.publishDraft(request, reply) : post.submit(request, reply),
+	);
 
 	const edit = new EditController(deps);
 	app.get<{ Querystring: EditQuery }>('/edit.php', { preHandler: authenticate }, edit.show);

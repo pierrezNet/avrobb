@@ -1,0 +1,77 @@
+{% extends "layout.njk" %}
+{% import "partials/topicNav.njk" as nav %}
+
+{% block head %}
+<link rel="canonical" href="viewtopic.php?id={{ view.topic.id }}{% if view.page > 1 %}&amp;p={{ view.page }}{% endif %}" />
+{% endblock %}
+
+{% block main %}
+<div class="linkst">
+	<div class="inbox crumbsplus">
+		{{ nav.crumbs(view, lang) }}
+		{{ nav.pagepost(view, lang) }}
+		<div class="clearer"></div>
+	</div>
+</div>
+
+{% for post in view.posts %}
+<div id="p{{ post.id }}" class="blockpost {{ post.rowClass }}{% if post.isFirstPost %} firstpost{% endif %}{% if loop.first %} blockpost1{% endif %}">
+	<h2><span><span class="conr">#{{ post.number }}</span> <a href="viewtopic.php?pid={{ post.id }}#p{{ post.id }}">{{ post.postedAt }}</a></span></h2>
+	<div class="box">
+		<div class="inbox">
+			<div class="postbody">
+				<div class="postleft">
+					<dl>
+						<dt><strong>{% if post.profileUrl %}<a href="{{ url(post.profileUrl) }}">{{ post.username }}</a>{% else %}{{ post.username }}{% endif %}</strong></dt>
+						<dd class="usertitle"><strong>{{ post.userTitle }}</strong></dd>
+						{% if post.avatarUrl %}<dd class="postavatar"><img src="{{ post.avatarUrl }}" alt="" /></dd>{% endif %}
+						{% if post.location %}<dd><span>{{ lang.from }} {{ post.location }}</span></dd>{% endif %}
+						{% if post.registeredAt %}<dd><span>{{ lang.registered }} {{ post.registeredAt }}</span></dd>{% endif %}
+						{% if post.numPosts !== null %}<dd><span>{{ lang.posts }} {{ post.numPosts }}</span></dd>{% endif %}
+						{% if post.ip %}<dd><span><a href="{{ url('moderate.php?get_host=' ~ post.id) }}" title="{{ post.ip }}">{{ lang.ipLogged }}</a></span></dd>{% endif %}
+						{% if post.adminNote %}<dd><span>{{ lang.note }} <strong>{{ post.adminNote }}</strong></span></dd>{% endif %}
+						{% if post.emailUrl or post.websiteUrl %}
+						<dd class="usercontacts">
+							{% if post.emailUrl %}<span class="email"><a href="{{ url(post.emailUrl) }}">{{ lang.email }}</a></span>{% endif %}
+							{% if post.websiteUrl %}<span class="website"><a href="{{ post.websiteUrl }}" rel="nofollow">{{ lang.website }}</a></span>{% endif %}
+						</dd>
+						{% endif %}
+					</dl>
+				</div>
+				<div class="postright">
+					<h3>{% if not post.isFirstPost %}{{ lang.re }} {% endif %}{{ view.topic.subject }}</h3>
+					<div class="postmsg">
+						{{ post.messageHtml | safe }}
+						{% if post.edited %}<p class="postedit"><em>{{ lang.lastEdit }} {{ post.edited.by }} ({{ post.edited.at }})</em></p>{% endif %}
+					</div>
+					{% if post.signatureHtml %}<div class="postsignature postmsg"><hr />{{ post.signatureHtml | safe }}</div>{% endif %}
+				</div>
+			</div>
+		</div>
+		<div class="inbox">
+			<div class="postfoot clearb">
+				<div class="postfootleft">{% if post.isOnline !== null %}<p>{% if post.isOnline %}<strong>{{ lang.online }}</strong>{% else %}<span>{{ lang.offline }}</span>{% endif %}</p>{% endif %}</div>
+				{% if post.actions.report or post.actions.delete or post.actions.edit or post.actions.quote %}
+				<div class="postfootright">
+					<ul>
+						{% if post.actions.report %}<li class="postreport"><span><a href="{{ url('misc.php?report=' ~ post.id) }}">{{ lang.report }}</a></span></li>{% endif %}
+						{% if post.actions.delete %}<li class="postdelete"><span><a href="{{ url('delete.php?id=' ~ post.id) }}">{{ lang.delete }}</a></span></li>{% endif %}
+						{% if post.actions.edit %}<li class="postedit"><span><a href="{{ url('edit.php?id=' ~ post.id) }}">{{ lang.edit }}</a></span></li>{% endif %}
+						{% if post.actions.quote %}<li class="postquote"><span><a href="{{ url('post.php?tid=' ~ view.topic.id ~ '&qid=' ~ post.id) }}">{{ lang.quote }}</a></span></li>{% endif %}
+					</ul>
+				</div>
+				{% endif %}
+			</div>
+		</div>
+	</div>
+</div>
+{% endfor %}
+
+<div class="postlinksb">
+	<div class="inbox crumbsplus">
+		{{ nav.pagepost(view, lang) }}
+		{{ nav.crumbs(view, lang) }}
+		<div class="clearer"></div>
+	</div>
+</div>
+{% endblock %}

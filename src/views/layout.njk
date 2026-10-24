@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="{{ lang.langCode }}">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>{{ pageTitle }}</title>
+<link rel="stylesheet" href="/style/Air.css" />
+{% block head %}{% endblock %}
+</head>
+
+<body>
+
+<div id="pun{{ pageId }}" class="pun">
+<div class="top-box"></div>
+<div class="punwrap">
+
+<div id="brdheader" class="block">
+	<div class="box">
+		<div id="brdtitle" class="inbox">
+			<h1><a href="{{ url('index.php') }}">{{ boardTitle }}</a></h1>
+		</div>
+		<div id="brdmenu" class="inbox">
+			<ul>
+			{% for item in menu %}
+				<li id="{{ item.id }}"{% if item.active %} class="isactive"{% endif %}><a href="{{ url(item.href) }}">{{ item.label }}</a></li>
+			{% endfor %}
+			</ul>
+		</div>
+		<div id="brdwelcome" class="inbox">
+			<ul class="conl">
+			{% if viewer.isGuest %}
+				<li><span>{{ lang.notLoggedIn }}</span></li>
+			{% else %}
+				<li><span>{{ lang.loggedInAs }} <strong>{{ viewer.username }}</strong></span></li>
+			{% endif %}
+			</ul>
+			<div class="clearer"></div>
+		</div>
+	</div>
+</div>
+
+<div id="brdmain">
+{% block main %}{% endblock %}
+</div>
+
+<div id="brdfooter" class="block">
+	<div class="box">
+		<div id="brdfooternav" class="inbox">
+			<div class="conr">
+				<p id="poweredby">{{ lang.prototype }}</p>
+			</div>
+			<div class="clearer"></div>
+		</div>
+	</div>
+</div>
+
+</div>
+<div class="end-box"></div>
+</div>
+
+</body>
+</html>

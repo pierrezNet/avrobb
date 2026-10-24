@@ -1,0 +1,125 @@
+# TODO — Portage de Pilote-Virtuel vers Node.js
+
+Méthode : lots ordonnés, chaque lot livrable seul. Le forum reste utilisable de bout en bout à chaque étape, car PHP et Node partagent la base et le cookie. Chaque page suit le skill `port-page` et passe `mvc-review` avant d'être cochée.
+
+Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonctionnalité propre à Pilote-Virtuel (absente de FluxBB standard).
+
+## Pourquoi cet ordre
+
+1. **Socle d'abord** : outillage, mise en page et CSS responsive sont partagés par toutes les pages. Les refaire après coup coûterait N fois.
+2. **Lecture avant écriture** : les pages en lecture seule ne présentent aucun risque pour la base partagée, couvrent la majorité du trafic et valident l'architecture (on part du POC `viewtopic`).
+3. **Authentification avant écriture** : poster, éditer ou envoyer un MP suppose une session, un CSRF et des bannissements fiables.
+4. **Rédaction avec l'index de recherche** : un message posté par Node doit être indexé comme le fait le PHP, sinon la recherche PHP se dégrade.
+5. **Communauté (MP, réputation, sondages…) ensuite** : ces modules dépendent de la session et de l'éditeur.
+6. **Modération puis administration en dernier** : peu d'utilisateurs, et le back-office PHP continue de fonctionner sur la même base pendant tout ce temps. C'est aussi là que se trouvent les invalidations de cache les plus délicates.
+7. **Bascule** : retrait du PHP une fois tout porté.
+
+---
+
+## Lot 0 — Socle technique
+
+- [ ] `git init` et premier commit du POC (le projet PHP n'est pas versionné : se protéger ici)
+- [ ] Lint et formatage (Biome : une seule dépendance, configuré pour tabulations et apostrophes simples) + script `npm run check` (lint, typecheck, test)
+- [ ] Gestion d'erreurs centralisée (`setErrorHandler`, 404 et 500 rendus avec `message.njk`, journalisation sans fuite d'informations)
+- [ ] Mise en page commune complète : en-tête (menu selon droits, bienvenue, nouveaux MP, liens de modération), pied (quickjump, « Propulsé par »), fil d'Ariane réutilisable
+- [ ] **CSS responsive** : feuille de base mobile d'abord + 6 thèmes FluxBB réduits à des variables CSS ; choix du thème utilisateur (`users.style`)
+- [ ] Chargement de `config` (table) avec invalidation, lecture des caches PHP
+- [ ] Langue : structurer `src/lang/fr.ts` par page (fichiers `lang/French/*.php` comme source)
+- [ ] Tests d'intégration contre une vraie base (conteneur `pv_db`, base de test dédiée) en complément des doublures
+- [ ] Mesure de parité : script qui compare le HTML ou le texte utile d'une page PHP et de son équivalent Node
+
+## Lot 1 — Lecture publique
+
+- [ ] **viewtopic** : terminer le POC
+  - [ ] BBCode complet (`include/parser.php`) : listes, couleurs, citations imbriquées, code, img, url, email
+  - [ ] Smileys (`smilies`) et censure (`censoring`)
+  - [ ] Balises propres à PV (`balises`, `balises_modo`, `balises.php`) **(PV)**
+  - [ ] Rangs et titre des bannis (`get_title()` complet)
+  - [ ] Affichage de la réputation sous l'auteur (`include/reputation/rep_viewtopic.php`) **(PV)**
+  - [ ] Affichage du sondage du sujet **(PV)**
+  - [ ] Pièces jointes et uploads affichés **(PV)**
+- [ ] **index** : catégories, forums, derniers messages, statistiques, utilisateurs en ligne (nouveau gabarit en `<div>`)
+- [ ] **viewforum** : liste des sujets, pagination, épinglés, déplacés, icônes lu/non lu (lecture seule)
+- [ ] **userlist** : recherche, tri, pagination
+- [ ] **profile** (consultation) : sections publiques, biographie (`UP_Ma_biographie`) **(PV)**
+- [ ] **help** (aide BBCode et smileys) et **balises.php** (liste des balises) **(PV)**
+- [ ] **search** : formulaire et résultats (lecture de l'index existant `search_*`, `search_cache`)
+- [ ] **extern.php** : flux RSS/Atom et HTML externe
+- [ ] **gallery** (consultation) **(PV)**
+
+## Lot 2 — Authentification et session
+
+- [ ] Émission du cookie FluxBB par Node (`pun_setcookie()`), renouvellement et expiration
+- [ ] **login** / **logout**, « se souvenir de moi », redirection
+- [ ] Mot de passe oublié (e-mail, jeton d'activation) : service d'envoi d'e-mails et modèles `mail_templates`
+- [ ] **register** : règles, validation, vérification par e-mail, `check_username()`
+- [ ] Jeton CSRF commun à tous les formulaires
+- [ ] Bannissements (`bans` : pseudo, IP, e-mail, expiration)
+- [ ] Table `online` : présence et invités, mise à jour par requête
+- [ ] Suivi des sujets lus (`action=new`, marquer comme lu)
+- [ ] Compteur de vues des sujets
+- [ ] Contrôle d'accès par groupe et par forum (`forum_perms`) généralisé
+
+## Lot 3 — Rédaction
+
+- [ ] Service d'**indexation de recherche** (`include/search_idx.php`) : ajout, mise à jour, suppression
+- [ ] **post** : nouveau sujet, réponse, citation, prévisualisation, anti-flood, mise à jour des compteurs
+- [ ] Réponse rapide sous viewtopic
+- [ ] Barre d'outils BBCode (FluxToolBar : `toolbar_conf`, `toolbar_tags`) en JS progressif
+- [ ] **edit** et **delete** (message, sujet)
+- [ ] Brouillons (`brouillons`, `draft_list`, `draft_edit`) **(PV)**
+- [ ] Abonnements aux sujets et forums + notifications par e-mail
+- [ ] Signalement d'un message (`misc.php?report`) et e-mail à un membre (`misc.php?email`)
+- [ ] Création et vote dans les sondages **(PV)**
+
+## Lot 4 — Profil (édition)
+
+- [ ] Sections du profil : essentiel, personnel, messagerie, personnalité, affichage, confidentialité
+- [ ] Avatar : téléversement et contrôles
+- [ ] Signature (prévisualisation, limites)
+- [ ] Changement de mot de passe et d'e-mail
+- [ ] Plugiles : Ma biographie, Suivi des sujets (`UPP_Suivile`), Mes uploads (`UPP_Mes_uploads`) **(PV)**
+
+## Lot 5 — Fonctionnalités communautaires PV
+
+- [ ] Messagerie privée : boîte de réception, lecture, envoi, contacts, listes d'envoi (`messages`, `contacts`, `sending_lists`) **(PV)**
+- [ ] Réputation : vote, historique, page `reputation.php` **(PV)**
+- [ ] Uploads et gestionnaire de fichiers (`gestionnaire.php`, Uploadile) **(PV)**
+- [ ] Galerie : ajout et gestion **(PV)**
+- [ ] Premium (`premium`, `premium.php`) **(PV)**
+
+## Lot 6 — Modération
+
+- [ ] `moderate.php` : fermer/ouvrir, épingler, déplacer, fusionner, scinder, suppression multiple
+- [ ] Consultation d'IP (`get_host`)
+- [ ] Traitement des signalements
+- [ ] Balises réservées aux modérateurs (`balises_modo`) **(PV)**
+
+## Lot 7 — Administration
+
+- [ ] Accueil et statistiques
+- [ ] Options (`admin_options`) avec invalidation de `cache_config.php`
+- [ ] Catégories, forums, permissions par forum
+- [ ] Groupes, utilisateurs (recherche, actions de masse), gestion utilisateurs (AMP) **(PV)**
+- [ ] Bannissements, censure, rapports
+- [ ] Maintenance : reconstruction de l'index de recherche, vidage des caches, mode maintenance
+- [ ] Plugins d'administration : balises, smileys, toolbar, premium, sondages, uploads, messagerie privée **(PV)**
+
+## Lot 8 — Bascule et décommissionnement
+
+- [ ] **Hébergement Node** : la production actuelle est un hébergement PHP (Apache/LiteSpeed). Choisir la cible (VPS, Node géré, Passenger…). **Décision à prendre tôt**, idéalement pendant le lot 1, car elle conditionne le déploiement.
+- [ ] Déploiement : reverse proxy, HTTPS, gestion des processus, journaux, sauvegardes de la base
+- [ ] Performance : index SQL manquants, cache HTTP des pages publiques, ressources statiques
+- [ ] Sécurité : en-têtes (CSP, HSTS), limitation de débit sur login et inscription, audit (`/security-review`)
+- [ ] Migration des mots de passe SHA-1 vers argon2 au fil des connexions (seulement après l'arrêt du PHP)
+- [ ] Redirections des anciennes URL non conservées, retrait de `LEGACY_BASE_URL`
+- [ ] Arrêt de l'installation PHP
+
+---
+
+## Écarts connus du POC (rappel du README)
+
+- Pas d'écriture (vues, sujets lus) → lot 2
+- BBCode partiel, smileys, censure, balises PV → lot 1
+- Rangs et bannis absents du titre → lot 1
+- Pas de réponse rapide → lot 3

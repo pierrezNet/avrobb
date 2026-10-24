@@ -12,6 +12,8 @@ export interface Presence {
 /** Présence d'un invité, avec la date de son dernier message (anti-flood de post.php). */
 export interface GuestPresence extends Presence {
 	lastPost: number | null;
+	/** Dernière recherche (anti-flood de search.php). */
+	lastSearch: number | null;
 }
 
 export type PresenceUpdate =

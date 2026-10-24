@@ -56,6 +56,8 @@ export const search = {
 	},
 	noTerms: 'Vous devez saisir au moins un mot-clé et/ou un auteur à rechercher.',
 	noHits: "Désolé, aucun résultat n'a été trouvé pour votre recherche.",
+	searchFlood: (interval: number) =>
+		`Vous devez patienter au minimum ${interval} secondes avant d'effectuer une nouvelle recherche. Veuillez patienter un moment et essayer à nouveau.`,
 	noUserPosts: "Il n'y a pas de message de cet utilisateur dans ce forum.",
 	noUserTopics: "Il n'y a pas de discussion de cet utilisateur dans ce forum.",
 	noSubscriptions: 'Cet utilisateur ne suit actuellement aucune discussion.',

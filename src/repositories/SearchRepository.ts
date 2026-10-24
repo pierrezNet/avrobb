@@ -1,7 +1,8 @@
 /**
- * Requêtes de search.php, en lecture seule : index de recherche (search_words / search_matches),
- * recherches par auteur, recherches rapides, chargement des résultats et lecture de search_cache.
- * Les permissions par forum (forum_perms) sont appliquées à chaque requête, comme en PHP.
+ * Requêtes de search.php : index de recherche (search_words / search_matches), recherches par
+ * auteur, recherches rapides, chargement des résultats ; résultats mémorisés dans search_cache et
+ * date de la dernière recherche (anti-flood). Les permissions par forum (forum_perms) sont
+ * appliquées à chaque requête, comme en PHP.
  */
 
 import { sql } from 'kysely';
@@ -9,6 +10,7 @@ import type { Db } from '../db/database.ts';
 import type { SearchPost, SearchTopic } from '../domain/models.ts';
 import type { ShowAs, SortBy, WordHit } from '../services/search.ts';
 import { forumReadable } from './forumPermissions.ts';
+import { inTransaction } from './transactions.ts';
 
 /** Forums auxquels limiter la recherche ; null pour tous les forums lisibles. */
 export type ForumScope = readonly number[] | null;
@@ -23,8 +25,18 @@ export interface SearchReader {
 	listTopics(ids: readonly number[], sortBy: SortBy, dir: 'ASC' | 'DESC'): Promise<SearchTopic[]>;
 	listPosts(ids: readonly number[], sortBy: SortBy, dir: 'ASC' | 'DESC'): Promise<SearchPost[]>;
 	findUsername(userId: number): Promise<string | null>;
-	/** search_cache.search_data d'une recherche faite par le PHP, si elle appartient à `ident`. */
+	/** search_cache.search_data d'une recherche mémorisée, si elle appartient à `ident`. */
 	findCachedSearch(searchId: number, ident: string): Promise<string | null>;
+}
+
+export interface SearchWriter {
+	/** Date de la dernière recherche : users.last_search d'un membre, online.last_search d'un invité (IP). */
+	recordSearch(searcher: { userId: number } | { ip: string }, at: number): Promise<void>;
+	/**
+	 * Mémorise une recherche pour `ident` (pseudo ou IP), après avoir supprimé celles des visiteurs
+	 * qui ne sont plus dans la liste des présents, comme search.php.
+	 */
+	saveCachedSearch(searchId: number, ident: string, data: string): Promise<void>;
 }
 
 export type QuickSearchQuery =
@@ -55,7 +67,7 @@ function topicSortColumn(sortBy: SortBy) {
 	return column === 'p.posted' || column === 'p.poster' ? 't.last_post' : column;
 }
 
-export class SearchRepository implements SearchReader {
+export class SearchRepository implements SearchReader, SearchWriter {
 	constructor(private readonly db: Db) {}
 
 	/** Messages et leurs sujets, avec permissions et limitation aux forums choisis. */
@@ -247,6 +259,24 @@ export class SearchRepository implements SearchReader {
 	async findUsername(userId: number): Promise<string | null> {
 		const row = await this.db.selectFrom('users').select('username').where('id', '=', userId).executeTakeFirst();
 		return row?.username ?? null;
+	}
+
+	async recordSearch(searcher: { userId: number } | { ip: string }, at: number): Promise<void> {
+		if ('userId' in searcher) await this.db.updateTable('users').set({ last_search: at }).where('id', '=', searcher.userId).execute();
+		else await this.db.updateTable('online').set({ last_search: at }).where('ident', '=', searcher.ip).execute();
+	}
+
+	async saveCachedSearch(searchId: number, ident: string, data: string): Promise<void> {
+		await inTransaction(this.db, async (trx) => {
+			// Le PHP ne purge que si la liste des présents n'est pas vide.
+			const online = await trx.selectFrom('online').select('ident').limit(1).executeTakeFirst();
+			if (online !== undefined)
+				await trx
+					.deleteFrom('search_cache')
+					.where('ident', 'not in', (eb) => eb.selectFrom('online').select('ident'))
+					.execute();
+			await trx.insertInto('search_cache').values({ id: searchId, ident, search_data: data }).execute();
+		});
 	}
 
 	async findCachedSearch(searchId: number, ident: string): Promise<string | null> {

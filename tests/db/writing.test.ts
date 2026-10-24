@@ -14,6 +14,7 @@ import { updateForum } from '../../src/repositories/forumCounters.ts';
 import { PostEditRepository } from '../../src/repositories/PostEditRepository.ts';
 import { PostingRepository } from '../../src/repositories/PostingRepository.ts';
 import { ReportRepository } from '../../src/repositories/ReportRepository.ts';
+import { SearchRepository } from '../../src/repositories/SearchRepository.ts';
 import { SubscriptionRepository } from '../../src/repositories/SubscriptionRepository.ts';
 import { stripSearchIndex, updateSearchIndex } from '../../src/repositories/searchIndexSql.ts';
 import { ToolbarRepository } from '../../src/repositories/ToolbarRepository.ts';
@@ -471,6 +472,32 @@ describe('ContactRepository et signalements', () => {
 					.where('created', '=', 1782900000)
 					.execute(),
 			).toEqual([{ post_id: 101, topic_id: 10, forum_id: 2, reported_by: 3, message: 'Hors sujet', zapped: null }]);
+		});
+	});
+});
+
+describe('SearchRepository (écritures)', () => {
+	it('mémorise une recherche en purgeant celles des absents, et note la date de recherche', async () => {
+		await inRollback(async (trx) => {
+			const search = new SearchRepository(trx);
+			await trx.insertInto('search_cache').values({ id: 5, ident: 'Parti', search_data: 'x' }).execute();
+			await search.saveCachedSearch(1234, 'Tessy', 'données');
+			// « Tessy » (présente) garde ses recherches, « Parti » (absent de online) perd les siennes.
+			expect(await trx.selectFrom('search_cache').select(['id', 'ident']).orderBy('id').execute()).toEqual([
+				{ id: 77, ident: 'Tessy' },
+				{ id: 1234, ident: 'Tessy' },
+			]);
+			expect(await search.findCachedSearch(1234, 'Tessy')).toBe('données');
+
+			await search.recordSearch({ userId: 3 }, 1782900000);
+			await trx.insertInto('online').values({ user_id: 1, ident: '198.51.100.30', logged: 1, idle: 0 }).execute();
+			await search.recordSearch({ ip: '198.51.100.30' }, 1782900001);
+			expect(await trx.selectFrom('users').select('last_search').where('id', '=', 3).executeTakeFirst()).toEqual({
+				last_search: 1782900000,
+			});
+			expect(await trx.selectFrom('online').select('last_search').where('ident', '=', '198.51.100.30').executeTakeFirst()).toEqual({
+				last_search: 1782900001,
+			});
 		});
 	});
 });

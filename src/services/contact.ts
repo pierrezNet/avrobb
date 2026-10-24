@@ -3,21 +3,12 @@
  * pures ; erreurs typées dans l'ordre des contrôles du PHP.
  */
 
+import { floodWait } from './flood.ts';
 import { punLinebreaks, punTrim } from './phpString.ts';
 import { MAX_POST_SIZE } from './posting.ts';
 
 /** Taille maximale d'un motif de signalement (colonne TEXT), en octets. */
 export const MAX_REASON_BYTES = 65_535;
-
-/**
- * Anti-flood de misc.php : délai restant (secondes) si le dernier envoi est trop récent, sinon
- * null. Un envoi daté dans le futur (horloge changée) ne bloque pas, comme le PHP.
- */
-export function floodWait(last: number | null, interval: number, now: number): number | null {
-	if (last === null) return null;
-	const elapsed = now - last;
-	return elapsed < interval && elapsed >= 0 ? interval - elapsed : null;
-}
 
 export type EmailError =
 	| { kind: 'noSubject' }

@@ -228,6 +228,7 @@ describe('GET /post.php', () => {
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('name="req_subject"');
 		expect(res.body).toContain('data-prefix="[MSFS]"');
+		expect(res.body).toContain('data-prefix="[FS-24]"');
 		expect(res.body).not.toContain('postreview');
 	});
 

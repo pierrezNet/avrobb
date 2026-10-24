@@ -3,6 +3,8 @@
  * validation de la demande, découpage des mots-clés, combinaison and/or/not, tri des résultats.
  */
 
+import type { SerializableValue } from './phpSerialize.ts';
+
 /** PUN_SEARCH_MIN_WORD et PUN_SEARCH_MAX_WORD (include/common.php). */
 export const SEARCH_MIN_WORD = 3;
 export const SEARCH_MAX_WORD = 20;
@@ -323,4 +325,30 @@ export function parseCachedSearch(data: string, unserialize: (text: string) => u
 	} catch {
 		return null;
 	}
+}
+
+/**
+ * search_cache.search_data au format de search.php : tableau sérialisé dont search_ids est
+ * lui-même une chaîne sérialisée. Le PHP relit ainsi les recherches faites par Node.
+ */
+export function serializeSearch(outcome: SearchOutcome, serialize: (value: SerializableValue) => string): string {
+	const type = outcome.type;
+	let searchType: SerializableValue[];
+	if (type.kind === 'action') searchType = type.userId !== null ? ['action', type.action, type.userId] : ['action', type.action];
+	else {
+		const forums = type.forums.join(',');
+		if (type.kind === 'both') searchType = ['both', [type.keywords, type.author], forums, type.searchIn];
+		else searchType = [type.kind, type.kind === 'keywords' ? type.keywords : type.author, forums, type.searchIn];
+	}
+
+	return serialize(
+		new Map<string, SerializableValue>([
+			['search_ids', serialize(outcome.ids)],
+			['num_hits', outcome.ids.length],
+			['sort_by', outcome.sortBy],
+			['sort_dir', outcome.sortDir],
+			['show_as', outcome.showAs],
+			['search_type', searchType],
+		]),
+	);
 }

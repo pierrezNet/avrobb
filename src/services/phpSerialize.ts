@@ -1,5 +1,5 @@
 /**
- * Lecture des valeurs écrites par serialize() de PHP : colonne forums.moderators
+ * Lecture et écriture des valeurs de serialize() de PHP : colonne forums.moderators
  * (array(nom => id)) et table search_cache (tableaux imbriqués, dont une chaîne elle-même
  * sérialisée).
  *
@@ -110,4 +110,28 @@ export function parseModerators(serialized: string | null): Map<string, number> 
 	}
 
 	return moderators;
+}
+
+/** Valeur écrite par phpSerialize() : un tableau JavaScript devient une liste PHP (clés 0, 1, …). */
+export type SerializableValue =
+	| string
+	| number
+	| boolean
+	| null
+	| readonly SerializableValue[]
+	| ReadonlyMap<string | number, SerializableValue>;
+
+/** serialize() de PHP (longueurs de chaînes en octets UTF-8 ; nombres entiers seulement). */
+export function phpSerialize(value: SerializableValue): string {
+	if (value === null) return 'N;';
+	if (typeof value === 'boolean') return `b:${value ? 1 : 0};`;
+	if (typeof value === 'number') {
+		if (!Number.isSafeInteger(value)) throw new RangeError(`Entier attendu : ${value}`);
+		return `i:${value};`;
+	}
+	if (typeof value === 'string') return `s:${Buffer.byteLength(value, 'utf8')}:"${value}";`;
+	const entries: [string | number, SerializableValue][] = Array.isArray(value)
+		? value.map((item, index) => [index, item])
+		: [...(value as ReadonlyMap<string | number, SerializableValue>)];
+	return `a:${entries.length}:{${entries.map(([key, item]) => phpSerialize(key) + phpSerialize(item)).join('')}}`;
 }

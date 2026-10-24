@@ -106,6 +106,7 @@ export class UserRepository implements UserReader, MemberListReader, ProfileRead
 				'u.num_posts',
 				'u.last_post',
 				'u.auto_notify',
+				'u.last_search',
 				'g.g_id',
 				'g.g_title',
 				'g.g_user_title',
@@ -126,6 +127,7 @@ export class UserRepository implements UserReader, MemberListReader, ProfileRead
 				'g.g_promote_min_posts',
 				'g.g_search',
 				'g.g_search_users',
+				'g.g_search_flood',
 				'g.g_pm',
 				'g.g_pm_limit',
 				'g.g_rep_enable',
@@ -156,6 +158,7 @@ export class UserRepository implements UserReader, MemberListReader, ProfileRead
 			promoteMinPosts: row.g_promote_min_posts,
 			canSearch: row.g_search === 1,
 			canSearchUsers: row.g_search_users === 1,
+			searchFlood: row.g_search_flood,
 			canUsePrivateMessages: row.g_pm === 1,
 			privateMessageLimit: row.g_pm_limit,
 			canUseReputation: row.g_rep_enable === 1,
@@ -189,6 +192,7 @@ export class UserRepository implements UserReader, MemberListReader, ProfileRead
 				numPosts: row.num_posts,
 				lastPost: row.last_post,
 				autoNotify: row.auto_notify === 1,
+				lastSearch: row.last_search,
 			},
 		};
 	}

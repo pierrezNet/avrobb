@@ -66,9 +66,9 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
 - `profile.php` : Node ne sert que la consultation ; tout cas de modification est redirigé vers
   `LEGACY_BASE_URL`, qui doit donc désigner une adresse servie par le PHP (sinon boucle).
 - Biographie affichée directement sur le profil (le PHP la cache derrière `?plugin=UP_Ma_biographie.php`).
-- Recherche : pas d'écriture dans `search_cache` ni de contrôle anti-flood (`g_search_flood`) ; les
-  résultats sont recalculés à chaque page à partir des paramètres. Les liens `?search_id=` du PHP
-  restent lisibles. Pas de recherche « CJK » par LIKE (inutile sur un forum francophone).
+- Recherche : résultats mémorisés dans `search_cache` (lisibles par le PHP) et anti-flood
+  `g_search_flood`, comme le PHP ; le formulaire reste en GET et écrit donc `last_search` et le cache.
+  Pas de recherche « CJK » par LIKE (inutile sur un forum francophone). Refus pour flood en 429.
 - Galerie : informations visibles sous chaque vignette (le PHP les montrait au survol, inaccessible
   au clavier et au toucher) ; envoi et modération restent en PHP.
 - extern.php : pas d'authentification HTTP Basic ni de cache des flux (`o_feed_ttl`).

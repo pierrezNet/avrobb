@@ -37,6 +37,8 @@ export interface Group {
 	promoteMinPosts: number;
 	canSearch: boolean;
 	canSearchUsers: boolean;
+	/** Délai minimal entre deux recherches, en secondes (g_search_flood). */
+	searchFlood: number;
 	/** Messagerie privée autorisée au groupe (g_pm, mod APMS). */
 	canUsePrivateMessages: boolean;
 	/** Nombre maximal de MP conservés (g_pm_limit) ; 0 = illimité. */
@@ -81,6 +83,8 @@ export interface Viewer {
 	lastPost: number | null;
 	/** Abonnement coché par défaut aux sujets où il écrit (users.auto_notify). */
 	autoNotify: boolean;
+	/** Date de sa dernière recherche (users.last_search, ou online.last_search pour un invité). */
+	lastSearch: number | null;
 }
 
 export interface Forum {

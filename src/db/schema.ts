@@ -130,6 +130,7 @@ export interface GroupsTable {
 	g_report_flood: number;
 	g_search: number;
 	g_search_users: number;
+	g_search_flood: number;
 	g_pm: number;
 	g_pm_limit: number;
 	g_rep_enable: number;
@@ -277,6 +278,7 @@ export interface UsersTable {
 	activate_key: string | null;
 	last_email_sent: number | null;
 	last_report_sent: Generated<number | null>;
+	last_search: Generated<number | null>;
 	style: string;
 	use_pm: Generated<number>;
 	num_pms: Generated<number>;

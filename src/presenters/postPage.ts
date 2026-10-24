@@ -76,7 +76,7 @@ export interface PostPageView {
 	review: { poster: string; postedAt: string; messageHtml: string }[];
 }
 
-const SIMULATOR_PREFIXES = ['MSFS', 'FSX', 'X-Plane', 'Flight', 'P3D', 'MULTI-SIMU'];
+const SIMULATOR_PREFIXES = ['MSFS', 'FS-24', 'FSX', 'X-Plane', 'Flight', 'P3D', 'MULTI-SIMU'];
 const OTHER_PREFIXES = ['Résolu', 'Réel', 'Video'];
 
 function checkboxes(input: PostPageInput, isNewTopic: boolean): Checkbox[] {

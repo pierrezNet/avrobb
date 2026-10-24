@@ -47,6 +47,7 @@ const stats = new StatsRepository(db);
 const users = new UserRepository(db);
 const topics = new TopicRepository(db);
 const reports = new ReportRepository(db);
+const search = new SearchRepository(db);
 
 const app = await buildApp({
 	config: new ConfigLoader(new ConfigRepository(db), phpCache, clock),
@@ -77,7 +78,8 @@ const app = await buildApp({
 	censorship: new CensorRepository(db),
 	topicLabels: new TopicLabelRepository(db),
 	stats,
-	search: new SearchRepository(db),
+	search,
+	searchWriter: search,
 	feeds: new FeedRepository(db),
 	gallery: new GalleryRepository(db),
 	stopwords: new StopwordsLoader(config.legacyRoot),

@@ -64,6 +64,7 @@ export function group(overrides: Partial<Group> = {}): Group {
 		promoteMinPosts: 0,
 		canSearch: true,
 		canSearchUsers: true,
+		searchFlood: 30,
 		canUsePrivateMessages: true,
 		privateMessageLimit: 0,
 		canUseReputation: true,
@@ -96,6 +97,7 @@ export function viewer(overrides: Partial<Viewer> = {}): Viewer {
 		numPosts: 12,
 		lastPost: null,
 		autoNotify: false,
+		lastSearch: null,
 		...overrides,
 	};
 }
@@ -293,6 +295,9 @@ export interface FakeData {
 	/** Envois enregistrés par misc.php (e-mail, signalement). */
 	contactLog?: string[];
 	createdReports?: { target: ReportTarget; reportedBy: number; created: number; message: string }[];
+	/** search_cache en mémoire : identifiant → { propriétaire, données sérialisées }. */
+	searchCache?: Map<number, { ident: string; data: string }>;
+	searchLog?: string[];
 }
 
 /** Liste des présents en mémoire : chaque écriture est consignée dans `log` pour les tests. */
@@ -305,7 +310,7 @@ export function fakeOnline(visitors: readonly OnlineVisitor[] = []): FakeOnline 
 	return {
 		log,
 		findGuestPresence: async (ip) =>
-			visitors.some((v) => v.userId === 1 && v.ident === ip) ? { logged: NOW - 60, idle: false, lastPost: null } : null,
+			visitors.some((v) => v.userId === 1 && v.ident === ip) ? { logged: NOW - 60, idle: false, lastPost: null, lastSearch: null } : null,
 		enter: async (userId, ident) => void log.push(`enter ${userId} ${ident}`),
 		refreshMember: async (userId) => void log.push(`refresh ${userId}`),
 		refreshGuest: async (ip) => void log.push(`refresh guest ${ip}`),
@@ -586,7 +591,21 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			listTopics: async () => [],
 			listPosts: async () => [],
 			findUsername: async () => null,
-			findCachedSearch: async () => null,
+			findCachedSearch: async (id, ident) => {
+				const cached = data.searchCache?.get(id);
+				return cached !== undefined && cached.ident === ident ? cached.data : null;
+			},
+		},
+		searchWriter: {
+			recordSearch: async (searcher, at) => {
+				data.searchLog = [
+					...(data.searchLog ?? []),
+					`${'userId' in searcher ? `membre ${searcher.userId}` : `invité ${searcher.ip}`} ${at}`,
+				];
+			},
+			saveCachedSearch: async (id, ident, serialized) => {
+				data.searchCache = new Map([...(data.searchCache ?? []), [id, { ident, data: serialized }]]);
+			},
 		},
 		stopwords: { load: async () => new Set(['les', 'pour']) },
 		gallery: {

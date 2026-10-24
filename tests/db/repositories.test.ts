@@ -332,7 +332,7 @@ describe('OnlineRepository et bannissements (écritures)', () => {
 		await online.enter(2, 'admin', NOW - 5000);
 		// REPLACE INTO : une seconde entrée remplace la première au lieu de la dupliquer.
 		await online.enter(1, '198.51.100.7', NOW - 900);
-		expect(await online.findGuestPresence('198.51.100.7')).toEqual({ logged: NOW - 900, idle: false, lastPost: null });
+		expect(await online.findGuestPresence('198.51.100.7')).toEqual({ logged: NOW - 900, idle: false, lastPost: null, lastSearch: null });
 
 		const stale = await online.listStale(NOW - 300);
 		expect(stale.map((e) => e.ident).sort()).toEqual(['198.51.100.7', 'Tessy', 'admin', '192.0.2.9', 'MaxDUO'].sort());
@@ -474,6 +474,7 @@ describe('viewtopic de bout en bout', () => {
 			postEdits: new PostEditRepository(db),
 			drafts: new DraftRepository(db),
 			subscriptions: new SubscriptionRepository(db),
+			searchWriter: new SearchRepository(db),
 			contacts: new ContactRepository(db),
 			reportWriter: new ReportRepository(db),
 			toolbar: new ToolbarRepository(db),

@@ -13,6 +13,7 @@ import type { IndexedWords } from '../services/searchIndex.ts';
 import { updateForum } from './forumCounters.ts';
 import { forumReadable } from './forumPermissions.ts';
 import { stripSearchIndex, updateSearchIndex } from './searchIndexSql.ts';
+import { inTransaction } from './transactions.ts';
 
 export interface PostUpdate {
 	postId: number;
@@ -34,11 +35,6 @@ export interface PostEditStore {
 	deletePost(post: EditablePost): Promise<number | null>;
 	/** delete_topic() puis update_forum(). */
 	deleteTopic(post: EditablePost): Promise<void>;
-}
-
-/** Transaction, ou celle déjà ouverte par l'appelant (les tests sur base réelle l'annulent ensuite). */
-function inTransaction<T>(db: Kysely<Database>, body: (trx: Kysely<Database>) => Promise<T>): Promise<T> {
-	return db.isTransaction ? body(db) : db.transaction().execute(body);
 }
 
 export class PostEditRepository implements PostEditStore {

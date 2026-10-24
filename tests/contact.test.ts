@@ -6,7 +6,8 @@
 import type { FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.ts';
-import { floodWait, validateEmail, validateReport } from '../src/services/contact.ts';
+import { validateEmail, validateReport } from '../src/services/contact.ts';
+import { floodWait } from '../src/services/flood.ts';
 import { buildLegacyCookie } from '../src/services/legacySession.ts';
 import { boardConfig, type FakeData, fakeDeps, group, guest, NOW, post, topic, viewer } from './fixtures.ts';
 

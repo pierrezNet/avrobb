@@ -17,7 +17,7 @@ import {
 	splitSearchWords,
 	type WordHit,
 } from '../src/services/search.ts';
-import { fakeDeps, guest, NOW, viewer } from './fixtures.ts';
+import { type FakeData, fakeDeps, guest, NOW, viewer } from './fixtures.ts';
 
 const member = { id: 3, isGuest: false, isAdmMod: false };
 
@@ -185,10 +185,24 @@ let app: FastifyInstance | undefined;
 afterEach(async () => app?.close());
 
 describe('GET /search.php', () => {
-	const deps = (search: Partial<SearchReader> = {}) => ({
-		...fakeDeps({ users, topics: [], posts: new Map() }),
-		search: fakeSearch(search),
-	});
+	/** Doublures avec un search_cache en mémoire partagé entre lecture et écriture. */
+	const deps = (search: Partial<SearchReader> = {}) => {
+		const data: FakeData = { users, topics: [], posts: new Map() };
+		const base = fakeDeps(data);
+		return {
+			...base,
+			search: { ...fakeSearch(search), findCachedSearch: search.findCachedSearch ?? base.search.findCachedSearch },
+			data,
+		};
+	};
+
+	/** Lance une recherche et suit la redirection vers sa page de résultats (search_id). */
+	const searchFor = async (url: string, headers: Record<string, string> = {}) => {
+		if (app === undefined) throw new Error('application non démarrée');
+		const first = await app.inject({ url, headers });
+		if (first.statusCode !== 302) return first;
+		return app.inject({ url: `/${first.headers.location}`, headers });
+	};
 
 	it('affiche le formulaire avec les forums à cocher', async () => {
 		app = await buildApp(deps());
@@ -200,7 +214,7 @@ describe('GET /search.php', () => {
 
 	it('mots-clés affichés en messages : message rendu, fil d’Ariane qui relance la recherche', async () => {
 		app = await buildApp(deps());
-		const res = await app.inject('/search.php?action=search&keywords=vintage&show_as=posts');
+		const res = await searchFor('/search.php?action=search&keywords=vintage&show_as=posts');
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('Message <strong>1</strong> <span class="smiley"');
 		expect(res.body).toContain('Messages contenant « vintage »');
@@ -212,7 +226,7 @@ describe('GET /search.php', () => {
 
 	it('mots-clés et auteur : intersection', async () => {
 		app = await buildApp(deps());
-		const res = await app.inject('/search.php?action=search&keywords=vintage&author=tessy&show_as=posts');
+		const res = await searchFor('/search.php?action=search&keywords=vintage&author=tessy&show_as=posts');
 		expect(res.body.match(/class="post__number"/g)).toHaveLength(1);
 		expect(res.body).toContain('Messages de tessy contenant « vintage »');
 	});
@@ -222,7 +236,11 @@ describe('GET /search.php', () => {
 		const res = await app.inject('/search.php?action=show_user_topics&user_id=6');
 		expect(res.body).toContain('Discussions de valdefsx');
 		expect(res.body.match(/<h3 class="forum-row__name/g)).toHaveLength(30);
-		expect(res.body).toContain('href="search.php?action=show_user_topics&amp;user_id=6&amp;p=2"');
+		const searchId = /href="search\.php\?search_id=(\d+)&amp;p=2"/.exec(res.body)?.[1];
+		expect(searchId).toBeDefined();
+		// La page 2 relit les résultats mémorisés (même propriétaire : l'invité, par son IP).
+		const page2 = await app.inject(`/search.php?search_id=${searchId}&p=2`);
+		expect(page2.body.match(/<h3 class="forum-row__name/g)).toHaveLength(5);
 		expect(res.body).toContain('<span class="badge">Épinglée :</span>');
 	});
 
@@ -233,6 +251,34 @@ describe('GET /search.php', () => {
 		expect((await app.inject('/search.php?action=search&keywords=ab')).body).toContain('Vous devez saisir au moins un mot-clé');
 		expect((await app.inject('/search.php?action=show_new')).statusCode).toBe(403);
 		expect((await app.inject('/search.php?search_id=0')).statusCode).toBe(404);
+	});
+
+	it('mémorise la recherche au format du PHP et applique l’anti-flood (last_search)', async () => {
+		const setup = deps();
+		app = await buildApp(setup);
+		const res = await app.inject('/search.php?action=search&keywords=vintage');
+		expect(res.statusCode).toBe(302);
+		const id = Number(/search_id=(\d+)/.exec(String(res.headers.location))?.[1]);
+		const cached = setup.data.searchCache?.get(id);
+		expect(cached?.ident).toBe('127.0.0.1');
+		expect(cached?.data).toMatch(/^a:6:\{s:10:"search_ids";s:\d+:"a:3:\{/);
+		expect(cached?.data).toContain('s:11:"search_type";a:4:{i:0;s:8:"keywords";i:1;s:7:"vintage";i:2;s:0:"";i:3;i:0;}');
+		expect(setup.data.searchLog).toEqual([`invité 127.0.0.1 ${NOW}`]);
+		await app.close();
+
+		const member = deps();
+		app = await buildApp({
+			...member,
+			users: {
+				findViewer: async (uid: number) =>
+					uid === 3
+						? { presence: null, passwordHash: 'hash-tessy', viewer: viewer({ lastSearch: NOW - 5 }) }
+						: member.users.findViewer(uid),
+			},
+		});
+		const flood = await app.inject({ url: '/search.php?action=search&keywords=vintage', headers: { cookie: cookie(3, 'hash-tessy') } });
+		expect(flood.statusCode).toBe(429);
+		expect(flood.body).toContain('Vous devez patienter au minimum 30 secondes');
 	});
 
 	it('relit une recherche mise en cache par le PHP, pour son seul propriétaire', async () => {

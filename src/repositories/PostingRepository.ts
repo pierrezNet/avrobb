@@ -14,6 +14,7 @@ import type { IndexedWords } from '../services/searchIndex.ts';
 import { updateForum } from './forumCounters.ts';
 import { forumReadable } from './forumPermissions.ts';
 import { updateSearchIndex } from './searchIndexSql.ts';
+import { inTransaction } from './transactions.ts';
 
 /** Auteur d'un nouveau message : membre (compteur, promotion) ou invité (repéré par son IP). */
 export type NewPostAuthor =
@@ -223,11 +224,6 @@ export class PostingRepository implements PostingStore {
 			.execute();
 		return rows.map((row) => ({ email: row.email, notifyWithPost: row.notify_with_post === 1 }));
 	}
-}
-
-/** Transaction, ou celle déjà ouverte par l'appelant (les tests sur base réelle l'annulent ensuite). */
-function inTransaction<T>(db: Kysely<Database>, body: (trx: Kysely<Database>) => Promise<T>): Promise<T> {
-	return db.isTransaction ? body(db) : db.transaction().execute(body);
 }
 
 /** INSERT du message ; un invité n'a pas de poster_id (1 par défaut) mais peut laisser son e-mail. */

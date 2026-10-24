@@ -1,24 +1,27 @@
 /**
  * Contrôleur de search.php : formulaire, recherches par mots-clés ou auteur, recherches rapides.
  *
- * Écart assumé avec le PHP : Node ne mémorise pas les résultats dans search_cache (aucune écriture
- * au lot 1) ; il recalcule la recherche à chaque page, à partir des paramètres repris dans les
- * liens de pagination. Les liens search.php?search_id=N créés par le PHP restent lisibles. Le
- * contrôle anti-flood (g_search_flood, qui écrit last_search) reviendra avec les écritures.
+ * Comme le PHP, une recherche est faite une seule fois : ses résultats sont mémorisés dans
+ * search_cache (lisible par le PHP) et les pages suivantes les relisent (search.php?search_id=N).
+ * Une recherche par mots-clés ou auteur est soumise à l'anti-flood du groupe (g_search_flood) et
+ * redirige vers sa page de résultats. Exception documentée à « pas d'écriture en GET » : comme
+ * dans le PHP, le formulaire de recherche est en GET et écrit last_search et search_cache.
  */
 
+import { randomInt } from 'node:crypto';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
-import { buildSearchForm, buildSearchResults, keywordSearchUrl } from '../presenters/searchPage.ts';
+import { buildSearchForm, buildSearchResults } from '../presenters/searchPage.ts';
 import type { CensorReader } from '../repositories/CensorRepository.ts';
 import type { ForumReader } from '../repositories/ForumRepository.ts';
-import type { ForumScope, SearchReader } from '../repositories/SearchRepository.ts';
+import type { ForumScope, SearchReader, SearchWriter } from '../repositories/SearchRepository.ts';
 import type { StopwordsReader } from '../repositories/StopwordsLoader.ts';
 import type { TopicLabelReader } from '../repositories/TopicLabelRepository.ts';
 import { buildCensor } from '../services/censor.ts';
+import { floodWait } from '../services/flood.ts';
 import { clampPage, pageCount } from '../services/pagination.ts';
 import { isAnyModerator } from '../services/permissions.ts';
-import { phpUnserialize } from '../services/phpSerialize.ts';
+import { phpSerialize, phpUnserialize } from '../services/phpSerialize.ts';
 import {
 	type ActionSearch,
 	combineKeywords,
@@ -29,6 +32,7 @@ import {
 	type SearchOutcome,
 	type SearchParams,
 	type SearchType,
+	serializeSearch,
 	sortHits,
 	splitSearchWords,
 } from '../services/search.ts';
@@ -37,6 +41,7 @@ import { positiveInt } from './params.ts';
 
 export interface SearchControllerDeps extends LayoutDeps {
 	search: SearchReader;
+	searchWriter: SearchWriter;
 	forums: ForumReader;
 	stopwords: StopwordsReader;
 	topicLabels: TopicLabelReader;
@@ -91,7 +96,7 @@ export class SearchController {
 			const searchId = positiveInt(query.search_id);
 			if (searchId === 0) return renderMessage(request, reply, this.deps, 404, lang.common.badRequest);
 			// Identifiant du propriétaire de la recherche, comme search.php : IP pour un invité.
-			const data = await this.deps.search.findCachedSearch(searchId, viewer.isGuest ? request.ip : viewer.username);
+			const data = await this.deps.search.findCachedSearch(searchId, this.ident(request));
 			const outcome = data !== null ? parseCachedSearch(data, phpUnserialize) : null;
 			if (outcome === null) return renderMessage(request, reply, this.deps, 200, lang.search.noHits);
 			return this.results(request, reply, outcome, (page) => `search.php?search_id=${searchId}&p=${page}`);
@@ -113,19 +118,38 @@ export class SearchController {
 		}
 
 		if (parsed.kind === 'search') {
+			const now = this.deps.page.clock();
+			const wait = floodWait(viewer.lastSearch, viewer.group.searchFlood, now);
+			if (wait !== null) return renderMessage(request, reply, this.deps, 429, lang.search.searchFlood(viewer.group.searchFlood));
+			await this.deps.searchWriter.recordSearch(viewer.isGuest ? { ip: request.ip } : { userId: viewer.id }, now);
+
 			const outcome = await this.keywordSearch(
 				parsed,
 				viewer.group.id,
 				this.scope(parsed.forums, config.searchAllForums || isAnyModerator(viewer)),
 			);
-			return this.results(request, reply, outcome, (page) =>
-				keywordSearchUrl(outcome.type, outcome.sortBy, outcome.sortDir, outcome.showAs, page),
-			);
+			if (outcome.ids.length === 0) return renderMessage(request, reply, this.deps, 200, noResultsMessage(outcome, lang));
+			const searchId = await this.remember(request, outcome);
+			return reply.redirect(`search.php?search_id=${searchId}`);
 		}
 
 		const outcome = await this.quickSearch(parsed, viewer.group.id, viewer.lastVisit);
-		return this.results(request, reply, outcome, (page) => this.actionUrl(parsed, page));
+		if (outcome.ids.length === 0) return renderMessage(request, reply, this.deps, 200, noResultsMessage(outcome, lang));
+		const searchId = await this.remember(request, outcome);
+		return this.results(request, reply, outcome, (page) => `search.php?search_id=${searchId}&p=${page}`);
 	};
+
+	/** Propriétaire d'une recherche mémorisée, comme search.php : pseudo, ou IP pour un invité. */
+	private ident(request: FastifyRequest): string {
+		return request.viewer.isGuest ? request.ip : request.viewer.username;
+	}
+
+	/** Mémorise les résultats dans search_cache (identifiant tiré au sort comme mt_rand()). */
+	private async remember(request: FastifyRequest, outcome: SearchOutcome): Promise<number> {
+		const searchId = randomInt(1, 2_147_483_647);
+		await this.deps.searchWriter.saveCachedSearch(searchId, this.ident(request), serializeSearch(outcome, phpSerialize));
+		return searchId;
+	}
 
 	private async form(request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply> {
 		const { viewer, board: config } = request;
@@ -214,16 +238,6 @@ export class SearchController {
 			sortDir: 'DESC',
 			type: { kind: 'action', action: request.action, userId: forUser ? request.userId : null },
 		};
-	}
-
-	private actionUrl(request: ActionSearch, page: number): string {
-		const params = new URLSearchParams({ action: request.action });
-		if (request.action === 'show_user_posts' || request.action === 'show_user_topics' || request.action === 'show_subscriptions')
-			params.set('user_id', String(request.userId));
-		if (request.forumId !== null) params.set('fid', String(request.forumId));
-		if (request.action === 'show_recent' && request.interval !== 86_400) params.set('value', String(request.interval));
-		if (page > 1) params.set('p', String(page));
-		return `search.php?${params.toString()}`;
 	}
 
 	private async results(

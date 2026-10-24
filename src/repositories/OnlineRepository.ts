@@ -28,11 +28,11 @@ export class OnlineRepository implements OnlineWriter {
 	async findGuestPresence(ip: string): Promise<GuestPresence | null> {
 		const row = await this.db
 			.selectFrom('online')
-			.select(['logged', 'idle', 'last_post'])
+			.select(['logged', 'idle', 'last_post', 'last_search'])
 			.where('ident', '=', ip)
 			.where('user_id', '=', 1)
 			.executeTakeFirst();
-		return row !== undefined ? { logged: row.logged, idle: row.idle === 1, lastPost: row.last_post } : null;
+		return row !== undefined ? { logged: row.logged, idle: row.idle === 1, lastPost: row.last_post, lastSearch: row.last_search } : null;
 	}
 
 	async enter(userId: number, ident: string, now: number): Promise<void> {

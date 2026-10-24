@@ -46,7 +46,7 @@ import type { PostingStore } from './repositories/PostingRepository.ts';
 import type { PostReader } from './repositories/PostRepository.ts';
 import type { RegistrationStore } from './repositories/RegistrationRepository.ts';
 import type { ReportWriter } from './repositories/ReportRepository.ts';
-import type { SearchReader } from './repositories/SearchRepository.ts';
+import type { SearchReader, SearchWriter } from './repositories/SearchRepository.ts';
 import type { StatsReader } from './repositories/StatsRepository.ts';
 import type { StopwordsReader } from './repositories/StopwordsLoader.ts';
 import type { SubscriptionStore } from './repositories/SubscriptionRepository.ts';
@@ -92,6 +92,7 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	topicLabels: TopicLabelReader;
 	stats: StatsReader;
 	search: SearchReader;
+	searchWriter: SearchWriter;
 	feeds: FeedReader;
 	gallery: GalleryReader;
 	stopwords: StopwordsReader;

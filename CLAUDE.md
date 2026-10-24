@@ -61,7 +61,7 @@ Principes :
 - **Session** : le cookie FluxBB (`services/legacySession.ts`) est la source de vérité. Une connexion faite par Node doit émettre exactement le même format de cookie que `pun_setcookie()`.
 - **Liens** : utiliser `url('page.php?…')` dans les vues ; ajouter la page à `PORTED_PAGES` (`src/app.ts`) quand elle est portée. On conserve les **mêmes URL** (`viewtopic.php?id=…`) pour ne casser ni les liens externes ni le référencement.
 - **Page portée en partie** (`profile.php`, `gallery.php`) : Node sert la consultation et **redirige vers `LEGACY_BASE_URL`** les cas qui écrivent (paramètres `section`, `action`, `info`…), jusqu'au lot qui les porte.
-- **Pages qui écrivent en PHP mais pas encore en Node** (recherche : `search_cache`, anti-flood) : on recalcule sans écrire et on le note dans le README.
+- **Pages qui écrivent en PHP mais pas encore en Node** : on lit sans écrire et on le note dans le README.
 - **Parseur BBCode** : tout changement de `services/bbcode.ts` se vérifie contre le vrai parseur PHP (`npm run bbcode:reference` puis `tests/bbcode/`). PV a aussi réécrit `paginate()` (pages voisines ±1).
 - **Mots de passe** : FluxBB stocke du SHA-1. Il faut rester compatible tant que le PHP tourne (évolution vers argon2 possible uniquement après la bascule, voir TODO).
 - Le code PHP sert de **référence en lecture**. On ne le modifie qu'en cas de besoin réel et en respectant ses contraintes (Latin-1 + CRLF, `grep -a`, voir son `CLAUDE.md`).
@@ -70,7 +70,7 @@ Principes :
 
 - Échappement automatique Nunjucks ; `| safe` seulement sur du HTML produit par `parseBbcode` (sûr par construction) et commenté. Seule autre exception : le HTML saisi par l'administrateur dans les options (`o_announcement_message`, `o_additional_navlinks`), affiché tel quel comme le fait le PHP ; ces champs portent le préfixe `trustedHtml`/`…Html` dans les modèles de vue.
 - Requêtes uniquement via Kysely (paramétrées) ; jamais de SQL concaténé avec des entrées utilisateur.
-- **Jeton CSRF** sur tout formulaire en POST (`{{ forms.csrf(layout) }}` et `preHandler: [session, verifyCsrf]`) ; aucune écriture en GET (exceptions documentées : présence, cookie de suivi et compteur de vues à l'affichage, lien de déconnexion du PHP protégé par son jeton).
+- **Jeton CSRF** sur tout formulaire en POST (`{{ forms.csrf(layout) }}` et `preHandler: [session, verifyCsrf]`) ; aucune écriture en GET (exceptions documentées : présence, cookie de suivi et compteur de vues à l'affichage, lien de déconnexion du PHP protégé par son jeton, recherche qui note `last_search` et remplit `search_cache` comme le PHP).
 - Valider et typer toutes les entrées (paramètres de requête, corps de formulaire) dès le contrôleur, avec des schémas Fastify ou de petites fonctions dédiées (`positiveInt`…).
 - Vérifier les droits côté serveur dans le contrôleur, même quand la vue masque déjà le lien.
 - Fichiers téléversés (avatars, uploads, galerie) : contrôler type, taille et chemin (pas de traversée de répertoire).

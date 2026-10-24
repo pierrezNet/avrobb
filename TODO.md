@@ -112,7 +112,8 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
 - [ ] Performance : index SQL manquants, cache HTTP des pages publiques, ressources statiques
 - [ ] Sécurité : en-têtes (CSP, HSTS), limitation de débit sur login et inscription, audit (`/security-review`)
 - [ ] Migration des mots de passe SHA-1 vers argon2 au fil des connexions (seulement après l'arrêt du PHP)
-- [ ] Redirections des anciennes URL non conservées, retrait de `LEGACY_BASE_URL`
+- [ ] URL propres sans `.php` (`/sujet/4`, `/forum/2`…) avec redirections 301 depuis les anciennes (`viewtopic.php?id=4`), pour garder liens externes et référencement ; d'ici là, Node conserve volontairement les URL du PHP pour cohabiter avec lui
+- [ ] Retrait de `LEGACY_BASE_URL`
 - [ ] Arrêt de l'installation PHP
 
 ---

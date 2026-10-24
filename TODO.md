@@ -86,6 +86,12 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
 - [ ] Réputation : vote, historique, page `reputation.php` **(PV)**
 - [ ] Uploads et gestionnaire de fichiers (`gestionnaire.php`, Uploadile) **(PV)**
 - [ ] Galerie : ajout et gestion **(PV)**
+  - [ ] Tuiles : image collée en haut de la tuile (sans marge au-dessus)
+  - [ ] Filtre « Mes images » pour ne voir que les siennes
+  - [ ] Insertion d'image dans un message : en plus de l'URL, choisir parmi ses images de la galerie, ou
+        téléverser une image depuis l'édition du message (elle rejoint alors la galerie)
+  - [ ] Image insérée avec son titre et sa description (la description, obligatoire dans la galerie, est
+        aujourd'hui perdue à l'insertion)
 - [ ] Premium (`premium`, `premium.php`) **(PV)**
 
 ## Lot 6 — Modération

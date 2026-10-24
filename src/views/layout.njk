@@ -1,62 +1,127 @@
+{#- Mise en page commune (main.tpl + header.php + footer.php). Données : `layout` (presenters/layout.ts). -#}
 <!DOCTYPE html>
-<html lang="{{ lang.langCode }}">
+<html lang="{{ lang.common.langCode }}">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>{{ pageTitle }}</title>
-<link rel="stylesheet" href="/style/Air.css" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ layout.pageTitle }}</title>
+{% if layout.robotsNoIndex %}<meta name="robots" content="noindex, follow">
+{% endif %}
+{% if layout.canonicalUrl %}<link rel="canonical" href="{{ layout.canonicalUrl }}">
+{% endif %}
+{% if layout.feed %}<link rel="alternate" type="{{ layout.feed.mimeType }}" href="{{ url(layout.feed.href) }}" title="{{ layout.feed.label }}">
+{% endif %}
+<link rel="icon" href="{{ url('img/favicon.ico') }}">
+<link rel="stylesheet" href="{{ asset('css/base.css') }}">
+<link rel="stylesheet" href="{{ asset('css/themes/' ~ layout.theme ~ '.css') }}">
 {% block head %}{% endblock %}
 </head>
-
 <body>
+<a class="skip-link" href="#main">{{ lang.common.skipToContent }}</a>
 
-<div id="pun{{ pageId }}" class="pun">
-<div class="top-box"></div>
-<div class="punwrap">
+<div id="pun{{ layout.pageId }}" class="page theme-{{ layout.theme }}">
 
-<div id="brdheader" class="block">
-	<div class="box">
-		<div id="brdtitle" class="inbox">
-			<h1><a href="{{ url('index.php') }}">{{ boardTitle }}</a></h1>
-		</div>
-		<div id="brdmenu" class="inbox">
-			<ul>
-			{% for item in menu %}
-				<li id="{{ item.id }}"{% if item.active %} class="isactive"{% endif %}><a href="{{ url(item.href) }}">{{ item.label }}</a></li>
-			{% endfor %}
-			</ul>
-		</div>
-		<div id="brdwelcome" class="inbox">
-			<ul class="conl">
-			{% if viewer.isGuest %}
-				<li><span>{{ lang.notLoggedIn }}</span></li>
-			{% else %}
-				<li><span>{{ lang.loggedInAs }} <strong>{{ viewer.username }}</strong></span></li>
+<header class="site-header" id="brdheader">
+	<div class="site-header__bar">
+		<a class="site-header__logo" href="{{ url('index.php') }}"><img src="{{ url('img/logo.png') }}" alt="{{ layout.boardTitle }}" width="301" height="77"></a>
+		<details class="site-nav" id="brdmenu">
+			<summary class="site-nav__toggle">{{ lang.common.menu }}</summary>
+			<nav aria-label="{{ lang.common.mainNav }}">
+				<ul class="site-nav__list">
+				{% for item in layout.nav %}
+					<li id="{{ item.id }}" class="site-nav__item{% if item.active %} is-active{% endif %}">
+					{%- if item.trustedHtml -%}
+						{#- HTML saisi par l'administrateur (o_additional_navlinks), affiché tel quel comme dans header.php. -#}
+						{{ item.trustedHtml | safe }}
+					{%- else -%}
+						<a href="{{ url(item.href) }}">{% if item.count %}({{ item.count }}) {% endif %}{% if item.abbrTitle %}<abbr title="{{ item.abbrTitle }}">{{ item.label }}</abbr>{% else %}{{ item.label }}{% endif %}</a>
+					{%- endif -%}
+					</li>
+				{% endfor %}
+				</ul>
+			</nav>
+		</details>
+	</div>
+
+	<div class="site-status" id="brdwelcome">
+	{% if layout.status %}
+		<ul class="site-status__info">
+			<li>{{ lang.common.loggedInAs }}<strong>{{ layout.status.username }}</strong></li>
+			<li>{{ layout.status.lastVisit }}</li>
+			{% if layout.status.showAdminLink %}<li id="navadmin"><a href="{{ url('admin_index.php') }}">{{ lang.common.admin }}</a></li>{% endif %}
+			{% if layout.status.pendingReports %}<li class="site-status__alert"><a href="{{ url('admin_reports.php') }}">{{ lang.common.newReports }}</a></li>{% endif %}
+			{% if layout.status.maintenance %}<li class="site-status__alert"><a href="{{ url('admin_options.php#maintenance') }}">{{ lang.common.maintenanceModeEnabled }}</a></li>{% endif %}
+			{% if layout.status.privateMessageBox %}
+				{% set box = layout.status.privateMessageBox %}
+				<li>
+				{%- if box.kind == 'full' -%}
+					<a class="site-status__alert" href="{{ url('pms_inbox.php') }}">{{ box.text }}</a>
+				{%- elif box.kind == 'filled' -%}
+					<label class="pm-gauge">{{ box.text }} <progress max="100" value="{{ box.percent }}">{{ box.percent }}&#160;%</progress></label>
+				{%- else -%}
+					{{ box.text }}
+				{%- endif -%}
+				</li>
 			{% endif %}
-			</ul>
-			<div class="clearer"></div>
-		</div>
+			{% if layout.status.unreadPrivateMessages %}<li class="site-status__alert"><a href="{{ url('pms_inbox.php') }}">{{ layout.status.unreadPrivateMessages }}</a></li>{% endif %}
+		</ul>
+	{% else %}
+		<p class="site-status__info">{{ lang.common.notLoggedIn }}</p>
+	{% endif %}
+	{% if layout.quickSearches.length %}
+		<p class="site-status__searches">{{ lang.common.topicSearches }}
+		{% for search in layout.quickSearches %}<a href="{{ url(search.href) }}" title="{{ search.title }}">{{ search.label }}</a>{% if not loop.last %} | {% endif %}{% endfor %}
+		</p>
+	{% endif %}
 	</div>
-</div>
+</header>
 
-<div id="brdmain">
+{% if layout.announcementHtml %}
+<aside class="announcement" id="announce" aria-labelledby="announce-title">
+	<h2 id="announce-title" class="announcement__title">{{ lang.common.announcement }}</h2>
+	{#- HTML saisi par l'administrateur (o_announcement_message), affiché tel quel comme dans header.php. #}
+	<div class="announcement__body">{{ layout.announcementHtml | safe }}</div>
+</aside>
+{% endif %}
+
+<main id="main" class="site-main" tabindex="-1">
 {% block main %}{% endblock %}
-</div>
+</main>
 
-<div id="brdfooter" class="block">
-	<div class="box">
-		<div id="brdfooternav" class="inbox">
-			<div class="conr">
-				<p id="poweredby">{{ lang.prototype }}</p>
-			</div>
-			<div class="clearer"></div>
+<footer class="site-footer" id="brdfooter">
+	<h2 class="visually-hidden">{{ lang.common.boardFooter }}</h2>
+	{% if layout.modControls.length %}
+	<nav class="mod-controls" id="modcontrols" aria-label="{{ lang.common.modControls }}">
+		<ul>
+		{% for control in layout.modControls %}
+			<li><a href="{{ url(control.href) }}">{{ control.label }}</a></li>
+		{% endfor %}
+		</ul>
+	</nav>
+	{% endif %}
+	<div class="site-footer__nav">
+		{% if layout.quickjump %}
+		<form id="qjump" class="quickjump" method="get" action="{{ url('viewforum.php') }}">
+			<label for="qjump-select">{{ lang.common.jumpTo }}</label>
+			<select id="qjump-select" name="id">
+			{% for category in layout.quickjump.categories %}
+				<optgroup label="{{ category.name }}">
+				{% for forum in category.forums %}
+					<option value="{{ forum.id }}"{% if forum.selected %} selected{% endif %}>{{ forum.label }}</option>
+				{% endfor %}
+				</optgroup>
+			{% endfor %}
+			</select>
+			<button type="submit" class="button">{{ lang.common.go }}</button>
+		</form>
+		{% endif %}
+		<div class="site-footer__info">
+			{% if layout.feed %}<p class="feed-link feed-link--{{ layout.feed.cssClass }}" id="feedlinks"><a href="{{ url(layout.feed.href) }}">{{ layout.feed.label }}</a></p>{% endif %}
+			<p id="poweredby">{{ lang.common.poweredBy }} <a href="https://fluxbb.org/">FluxBB</a>{% if layout.poweredByVersion %} {{ layout.poweredByVersion }}{% endif %}</p>
 		</div>
 	</div>
-</div>
+</footer>
 
 </div>
-<div class="end-box"></div>
-</div>
-
 </body>
 </html>

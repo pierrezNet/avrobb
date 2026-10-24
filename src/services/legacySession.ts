@@ -7,7 +7,7 @@
  * avec hmac = HMAC-SHA1 en hexadécimal (forum_hmac()).
  */
 
-import { createHmac, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 
 export interface LegacyCookie {
 	userId: number;
@@ -48,4 +48,18 @@ export function isCookieSignatureValid(cookie: LegacyCookie, seed: string, now: 
 export function isCookiePasswordValid(cookie: LegacyCookie, userPasswordHash: string, seed: string): boolean {
 	const expected = forumHmac(userPasswordHash, `${seed}_password_hash`);
 	return safeEqualHex(expected, cookie.passwordHash);
+}
+
+/** sha1() de PHP, nommé pun_hash() dans FluxBB. */
+export function punHash(text: string): string {
+	return createHash('sha1').update(text).digest('hex');
+}
+
+/**
+ * Jeton du lien « Déconnexion » de header.php, vérifié par login.php?action=out :
+ * pun_hash(id . pun_hash(get_remote_address())). Il dépend de l'IP vue par le serveur : derrière un
+ * proxy, Node et PHP doivent voir la même adresse (trustProxy / FORUM_BEHIND_REVERSE_PROXY).
+ */
+export function logoutToken(userId: number, remoteAddress: string): string {
+	return punHash(`${userId}${punHash(remoteAddress)}`);
 }

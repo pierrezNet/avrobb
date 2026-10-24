@@ -17,12 +17,12 @@ export interface AppConfig {
 		name: string;
 		seed: string;
 	};
-	/** Dossier des feuilles de style FluxBB (Air.css…), servi sous /style. */
-	styleDir: string;
 	/** URL de l'installation PHP, pour les pages pas encore portées. */
 	legacyBaseUrl: string;
-	/** Racine de l'installation PHP sur le disque (avatars). */
+	/** Racine de l'installation PHP sur le disque (avatars, fichiers de cache) ; vide si inaccessible. */
 	legacyRoot: string;
+	/** Node est derrière un reverse proxy (IP du client lue dans X-Forwarded-For). */
+	trustProxy: boolean;
 }
 
 function required(env: NodeJS.ProcessEnv, name: string): string {
@@ -48,8 +48,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
 			name: required(env, 'LEGACY_COOKIE_NAME'),
 			seed: required(env, 'LEGACY_COOKIE_SEED'),
 		},
-		styleDir: required(env, 'STYLE_DIR'),
 		legacyBaseUrl: (env.LEGACY_BASE_URL ?? '').replace(/\/$/, ''),
 		legacyRoot: env.LEGACY_ROOT ?? '',
+		trustProxy: env.TRUST_PROXY === '1',
 	};
 }

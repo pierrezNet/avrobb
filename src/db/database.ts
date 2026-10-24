@@ -1,3 +1,7 @@
+/**
+ * Connexion Kysely à la base MariaDB partagée avec le PHP, préfixe des tables compris.
+ */
+
 import { Kysely, MysqlDialect } from 'kysely';
 import { createPool } from 'mysql2';
 import type { AppConfig } from '../config.ts';

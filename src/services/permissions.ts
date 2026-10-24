@@ -1,9 +1,9 @@
 /**
- * Règles d'accès de viewtopic, regroupées ici au lieu d'être répétées dans la page
- * (viewtopic.php les recopiait en trois endroits).
+ * Règles d'accès, regroupées ici au lieu d'être répétées dans les pages
+ * (viewtopic.php les recopiait en trois endroits, header.php et les mods en ajoutaient d'autres).
  */
 
-import { GroupId, type Topic, type Viewer } from '../domain/models.ts';
+import { type BoardConfig, GroupId, type Topic, type Viewer } from '../domain/models.ts';
 
 export function isAdmin(viewer: Viewer): boolean {
 	return viewer.group.id === GroupId.Admin;
@@ -60,4 +60,14 @@ export function postActions(viewer: Viewer, topic: Topic, posterId: number, posi
 	rights.quote = hasReplyPermission(viewer, topic);
 
 	return rights;
+}
+
+/** Messagerie privée disponible pour ce membre (conditions de plugins/apms/header_add1.php). */
+export function canUsePrivateMessages(viewer: Viewer, config: BoardConfig): boolean {
+	return !viewer.isGuest && config.privateMessagesEnabled && viewer.group.canUsePrivateMessages && viewer.usesPrivateMessages;
+}
+
+/** Recherche accessible au groupe (g_read_board et g_search). */
+export function canSearch(viewer: Viewer): boolean {
+	return viewer.group.canReadBoard && viewer.group.canSearch;
 }

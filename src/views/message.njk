@@ -1,13 +1,10 @@
+{#- Page d'information (message() de FluxBB) : erreurs, accès refusé… -#}
 {% extends "layout.njk" %}
 
 {% block main %}
-<div id="msg" class="block">
-	<h2><span>{{ lang.info }}</span></h2>
-	<div class="box">
-		<div class="inbox">
-			<p>{{ message }}</p>
-			<p><a href="javascript: history.go(-1)">{{ lang.goBack }}</a></p>
-		</div>
-	</div>
-</div>
+<section class="message-box" id="msg" aria-labelledby="msg-title">
+	<h1 id="msg-title" class="message-box__title">{{ lang.common.info }}</h1>
+	<p>{{ view.message }}</p>
+	<p><a href="{{ url('index.php') }}">{{ lang.common.backToIndex }}</a></p>
+</section>
 {% endblock %}

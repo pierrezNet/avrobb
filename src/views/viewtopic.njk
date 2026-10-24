@@ -1,77 +1,77 @@
+{#- Lecture d'un sujet (viewtopic.php). Données : `view` (presenters/topicPage.ts). -#}
 {% extends "layout.njk" %}
-{% import "partials/topicNav.njk" as nav %}
+{% import "partials/navigation.njk" as navigation %}
 
-{% block head %}
-<link rel="canonical" href="viewtopic.php?id={{ view.topic.id }}{% if view.page > 1 %}&amp;p={{ view.page }}{% endif %}" />
-{% endblock %}
+{% macro topicBar(view, lang) %}
+<div class="page-bar">
+	{{ navigation.pagination(view.pagination, lang) }}
+	{% if view.replyUrl or view.topic.closed %}
+	<p class="page-bar__actions">
+		{% if view.topic.closed %}<span class="badge">{{ lang.topic.topicClosed }}</span>{% endif %}
+		{% if view.replyUrl %}<a class="button button--primary" href="{{ url(view.replyUrl) }}">{{ lang.topic.postReply }}</a>{% endif %}
+	</p>
+	{% endif %}
+</div>
+{% endmacro %}
 
 {% block main %}
-<div class="linkst">
-	<div class="inbox crumbsplus">
-		{{ nav.crumbs(view, lang) }}
-		{{ nav.pagepost(view, lang) }}
-		<div class="clearer"></div>
-	</div>
-</div>
+{{ navigation.breadcrumbs(view.crumbs, lang) }}
+<h1 class="page-title">{{ view.topic.subject }}</h1>
+{{ topicBar(view, lang) }}
 
+<div class="post-list">
 {% for post in view.posts %}
-<div id="p{{ post.id }}" class="blockpost {{ post.rowClass }}{% if post.isFirstPost %} firstpost{% endif %}{% if loop.first %} blockpost1{% endif %}">
-	<h2><span><span class="conr">#{{ post.number }}</span> <a href="viewtopic.php?pid={{ post.id }}#p{{ post.id }}">{{ post.postedAt }}</a></span></h2>
-	<div class="box">
-		<div class="inbox">
-			<div class="postbody">
-				<div class="postleft">
-					<dl>
-						<dt><strong>{% if post.profileUrl %}<a href="{{ url(post.profileUrl) }}">{{ post.username }}</a>{% else %}{{ post.username }}{% endif %}</strong></dt>
-						<dd class="usertitle"><strong>{{ post.userTitle }}</strong></dd>
-						{% if post.avatarUrl %}<dd class="postavatar"><img src="{{ post.avatarUrl }}" alt="" /></dd>{% endif %}
-						{% if post.location %}<dd><span>{{ lang.from }} {{ post.location }}</span></dd>{% endif %}
-						{% if post.registeredAt %}<dd><span>{{ lang.registered }} {{ post.registeredAt }}</span></dd>{% endif %}
-						{% if post.numPosts !== null %}<dd><span>{{ lang.posts }} {{ post.numPosts }}</span></dd>{% endif %}
-						{% if post.ip %}<dd><span><a href="{{ url('moderate.php?get_host=' ~ post.id) }}" title="{{ post.ip }}">{{ lang.ipLogged }}</a></span></dd>{% endif %}
-						{% if post.adminNote %}<dd><span>{{ lang.note }} <strong>{{ post.adminNote }}</strong></span></dd>{% endif %}
-						{% if post.emailUrl or post.websiteUrl %}
-						<dd class="usercontacts">
-							{% if post.emailUrl %}<span class="email"><a href="{{ url(post.emailUrl) }}">{{ lang.email }}</a></span>{% endif %}
-							{% if post.websiteUrl %}<span class="website"><a href="{{ post.websiteUrl }}" rel="nofollow">{{ lang.website }}</a></span>{% endif %}
-						</dd>
-						{% endif %}
-					</dl>
-				</div>
-				<div class="postright">
-					<h3>{% if not post.isFirstPost %}{{ lang.re }} {% endif %}{{ view.topic.subject }}</h3>
-					<div class="postmsg">
-						{{ post.messageHtml | safe }}
-						{% if post.edited %}<p class="postedit"><em>{{ lang.lastEdit }} {{ post.edited.by }} ({{ post.edited.at }})</em></p>{% endif %}
-					</div>
-					{% if post.signatureHtml %}<div class="postsignature postmsg"><hr />{{ post.signatureHtml | safe }}</div>{% endif %}
-				</div>
-			</div>
-		</div>
-		<div class="inbox">
-			<div class="postfoot clearb">
-				<div class="postfootleft">{% if post.isOnline !== null %}<p>{% if post.isOnline %}<strong>{{ lang.online }}</strong>{% else %}<span>{{ lang.offline }}</span>{% endif %}</p>{% endif %}</div>
-				{% if post.actions.report or post.actions.delete or post.actions.edit or post.actions.quote %}
-				<div class="postfootright">
-					<ul>
-						{% if post.actions.report %}<li class="postreport"><span><a href="{{ url('misc.php?report=' ~ post.id) }}">{{ lang.report }}</a></span></li>{% endif %}
-						{% if post.actions.delete %}<li class="postdelete"><span><a href="{{ url('delete.php?id=' ~ post.id) }}">{{ lang.delete }}</a></span></li>{% endif %}
-						{% if post.actions.edit %}<li class="postedit"><span><a href="{{ url('edit.php?id=' ~ post.id) }}">{{ lang.edit }}</a></span></li>{% endif %}
-						{% if post.actions.quote %}<li class="postquote"><span><a href="{{ url('post.php?tid=' ~ view.topic.id ~ '&qid=' ~ post.id) }}">{{ lang.quote }}</a></span></li>{% endif %}
-					</ul>
-				</div>
-				{% endif %}
-			</div>
-		</div>
-	</div>
-</div>
-{% endfor %}
+<article id="p{{ post.id }}" class="post{% if post.isFirstPost %} post--first{% endif %}" aria-labelledby="p{{ post.id }}-title">
+	<h2 class="post__meta" id="p{{ post.id }}-title">
+		<a class="post__date" href="{{ post.permalink }}">{{ post.postedAt }}</a>
+		<span class="post__number"><span class="visually-hidden">{{ lang.topic.postNumber(post.number) }}</span><span aria-hidden="true">#{{ post.number }}</span></span>
+	</h2>
 
-<div class="postlinksb">
-	<div class="inbox crumbsplus">
-		{{ nav.pagepost(view, lang) }}
-		{{ nav.crumbs(view, lang) }}
-		<div class="clearer"></div>
+	<div class="post__author">
+		{% if post.avatarUrl %}<img class="post__avatar" src="{{ post.avatarUrl }}" alt="" loading="lazy">{% endif %}
+		<div class="post__identity">
+			<p class="post__username">{% if post.profileUrl %}<a href="{{ url(post.profileUrl) }}">{{ post.username }}</a>{% else %}{{ post.username }}{% endif %}</p>
+			<p class="post__usertitle">{{ post.userTitle }}</p>
+		</div>
+		<dl class="post__details">
+			{% if post.location %}<div><dt>{{ lang.topic.from }}</dt> <dd>{{ post.location }}</dd></div>{% endif %}
+			{% if post.registeredAt %}<div><dt>{{ lang.topic.registered }}</dt> <dd>{{ post.registeredAt }}</dd></div>{% endif %}
+			{% if post.numPosts !== null %}<div><dt>{{ lang.topic.posts }}</dt> <dd>{{ post.numPosts }}</dd></div>{% endif %}
+			{% if post.adminNote %}<div><dt>{{ lang.topic.note }}</dt> <dd><strong>{{ post.adminNote }}</strong></dd></div>{% endif %}
+		</dl>
+		{% if post.ip or post.emailUrl or post.websiteUrl %}
+		<ul class="post__contacts">
+			{% if post.ip %}<li><a href="{{ url('moderate.php?get_host=' ~ post.id) }}" title="{{ post.ip }}">{{ lang.topic.ipAddressLogged }}</a></li>{% endif %}
+			{% if post.emailUrl %}<li><a href="{{ url(post.emailUrl) }}">{{ lang.topic.email }}</a></li>{% endif %}
+			{% if post.websiteUrl %}<li><a href="{{ post.websiteUrl }}" rel="nofollow ugc">{{ lang.topic.website }}</a></li>{% endif %}
+		</ul>
+		{% endif %}
 	</div>
+
+	<div class="post__content">
+		<p class="post__subject">{% if not post.isFirstPost %}{{ lang.topic.re }} {% endif %}{{ view.topic.subject }}</p>
+		{#- HTML produit par parseBbcode() : texte échappé avant de reconnaître les balises (services/bbcode.ts). #}
+		<div class="post__message bbcode">{{ post.messageHtml | safe }}</div>
+		{% if post.edited %}<p class="post__edited"><em>{{ lang.topic.lastEdit }} {{ post.edited.by }} ({{ post.edited.at }})</em></p>{% endif %}
+		{#- Même origine que messageHtml : parseBbcode(). #}
+		{% if post.signatureHtml %}<div class="post__signature bbcode">{{ post.signatureHtml | safe }}</div>{% endif %}
+	</div>
+
+	<footer class="post__footer">
+		{% if post.isOnline !== null %}<p class="post__presence{% if post.isOnline %} post__presence--online{% endif %}">{% if post.isOnline %}{{ lang.topic.online }}{% else %}{{ lang.topic.offline }}{% endif %}</p>{% endif %}
+		{% if post.actions.report or post.actions.delete or post.actions.edit or post.actions.quote %}
+		<ul class="post__actions">
+			{% if post.actions.report %}<li class="postreport"><a href="{{ url('misc.php?report=' ~ post.id) }}">{{ lang.topic.report }}</a></li>{% endif %}
+			{% if post.actions.delete %}<li class="postdelete"><a href="{{ url('delete.php?id=' ~ post.id) }}">{{ lang.topic.delete }}</a></li>{% endif %}
+			{% if post.actions.edit %}<li class="postedit"><a href="{{ url('edit.php?id=' ~ post.id) }}">{{ lang.topic.edit }}</a></li>{% endif %}
+			{% if post.actions.quote %}<li class="postquote"><a href="{{ url('post.php?tid=' ~ view.topic.id ~ '&qid=' ~ post.id) }}">{{ lang.topic.quote }}</a></li>{% endif %}
+		</ul>
+		{% endif %}
+	</footer>
+</article>
+{% endfor %}
 </div>
+
+{{ topicBar(view, lang) }}
+{{ navigation.breadcrumbs(view.crumbs, lang) }}
 {% endblock %}

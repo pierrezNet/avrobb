@@ -1,0 +1,34 @@
+{#- Fil d'Ariane et pagination, communs à toutes les pages (presenters/navigation.ts). -#}
+
+{% macro breadcrumbs(items, lang) %}
+<nav class="breadcrumbs" aria-label="{{ lang.common.breadcrumbs }}">
+	<ol>
+	{% for crumb in items %}
+		<li>{% if crumb.current %}<a href="{{ url(crumb.href) }}" aria-current="page"><strong>{{ crumb.label }}</strong></a>{% else %}<a href="{{ url(crumb.href) }}">{{ crumb.label }}</a>{% endif %}</li>
+	{% endfor %}
+	</ol>
+</nav>
+{% endmacro %}
+
+{% macro pagination(links, lang) %}
+<nav class="pagination" aria-label="{{ lang.common.pages }}">
+	<span class="pagination__label" aria-hidden="true">{{ lang.common.pages }}</span>
+	<ul>
+	{% for link in links %}
+		<li>
+		{%- if link.kind == 'previous' -%}
+			<a rel="prev" href="{{ url(link.href) }}">{{ lang.common.previous }}</a>
+		{%- elif link.kind == 'next' -%}
+			<a rel="next" href="{{ url(link.href) }}">{{ lang.common.next }}</a>
+		{%- elif link.kind == 'gap' -%}
+			<span class="pagination__gap">{{ lang.common.spacer }}</span>
+		{%- elif link.current -%}
+			<strong aria-current="page">{{ link.page }}</strong>
+		{%- else -%}
+			<a href="{{ url(link.href) }}">{{ link.page }}</a>
+		{%- endif -%}
+		</li>
+	{% endfor %}
+	</ul>
+</nav>
+{% endmacro %}

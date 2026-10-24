@@ -1,0 +1,23 @@
+/* Thème GreenDeal de Pilote-Virtuel (style/GreenDeal.css), réduit à ses couleurs. */
+
+:root {
+	color-scheme: light;
+	--color-bg: #f0f9f3;
+	--color-surface: #f4fdf7;
+	--color-surface-alt: #ebfdf1;
+	--color-text: #2c3e2d;
+	--color-muted: #4e5f4f;
+	--color-link: #2a6f46;
+	--color-link-hover: #1e3e2e;
+	--color-accent: #3a785a;
+	--color-accent-text: #ffffff;
+	--color-header-bg: #1e3e2e;
+	--color-header-text: #ffffff;
+	--color-active: #4a7c59;
+	--color-border: #cedec9;
+	--color-code-bg: #eaf5ec;
+	--color-quote-bg: #fff4d7;
+	--color-button-bg: #d4e2d0;
+	--color-button-text: #1e3e2e;
+	--color-focus: #2f8b4a;
+}

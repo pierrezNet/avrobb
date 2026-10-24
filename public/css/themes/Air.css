@@ -1,0 +1,23 @@
+/* Thème Air de Pilote-Virtuel (style/Air.css), réduit à ses couleurs. */
+
+:root {
+	color-scheme: light;
+	--color-bg: #ebf3fb;
+	--color-surface: #fafdff;
+	--color-surface-alt: #f2f6fb;
+	--color-text: #333333;
+	--color-muted: #55606c;
+	--color-link: #2365b0;
+	--color-link-hover: #b50000;
+	--color-accent: #44699c;
+	--color-accent-text: #ffffff;
+	--color-header-bg: #1a293e;
+	--color-header-text: #ffffff;
+	--color-active: #b50000;
+	--color-border: #cfd9e4;
+	--color-code-bg: #f1f5f9;
+	--color-quote-bg: #fbf3d3;
+	--color-button-bg: #d4dae2;
+	--color-button-text: #1a293e;
+	--color-focus: #b50000;
+}

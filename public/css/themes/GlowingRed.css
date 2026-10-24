@@ -1,0 +1,23 @@
+/* Thème GlowingRed de Pilote-Virtuel (style/GlowingRed.css), réduit à ses couleurs. */
+
+:root {
+	color-scheme: light;
+	--color-bg: #fcefee;
+	--color-surface: #feebeb;
+	--color-surface-alt: #fce9e9;
+	--color-text: #4d1c1c;
+	--color-muted: #6e3a3a;
+	--color-link: #a82828;
+	--color-link-hover: #600202;
+	--color-accent: #b32424;
+	--color-accent-text: #ffffff;
+	--color-header-bg: #600202;
+	--color-header-text: #ffffff;
+	--color-active: #990000;
+	--color-border: #f1b5b5;
+	--color-code-bg: #fce7e6;
+	--color-quote-bg: #fff5cc;
+	--color-button-bg: #f3dada;
+	--color-button-text: #600202;
+	--color-focus: #d12b2b;
+}

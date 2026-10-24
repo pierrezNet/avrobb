@@ -5,6 +5,12 @@
 
 import type { Generated } from 'kysely';
 
+export interface CategoriesTable {
+	id: Generated<number>;
+	cat_name: string;
+	disp_position: number;
+}
+
 export interface ConfigTable {
 	conf_name: string;
 	conf_value: string | null;
@@ -13,7 +19,9 @@ export interface ConfigTable {
 export interface ForumsTable {
 	id: Generated<number>;
 	forum_name: string;
+	redirect_url: string | null;
 	moderators: string | null;
+	disp_position: number;
 	cat_id: number;
 }
 
@@ -38,6 +46,17 @@ export interface GroupsTable {
 	g_delete_posts: number;
 	g_delete_topics: number;
 	g_send_email: number;
+	g_search: number;
+	g_pm: number;
+	g_pm_limit: number;
+}
+
+/** Messagerie privée (mod APMS) : une ligne par exemplaire d'un message, `owner` étant son détenteur. */
+export interface MessagesTable {
+	id: Generated<number>;
+	owner: number;
+	showed: number;
+	show_message: number;
 }
 
 export interface OnlineTable {
@@ -57,6 +76,11 @@ export interface PostsTable {
 	edited: number | null;
 	edited_by: string | null;
 	topic_id: number;
+}
+
+export interface ReportsTable {
+	id: Generated<number>;
+	zapped: number | null;
 }
 
 export interface TopicsTable {
@@ -89,18 +113,37 @@ export interface UsersTable {
 	dst: number;
 	num_posts: number;
 	registered: number;
+	last_visit: number;
 	admin_note: string | null;
+	style: string;
+	use_pm: number;
+	num_pms: number;
 }
 
 export interface Database {
+	categories: CategoriesTable;
 	config: ConfigTable;
 	forums: ForumsTable;
 	forum_perms: ForumPermsTable;
 	groups: GroupsTable;
+	messages: MessagesTable;
 	online: OnlineTable;
 	posts: PostsTable;
+	reports: ReportsTable;
 	topics: TopicsTable;
 	users: UsersTable;
 }
 
-export const TABLE_NAMES: readonly (keyof Database)[] = ['config', 'forums', 'forum_perms', 'groups', 'online', 'posts', 'topics', 'users'];
+export const TABLE_NAMES: readonly (keyof Database)[] = [
+	'categories',
+	'config',
+	'forums',
+	'forum_perms',
+	'groups',
+	'messages',
+	'online',
+	'posts',
+	'reports',
+	'topics',
+	'users',
+];

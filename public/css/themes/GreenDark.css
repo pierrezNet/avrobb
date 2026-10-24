@@ -1,0 +1,23 @@
+/* Thème GreenDark de Pilote-Virtuel (style/GreenDark.css), réduit à ses couleurs. */
+
+:root {
+	color-scheme: dark;
+	--color-bg: #134a2d;
+	--color-surface: #242424;
+	--color-surface-alt: #1a1a1a;
+	--color-text: #cfcfcf;
+	--color-muted: #a3ada5;
+	--color-link: #6fcf9a;
+	--color-link-hover: #ffffff;
+	--color-accent: #2f6e4d;
+	--color-accent-text: #ffffff;
+	--color-header-bg: #173825;
+	--color-header-text: #ffffff;
+	--color-active: #05311b;
+	--color-border: #2e3e2f;
+	--color-code-bg: #1d3224;
+	--color-quote-bg: #3b2d15;
+	--color-button-bg: #d2e6d2;
+	--color-button-text: #173825;
+	--color-focus: #6fcf9a;
+}

@@ -1,0 +1,163 @@
+/**
+ * Mise en page commune : presenter (menu selon les droits, statut, MP, pied) et rendu via app.inject().
+ */
+
+import type { FastifyInstance } from 'fastify';
+import { afterEach, describe, expect, it } from 'vitest';
+import { buildApp } from '../src/app.ts';
+import { GroupId } from '../src/domain/models.ts';
+import { fr, frDateWords } from '../src/lang/fr/index.ts';
+import { buildLayout, type LayoutInput, pageTitle } from '../src/presenters/layout.ts';
+import { forumHmac, logoutToken } from '../src/services/legacySession.ts';
+import { boardConfig, fakeDeps, forumCategories, group, guest, NOW, topic, viewer } from './fixtures.ts';
+
+const mod = viewer({ id: 5, username: 'MaxDUO', group: group({ id: GroupId.Moderator, isModerator: true }) });
+
+function input(overrides: Partial<LayoutInput> = {}): LayoutInput {
+	return {
+		viewer: viewer(),
+		config: boardConfig,
+		lang: fr,
+		dateWords: frDateWords,
+		now: NOW,
+		remoteAddress: '127.0.0.1',
+		options: { pageId: 'test', titleParts: ['Forum', 'Page'] },
+		pendingReports: false,
+		unreadPrivateMessages: 0,
+		forums: null,
+		...overrides,
+	};
+}
+
+const navIds = (layout: ReturnType<typeof buildLayout>): string[] => layout.nav.map((item) => item.id);
+
+describe('pageTitle', () => {
+	it('inverse les parties comme generate_page_title()', () => {
+		expect(pageTitle(['Forum', 'Section', 'Sujet'], 2, fr)).toBe('Sujet (Page 2) / Section / Forum');
+		expect(pageTitle(['Forum'], null, fr)).toBe('Forum');
+	});
+});
+
+describe('buildLayout', () => {
+	it('menu invité : inscription et identification, pas de profil', () => {
+		const layout = buildLayout(input({ viewer: guest }));
+		expect(navIds(layout)).toEqual(['navindex', 'navuserlist', 'navsearch', 'navregister', 'navlogin']);
+		expect(layout.status).toBeNull();
+		expect(layout.quickSearches.map((s) => s.label)).toEqual(['Récentes', 'Sans réponse']);
+	});
+
+	it('menu membre : profil et déconnexion avec le jeton de login.php', () => {
+		const layout = buildLayout(input({ options: { pageId: 'x', titleParts: [], activeNav: 'index' } }));
+		expect(navIds(layout)).toEqual(['navindex', 'navuserlist', 'navsearch', 'navprofile', 'navlogout']);
+		expect(layout.nav[0]?.active).toBe(true);
+		expect(layout.nav.at(-1)?.href).toBe(`login.php?action=out&id=3&csrf_token=${logoutToken(3, '127.0.0.1')}`);
+		expect(layout.quickSearches).toHaveLength(4);
+		expect(layout.status?.showAdminLink).toBe(false);
+	});
+
+	it('masque liste des membres et recherche selon le groupe, affiche les règles si activées', () => {
+		const restricted = viewer({ group: group({ canViewUsers: false, canSearch: false }) });
+		const layout = buildLayout(input({ viewer: restricted, config: { ...boardConfig, rules: true } }));
+		expect(navIds(layout)).toEqual(['navindex', 'navrules', 'navprofile', 'navlogout']);
+		expect(layout.quickSearches).toEqual([]);
+	});
+
+	it('insère les liens additionnels à la position demandée', () => {
+		const config = { ...boardConfig, additionalNavlinks: '1 = <a href="/wiki">Wiki</a>\n10 = <a href="/x">X</a>' };
+		const layout = buildLayout(input({ viewer: guest, config }));
+		expect(navIds(layout)).toEqual(['navindex', 'navextra1', 'navuserlist', 'navsearch', 'navregister', 'navlogin', 'navextra2']);
+		expect(layout.nav[1]?.trustedHtml).toBe('<a href="/wiki">Wiki</a>');
+	});
+
+	it('liens de modération : signalements et maintenance pour les modérateurs seulement', () => {
+		const config = { ...boardConfig, maintenance: true };
+		expect(buildLayout(input({ viewer: mod, config, pendingReports: true })).status).toMatchObject({
+			showAdminLink: true,
+			pendingReports: true,
+			maintenance: true,
+		});
+		expect(buildLayout(input({ config, pendingReports: true })).status).toMatchObject({ pendingReports: false, maintenance: false });
+		const emailOnly = { ...boardConfig, reportsByBoard: false };
+		expect(buildLayout(input({ viewer: mod, config: emailOnly, pendingReports: true })).status?.pendingReports).toBe(false);
+	});
+
+	it('messagerie privée : lien, nouveaux messages et remplissage des boîtes', () => {
+		const config = { ...boardConfig, privateMessagesEnabled: true };
+		const limited = viewer({ group: group({ privateMessageLimit: 50 }), privateMessageCount: 10 });
+		const layout = buildLayout(input({ viewer: limited, config, unreadPrivateMessages: 2 }));
+
+		expect(layout.nav.find((item) => item.id === 'navpm')).toMatchObject({ label: 'MP', count: 2, abbrTitle: 'Messages privés' });
+		expect(layout.status?.unreadPrivateMessages).toBe('Vous avez 2 messages privés non lus !');
+		expect(layout.status?.privateMessageBox).toEqual({ kind: 'filled', percent: 20, text: 'Boîtes de messages privés pleines à 20 %' });
+
+		const full = viewer({ group: group({ privateMessageLimit: 10 }), privateMessageCount: 10 });
+		expect(buildLayout(input({ viewer: full, config })).status?.privateMessageBox?.kind).toBe('full');
+		expect(buildLayout(input({ viewer: limited })).nav.some((item) => item.id === 'navpm')).toBe(false);
+		expect(buildLayout(input({ viewer: viewer({ usesPrivateMessages: false }), config })).nav.some((item) => item.id === 'navpm')).toBe(
+			false,
+		);
+	});
+
+	it('pied de viewtopic : flux, quickjump sur le forum courant, modération du forum', () => {
+		const modTopic = topic({ id: 10, closed: true, forum: { id: 2, name: 'F', moderators: new Map([['MaxDUO', 5]]) } });
+		const options = { pageId: 'viewtopic', titleParts: [], footer: { kind: 'viewtopic' as const, topic: modTopic, page: 1 } };
+
+		const layout = buildLayout(input({ viewer: mod, options, forums: forumCategories }));
+		expect(layout.feed).toMatchObject({ href: 'extern.php?action=feed&tid=10&type=atom', mimeType: 'application/atom+xml' });
+		expect(layout.quickjump?.categories[1]?.forums[0]).toEqual({ id: 2, label: 'Captures & Vidéos', selected: true });
+		expect(layout.modControls.map((c) => c.href)).toContain('moderate.php?fid=2&open=10');
+
+		expect(buildLayout(input({ options, forums: forumCategories })).modControls).toEqual([]);
+		const otherMod = viewer({ id: 6, username: 'Autre', group: group({ id: GroupId.Moderator, isModerator: true }) });
+		expect(buildLayout(input({ viewer: otherMod, options })).modControls).toEqual([]);
+	});
+
+	it("thème : celui du membre s'il est connu, sinon celui du forum ; toujours celui du forum pour un invité", () => {
+		expect(buildLayout(input({ viewer: viewer({ style: 'GreenDark' }) })).theme).toBe('GreenDark');
+		expect(buildLayout(input({ viewer: viewer({ style: '../../etc' }) })).theme).toBe('Air');
+		const config = { ...boardConfig, defaultStyle: 'Lagon' };
+		expect(buildLayout(input({ viewer: { ...guest, style: 'GreenDark' }, config })).theme).toBe('Lagon');
+	});
+});
+
+describe('rendu de la mise en page', () => {
+	let app: FastifyInstance;
+	afterEach(async () => app.close());
+
+	const users = [
+		{ viewer: guest, passwordHash: '' },
+		{ viewer: mod, passwordHash: 'hash-mod' },
+	];
+	const cookie = (userId: number, hash: string): string => {
+		const expires = NOW + 3600;
+		return `punbb_cookie=${userId}|${forumHmac(hash, 'graine-de-test_password_hash')}|${expires}|${forumHmac(`${userId}|${expires}`, 'graine-de-test_cookie_hash')}`;
+	};
+
+	it("affiche l'annonce, le quickjump, les signalements et le thème", async () => {
+		const config = { announcement: '<b>Maintenance dimanche</b>' };
+		app = await buildApp(fakeDeps({ users, topics: [], posts: new Map(), config, pendingReports: true }));
+
+		const res = await app.inject({ url: '/nimporte.php', headers: { cookie: cookie(5, 'hash-mod') } });
+		expect(res.statusCode).toBe(404);
+		expect(res.body).toContain('<b>Maintenance dimanche</b>');
+		expect(res.body).toContain('<optgroup label="Ateliers">');
+		expect(res.body).toContain('href="http://php.test/admin_reports.php"');
+		expect(res.body).toMatch(/href="\/assets\/css\/themes\/Air\.css\?v=[0-9a-f]{10}"/);
+	});
+
+	it('sert les feuilles de style sans interroger la base', async () => {
+		const deps = fakeDeps({ users, topics: [], posts: new Map() });
+		app = await buildApp({
+			...deps,
+			config: {
+				load: async () => {
+					throw new Error('pas de base pour un fichier statique');
+				},
+			},
+		});
+
+		const res = await app.inject('/assets/css/base.css');
+		expect(res.statusCode).toBe(200);
+		expect(res.headers['cache-control']).toContain('immutable');
+	});
+});

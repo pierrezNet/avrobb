@@ -7,17 +7,17 @@
  */
 
 import { type BoardConfig, GroupId, type Post, type Topic, type Viewer } from '../domain/models.ts';
-import type { Lang } from '../lang/fr.ts';
+import type { Lang } from '../lang/fr/index.ts';
 import { parseBbcode } from '../services/bbcode.ts';
 import { type DateWords, formatTime, type TimeSettings } from '../services/dateFormat.ts';
-import { type PageLink, paginate } from '../services/pagination.ts';
 import { canReply, isAnyModerator, type PostActionRights, postActions } from '../services/permissions.ts';
+import { type Crumb, crumbs, type PaginationLink, paginationLinks } from './navigation.ts';
 
 export interface PostView {
 	id: number;
 	number: number;
 	isFirstPost: boolean;
-	rowClass: 'rowodd' | 'roweven';
+	permalink: string;
 	postedAt: string;
 	username: string;
 	profileUrl: string | null;
@@ -40,10 +40,10 @@ export interface PostView {
 
 export interface TopicPageView {
 	topic: { id: number; subject: string; closed: boolean };
-	forum: { id: number; name: string };
-	page: number;
-	pagination: PageLink[];
-	canReply: boolean;
+	crumbs: Crumb[];
+	pagination: PaginationLink[];
+	/** Lien « Répondre » ; null si le membre ne peut pas répondre. */
+	replyUrl: string | null;
 	posts: PostView[];
 }
 
@@ -64,10 +64,15 @@ export interface TopicPageInput {
 
 /** Titre affiché sous le nom (get_title() de FluxBB, sans les rangs ni les bannissements). */
 function userTitle(post: Post, lang: Lang): string {
-	if (post.author === null) return lang.guest;
+	if (post.author === null) return lang.common.guest;
 	if (post.author.title !== '') return post.author.title;
 	if (post.author.groupUserTitle !== '') return post.author.groupUserTitle;
-	return lang.member;
+	return lang.common.member;
+}
+
+/** URL d'une page du sujet (la page 1 n'a pas de paramètre p, comme dans FluxBB). */
+export function topicUrl(topicId: number, page = 1): string {
+	return page > 1 ? `viewtopic.php?id=${topicId}&p=${page}` : `viewtopic.php?id=${topicId}`;
 }
 
 export function buildTopicPage(input: TopicPageInput): TopicPageView {
@@ -102,7 +107,7 @@ export function buildTopicPage(input: TopicPageInput): TopicPageView {
 			id: post.id,
 			number: position,
 			isFirstPost: post.id === topic.firstPostId,
-			rowClass: index % 2 === 0 ? 'rowodd' : 'roweven',
+			permalink: `viewtopic.php?pid=${post.id}#p${post.id}`,
 			postedAt: format(post.posted),
 			username: post.username,
 			profileUrl: author !== null && viewer.group.canViewUsers ? `profile.php?id=${author.id}` : null,
@@ -128,10 +133,13 @@ export function buildTopicPage(input: TopicPageInput): TopicPageView {
 
 	return {
 		topic: { id: topic.id, subject: topic.subject, closed: topic.closed },
-		forum: { id: topic.forum.id, name: topic.forum.name },
-		page: input.page,
-		pagination: paginate(input.numPages, input.page),
-		canReply: canReply(viewer, topic),
+		crumbs: crumbs(
+			{ label: lang.common.index, href: 'index.php' },
+			{ label: topic.forum.name, href: `viewforum.php?id=${topic.forum.id}` },
+			{ label: topic.subject, href: topicUrl(topic.id) },
+		),
+		pagination: paginationLinks(input.numPages, input.page, (page) => topicUrl(topic.id, page)),
+		replyUrl: canReply(viewer, topic) ? `post.php?tid=${topic.id}` : null,
 		posts,
 	};
 }

@@ -40,7 +40,7 @@ describe('GET /viewtopic.php', () => {
 		expect(res.body).not.toContain('<script>alert(1)');
 		expect(res.body).toContain('<strong>gras</strong>');
 		expect(res.body).not.toContain('<img src=x');
-		expect(res.body).toContain('Vous n&#39;êtes pas connecté(e).');
+		expect(res.body).toContain('Vous n&#39;êtes pas identifié(e).');
 		expect(res.body).not.toContain('class="postdelete"');
 	});
 
@@ -56,11 +56,12 @@ describe('GET /viewtopic.php', () => {
 		app = await buildApp(fakeDeps(data()));
 
 		const valid = await app.inject({ url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(3, 'hash-tessy') } });
-		expect(valid.body).toContain('Connecté(e) en tant que <strong>Tessy</strong>');
+		expect(valid.body).toContain('<strong>Tessy</strong>');
+		expect(valid.body).toContain('id="navlogout"');
 		expect(valid.body).toContain('class="postedit"');
 
 		const forged = await app.inject({ url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(2, 'mauvais-hash') } });
-		expect(forged.body).toContain('Vous n&#39;êtes pas connecté(e).');
+		expect(forged.body).toContain('Vous n&#39;êtes pas identifié(e).');
 	});
 
 	it('redirige ?pid= vers la bonne page du sujet', async () => {
@@ -79,8 +80,53 @@ describe('GET /viewtopic.php', () => {
 		const res = await app.inject('/viewtopic.php?id=20&p=2');
 		expect(res.body).toContain('id="p225"');
 		expect(res.body).not.toContain('id="p224"');
-		expect(res.body).toContain('<strong>2</strong>');
+		expect(res.body).toContain('<strong aria-current="page">2</strong>');
 		expect(res.body).toContain('href="http://php.test/viewforum.php?id=1"');
 		expect(res.body).toContain('href="viewtopic.php?id=20"');
+	});
+});
+
+describe('gestion des erreurs', () => {
+	it('renvoie une page 500 générique, sans détail technique', async () => {
+		const deps = fakeDeps(data());
+		app = await buildApp({
+			...deps,
+			posts: {
+				listPage: async () => {
+					throw new Error("SELECT * FROM fo_posts : Table 'secret' doesn't exist");
+				},
+			},
+		});
+
+		const res = await app.inject('/viewtopic.php?id=10');
+		expect(res.statusCode).toBe(500);
+		expect(res.headers['content-type']).toContain('text/html');
+		expect(res.body).toContain('Une erreur est survenue');
+		expect(res.body).not.toContain('fo_posts');
+		expect(res.body).toContain('id="brdmenu"');
+	});
+
+	it('se contente de la mise en page minimale si la base est indisponible', async () => {
+		const deps = fakeDeps(data());
+		app = await buildApp({
+			...deps,
+			config: {
+				load: async () => {
+					throw new Error('connect ECONNREFUSED 127.0.0.1:3307');
+				},
+			},
+		});
+
+		const res = await app.inject('/viewtopic.php?id=10');
+		expect(res.statusCode).toBe(500);
+		expect(res.body).toContain('Une erreur est survenue');
+		expect(res.body).not.toContain('ECONNREFUSED');
+	});
+
+	it('rend les URL inconnues en 404 dans la mise en page', async () => {
+		app = await buildApp(fakeDeps(data()));
+		const res = await app.inject('/inconnu');
+		expect(res.statusCode).toBe(404);
+		expect(res.body).toContain('Le lien que vous avez suivi est incorrect');
 	});
 });

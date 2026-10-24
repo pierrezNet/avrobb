@@ -25,6 +25,11 @@ export interface Group {
 	canDeletePosts: boolean;
 	canDeleteTopics: boolean;
 	canSendEmail: boolean;
+	canSearch: boolean;
+	/** Messagerie privée autorisée au groupe (g_pm, mod APMS). */
+	canUsePrivateMessages: boolean;
+	/** Nombre maximal de MP conservés (g_pm_limit) ; 0 = illimité. */
+	privateMessageLimit: number;
 }
 
 /** Utilisateur qui consulte la page (invité ou membre connecté). */
@@ -39,6 +44,14 @@ export interface Viewer {
 	dst: boolean;
 	showAvatars: boolean;
 	showSignatures: boolean;
+	/** Date de la visite précédente (users.last_visit), en secondes Unix. */
+	lastVisit: number;
+	/** Thème choisi (users.style), à valider avant usage : voir services/themes.ts. */
+	style: string;
+	/** Le membre a activé la messagerie privée (users.use_pm). */
+	usesPrivateMessages: boolean;
+	/** MP conservés dans ses boîtes (users.num_pms). */
+	privateMessageCount: number;
 }
 
 export interface Forum {
@@ -90,9 +103,13 @@ export interface Post {
 	author: PostAuthor | null;
 }
 
+/** Format des liens de flux de syndication (o_feed_type). */
+export type FeedType = 'none' | 'rss' | 'atom';
+
 /** Réglages du forum (table config) utiles à l'affichage. */
 export interface BoardConfig {
 	boardTitle: string;
+	defaultStyle: string;
 	defaultPostsPerPage: number;
 	dateFormat: string;
 	timeFormat: string;
@@ -103,4 +120,33 @@ export interface BoardConfig {
 	avatarsDir: string;
 	bbcode: boolean;
 	imgTag: boolean;
+	/** Lien « Règles » dans le menu (o_rules). */
+	rules: boolean;
+	registrationsAllowed: boolean;
+	/** Liens de menu supplémentaires, en HTML saisi par l'administrateur (o_additional_navlinks). */
+	additionalNavlinks: string;
+	/** Signalements reçus dans le forum (o_report_method 0 ou 2) ou seulement par e-mail. */
+	reportsByBoard: boolean;
+	maintenance: boolean;
+	/** Annonce affichée en haut de chaque page ; null si désactivée (HTML saisi par l'administrateur). */
+	announcement: string | null;
+	quickjump: boolean;
+	feedType: FeedType;
+	/** Version de FluxBB affichée dans « Propulsé par » ; null si o_show_version est désactivé. */
+	shownVersion: string | null;
+	privateMessagesEnabled: boolean;
+}
+
+/** Forum proposé dans la liste « Atteindre » du pied de page. */
+export interface ForumLink {
+	id: number;
+	name: string;
+	/** Forum de redirection (forums.redirect_url) : FluxBB ajoute « >>> » au nom. */
+	isRedirect: boolean;
+}
+
+export interface ForumCategory {
+	id: number;
+	name: string;
+	forums: ForumLink[];
 }

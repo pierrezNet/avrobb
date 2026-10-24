@@ -1,0 +1,23 @@
+/* Thème fiftyGrey de Pilote-Virtuel (style/fiftyGrey.css), réduit à ses couleurs. */
+
+:root {
+	color-scheme: light;
+	--color-bg: #abc3e1;
+	--color-surface: #dfe5ef;
+	--color-surface-alt: #d3dae7;
+	--color-text: #2e3a4d;
+	--color-muted: #46546a;
+	--color-link: #2f5785;
+	--color-link-hover: #8a2b2b;
+	--color-accent: #526582;
+	--color-accent-text: #ffffff;
+	--color-header-bg: #526582;
+	--color-header-text: #ffffff;
+	--color-active: #8a2b2b;
+	--color-border: #a8b4c5;
+	--color-code-bg: #c7d2e1;
+	--color-quote-bg: #e9e2c8;
+	--color-button-bg: #b0bac9;
+	--color-button-text: #1f2836;
+	--color-focus: #8a2b2b;
+}

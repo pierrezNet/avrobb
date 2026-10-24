@@ -1,3 +1,7 @@
+/**
+ * Sujets : lecture avec les permissions du forum, localisation d'un message dans son sujet.
+ */
+
 import { sql } from 'kysely';
 import type { Db } from '../db/database.ts';
 import type { Topic } from '../domain/models.ts';

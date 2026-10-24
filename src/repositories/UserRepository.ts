@@ -1,3 +1,8 @@
+/**
+ * Membres et invité : chargement de l'utilisateur courant avec les droits de son groupe
+ * (l'équivalent de la requête de check_cookie() dans include/functions.php).
+ */
+
 import type { Db } from '../db/database.ts';
 import { type Group, GUEST_USER_ID, type Viewer } from '../domain/models.ts';
 
@@ -27,6 +32,10 @@ export class UserRepository implements UserReader {
 				'u.dst',
 				'u.show_avatars',
 				'u.show_sig',
+				'u.last_visit',
+				'u.style',
+				'u.use_pm',
+				'u.num_pms',
 				'g.g_id',
 				'g.g_title',
 				'g.g_user_title',
@@ -39,6 +48,9 @@ export class UserRepository implements UserReader {
 				'g.g_delete_posts',
 				'g.g_delete_topics',
 				'g.g_send_email',
+				'g.g_search',
+				'g.g_pm',
+				'g.g_pm_limit',
 			])
 			.where('u.id', '=', userId)
 			.executeTakeFirst();
@@ -58,6 +70,9 @@ export class UserRepository implements UserReader {
 			canDeletePosts: row.g_delete_posts === 1,
 			canDeleteTopics: row.g_delete_topics === 1,
 			canSendEmail: row.g_send_email === 1,
+			canSearch: row.g_search === 1,
+			canUsePrivateMessages: row.g_pm === 1,
+			privateMessageLimit: row.g_pm_limit,
 		};
 
 		return {
@@ -72,6 +87,10 @@ export class UserRepository implements UserReader {
 				dst: row.dst === 1,
 				showAvatars: row.show_avatars === 1,
 				showSignatures: row.show_sig === 1,
+				lastVisit: row.last_visit,
+				style: row.style,
+				usesPrivateMessages: row.use_pm === 1,
+				privateMessageCount: row.num_pms,
 			},
 		};
 	}

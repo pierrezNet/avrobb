@@ -1,3 +1,7 @@
+/**
+ * Messages d'un sujet, avec leur auteur, son groupe et sa présence en ligne (requête de viewtopic.php).
+ */
+
 import type { Db } from '../db/database.ts';
 import { GUEST_USER_ID, type Post } from '../domain/models.ts';
 

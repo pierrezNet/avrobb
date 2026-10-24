@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { type Database, TABLE_NAMES } from '../src/db/schema.ts';
 import { TablePrefixPlugin } from '../src/db/TablePrefixPlugin.ts';
 import { GroupId } from '../src/domain/models.ts';
-import { frDateWords } from '../src/lang/fr.ts';
+import { frDateWords } from '../src/lang/fr/index.ts';
 import { parseBbcode } from '../src/services/bbcode.ts';
 import { formatTime } from '../src/services/dateFormat.ts';
 import { forumHmac, isCookiePasswordValid, isCookieSignatureValid, parseLegacyCookie } from '../src/services/legacySession.ts';

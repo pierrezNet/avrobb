@@ -1,0 +1,23 @@
+/* Thème Lagon de Pilote-Virtuel (style/Lagon.css), réduit à ses couleurs. */
+
+:root {
+	color-scheme: light;
+	--color-bg: #e4e3d1;
+	--color-surface: #ffffff;
+	--color-surface-alt: #e4eaf2;
+	--color-text: #333333;
+	--color-muted: #55606c;
+	--color-link: #0060ab;
+	--color-link-hover: #b84a0f;
+	--color-accent: #0060ab;
+	--color-accent-text: #ffffff;
+	--color-header-bg: #004080;
+	--color-header-text: #ffffff;
+	--color-active: #0060ab;
+	--color-border: #9fbfdc;
+	--color-code-bg: #f1f1f1;
+	--color-quote-bg: #fbf3d3;
+	--color-button-bg: #ffffff;
+	--color-button-text: #004080;
+	--color-focus: #f26522;
+}

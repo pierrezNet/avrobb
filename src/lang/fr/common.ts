@@ -1,0 +1,91 @@
+/**
+ * Textes communs à toutes les pages : en-tête, pied, messages d'erreur, titres des membres.
+ * Source : lang/French/common.php de Pilote-Virtuel. Les espaces insécables (&#160;) y sont
+ * écrits « \u00a0 », et les chaînes à trous (%s) deviennent des fonctions.
+ */
+
+export const common = {
+	langCode: 'fr',
+
+	// Avis
+	badRequest: 'Erreur. Le lien que vous avez suivi est incorrect ou périmé.',
+	noView: "Vous n'êtes pas autorisé(e) à visiter ces forums.",
+	noPermission: "Vous n'êtes pas autorisé(e) à afficher cette page.",
+	/** Absent de FluxBB : remplace la page d'erreur technique de error(). */
+	serverError: 'Une erreur est survenue. Veuillez réessayer dans quelques instants.',
+
+	// Divers
+	announcement: 'Annonce',
+	info: 'Info',
+	goBack: 'Retour',
+	/** Absent de FluxBB : message() renvoie en arrière en JavaScript, ici un vrai lien. */
+	backToIndex: "Retour à l'accueil",
+	maintenance: 'Maintenance',
+	previous: 'Précédent',
+	next: 'Suivant',
+	spacer: '…',
+	pages: 'Pages\u00a0:',
+	page: (n: number) => `Page ${n}`,
+
+	// Titres
+	member: 'Membre',
+	moderator: 'Modérateur',
+	administrator: 'Administrateur',
+	banned: 'En vacances',
+	guest: 'Invité',
+
+	// Navigation (haut de chaque page)
+	skipToContent: 'Aller au contenu',
+	menu: 'Menu',
+	mainNav: 'Navigation principale',
+	breadcrumbs: "Fil d'Ariane",
+	index: 'Accueil',
+	userList: 'Liste des membres',
+	rules: 'Règles',
+	search: 'Recherche',
+	register: 'Inscription',
+	login: 'Identification',
+	notLoggedIn: "Vous n'êtes pas identifié(e).",
+	profile: 'Profil',
+	logout: 'Déconnexion',
+	loggedInAs: "Connecté(e) sous l'identité\u00a0",
+	admin: 'Administration',
+	lastVisit: (date: string) => `Dernière visite\u00a0: ${date}`,
+	topicSearches: 'Contributions\u00a0:',
+	newPostsHeader: 'Nouvelles',
+	activeTopics: 'Récentes',
+	unansweredTopics: 'Sans réponse',
+	postedTopics: 'Personnelles',
+	showNewPosts: 'Trouver les discussions avec de nouveaux messages depuis votre dernière visite.',
+	showActiveTopics: 'Trouver les discussions comportant des messages récents.',
+	showUnansweredTopics: 'Trouver les discussions sans réponse.',
+	showPostedTopics: 'Trouver les discussions auxquelles vous avez participé.',
+	titleSeparator: ' / ',
+
+	// Pied de page
+	boardFooter: 'Pied de page des forums',
+	/** « Mod controls » de lang/French/topic.php et forum.php. */
+	modControls: 'Modération',
+	jumpTo: 'Atteindre',
+	go: 'Aller',
+	moderateTopic: 'Modérer la discussion',
+	moveTopic: 'Déplacer la discussion',
+	openTopic: 'Ouvrir la discussion',
+	closeTopic: 'Fermer la discussion',
+	unstickTopic: 'Détacher la discussion',
+	stickTopic: 'Épingler la discussion',
+	moderateForum: 'Modérer le forum',
+	poweredBy: 'Propulsé par',
+
+	// Flux (extern.php)
+	rssActiveTopicsFeed: 'Flux RSS des discussions actives',
+	atomActiveTopicsFeed: 'Flux Atom des discussions actives',
+	rssForumFeed: 'Flux RSS du forum',
+	atomForumFeed: 'Flux Atom du forum',
+	rssTopicFeed: 'Flux RSS de la discussion',
+	atomTopicFeed: 'Flux Atom de la discussion',
+
+	// Liens d'administration de l'en-tête
+	newReports: 'De nouveaux signalements ont été envoyés\u00a0!',
+	maintenanceModeEnabled: 'Le mode maintenance est activé\u00a0!',
+};

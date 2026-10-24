@@ -3,8 +3,8 @@
  */
 
 import type { AppDeps } from '../src/app.ts';
-import { type BoardConfig, type Group, GroupId, type Post, type Topic, type Viewer } from '../src/domain/models.ts';
-import { fr, frDateWords } from '../src/lang/fr.ts';
+import { type BoardConfig, type ForumCategory, type Group, GroupId, type Post, type Topic, type Viewer } from '../src/domain/models.ts';
+import { fr, frDateWords } from '../src/lang/fr/index.ts';
 import type { PostLocation } from '../src/repositories/TopicRepository.ts';
 import type { ViewerRecord } from '../src/repositories/UserRepository.ts';
 
@@ -24,6 +24,9 @@ export function group(overrides: Partial<Group> = {}): Group {
 		canDeletePosts: true,
 		canDeleteTopics: true,
 		canSendEmail: true,
+		canSearch: true,
+		canUsePrivateMessages: true,
+		privateMessageLimit: 0,
 		...overrides,
 	};
 }
@@ -39,6 +42,10 @@ export function viewer(overrides: Partial<Viewer> = {}): Viewer {
 		dst: false,
 		showAvatars: true,
 		showSignatures: true,
+		lastVisit: NOW - 7200,
+		style: 'Air',
+		usesPrivateMessages: true,
+		privateMessageCount: 0,
 		...overrides,
 	};
 }
@@ -113,7 +120,23 @@ export const boardConfig: BoardConfig = {
 	avatarsDir: 'img/avatars',
 	bbcode: true,
 	imgTag: true,
+	defaultStyle: 'Air',
+	rules: false,
+	registrationsAllowed: true,
+	additionalNavlinks: '',
+	reportsByBoard: true,
+	maintenance: false,
+	announcement: null,
+	quickjump: true,
+	feedType: 'atom',
+	shownVersion: null,
+	privateMessagesEnabled: false,
 };
+
+export const forumCategories: ForumCategory[] = [
+	{ id: 1, name: 'Simulateurs', forums: [{ id: 1, name: 'Forum', isRedirect: false }] },
+	{ id: 2, name: 'Ateliers', forums: [{ id: 2, name: 'Captures & Vidéos', isRedirect: false }] },
+];
 
 export interface FakeData {
 	users: ViewerRecord[];
@@ -122,6 +145,10 @@ export interface FakeData {
 	posts: Map<number, Post[]>;
 	/** Groupes autorisés à lire chaque forum (absent = tous). */
 	forumReaders?: Map<number, number[]>;
+	config?: Partial<BoardConfig>;
+	pendingReports?: boolean;
+	/** MP non lus par membre. */
+	unreadPrivateMessages?: Map<number, number>;
 }
 
 export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppDeps {
@@ -129,7 +156,7 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 		[...data.posts].flatMap(([topicId, posts]) => posts.map((post, i) => ({ topicId, post, position: i + 1 })));
 
 	return {
-		config: { load: async () => boardConfig },
+		config: { load: async () => ({ ...boardConfig, ...data.config }) },
 		users: { findViewer: async (id) => data.users.find((u) => u.viewer.id === id) ?? null },
 		topics: {
 			findReadable: async (id, groupId) => {
@@ -144,10 +171,12 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			findLastPostId: async (topicId) => data.posts.get(topicId)?.at(-1)?.id ?? null,
 		},
 		posts: { listPage: async (topicId, offset, limit) => (data.posts.get(topicId) ?? []).slice(offset, offset + limit) },
+		forums: { listReadable: async () => forumCategories },
+		reports: { hasPending: async () => data.pendingReports ?? false },
+		privateMessages: { countUnread: async (userId) => data.unreadPrivateMessages?.get(userId) ?? 0 },
 		avatars: { urlFor: async () => null },
 		page: { lang: fr, dateWords: frDateWords, clock: () => NOW },
 		legacyCookie: { name: 'punbb_cookie', seed: 'graine-de-test' },
-		styleDir: '.',
 		legacyBaseUrl: 'http://php.test',
 		...overrides,
 	};

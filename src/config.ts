@@ -28,8 +28,7 @@ export interface AppConfig {
 function required(env: NodeJS.ProcessEnv, name: string): string {
 	const value = env[name];
 
-	if (value === undefined || value === '')
-		throw new Error(`Variable d'environnement manquante : ${name}`);
+	if (value === undefined || value === '') throw new Error(`Variable d'environnement manquante : ${name}`);
 
 	return value;
 }

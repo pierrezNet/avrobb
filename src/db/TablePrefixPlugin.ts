@@ -6,8 +6,8 @@
  */
 
 import {
-	OperationNodeTransformer,
 	type KyselyPlugin,
+	OperationNodeTransformer,
 	type PluginTransformQueryArgs,
 	type PluginTransformResultArgs,
 	type QueryResult,
@@ -30,8 +30,7 @@ class TablePrefixTransformer extends OperationNodeTransformer {
 		const transformed = super.transformTable(node);
 		const identifier = transformed.table.identifier;
 
-		if (!this.#tables.has(identifier.name))
-			return transformed;
+		if (!this.#tables.has(identifier.name)) return transformed;
 
 		return {
 			...transformed,

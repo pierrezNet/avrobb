@@ -20,11 +20,13 @@ export class FileAvatarLocator implements AvatarLocator {
 	 * @param legacyRoot racine de l'installation PHP sur le disque
 	 * @param legacyBaseUrl URL publique de cette installation
 	 */
-	constructor(private readonly legacyRoot: string, private readonly legacyBaseUrl: string) {}
+	constructor(
+		private readonly legacyRoot: string,
+		private readonly legacyBaseUrl: string,
+	) {}
 
 	async urlFor(userId: number, avatarsDir: string): Promise<string | null> {
-		if (this.#cache.has(userId))
-			return this.#cache.get(userId) ?? null;
+		if (this.#cache.has(userId)) return this.#cache.get(userId) ?? null;
 
 		let url: string | null = null;
 
@@ -34,8 +36,7 @@ export class FileAvatarLocator implements AvatarLocator {
 				await access(path.join(this.legacyRoot, relative));
 				url = `${this.legacyBaseUrl}/${relative}`;
 				break;
-			}
-			catch {
+			} catch {
 				// Pas d'avatar avec cette extension.
 			}
 		}

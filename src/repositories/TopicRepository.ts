@@ -23,20 +23,25 @@ export class TopicRepository implements TopicReader {
 		const row = await this.db
 			.selectFrom('topics as t')
 			.innerJoin('forums as f', 'f.id', 't.forum_id')
-			.leftJoin('forum_perms as fp', (join) => join
-				.onRef('fp.forum_id', '=', 'f.id')
-				.on('fp.group_id', '=', groupId))
+			.leftJoin('forum_perms as fp', (join) => join.onRef('fp.forum_id', '=', 'f.id').on('fp.group_id', '=', groupId))
 			.select([
-				't.id', 't.subject', 't.closed', 't.sticky', 't.first_post_id', 't.num_replies',
-				'f.id as forum_id', 'f.forum_name', 'f.moderators', 'fp.post_replies',
+				't.id',
+				't.subject',
+				't.closed',
+				't.sticky',
+				't.first_post_id',
+				't.num_replies',
+				'f.id as forum_id',
+				'f.forum_name',
+				'f.moderators',
+				'fp.post_replies',
 			])
 			.where('t.id', '=', topicId)
 			.where('t.moved_to', 'is', null)
 			.where((eb) => eb.or([eb('fp.read_forum', 'is', null), eb('fp.read_forum', '=', 1)]))
 			.executeTakeFirst();
 
-		if (row === undefined)
-			return null;
+		if (row === undefined) return null;
 
 		return {
 			id: row.id,
@@ -55,14 +60,9 @@ export class TopicRepository implements TopicReader {
 	}
 
 	async locatePost(postId: number): Promise<PostLocation | null> {
-		const post = await this.db
-			.selectFrom('posts')
-			.select(['topic_id', 'posted'])
-			.where('id', '=', postId)
-			.executeTakeFirst();
+		const post = await this.db.selectFrom('posts').select(['topic_id', 'posted']).where('id', '=', postId).executeTakeFirst();
 
-		if (post === undefined)
-			return null;
+		if (post === undefined) return null;
 
 		const { before } = await this.db
 			.selectFrom('posts')

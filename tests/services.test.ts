@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
 import { DummyDriver, Kysely, MysqlAdapter, MysqlIntrospector, MysqlQueryCompiler } from 'kysely';
-import { TABLE_NAMES, type Database } from '../src/db/schema.ts';
+import { describe, expect, it } from 'vitest';
+import { type Database, TABLE_NAMES } from '../src/db/schema.ts';
 import { TablePrefixPlugin } from '../src/db/TablePrefixPlugin.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { frDateWords } from '../src/lang/fr.ts';
@@ -41,7 +41,10 @@ describe('parseBbcode', () => {
 describe('parseModerators', () => {
 	it('lit le tableau sérialisé par PHP, longueurs en octets', () => {
 		const mods = parseModerators('a:2:{s:5:"Hélo";i:7;s:5:"admin";i:2;}');
-		expect([...mods]).toEqual([['Hélo', 7], ['admin', 2]]);
+		expect([...mods]).toEqual([
+			['Hélo', 7],
+			['admin', 2],
+		]);
 	});
 
 	it('renvoie une liste vide pour une valeur absente ou invalide', () => {
@@ -92,7 +95,8 @@ describe('permissions', () => {
 
 describe('pagination', () => {
 	it('reproduit paginate() de FluxBB', () => {
-		const shape = (n: number, p: number) => paginate(n, p).map((l) => l.kind === 'page' ? (l.current ? `[${l.page}]` : String(l.page)) : l.kind);
+		const shape = (n: number, p: number) =>
+			paginate(n, p).map((l) => (l.kind === 'page' ? (l.current ? `[${l.page}]` : String(l.page)) : l.kind));
 		expect(shape(1, 1)).toEqual(['[1]']);
 		expect(shape(10, 1)).toEqual(['[1]', '2', '3', 'gap', '10', 'next']);
 		expect(shape(10, 6)).toEqual(['previous', '1', 'gap', '4', '5', '[6]', '7', '8', 'gap', '10', 'next']);
@@ -130,7 +134,13 @@ describe('TablePrefixPlugin', () => {
 			plugins: [new TablePrefixPlugin('fo_', TABLE_NAMES)],
 		});
 
-		const query = db.selectFrom('topics as t').innerJoin('forums', 'forums.id', 't.forum_id').select(['t.id', 'forums.forum_name']).compile();
-		expect(query.sql).toBe('select `t`.`id`, `fo_forums`.`forum_name` from `fo_topics` as `t` inner join `fo_forums` on `fo_forums`.`id` = `t`.`forum_id`');
+		const query = db
+			.selectFrom('topics as t')
+			.innerJoin('forums', 'forums.id', 't.forum_id')
+			.select(['t.id', 'forums.forum_name'])
+			.compile();
+		expect(query.sql).toBe(
+			'select `t`.`id`, `fo_forums`.`forum_name` from `fo_topics` as `t` inner join `fo_forums` on `fo_forums`.`id` = `t`.`forum_id`',
+		);
 	});
 });

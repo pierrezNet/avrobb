@@ -1,4 +1,5 @@
 ---
+
 name: mvc-review
 description: Grille de relecture de pv-forum (architecture MVC, code propre, sécurité, cohabitation avec le PHP, tests). À passer sur tout code modifié avant de considérer une page ou un lot de TODO.md comme terminé, ou quand on demande une relecture.
 ---
@@ -21,7 +22,7 @@ Passer chaque point sur le diff. Corriger directement ce qui est simple, signale
 - [ ] Fonctions courtes à responsabilité unique, noms explicites, pas de code mort ni de `console.log`.
 - [ ] Pas de `any` ni d'assertion `!` injustifiée ; types du domaine plutôt que lignes brutes de la base.
 - [ ] Pas de duplication avec un service existant (`pagination`, `dateFormat`, `permissions`, `bbcode`…).
-- [ ] Commentaires en français, sur le *pourquoi* ; en-tête de fichier présent.
+- [ ] Commentaires en français, sur le _pourquoi_ ; en-tête de fichier présent.
 - [ ] Style respecté : tabulations, apostrophes simples, imports `.ts`.
 - [ ] Textes dans `src/lang/fr.ts`, pas en dur.
 

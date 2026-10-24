@@ -23,28 +23,18 @@ export interface MenuItem {
 	active: boolean;
 }
 
-export function layoutContext(
-	viewer: Viewer,
-	config: BoardConfig,
-	page: PageContext,
-	pageId: string,
-	titleParts: readonly string[],
-) {
+export function layoutContext(viewer: Viewer, config: BoardConfig, page: PageContext, pageId: string, titleParts: readonly string[]) {
 	const { lang } = page;
-	const menu: MenuItem[] = [
-		{ id: 'navindex', label: lang.index, href: 'index.php', active: pageId === 'viewtopic' },
-	];
+	const menu: MenuItem[] = [{ id: 'navindex', label: lang.index, href: 'index.php', active: pageId === 'viewtopic' }];
 
-	if (viewer.group.canViewUsers)
-		menu.push({ id: 'navuserlist', label: lang.userList, href: 'userlist.php', active: false });
+	if (viewer.group.canViewUsers) menu.push({ id: 'navuserlist', label: lang.userList, href: 'userlist.php', active: false });
 
 	menu.push({ id: 'navsearch', label: lang.search, href: 'search.php', active: false });
 
 	if (viewer.isGuest) {
 		menu.push({ id: 'navregister', label: lang.register, href: 'register.php', active: false });
 		menu.push({ id: 'navlogin', label: lang.login, href: 'login.php', active: false });
-	}
-	else {
+	} else {
 		menu.push({ id: 'navprofile', label: lang.profile, href: `profile.php?id=${viewer.id}`, active: false });
 	}
 

@@ -7,22 +7,19 @@
 export function parseModerators(serialized: string | null): Map<string, number> {
 	const moderators = new Map<string, number>();
 
-	if (serialized === null || serialized === '')
-		return moderators;
+	if (serialized === null || serialized === '') return moderators;
 
 	const bytes = Buffer.from(serialized, 'utf8');
 	let pos = 0;
 
 	const expect = (text: string): void => {
-		if (bytes.toString('utf8', pos, pos + text.length) !== text)
-			throw new SyntaxError(`« ${text} » attendu à la position ${pos}`);
+		if (bytes.toString('utf8', pos, pos + text.length) !== text) throw new SyntaxError(`« ${text} » attendu à la position ${pos}`);
 		pos += text.length;
 	};
 
 	const readUntil = (terminator: string): string => {
 		const end = bytes.indexOf(terminator, pos);
-		if (end === -1)
-			throw new SyntaxError(`« ${terminator} » introuvable après la position ${pos}`);
+		if (end === -1) throw new SyntaxError(`« ${terminator} » introuvable après la position ${pos}`);
 		const value = bytes.toString('utf8', pos, end);
 		pos = end + terminator.length;
 		return value;
@@ -30,8 +27,7 @@ export function parseModerators(serialized: string | null): Map<string, number> 
 
 	const readInt = (terminator: string): number => {
 		const raw = readUntil(terminator);
-		if (!/^-?\d+$/.test(raw))
-			throw new SyntaxError(`Entier invalide : ${raw}`);
+		if (!/^-?\d+$/.test(raw)) throw new SyntaxError(`Entier invalide : ${raw}`);
 		return Number(raw);
 	};
 
@@ -51,8 +47,7 @@ export function parseModerators(serialized: string | null): Map<string, number> 
 		}
 
 		expect('}');
-	}
-	catch {
+	} catch {
 		return new Map();
 	}
 

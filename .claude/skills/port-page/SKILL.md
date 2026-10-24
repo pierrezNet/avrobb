@@ -1,4 +1,5 @@
 ---
+
 name: port-page
 description: Procédure pour porter une page PHP de Pilote-Virtuel (FluxBB) vers pv-forum en Node/TypeScript MVC. À utiliser dès qu'on commence le portage d'une page ou d'une fonctionnalité de TODO.md (viewforum, post, profile, pms…).
 ---

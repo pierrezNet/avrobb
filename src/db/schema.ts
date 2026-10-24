@@ -103,6 +103,4 @@ export interface Database {
 	users: UsersTable;
 }
 
-export const TABLE_NAMES: readonly (keyof Database)[] = [
-	'config', 'forums', 'forum_perms', 'groups', 'online', 'posts', 'topics', 'users',
-];
+export const TABLE_NAMES: readonly (keyof Database)[] = ['config', 'forums', 'forum_perms', 'groups', 'online', 'posts', 'topics', 'users'];

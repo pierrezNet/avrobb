@@ -1,9 +1,9 @@
-import { afterEach, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
+import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { forumHmac } from '../src/services/legacySession.ts';
-import { fakeDeps, group, guest, NOW, post, topic, viewer, type FakeData } from './fixtures.ts';
+import { type FakeData, fakeDeps, group, guest, NOW, post, topic, viewer } from './fixtures.ts';
 
 const SEED = 'graine-de-test';
 const tessy = viewer();
@@ -40,7 +40,7 @@ describe('GET /viewtopic.php', () => {
 		expect(res.body).not.toContain('<script>alert(1)');
 		expect(res.body).toContain('<strong>gras</strong>');
 		expect(res.body).not.toContain('<img src=x');
-		expect(res.body).toContain("Vous n&#39;êtes pas connecté(e).");
+		expect(res.body).toContain('Vous n&#39;êtes pas connecté(e).');
 		expect(res.body).not.toContain('class="postdelete"');
 	});
 
@@ -60,7 +60,7 @@ describe('GET /viewtopic.php', () => {
 		expect(valid.body).toContain('class="postedit"');
 
 		const forged = await app.inject({ url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(2, 'mauvais-hash') } });
-		expect(forged.body).toContain("Vous n&#39;êtes pas connecté(e).");
+		expect(forged.body).toContain('Vous n&#39;êtes pas connecté(e).');
 	});
 
 	it('redirige ?pid= vers la bonne page du sujet', async () => {

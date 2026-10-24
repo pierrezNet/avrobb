@@ -70,12 +70,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 
 	app.decorateRequest('viewer', null as unknown as Viewer);
 	app.addHook('preHandler', async (request) => {
-		request.viewer = await resolveViewer(
-			request.cookies[deps.legacyCookie.name],
-			deps.users,
-			deps.legacyCookie.seed,
-			deps.page.clock(),
-		);
+		request.viewer = await resolveViewer(request.cookies[deps.legacyCookie.name], deps.users, deps.legacyCookie.seed, deps.page.clock());
 	});
 
 	const topics = new TopicController(deps);

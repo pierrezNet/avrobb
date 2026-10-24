@@ -21,36 +21,47 @@ export interface DateWords {
 
 const pad = (n: number): string => String(n).padStart(2, '0');
 
+type DatePart = (date: Date, words: DateWords) => string | number;
+
+const hour12 = (date: Date): number => date.getUTCHours() % 12 || 12;
+
+/** Lettres de date() de PHP reconnues (les autres sont recopiées telles quelles). */
+const DATE_PARTS: Readonly<Record<string, DatePart>> = {
+	d: (date) => pad(date.getUTCDate()),
+	j: (date) => date.getUTCDate(),
+	D: (date, words) => (words.days[date.getUTCDay()] ?? '').slice(0, 3),
+	l: (date, words) => words.days[date.getUTCDay()] ?? '',
+	m: (date) => pad(date.getUTCMonth() + 1),
+	n: (date) => date.getUTCMonth() + 1,
+	M: (date, words) => (words.months[date.getUTCMonth()] ?? '').slice(0, 3),
+	F: (date, words) => words.months[date.getUTCMonth()] ?? '',
+	Y: (date) => date.getUTCFullYear(),
+	y: (date) => pad(date.getUTCFullYear() % 100),
+	H: (date) => pad(date.getUTCHours()),
+	G: (date) => date.getUTCHours(),
+	h: (date) => pad(hour12(date)),
+	g: (date) => hour12(date),
+	i: (date) => pad(date.getUTCMinutes()),
+	s: (date) => pad(date.getUTCSeconds()),
+	a: (date) => (date.getUTCHours() < 12 ? 'am' : 'pm'),
+	A: (date) => (date.getUTCHours() < 12 ? 'AM' : 'PM'),
+};
+
 /** Sous-ensemble de date() de PHP, appliqué à une Date lue en UTC (décalage déjà ajouté). */
 export function phpDate(format: string, date: Date, words: DateWords): string {
 	let out = '';
 
 	for (let i = 0; i < format.length; i++) {
-		const c = format[i]!;
-		const hours = date.getUTCHours();
+		const c = format.charAt(i);
 
-		switch (c) {
-			case 'd': out += pad(date.getUTCDate()); break;
-			case 'j': out += date.getUTCDate(); break;
-			case 'D': out += (words.days[date.getUTCDay()] ?? '').slice(0, 3); break;
-			case 'l': out += words.days[date.getUTCDay()] ?? ''; break;
-			case 'm': out += pad(date.getUTCMonth() + 1); break;
-			case 'n': out += date.getUTCMonth() + 1; break;
-			case 'M': out += (words.months[date.getUTCMonth()] ?? '').slice(0, 3); break;
-			case 'F': out += words.months[date.getUTCMonth()] ?? ''; break;
-			case 'Y': out += date.getUTCFullYear(); break;
-			case 'y': out += pad(date.getUTCFullYear() % 100); break;
-			case 'H': out += pad(hours); break;
-			case 'G': out += hours; break;
-			case 'h': out += pad(hours % 12 || 12); break;
-			case 'g': out += hours % 12 || 12; break;
-			case 'i': out += pad(date.getUTCMinutes()); break;
-			case 's': out += pad(date.getUTCSeconds()); break;
-			case 'a': out += hours < 12 ? 'am' : 'pm'; break;
-			case 'A': out += hours < 12 ? 'AM' : 'PM'; break;
-			case '\\': out += format[++i] ?? ''; break;
-			default: out += c;
+		if (c === '\\') {
+			i++;
+			out += format.charAt(i);
+			continue;
 		}
+
+		const part = Object.hasOwn(DATE_PARTS, c) ? DATE_PARTS[c] : undefined;
+		out += part !== undefined ? part(date, words) : c;
 	}
 
 	return out;
@@ -60,27 +71,17 @@ export function phpDate(format: string, date: Date, words: DateWords): string {
  * @param timestamp secondes Unix (null = jamais)
  * @param now secondes Unix de référence pour « Aujourd'hui » / « Hier »
  */
-export function formatTime(
-	timestamp: number | null,
-	settings: TimeSettings,
-	words: DateWords,
-	now: number,
-	dateOnly = false,
-): string {
-	if (timestamp === null || timestamp === 0)
-		return words.never;
+export function formatTime(timestamp: number | null, settings: TimeSettings, words: DateWords, now: number, dateOnly = false): string {
+	if (timestamp === null || timestamp === 0) return words.never;
 
 	const offset = (settings.timezone + (settings.dst ? 1 : 0)) * 3600;
 	const at = new Date((timestamp + offset) * 1000);
 	const day = (seconds: number): string => phpDate('Y-m-d', new Date((seconds + offset) * 1000), words);
 
 	let datePart: string;
-	if (day(timestamp) === day(now))
-		datePart = words.today;
-	else if (day(timestamp) === day(now - 86400))
-		datePart = words.yesterday;
-	else
-		datePart = phpDate(settings.dateFormat, at, words);
+	if (day(timestamp) === day(now)) datePart = words.today;
+	else if (day(timestamp) === day(now - 86400)) datePart = words.yesterday;
+	else datePart = phpDate(settings.dateFormat, at, words);
 
 	return dateOnly ? datePart : `${datePart} ${phpDate(settings.timeFormat, at, words)}`;
 }

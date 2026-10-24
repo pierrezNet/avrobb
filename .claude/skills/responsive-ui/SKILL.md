@@ -1,4 +1,5 @@
 ---
+
 name: responsive-ui
 description: Règles de front-end de pv-forum pour les vues Nunjucks et le CSS (mobile d'abord, thèmes FluxBB en variables CSS, accessibilité, JS en amélioration progressive). À utiliser pour écrire ou modifier une vue `.njk`, une feuille de style ou un script côté navigateur.
 ---
@@ -23,9 +24,11 @@ description: Règles de front-end de pv-forum pour les vues Nunjucks et le CSS (
 ## CSS
 
 - Une feuille de base commune (`public/css/base.css`) pour la structure, la typographie et le responsive, plus une petite feuille par thème qui ne définit **que des variables** :
+
   ```css
   :root { --color-bg: …; --color-text: …; --color-accent: …; --color-border: …; --color-header-bg: …; }
   ```
+
   Les 6 thèmes FluxBB (Air, Lagon, GreenDeal, GreenDark, GlowingRed, fiftyGrey) sont convertis à partir de `/var/www/html/PiloteVirtuel/style/*.css`.
 - Unités relatives (`rem`, `em`, `%`, `ch`) ; taille de base 16 px ; longueur de ligne des messages limitée à environ 75 ch sur grand écran.
 - Classes nommées par composant (`.post`, `.post__author`, `.topic-list`, `.pagination`) et non par apparence. Pas de `!important`, pas de styles en ligne.

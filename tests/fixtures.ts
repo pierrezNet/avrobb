@@ -3,10 +3,10 @@
  */
 
 import type { AppDeps } from '../src/app.ts';
-import { GroupId, type BoardConfig, type Group, type Post, type Topic, type Viewer } from '../src/domain/models.ts';
+import { type BoardConfig, type Group, GroupId, type Post, type Topic, type Viewer } from '../src/domain/models.ts';
 import { fr, frDateWords } from '../src/lang/fr.ts';
-import type { ViewerRecord } from '../src/repositories/UserRepository.ts';
 import type { PostLocation } from '../src/repositories/TopicRepository.ts';
+import type { ViewerRecord } from '../src/repositories/UserRepository.ts';
 
 export const NOW = 1_782_900_000;
 
@@ -47,7 +47,14 @@ export const guest = viewer({
 	id: 1,
 	username: 'Invité',
 	isGuest: true,
-	group: group({ id: GroupId.Guest, title: 'Invités', canPostReplies: false, canEditPosts: false, canDeletePosts: false, canDeleteTopics: false }),
+	group: group({
+		id: GroupId.Guest,
+		title: 'Invités',
+		canPostReplies: false,
+		canEditPosts: false,
+		canDeletePosts: false,
+		canDeleteTopics: false,
+	}),
 });
 
 export function topic(overrides: Partial<Topic> = {}): Topic {

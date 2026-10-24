@@ -18,24 +18,16 @@ export interface BbcodeOptions {
 }
 
 export function escapeHtml(text: string): string {
-	return text
-		.replaceAll('&', '&amp;')
-		.replaceAll('<', '&lt;')
-		.replaceAll('>', '&gt;')
-		.replaceAll('"', '&quot;')
-		.replaceAll("'", '&#039;');
+	return text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 }
 
 /** URL déjà échappée HTML ; renvoie l'URL utilisable en attribut, ou null si le schéma est refusé. */
 function safeUrl(escapedUrl: string): string | null {
 	const url = escapedUrl.trim();
 
-	if (/^(https?|ftps?):\/\//i.test(url))
-		return url;
-	if (/^www\./i.test(url))
-		return `http://${url}`;
-	if (/^(\/|\.\/|[\w-]+\.php)/i.test(url) && !url.includes(':'))
-		return url;
+	if (/^(https?|ftps?):\/\//i.test(url)) return url;
+	if (/^www\./i.test(url)) return `http://${url}`;
+	if (/^(\/|\.\/|[\w-]+\.php)/i.test(url) && !url.includes(':')) return url;
 
 	return null;
 }
@@ -43,6 +35,7 @@ function safeUrl(escapedUrl: string): string | null {
 const COLOR = /^(#[0-9a-f]{3}|#[0-9a-f]{6}|[a-z]{3,20})$/i;
 
 /** Marqueurs des blocs [code] mis de côté pendant le traitement (le texte ne peut pas contenir \0). */
+// biome-ignore lint/suspicious/noControlCharactersInRegex: \0 sert justement de délimiteur impossible à saisir.
 const CODE_TOKEN = /\u0000(\d+)\u0000/g;
 
 function renderInline(text: string, options: BbcodeOptions): string {
@@ -59,16 +52,15 @@ function renderInline(text: string, options: BbcodeOptions): string {
 		[/\[h\](.*?)\[\/h\]/gs, '</p><h5>$1</h5><p>'],
 	];
 
-	for (const [pattern, replacement] of simple)
-		html = html.replace(pattern, replacement);
+	for (const [pattern, replacement] of simple) html = html.replace(pattern, replacement);
 
 	html = html.replace(/\[colou?r=([^\]]+)\](.*?)\[\/colou?r\]/gs, (whole, color: string, inner: string) =>
-		COLOR.test(color) ? `<span style="color: ${color}">${inner}</span>` : whole);
+		COLOR.test(color) ? `<span style="color: ${color}">${inner}</span>` : whole,
+	);
 
 	html = html.replace(/\[img\](.*?)\[\/img\]/gs, (whole, src: string) => {
 		const url = safeUrl(src);
-		if (url === null)
-			return whole;
+		if (url === null) return whole;
 		return options.showImages
 			? `<span class="postimg"><img src="${url}" alt="${url}" /></span>`
 			: `<a href="${url}" rel="nofollow">${url}</a>`;
@@ -84,8 +76,8 @@ function renderInline(text: string, options: BbcodeOptions): string {
 		return url === null ? whole : `<a href="${url}" rel="nofollow">${label}</a>`;
 	});
 
-	html = html.replace(/\[email\]([^\s@\[\]]+@[^\s@\[\]]+)\[\/email\]/g, '<a href="mailto:$1">$1</a>');
-	html = html.replace(/\[email=([^\s@\[\]]+@[^\s@\[\]]+)\](.*?)\[\/email\]/gs, '<a href="mailto:$1">$2</a>');
+	html = html.replace(/\[email\]([^\s@[\]]+@[^\s@[\]]+)\[\/email\]/g, '<a href="mailto:$1">$1</a>');
+	html = html.replace(/\[email=([^\s@[\]]+@[^\s@[\]]+)\](.*?)\[\/email\]/gs, '<a href="mailto:$1">$2</a>');
 
 	// Citations : on remplace d'abord les plus internes, jusqu'à ce qu'il n'en reste plus.
 	const innermostQuote = /\[quote(?:=([^\]]*))?\]((?:(?!\[quote(?:=[^\]]*)?\]).)*?)\[\/quote\]/s;
@@ -115,15 +107,16 @@ export function parseBbcode(source: string, options: BbcodeOptions): string {
 
 	let html = escapeHtml(text);
 
-	if (options.bbcode)
-		html = renderInline(html, options);
+	if (options.bbcode) html = renderInline(html, options);
 
 	html = html.replaceAll('\n', '<br />').replaceAll('\t', '&#160; &#160; ');
 
 	html = `<p>${html}</p>`;
 	html = html.replace(/<br \/>\s*?<br \/>((\s*<br \/>)*)/g, '</p>$1<p>');
-	html = html.replace(CODE_TOKEN, (_whole, index: string) =>
-		`</p><div class="codebox"><pre><code>${escapeHtml(codeBlocks[Number(index)] ?? '')}</code></pre></div><p>`);
+	html = html.replace(
+		CODE_TOKEN,
+		(_whole, index: string) => `</p><div class="codebox"><pre><code>${escapeHtml(codeBlocks[Number(index)] ?? '')}</code></pre></div><p>`,
+	);
 	html = html.replaceAll('<p><br />', '<p>').replace(/<p>\s*<\/p>/g, '');
 
 	return html;

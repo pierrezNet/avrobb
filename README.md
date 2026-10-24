@@ -18,13 +18,13 @@ http://localhost:8080 est reconnu par le prototype : le cookie de session PHP es
 
 ## Organisation
 
-| Couche | Dossier | Rôle |
-|---|---|---|
-| Modèle | `src/domain/`, `src/repositories/` | Objets du domaine ; seul endroit où l'on écrit du SQL (Kysely, typé) |
-| Services | `src/services/` | Règles pures et testables : permissions, BBCode, dates, pagination, session |
-| Présentation | `src/presenters/` | Domaine → modèle de vue (fonction pure) |
-| Contrôleur | `src/controllers/` | Requête → repositories → presenter → réponse ; ni SQL ni HTML |
-| Vue | `src/views/` | Nunjucks (syntaxe proche de Twig), échappement automatique |
+| Couche       | Dossier                            | Rôle                                                                        |
+| ------------ | ---------------------------------- | --------------------------------------------------------------------------- |
+| Modèle       | `src/domain/`, `src/repositories/` | Objets du domaine ; seul endroit où l'on écrit du SQL (Kysely, typé)        |
+| Services     | `src/services/`                    | Règles pures et testables : permissions, BBCode, dates, pagination, session |
+| Présentation | `src/presenters/`                  | Domaine → modèle de vue (fonction pure)                                     |
+| Contrôleur   | `src/controllers/`                 | Requête → repositories → presenter → réponse ; ni SQL ni HTML               |
+| Vue          | `src/views/`                       | Nunjucks (syntaxe proche de Twig), échappement automatique                  |
 
 Le préfixe des tables (`fo_`) est ajouté par `TablePrefixPlugin` : les requêtes utilisent les noms nus.
 

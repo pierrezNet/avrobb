@@ -14,16 +14,29 @@ export class PostRepository implements PostReader {
 			.selectFrom('posts as p')
 			.innerJoin('users as u', 'u.id', 'p.poster_id')
 			.innerJoin('groups as g', 'g.g_id', 'u.group_id')
-			.leftJoin('online as o', (join) => join
-				.onRef('o.user_id', '=', 'u.id')
-				.on('o.user_id', '!=', GUEST_USER_ID)
-				.on('o.idle', '=', 0))
+			.leftJoin('online as o', (join) => join.onRef('o.user_id', '=', 'u.id').on('o.user_id', '!=', GUEST_USER_ID).on('o.idle', '=', 0))
 			.select([
-				'p.id', 'p.poster', 'p.poster_id', 'p.poster_ip', 'p.poster_email', 'p.message',
-				'p.hide_smilies', 'p.posted', 'p.edited', 'p.edited_by',
-				'u.email', 'u.title', 'u.url', 'u.location', 'u.signature', 'u.email_setting',
-				'u.num_posts', 'u.registered', 'u.admin_note',
-				'g.g_id', 'g.g_user_title',
+				'p.id',
+				'p.poster',
+				'p.poster_id',
+				'p.poster_ip',
+				'p.poster_email',
+				'p.message',
+				'p.hide_smilies',
+				'p.posted',
+				'p.edited',
+				'p.edited_by',
+				'u.email',
+				'u.title',
+				'u.url',
+				'u.location',
+				'u.signature',
+				'u.email_setting',
+				'u.num_posts',
+				'u.registered',
+				'u.admin_note',
+				'g.g_id',
+				'g.g_user_title',
 				'o.user_id as online_user_id',
 			])
 			.where('p.topic_id', '=', topicId)
@@ -42,21 +55,24 @@ export class PostRepository implements PostReader {
 			posted: row.posted,
 			edited: row.edited,
 			editedBy: row.edited_by ?? '',
-			author: row.poster_id === GUEST_USER_ID ? null : {
-				id: row.poster_id,
-				email: row.email,
-				title: row.title ?? '',
-				url: row.url ?? '',
-				location: row.location ?? '',
-				signature: row.signature ?? '',
-				emailSetting: row.email_setting,
-				numPosts: row.num_posts,
-				registered: row.registered,
-				adminNote: row.admin_note ?? '',
-				groupId: row.g_id,
-				groupUserTitle: row.g_user_title ?? '',
-				isOnline: row.online_user_id === row.poster_id,
-			},
+			author:
+				row.poster_id === GUEST_USER_ID
+					? null
+					: {
+							id: row.poster_id,
+							email: row.email,
+							title: row.title ?? '',
+							url: row.url ?? '',
+							location: row.location ?? '',
+							signature: row.signature ?? '',
+							emailSetting: row.email_setting,
+							numPosts: row.num_posts,
+							registered: row.registered,
+							adminNote: row.admin_note ?? '',
+							groupId: row.g_id,
+							groupUserTitle: row.g_user_title ?? '',
+							isOnline: row.online_user_id === row.poster_id,
+						},
 		}));
 	}
 }

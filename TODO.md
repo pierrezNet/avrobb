@@ -18,8 +18,8 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
 
 ## Lot 0 — Socle technique
 
-- [ ] `git init` et premier commit du POC (le projet PHP n'est pas versionné : se protéger ici)
-- [ ] Lint et formatage (Biome : une seule dépendance, configuré pour tabulations et apostrophes simples) + script `npm run check` (lint, typecheck, test)
+- [x] `git init` et premier commit du POC (le projet PHP n'est pas versionné : se protéger ici)
+- [x] Lint et formatage (Biome : une seule dépendance, configuré pour tabulations et apostrophes simples) + script `npm run check` (lint, typecheck, test)
 - [ ] Gestion d'erreurs centralisée (`setErrorHandler`, 404 et 500 rendus avec `message.njk`, journalisation sans fuite d'informations)
 - [ ] Mise en page commune complète : en-tête (menu selon droits, bienvenue, nouveaux MP, liens de modération), pied (quickjump, « Propulsé par »), fil d'Ariane réutilisable
 - [ ] **CSS responsive** : feuille de base mobile d'abord + 6 thèmes FluxBB réduits à des variables CSS ; choix du thème utilisateur (`users.style`)

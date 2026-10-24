@@ -17,11 +17,14 @@ Stratégie de migration **page par page (« strangler fig »)** : Node et PHP pa
 npm run dev        # tsx watch, http://localhost:3000/viewtopic.php?id=4
 npm test           # vitest
 npm run typecheck  # tsc --noEmit (TypeScript strict)
+npm run lint       # Biome (lint + format, vérification seule)
+npm run format     # Biome : corrige le formatage et l'ordre des imports
+npm run check      # lint + typecheck + test : à lancer avant chaque commit
 ```
 
 Pré-requis : la pile Docker du projet PHP (`cd /var/www/html/PiloteVirtuel && sg docker -c "docker compose up -d"`) : MariaDB sur `127.0.0.1:3307`, forum PHP sur `:8080`, phpMyAdmin sur `:8081`. `.env` est copié depuis `.env.example` ; `LEGACY_COOKIE_SEED` = `$cookie_seed` du `config.php` PHP.
 
-**Définition de « terminé »** : `npm run typecheck` et `npm test` passent, et la page a été vérifiée à la main dans le navigateur face à la page PHP équivalente, sur mobile comme sur bureau.
+**Définition de « terminé »** : `npm run check` passe, et la page a été vérifiée à la main dans le navigateur face à la page PHP équivalente, sur mobile comme sur bureau.
 
 ## Pile technique
 
@@ -29,15 +32,15 @@ Node ≥ 24 (ESM, `"type": "module"`), TypeScript exécuté par `tsx` (imports a
 
 ## Architecture MVC (règles strictes)
 
-| Couche | Dossier | A le droit de | N'a pas le droit de |
-|---|---|---|---|
-| Domaine | `src/domain/` | types métier (booléens, noms explicites) | importer quoi que ce soit d'autre |
-| Repositories | `src/repositories/` | **seul endroit avec du SQL** (Kysely), conversion ligne → domaine | logique d'affichage, HTTP |
-| Services | `src/services/` | règles métier **pures** (permissions, BBCode, dates, pagination, session) | accès base, HTTP |
-| Presenters | `src/presenters/` | domaine → modèle de vue, **fonction pure** | requêtes, `reply` |
-| Contrôleurs | `src/controllers/` | lire la requête, appeler repositories, services et presenter, choisir la réponse | SQL, HTML, règles métier |
-| Vues | `src/views/` | balisage Nunjucks | calculs, conditions métier (au-delà d'un `if` sur un champ du modèle de vue) |
-| HTTP | `src/http/` | contexte de mise en page commun, session, hooks | — |
+| Couche       | Dossier             | A le droit de                                                                    | N'a pas le droit de                                                          |
+| ------------ | ------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Domaine      | `src/domain/`       | types métier (booléens, noms explicites)                                         | importer quoi que ce soit d'autre                                            |
+| Repositories | `src/repositories/` | **seul endroit avec du SQL** (Kysely), conversion ligne → domaine                | logique d'affichage, HTTP                                                    |
+| Services     | `src/services/`     | règles métier **pures** (permissions, BBCode, dates, pagination, session)        | accès base, HTTP                                                             |
+| Presenters   | `src/presenters/`   | domaine → modèle de vue, **fonction pure**                                       | requêtes, `reply`                                                            |
+| Contrôleurs  | `src/controllers/`  | lire la requête, appeler repositories, services et presenter, choisir la réponse | SQL, HTML, règles métier                                                     |
+| Vues         | `src/views/`        | balisage Nunjucks                                                                | calculs, conditions métier (au-delà d'un `if` sur un champ du modèle de vue) |
+| HTTP         | `src/http/`         | contexte de mise en page commun, session, hooks                                  | —                                                                            |
 
 Principes :
 - **Injection de dépendances** : chaque contrôleur reçoit ses dépendances sous forme d'interfaces `XxxReader` / `XxxWriter` (voir `AppDeps` dans `src/app.ts`). `server.ts` câble les vraies, les tests passent des doublures en mémoire (`tests/fixtures.ts`).
@@ -67,7 +70,7 @@ Principes :
 ## Style de code
 
 - Indentation par **tabulations**, apostrophes simples, points-virgules, `const` par défaut.
-- **Commentaires et textes en français**, comme dans le code existant : un en-tête `/** … */` par fichier qui explique son rôle, des commentaires sur le *pourquoi* (surtout les écarts ou fidélités à FluxBB), pas sur le *quoi*.
+- **Commentaires et textes en français**, comme dans le code existant : un en-tête `/** … */` par fichier qui explique son rôle, des commentaires sur le _pourquoi_ (surtout les écarts ou fidélités à FluxBB), pas sur le _quoi_.
 - TypeScript strict (`noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`) : pas de `any`, pas de `!` sans justification.
 - Fonctions courtes, noms explicites ; une règle FluxBB reproduite cite la fonction PHP d'origine (`get_title()`, `paginate()`…).
 - Tests : chaque service pur a ses tests unitaires ; chaque page a au moins un test d'intégration via `app.inject()` avec des doublures.

@@ -22,29 +22,24 @@ export function clampPage(requested: unknown, numPages: number): number {
 export function paginate(numPages: number, current: number): PageLink[] {
 	const links: PageLink[] = [];
 
-	if (numPages <= 1)
-		return [{ kind: 'page', page: 1, current: true }];
+	if (numPages <= 1) return [{ kind: 'page', page: 1, current: true }];
 
-	if (current > 1)
-		links.push({ kind: 'previous', page: current - 1 });
+	if (current > 1) links.push({ kind: 'previous', page: current - 1 });
 
 	if (current > 3) {
 		links.push({ kind: 'page', page: 1, current: false });
-		if (current > 4)
-			links.push({ kind: 'gap' });
+		if (current > 4) links.push({ kind: 'gap' });
 	}
 
 	for (let page = Math.max(1, current - 2); page <= Math.min(numPages, current + 2); page++)
 		links.push({ kind: 'page', page, current: page === current });
 
 	if (current < numPages - 2) {
-		if (current < numPages - 3)
-			links.push({ kind: 'gap' });
+		if (current < numPages - 3) links.push({ kind: 'gap' });
 		links.push({ kind: 'page', page: numPages, current: false });
 	}
 
-	if (current < numPages)
-		links.push({ kind: 'next', page: current + 1 });
+	if (current < numPages) links.push({ kind: 'next', page: current + 1 });
 
 	return links;
 }

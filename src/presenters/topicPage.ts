@@ -6,12 +6,12 @@
  * en dernier, et seulement pour l'affichage (pas de comparaison sur des chaînes formatées).
  */
 
-import { GroupId, type BoardConfig, type Post, type Topic, type Viewer } from '../domain/models.ts';
+import { type BoardConfig, GroupId, type Post, type Topic, type Viewer } from '../domain/models.ts';
 import type { Lang } from '../lang/fr.ts';
 import { parseBbcode } from '../services/bbcode.ts';
-import { formatTime, type DateWords, type TimeSettings } from '../services/dateFormat.ts';
-import { paginate, type PageLink } from '../services/pagination.ts';
-import { canReply, isAnyModerator, postActions, type PostActionRights } from '../services/permissions.ts';
+import { type DateWords, formatTime, type TimeSettings } from '../services/dateFormat.ts';
+import { type PageLink, paginate } from '../services/pagination.ts';
+import { canReply, isAnyModerator, type PostActionRights, postActions } from '../services/permissions.ts';
 
 export interface PostView {
 	id: number;
@@ -64,12 +64,9 @@ export interface TopicPageInput {
 
 /** Titre affiché sous le nom (get_title() de FluxBB, sans les rangs ni les bannissements). */
 function userTitle(post: Post, lang: Lang): string {
-	if (post.author === null)
-		return lang.guest;
-	if (post.author.title !== '')
-		return post.author.title;
-	if (post.author.groupUserTitle !== '')
-		return post.author.groupUserTitle;
+	if (post.author === null) return lang.guest;
+	if (post.author.title !== '') return post.author.title;
+	if (post.author.groupUserTitle !== '') return post.author.groupUserTitle;
 	return lang.member;
 }
 
@@ -81,8 +78,7 @@ export function buildTopicPage(input: TopicPageInput): TopicPageView {
 		dateFormat: config.dateFormat,
 		timeFormat: config.timeFormat,
 	};
-	const format = (ts: number | null, dateOnly = false): string =>
-		formatTime(ts, time, input.dateWords, input.now, dateOnly);
+	const format = (ts: number | null, dateOnly = false): string => formatTime(ts, time, input.dateWords, input.now, dateOnly);
 
 	const viewerIsMod = isAnyModerator(viewer);
 	const showSignatures = config.signatures && viewer.showSignatures;
@@ -95,12 +91,9 @@ export function buildTopicPage(input: TopicPageInput): TopicPageView {
 		let emailUrl: string | null = null;
 		if (config.showUserInfo && viewer.group.canSendEmail) {
 			if (author !== null) {
-				if ((author.emailSetting === 0 && !viewer.isGuest) || viewerIsMod)
-					emailUrl = `mailto:${author.email}`;
-				else if (author.emailSetting === 1 && !viewer.isGuest)
-					emailUrl = `misc.php?email=${author.id}`;
-			}
-			else if (post.posterEmail !== '' && !viewer.isGuest) {
+				if ((author.emailSetting === 0 && !viewer.isGuest) || viewerIsMod) emailUrl = `mailto:${author.email}`;
+				else if (author.emailSetting === 1 && !viewer.isGuest) emailUrl = `misc.php?email=${author.id}`;
+			} else if (post.posterEmail !== '' && !viewer.isGuest) {
 				emailUrl = `mailto:${post.posterEmail}`;
 			}
 		}
@@ -114,7 +107,7 @@ export function buildTopicPage(input: TopicPageInput): TopicPageView {
 			username: post.username,
 			profileUrl: author !== null && viewer.group.canViewUsers ? `profile.php?id=${author.id}` : null,
 			userTitle: userTitle(post, lang),
-			avatarUrl: author !== null ? input.avatars.get(author.id) ?? null : null,
+			avatarUrl: author !== null ? (input.avatars.get(author.id) ?? null) : null,
 			location: showInfo && author.location !== '' ? author.location : null,
 			registeredAt: showInfo ? format(author.registered, true) : null,
 			numPosts: showInfo && (config.showPostCount || viewerIsMod) ? author.numPosts : null,
@@ -124,9 +117,10 @@ export function buildTopicPage(input: TopicPageInput): TopicPageView {
 			adminNote: viewerIsMod && author !== null && author.adminNote !== '' ? author.adminNote : null,
 			isOnline: author !== null ? author.isOnline : null,
 			messageHtml: parseBbcode(post.message, { bbcode: config.bbcode, showImages: config.imgTag }),
-			signatureHtml: showSignatures && author !== null && author.signature !== ''
-				? parseBbcode(author.signature, { bbcode: config.bbcode, showImages: config.imgTag })
-				: null,
+			signatureHtml:
+				showSignatures && author !== null && author.signature !== ''
+					? parseBbcode(author.signature, { bbcode: config.bbcode, showImages: config.imgTag })
+					: null,
 			edited: post.edited !== null ? { by: post.editedBy, at: format(post.edited) } : null,
 			actions: postActions(viewer, topic, author?.id ?? 0, position, author?.groupId === GroupId.Admin),
 		};

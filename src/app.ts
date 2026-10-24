@@ -46,6 +46,7 @@ import type { RegistrationStore } from './repositories/RegistrationRepository.ts
 import type { SearchReader } from './repositories/SearchRepository.ts';
 import type { StatsReader } from './repositories/StatsRepository.ts';
 import type { StopwordsReader } from './repositories/StopwordsLoader.ts';
+import type { SubscriptionStore } from './repositories/SubscriptionRepository.ts';
 import type { ToolbarReader } from './repositories/ToolbarRepository.ts';
 import type { TopicLabelReader } from './repositories/TopicLabelRepository.ts';
 import type { TopicReader, TopicWriter } from './repositories/TopicRepository.ts';
@@ -79,6 +80,7 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	posting: PostingStore;
 	postEdits: PostEditStore;
 	drafts: DraftStore;
+	subscriptions: SubscriptionStore;
 	toolbar: ToolbarReader;
 	avatars: AvatarLocator;
 	censorship: CensorReader;
@@ -226,7 +228,11 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 	const miscSession = session({ quiet: (request) => (request.query as MiscQuery).action !== undefined });
 	const misc = new MiscController({ ...deps, trackCookieName });
 	app.get<{ Querystring: MiscQuery }>('/misc.php', { preHandler: miscSession }, misc.show);
-	app.post<{ Querystring: MiscQuery; Body: FormBody }>('/misc.php', { preHandler: [miscSession, verifyCsrf] }, misc.markRead);
+	app.post<{ Querystring: MiscQuery; Body: FormBody }>('/misc.php', { preHandler: [miscSession, verifyCsrf] }, (request, reply) =>
+		request.query.action === 'subscribe' || request.query.action === 'unsubscribe'
+			? misc.subscription(request, reply)
+			: misc.markRead(request, reply),
+	);
 
 	const register = new RegisterController(deps);
 	app.get<{ Querystring: RegisterQuery }>('/register.php', { preHandler: authenticate }, register.show);

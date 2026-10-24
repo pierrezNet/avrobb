@@ -4,6 +4,9 @@
 
 export const topic = {
 	quickPost: 'Réponse rapide',
+	isSubscribed: 'Vous suivez cette discussion',
+	unsubscribe: 'Ne plus suivre',
+	subscribe: 'Suivre cette discussion',
 	postReply: 'Répondre',
 	topicClosed: 'Discussion fermée',
 	from: 'Lieu\u00a0:',

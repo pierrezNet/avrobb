@@ -90,6 +90,8 @@ export interface TopicPageView {
 	posts: PostView[];
 	/** Formulaire de réponse rapide, ou null. */
 	quickPost: QuickPostView | null;
+	/** Abonnement au sujet (membres, o_topic_subscriptions) : bouton POST vers misc.php. */
+	subscription: { subscribed: boolean; action: string } | null;
 }
 
 export interface QuickPostView {
@@ -305,5 +307,12 @@ export function buildTopicPage(input: TopicPageInput): TopicPageView {
 		replyUrl: canReply(viewer, topic) ? `post.php?tid=${topic.id}` : null,
 		posts,
 		quickPost: quickPost(input),
+		subscription:
+			!viewer.isGuest && config.topicSubscriptions
+				? {
+						subscribed: topic.isSubscribed,
+						action: `misc.php?action=${topic.isSubscribed ? 'unsubscribe' : 'subscribe'}&tid=${topic.id}`,
+					}
+				: null,
 	};
 }

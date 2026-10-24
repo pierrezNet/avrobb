@@ -12,6 +12,7 @@ import { DraftRepository } from '../../src/repositories/DraftRepository.ts';
 import { updateForum } from '../../src/repositories/forumCounters.ts';
 import { PostEditRepository } from '../../src/repositories/PostEditRepository.ts';
 import { PostingRepository } from '../../src/repositories/PostingRepository.ts';
+import { SubscriptionRepository } from '../../src/repositories/SubscriptionRepository.ts';
 import { stripSearchIndex, updateSearchIndex } from '../../src/repositories/searchIndexSql.ts';
 import { ToolbarRepository } from '../../src/repositories/ToolbarRepository.ts';
 import { testDbConfig } from './testDatabase.ts';
@@ -406,6 +407,24 @@ describe('DraftRepository', () => {
 			expect(await drafts.find(topicDraft)).not.toBeNull();
 			await drafts.delete(topicDraft, 3);
 			expect(await drafts.find(topicDraft)).toBeNull();
+		});
+	});
+});
+
+describe('SubscriptionRepository', () => {
+	it('lecture permise, abonnement et désabonnement aux sujets et forums', async () => {
+		const read = new SubscriptionRepository(db);
+		expect(await read.isReadable({ kind: 'topic', id: 10 }, 3)).toBe(true);
+		expect(await read.isReadable({ kind: 'topic', id: 11 }, 3)).toBe(false);
+		expect(await read.isReadable({ kind: 'topic', id: 12 }, 4)).toBe(false);
+		expect(await read.isReadable({ kind: 'forum', id: 3 }, 3)).toBe(false);
+		expect(await read.isSubscribed({ kind: 'topic', id: 10 }, 3)).toBe(true);
+		await inRollback(async (trx) => {
+			const subscriptions = new SubscriptionRepository(trx);
+			await subscriptions.subscribe({ kind: 'forum', id: 1 }, 5);
+			expect(await subscriptions.isSubscribed({ kind: 'forum', id: 1 }, 5)).toBe(true);
+			await subscriptions.unsubscribe({ kind: 'topic', id: 10 }, 3);
+			expect(await subscriptions.isSubscribed({ kind: 'topic', id: 10 }, 3)).toBe(false);
 		});
 	});
 });

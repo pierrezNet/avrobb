@@ -1,0 +1,12 @@
+{#- Confirmation d'une action qui écrit, demandée par un lien GET (misc.php). Données : `view` { title, text, action, button }. -#}
+{% extends "layout.njk" %}
+{% import "partials/forms.njk" as forms %}
+
+{% block main %}
+<form class="message-box" method="post" action="{{ url(view.action) }}">
+	{{ forms.csrf(layout) }}
+	<h1 class="message-box__title">{{ view.title }}</h1>
+	<p>{{ view.text }}</p>
+	<p><button type="submit" class="button button--primary">{{ view.button }}</button></p>
+</form>
+{% endblock %}

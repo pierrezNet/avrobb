@@ -29,6 +29,7 @@ import { ReportRepository } from './repositories/ReportRepository.ts';
 import { SearchRepository } from './repositories/SearchRepository.ts';
 import { StatsRepository } from './repositories/StatsRepository.ts';
 import { StopwordsLoader } from './repositories/StopwordsLoader.ts';
+import { SubscriptionRepository } from './repositories/SubscriptionRepository.ts';
 import { ToolbarRepository } from './repositories/ToolbarRepository.ts';
 import { TopicLabelRepository } from './repositories/TopicLabelRepository.ts';
 import { TopicRepository } from './repositories/TopicRepository.ts';
@@ -61,6 +62,7 @@ const app = await buildApp({
 	posting: new PostingRepository(db),
 	postEdits: new PostEditRepository(db),
 	drafts: new DraftRepository(db),
+	subscriptions: new SubscriptionRepository(db),
 	toolbar: new ToolbarRepository(db),
 	forums: new ForumRepository(db),
 	reports: new ReportRepository(db),

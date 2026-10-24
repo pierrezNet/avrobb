@@ -271,6 +271,7 @@ export interface FakeData {
 	bans?: Ban[];
 	/** Sujets suivis par le visiteur (topic_subscriptions). */
 	subscribedTopics?: number[];
+	subscribedForums?: number[];
 	/** Abonnés à prévenir d'une réponse ou d'une discussion. */
 	subscribers?: Subscriber[];
 	/** Réponses et discussions enregistrées par post.php. */
@@ -523,6 +524,20 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 		toolbar: { load: async () => null },
 		postEdits: fakePostEdits(data),
 		drafts: fakeDrafts(data),
+		subscriptions: {
+			isReadable: async (target) =>
+				target.kind === 'topic' ? data.topics.some((t) => t.id === target.id) : (data.forumInfos ?? []).some((f) => f.id === target.id),
+			isSubscribed: async (target) =>
+				target.kind === 'topic' ? (data.subscribedTopics ?? []).includes(target.id) : (data.subscribedForums ?? []).includes(target.id),
+			subscribe: async (target) => {
+				if (target.kind === 'topic') data.subscribedTopics = [...(data.subscribedTopics ?? []), target.id];
+				else data.subscribedForums = [...(data.subscribedForums ?? []), target.id];
+			},
+			unsubscribe: async (target) => {
+				if (target.kind === 'topic') data.subscribedTopics = (data.subscribedTopics ?? []).filter((id) => id !== target.id);
+				else data.subscribedForums = (data.subscribedForums ?? []).filter((id) => id !== target.id);
+			},
+		},
 		forums: {
 			listReadable: async () => forumCategories,
 			listIndex: async () => data.indexCategories ?? [],

@@ -3,6 +3,7 @@
 {% import "partials/navigation.njk" as navigation %}
 {% import "partials/forms.njk" as forms %}
 {% import "partials/postFields.njk" as postFields %}
+{% import "partials/actions.njk" as actions %}
 
 {% macro topicBar(view, lang) %}
 <div class="page-bar">
@@ -83,6 +84,12 @@
 </div>
 
 {{ topicBar(view, lang) }}
+
+{% if view.subscription %}
+<p class="subscribelink forum-actions">
+	{% if view.subscription.subscribed %}<span>{{ lang.topic.isSubscribed }} - </span>{{ actions.postButton(layout, view.subscription.action, lang.topic.unsubscribe) }}{% else %}{{ actions.postButton(layout, view.subscription.action, lang.topic.subscribe) }}{% endif %}
+</p>
+{% endif %}
 
 {% if view.quickPost %}
 <form id="quickpostform" class="form-box form post-form" method="post" action="{{ url(view.quickPost.formAction) }}" aria-labelledby="quickpost-title">

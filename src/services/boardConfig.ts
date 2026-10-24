@@ -21,6 +21,8 @@ export function toBoardConfig(values: ReadonlyMap<string, string>): BoardConfig 
 		showDot: flag('o_show_dot'),
 		forumSubscriptions: flag('o_forum_subscriptions'),
 		topicSubscriptions: flag('o_topic_subscriptions'),
+		topicViews: flag('o_topic_views'),
+		rulesMessage: text('o_rules_message'),
 		searchAllForums: flag('o_search_all_forums'),
 		dateFormat: text('o_date_format', 'Y-m-d'),
 		timeFormat: text('o_time_format', 'H:i:s'),

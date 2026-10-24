@@ -2,6 +2,7 @@
 {% extends "layout.njk" %}
 {% import "partials/navigation.njk" as navigation %}
 {% import "partials/people.njk" as people %}
+{% import "partials/actions.njk" as actions %}
 
 {% block main %}
 {{ navigation.breadcrumbs(view.crumbs, lang) }}
@@ -79,5 +80,5 @@
 
 <div class="page-bar">{{ navigation.pagination(view.pagination, lang) }}</div>
 {{ navigation.breadcrumbs(view.crumbs, lang) }}
-{% if view.markReadUrl %}<p class="forum-actions"><a href="{{ url(view.markReadUrl) }}">{{ lang.search.markAllAsRead }}</a></p>{% endif %}
+{% if view.markReadUrl %}<div class="forum-actions">{{ actions.postButton(layout, view.markReadUrl, lang.search.markAllAsRead) }}</div>{% endif %}
 {% endblock %}

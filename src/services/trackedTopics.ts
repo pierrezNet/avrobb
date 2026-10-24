@@ -52,3 +52,27 @@ export function forumHasNewPosts(
 		return (topicRead === undefined || topicRead < topic.lastPost) && (forumRead === undefined || forumRead < topic.lastPost);
 	});
 }
+
+/**
+ * set_tracked_topics() : sujets puis forums, du plus récemment lu au plus ancien, tronqué à
+ * FORUM_MAX_COOKIE_SIZE sur une limite d'entrée.
+ */
+export function serializeTrackedTopics(tracked: TrackedTopics): string {
+	const entries = (prefix: string, map: ReadonlyMap<number, number>): string[] =>
+		[...map].sort((a, b) => b[1] - a[1]).map(([id, timestamp]) => `${prefix}${id}=${timestamp};`);
+	let data = [...entries('t', tracked.topics), ...entries('f', tracked.forums)].join('');
+
+	if (data.length > MAX_COOKIE_SIZE) {
+		data = data.slice(0, MAX_COOKIE_SIZE);
+		data = `${data.slice(0, data.lastIndexOf(';'))};`;
+	}
+
+	return data;
+}
+
+/** Copie de `tracked` où le sujet (ou le forum) est marqué lu à `now`. */
+export function markRead(tracked: TrackedTopics, kind: 'topics' | 'forums', id: number, now: number): TrackedTopics {
+	const updated = new Map(tracked[kind]);
+	updated.set(id, now);
+	return kind === 'topics' ? { topics: updated, forums: tracked.forums } : { topics: tracked.topics, forums: updated };
+}

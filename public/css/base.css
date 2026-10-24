@@ -883,6 +883,30 @@ a.site-status__alert {
 	border-top: 1px solid var(--color-border);
 }
 
+.inline-form {
+	display: inline;
+	margin: 0;
+}
+
+/* Bouton d'action qui ressemble à un lien (formulaire POST d'une seule action). */
+.link-button {
+	display: inline-flex;
+	align-items: center;
+	min-height: 2.75rem;
+	padding: 0;
+	border: 0;
+	background: none;
+	color: var(--color-link);
+	font: inherit;
+	text-decoration: underline;
+	text-underline-offset: 0.15em;
+	cursor: pointer;
+}
+
+.link-button:hover {
+	color: var(--color-link-hover);
+}
+
 .forum-actions {
 	display: flex;
 	flex-wrap: wrap;

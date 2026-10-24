@@ -138,6 +138,10 @@ export interface BoardConfig {
 	showDot: boolean;
 	forumSubscriptions: boolean;
 	topicSubscriptions: boolean;
+	/** Compteur de vues des sujets (o_topic_views). */
+	topicViews: boolean;
+	/** Règles du forum (o_rules_message), HTML saisi par l'administrateur. */
+	rulesMessage: string;
 	/** Recherche dans plusieurs forums (o_search_all_forums) ; sinon un seul forum à choisir. */
 	searchAllForums: boolean;
 	dateFormat: string;

@@ -1,0 +1,12 @@
+{#- Confirmation de « marquer comme lu » pour un ancien lien GET (misc.php). -#}
+{% extends "layout.njk" %}
+{% import "partials/forms.njk" as forms %}
+
+{% block main %}
+<form class="message-box" method="post" action="{{ url(view.action) }}">
+	{{ forms.csrf(layout) }}
+	<h1 class="message-box__title">{% if view.forumWide %}{{ lang.misc.markForumRead }}{% else %}{{ lang.misc.markRead }}{% endif %}</h1>
+	<p>{% if view.forumWide %}{{ lang.misc.confirmMarkForumRead }}{% else %}{{ lang.misc.confirmMarkRead }}{% endif %}</p>
+	<p><button type="submit" class="button button--primary">{{ lang.misc.confirm }}</button></p>
+</form>
+{% endblock %}

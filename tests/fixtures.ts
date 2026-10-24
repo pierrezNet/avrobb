@@ -151,6 +151,8 @@ export const boardConfig: BoardConfig = {
 	showDot: false,
 	forumSubscriptions: true,
 	topicSubscriptions: true,
+	topicViews: true,
+	rulesMessage: '<p>Soyez <em>courtois</em>.</p>',
 	searchAllForums: true,
 	dateFormat: 'Y-m-d',
 	timeFormat: 'H:i:s',
@@ -215,6 +217,8 @@ export interface FakeData {
 	forumTopics?: Map<number, TopicSummary[]>;
 	labelDefinitions?: TopicLabel[];
 	members?: MemberSummary[];
+	/** Sujets dont le compteur de vues a été incrémenté. */
+	viewedTopics?: number[];
 	profiles?: UserProfile[];
 	galleryImages?: GalleryImage[];
 	recentTopics?: RecentTopic[];
@@ -304,6 +308,12 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			findLastPostId: async (topicId) => data.posts.get(topicId)?.at(-1)?.id ?? null,
 			listUpdatedSince: async (_groupId, since) => (data.recentTopics ?? []).filter((t) => t.lastPost > since),
 			listForumPage: async (forumId, _sort, offset, limit) => (data.forumTopics?.get(forumId) ?? []).slice(offset, offset + limit),
+			findFirstPostAfter: async (topicId, since) => (data.posts.get(topicId) ?? []).find((p) => p.posted > since)?.id ?? null,
+		},
+		topicWriter: {
+			incrementViews: async (topicId) => {
+				data.viewedTopics = [...(data.viewedTopics ?? []), topicId];
+			},
 		},
 		posts: { listPage: async (topicId, offset, limit) => (data.posts.get(topicId) ?? []).slice(offset, offset + limit) },
 		forums: {

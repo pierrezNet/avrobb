@@ -15,6 +15,7 @@ import { GalleryController, type GalleryQuery } from './controllers/GalleryContr
 import { HelpController } from './controllers/HelpController.ts';
 import { IndexController } from './controllers/IndexController.ts';
 import { LoginController, type LoginQuery } from './controllers/LoginController.ts';
+import { MiscController, type MiscQuery } from './controllers/MiscController.ts';
 import { ProfileController, type ProfileQuery } from './controllers/ProfileController.ts';
 import { SearchController, type SearchQuery } from './controllers/SearchController.ts';
 import { TopicController, type TopicQuery } from './controllers/TopicController.ts';
@@ -34,7 +35,7 @@ import type { SearchReader } from './repositories/SearchRepository.ts';
 import type { StatsReader } from './repositories/StatsRepository.ts';
 import type { StopwordsReader } from './repositories/StopwordsLoader.ts';
 import type { TopicLabelReader } from './repositories/TopicLabelRepository.ts';
-import type { TopicReader } from './repositories/TopicRepository.ts';
+import type { TopicReader, TopicWriter } from './repositories/TopicRepository.ts';
 import type { CredentialsStore, MemberListReader, ProfileReader } from './repositories/UserRepository.ts';
 import type { UsersInfoReader } from './repositories/UsersInfoLoader.ts';
 import type { AvatarLocator } from './services/avatars.ts';
@@ -56,6 +57,7 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	credentials: CredentialsStore;
 	profiles: ProfileReader;
 	topics: TopicReader;
+	topicWriter: TopicWriter;
 	posts: PostReader;
 	avatars: AvatarLocator;
 	censorship: CensorReader;
@@ -80,6 +82,7 @@ const PORTED_PAGES = new Set([
 	'help.php',
 	'index.php',
 	'login.php',
+	'misc.php',
 	'profile.php',
 	'search.php',
 	'userlist.php',
@@ -188,13 +191,19 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 			: renderMessage(request, reply, deps, 400, deps.page.lang.common.badRequest),
 	);
 
+	// misc.php : visite discrète dès qu'une action est demandée (PUN_QUIET_VISIT).
+	const miscSession = session({ quiet: (request) => (request.query as MiscQuery).action !== undefined });
+	const misc = new MiscController({ ...deps, trackCookieName });
+	app.get<{ Querystring: MiscQuery }>('/misc.php', { preHandler: miscSession }, misc.show);
+	app.post<{ Querystring: MiscQuery; Body: FormBody }>('/misc.php', { preHandler: [miscSession, verifyCsrf] }, misc.markRead);
+
 	const help = new HelpController(deps);
 	app.get('/help.php', { preHandler: authenticate }, help.show);
 
 	const profiles = new ProfileController(deps);
 	app.get<{ Querystring: ProfileQuery }>('/profile.php', { preHandler: authenticate }, profiles.show);
 
-	const topics = new TopicController(deps);
+	const topics = new TopicController({ ...deps, topicViews: deps.topicWriter, trackCookieName });
 	app.get<{ Querystring: TopicQuery }>('/viewtopic.php', { preHandler: authenticate }, topics.show);
 
 	return app;

@@ -56,8 +56,8 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
 - [x] Jeton CSRF commun à tous les formulaires (double soumission + Origin, `partials/forms.njk`)
 - [x] Bannissements (`bans` : pseudo, IP, expiration ; l'e-mail ne sert qu'à l'inscription) + mode maintenance
 - [x] Table `online` : présence et invités, mise à jour par requête, `last_visit`, purge (`update_users_online()`)
-- [ ] Suivi des sujets lus (`action=new`, marquer comme lu)
-- [ ] Compteur de vues des sujets
+- [x] Suivi des sujets lus (`action=new`, marquer comme lu en POST, règles) — `misc.php` en partie porté
+- [x] Compteur de vues des sujets
 - [ ] Contrôle d'accès par groupe et par forum (`forum_perms`) généralisé
 
 ## Lot 3 — Rédaction

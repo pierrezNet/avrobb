@@ -111,6 +111,13 @@ describe('TopicRepository', () => {
 		expect(await topics.findReadable(12, GroupId.Member)).toBeNull();
 	});
 
+	it('premier message après une date, compteur de vues', async () => {
+		expect(await topics.findFirstPostAfter(10, 1_782_800_050)).toBe(101);
+		expect(await topics.findFirstPostAfter(10, 1_782_800_200)).toBeNull();
+		await topics.incrementViews(11);
+		expect((await db.selectFrom('topics').select('num_views').where('id', '=', 11).executeTakeFirstOrThrow()).num_views).toBe(2);
+	});
+
 	it('situe un message dans son sujet', async () => {
 		expect(await topics.locatePost(102)).toEqual({ topicId: 10, position: 3 });
 		expect(await topics.locatePost(999)).toBeNull();
@@ -402,6 +409,7 @@ describe('viewtopic de bout en bout', () => {
 			credentials: new UserRepository(db),
 			profiles: new UserRepository(db),
 			topics: new TopicRepository(db),
+			topicWriter: new TopicRepository(db),
 			posts: new PostRepository(db),
 			forums: new ForumRepository(db),
 			reports: new ReportRepository(db),

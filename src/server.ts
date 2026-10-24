@@ -36,6 +36,7 @@ const phpCache = config.legacyRoot !== '' ? new PhpCacheFiles(path.join(config.l
 
 const stats = new StatsRepository(db);
 const users = new UserRepository(db);
+const topics = new TopicRepository(db);
 
 const app = await buildApp({
 	config: new ConfigLoader(new ConfigRepository(db), phpCache, clock),
@@ -43,7 +44,8 @@ const app = await buildApp({
 	members: users,
 	credentials: users,
 	profiles: users,
-	topics: new TopicRepository(db),
+	topics,
+	topicWriter: topics,
 	posts: new PostRepository(db),
 	forums: new ForumRepository(db),
 	reports: new ReportRepository(db),

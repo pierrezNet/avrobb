@@ -1,6 +1,7 @@
 {#- Liste des sujets d'un forum (viewforum.php). Données : `view` (presenters/forumPage.ts). -#}
 {% extends "layout.njk" %}
 {% import "partials/navigation.njk" as navigation %}
+{% import "partials/actions.njk" as actions %}
 
 {% macro forumBar(view, lang) %}
 <div class="page-bar">
@@ -63,11 +64,11 @@
 {{ navigation.breadcrumbs(view.crumbs, lang) }}
 
 {% if view.subscription or view.markReadUrl %}
-<p class="forum-actions">
+<div class="forum-actions">
 	{% if view.subscription %}
 		{% if view.subscription.subscribed %}<span>{{ lang.forum.isSubscribed }} - </span><a href="{{ url(view.subscription.href) }}">{{ lang.forum.unsubscribe }}</a>{% else %}<a href="{{ url(view.subscription.href) }}">{{ lang.forum.subscribe }}</a>{% endif %}
 	{% endif %}
-	{% if view.markReadUrl %}<a href="{{ url(view.markReadUrl) }}">{{ lang.forum.markForumRead }}</a>{% endif %}
-</p>
+	{% if view.markReadUrl %}{{ actions.postButton(layout, view.markReadUrl, lang.forum.markForumRead) }}{% endif %}
+</div>
 {% endif %}
 {% endblock %}

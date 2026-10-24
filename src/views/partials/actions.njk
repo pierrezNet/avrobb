@@ -1,0 +1,6 @@
+{#- Boutons d'action qui écrivent : un petit formulaire POST protégé par le jeton CSRF. -#}
+{% import "partials/forms.njk" as forms %}
+
+{% macro postButton(layout, action, label) %}
+<form class="inline-form" method="post" action="{{ url(action) }}">{{ forms.csrf(layout) }}<button type="submit" class="link-button">{{ label }}</button></form>
+{% endmacro %}

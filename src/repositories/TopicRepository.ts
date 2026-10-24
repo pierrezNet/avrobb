@@ -25,11 +25,18 @@ export interface TopicReader {
 	 * @param dotUserId membre pour qui calculer « le point » (o_show_dot), ou null
 	 */
 	listForumPage(forumId: number, sort: TopicSort, offset: number, limit: number, dotUserId: number | null): Promise<TopicSummary[]>;
+	/** Premier message posté après `since` (viewtopic.php?action=new), ou null. */
+	findFirstPostAfter(topicId: number, since: number): Promise<number | null>;
+}
+
+export interface TopicWriter {
+	/** num_views + 1 à chaque affichage d'un sujet (o_topic_views). */
+	incrementViews(topicId: number): Promise<void>;
 }
 
 const SORT_COLUMNS = { lastPost: 't.last_post', posted: 't.posted', subject: 't.subject' } as const;
 
-export class TopicRepository implements TopicReader {
+export class TopicRepository implements TopicReader, TopicWriter {
 	constructor(private readonly db: Db) {}
 
 	async findReadable(topicId: number, groupId: number): Promise<Topic | null> {
@@ -156,5 +163,23 @@ export class TopicRepository implements TopicReader {
 			movedTo: row.moved_to !== null && row.moved_to !== 0 ? row.moved_to : null,
 			hasPosted: Boolean(Number(row.has_posted)),
 		}));
+	}
+
+	async findFirstPostAfter(topicId: number, since: number): Promise<number | null> {
+		const row = await this.db
+			.selectFrom('posts')
+			.select((eb) => eb.fn.min('id').as('first_id'))
+			.where('topic_id', '=', topicId)
+			.where('posted', '>', since)
+			.executeTakeFirst();
+		return row?.first_id ?? null;
+	}
+
+	async incrementViews(topicId: number): Promise<void> {
+		await this.db
+			.updateTable('topics')
+			.set((eb) => ({ num_views: eb('num_views', '+', 1) }))
+			.where('id', '=', topicId)
+			.execute();
 	}
 }

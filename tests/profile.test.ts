@@ -83,7 +83,7 @@ describe('GET /profile.php', () => {
 		expect(res.body).toContain('<title>Profil de valdefsx / Forum de test</title>');
 		expect(res.body).toContain('Valentin &lt;V&gt;');
 		expect(res.body).toContain('<a href="http://www.valdefsx.test" rel="nofollow ugc">www.valdefsx.test</a>');
-		expect(res.body).toContain('http://php.test/misc.php?email=6');
+		expect(res.body).toContain('href="misc.php?email=6"');
 		expect(res.body).not.toContain('val@example.test');
 		expect(res.body).toContain('<dd>12345</dd>');
 		expect(res.body).toContain('<strong>Bons vols</strong>');

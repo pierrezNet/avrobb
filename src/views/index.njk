@@ -1,6 +1,7 @@
 {#- Index des forums (index.php). Données : `view` (presenters/indexPage.ts). -#}
 {% extends "layout.njk" %}
 {% import "partials/people.njk" as people %}
+{% import "partials/actions.njk" as actions %}
 
 {% block main %}
 <h1 class="visually-hidden">{{ layout.boardTitle }}</h1>
@@ -46,7 +47,7 @@
 {% endfor %}
 
 {% if view.markReadUrl %}
-<p class="page-bar"><a class="button" href="{{ url(view.markReadUrl) }}">{{ lang.index.markAllAsRead }}</a></p>
+<div class="page-bar">{{ actions.postButton(layout, view.markReadUrl, lang.index.markAllAsRead) }}</div>
 {% endif %}
 
 <section class="board-stats" id="brdstats" aria-labelledby="brdstats-title">

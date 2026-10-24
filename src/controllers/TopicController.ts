@@ -4,16 +4,19 @@
  */
 
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { LegacyCookieConfig } from '../config.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
+import { setForumCookie } from '../http/session.ts';
 import { buildTopicPage, topicUrl } from '../presenters/topicPage.ts';
 import type { BanReader } from '../repositories/BanRepository.ts';
 import type { CensorReader } from '../repositories/CensorRepository.ts';
 import type { PostReader } from '../repositories/PostRepository.ts';
 import type { TopicLabelReader } from '../repositories/TopicLabelRepository.ts';
-import type { TopicReader } from '../repositories/TopicRepository.ts';
+import type { TopicReader, TopicWriter } from '../repositories/TopicRepository.ts';
 import type { AvatarLocator } from '../services/avatars.ts';
 import { buildCensor } from '../services/censor.ts';
 import { clampPage, pageCount } from '../services/pagination.ts';
+import { markRead, parseTrackedTopics, serializeTrackedTopics } from '../services/trackedTopics.ts';
 import { positiveInt } from './params.ts';
 
 export interface TopicControllerDeps extends LayoutDeps {
@@ -23,6 +26,9 @@ export interface TopicControllerDeps extends LayoutDeps {
 	bans: BanReader;
 	censorship: CensorReader;
 	topicLabels: TopicLabelReader;
+	topicViews: TopicWriter;
+	legacyCookie: LegacyCookieConfig;
+	trackCookieName: string;
 }
 
 export interface TopicQuery {
@@ -50,8 +56,17 @@ export class TopicController {
 
 		if (id === 0) return this.notFound(request, reply);
 
-		// action=new demande le suivi des sujets lus (cookie PHP) : non repris, on va au dernier message.
-		if (request.query.action === 'last' || request.query.action === 'new') {
+		// action=new : premier message non lu (d'après le cookie de suivi ou la dernière visite), sinon le dernier.
+		if (request.query.action === 'new') {
+			if (!viewer.isGuest) {
+				const tracked = parseTrackedTopics(request.cookies[this.deps.trackCookieName]);
+				const firstNew = await this.deps.topics.findFirstPostAfter(id, tracked.topics.get(id) ?? viewer.lastVisit);
+				if (firstNew !== null) return reply.redirect(`viewtopic.php?pid=${firstNew}#p${firstNew}`);
+			}
+			return reply.redirect(`viewtopic.php?id=${id}&action=last`);
+		}
+
+		if (request.query.action === 'last') {
 			const lastPostId = await this.deps.topics.findLastPostId(id);
 			if (lastPostId !== null) return reply.redirect(`viewtopic.php?pid=${lastPostId}#p${lastPostId}`);
 		}
@@ -77,6 +92,8 @@ export class TopicController {
 					avatars.set(post.author.id, await this.deps.avatars.urlFor(post.author.id, config.avatarsDir));
 			}
 		}
+
+		await this.recordVisit(request, reply, topic.id);
 
 		const view = buildTopicPage({
 			viewer,
@@ -112,6 +129,31 @@ export class TopicController {
 			view,
 		);
 	};
+
+	/**
+	 * Effets de l'affichage d'un sujet, comme viewtopic.php : sujet marqué lu dans le cookie de suivi
+	 * (membres), puis compteur de vues (o_topic_views). Seules écritures faites sur un GET, comme
+	 * dans tout forum : elles ne dépendent d'aucune action du visiteur.
+	 */
+	private async recordVisit(request: FastifyRequest, reply: FastifyReply, topicId: number): Promise<void> {
+		const { viewer, board: config } = request;
+		const now = this.deps.page.clock();
+
+		if (!viewer.isGuest) {
+			const tracked = markRead(parseTrackedTopics(request.cookies[this.deps.trackCookieName]), 'topics', topicId, now);
+			setForumCookie(
+				reply,
+				this.deps.legacyCookie,
+				this.deps.trackCookieName,
+				serializeTrackedTopics(tracked),
+				now + config.timeoutVisit,
+				now,
+				config.timeoutVisit,
+			);
+		}
+
+		if (config.topicViews) await this.deps.topicViews.incrementViews(topicId);
+	}
 
 	private async redirectToPost(request: FastifyRequest, reply: FastifyReply, pid: number, perPage: number): Promise<FastifyReply> {
 		const location = await this.deps.topics.locatePost(pid);

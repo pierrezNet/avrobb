@@ -91,6 +91,12 @@ describe('edit.php', () => {
 		expect(reply.body).toContain('>Réponse [b]zut[/b]</textarea>');
 	});
 
+	it('présente le texte d’origine, non censuré (la censure reste à l’affichage)', async () => {
+		app = await buildApp(fakeDeps(data({ config: { censoring: true }, censoredWords: [{ searchFor: 'zut', replaceWith: '***' }] })));
+		const res = await app.inject({ url: '/edit.php?id=101', headers: { cookie: tessy } });
+		expect(res.body).toContain('>Réponse [b]zut[/b]</textarea>');
+	});
+
 	it('refuse hors délai, sur le message d’un autre, ou un identifiant inconnu', async () => {
 		app = await buildApp(
 			fakeDeps(data({ posts: new Map([[10, [post(100, { posted: NOW - 3600 }), post(101, { author: null, username: 'Invité' })]]]) })),

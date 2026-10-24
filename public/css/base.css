@@ -598,7 +598,7 @@ a.site-status__alert {
 /* Retour à la ligne simple (Entrée) : demi-interligne d'écart (services/bbcode.ts). */
 .bbcode-gap {
 	display: block;
-	height: 0.4em;
+	height: 0.75rem;
 }
 
 .bbcode > :last-child {

@@ -62,6 +62,8 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   voulait (son code comparait `strtotime()` d'un timestamp, toujours faux : seuls les modérateurs
   pouvaient modifier) ; le lien « Modifier » de viewtopic suit la même règle. Le lien « Supprimer »
   suit exactement la règle de `delete.php` (le PHP pouvait afficher un lien refusé ensuite).
+  Le formulaire présente le texte d'origine (le PHP y mettait le texte censuré, qui remplaçait
+  alors définitivement les mots d'origine en base).
 - Brouillons (PV) : table `brouillons` absente de la base locale, reconstituée d'après le code PHP
   (`tests/db/schema.sql`). Publier un brouillon repris le supprime ; sa modification suit les
   contrôles de `post.php` ; lien « Mes brouillons » sous les options du formulaire (le PHP n'y

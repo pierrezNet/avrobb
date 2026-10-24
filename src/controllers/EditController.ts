@@ -2,7 +2,9 @@
  * Contrôleur de edit.php : modification d'un message (et du sujet s'il l'ouvre), prévisualisation,
  * enregistrement avec mise à jour de l'index de recherche.
  *
- * Comme le PHP, le formulaire présente le texte déjà censuré : l'enregistrer conserve la censure.
+ * Écart assumé : le formulaire présente le texte d'origine. Le PHP y mettait le texte censuré, que
+ * l'enregistrement écrivait en base : les mots d'origine étaient perdus. La censure reste
+ * appliquée à l'affichage (fil d'Ariane, prévisualisation, messages).
  */
 
 import type { FastifyReply, FastifyRequest } from 'fastify';
@@ -46,7 +48,6 @@ export class EditController {
 		const post = await this.resolvePost(request, reply);
 		if (!('topic' in post)) return post;
 		const censor = await this.censor(request.board);
-		const censored = (text: string): string => (censor !== null ? censor(text) : text);
 
 		return this.renderForm(
 			request,
@@ -54,8 +55,9 @@ export class EditController {
 			post,
 			censor,
 			{
-				subject: censored(post.topic.subject),
-				message: censored(post.message),
+				// Texte d'origine, non censuré : l'enregistrer ne doit pas figer la censure en base.
+				subject: post.topic.subject,
+				message: post.message,
 				username: '',
 				email: '',
 				hideSmilies: post.hideSmilies,

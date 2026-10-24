@@ -889,6 +889,114 @@ a.site-status__alert {
 	border-top: 1px solid var(--color-border);
 }
 
+/* ---------- Formulaires ---------- */
+
+.form-box {
+	margin-bottom: 1rem;
+	padding: 0.75rem 1rem;
+	border: 1px solid var(--color-border);
+	border-radius: 0.5rem;
+	background: var(--color-surface);
+}
+
+.form-box__title {
+	margin: 0 0 0.5rem;
+	font-size: 1.125rem;
+}
+
+.form__fieldset {
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+.form__legend {
+	margin-bottom: 0.5rem;
+	padding: 0;
+	font-weight: 600;
+}
+
+.form__grid {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 0.75rem 1rem;
+}
+
+.form__field {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+	margin: 0;
+}
+
+.form__field label {
+	font-weight: 600;
+}
+
+.form__field input,
+.form__field select,
+.form__field textarea {
+	width: 100%;
+	min-height: 2.75rem;
+	padding: 0.375rem 0.5rem;
+	border: 1px solid var(--color-border);
+	border-radius: 0.25rem;
+	background: var(--color-surface);
+	color: var(--color-text);
+	font: inherit;
+}
+
+.form__help {
+	margin: 0.75rem 0 0;
+	color: var(--color-muted);
+	font-size: 0.875rem;
+}
+
+.form__buttons {
+	margin: 0.75rem 0 0;
+}
+
+/* ---------- Tableaux de données ---------- */
+
+.data-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 0.9375rem;
+}
+
+/* Mobile : chaque ligne devient une carte, l'en-tête de colonne repris en libellé. */
+.data-table thead {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+}
+
+.data-table tr {
+	display: block;
+	padding: 0.5rem 0.75rem;
+	border-top: 1px solid var(--color-border);
+}
+
+.data-table th,
+.data-table td {
+	display: block;
+	padding: 0.125rem 0;
+	text-align: left;
+}
+
+.data-table td::before {
+	content: attr(data-label) " : ";
+	color: var(--color-muted);
+}
+
+.data-table tbody th a {
+	display: inline-block;
+	padding: 0.25rem 0;
+	font-weight: 700;
+}
+
 /* ---------- Pages d'information ---------- */
 
 .message-box {
@@ -1051,6 +1159,46 @@ a.site-status__alert {
 	}
 
 	.site-footer__info {
+		text-align: right;
+	}
+
+	.form__grid {
+		grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+	}
+
+	.data-table thead {
+		position: static;
+		width: auto;
+		height: auto;
+		overflow: visible;
+		clip: auto;
+	}
+
+	.data-table thead th {
+		padding: 0.375rem 0.75rem;
+		border-bottom: 1px solid var(--color-border);
+		background: var(--color-surface-alt);
+		color: var(--color-muted);
+		font-size: 0.8125rem;
+	}
+
+	.data-table tr {
+		display: table-row;
+		padding: 0;
+	}
+
+	.data-table th,
+	.data-table td {
+		display: table-cell;
+		padding: 0.375rem 0.75rem;
+		border-top: 1px solid var(--color-border);
+	}
+
+	.data-table td::before {
+		content: none;
+	}
+
+	.data-table .data-table__num {
 		text-align: right;
 	}
 

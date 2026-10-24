@@ -10,6 +10,9 @@ import {
 	type Group,
 	GroupId,
 	type IndexCategory,
+	type MemberFilter,
+	type MemberSort,
+	type MemberSummary,
 	type OnlineVisitor,
 	type Post,
 	type RecentTopic,
@@ -41,6 +44,7 @@ export function group(overrides: Partial<Group> = {}): Group {
 		canSendEmail: true,
 		canPostTopics: true,
 		canSearch: true,
+		canSearchUsers: true,
 		canUsePrivateMessages: true,
 		privateMessageLimit: 0,
 		canUseReputation: true,
@@ -196,8 +200,16 @@ export interface FakeData {
 	/** Sujets par forum, déjà dans l'ordre d'affichage. */
 	forumTopics?: Map<number, TopicSummary[]>;
 	labelDefinitions?: TopicLabel[];
+	members?: MemberSummary[];
 	recentTopics?: RecentTopic[];
 	online?: OnlineVisitor[];
+}
+
+const sortKey = (sort: MemberSort): 'username' | 'registered' | 'numPosts' => (sort === 'num_posts' ? 'numPosts' : sort);
+
+function matchMember(member: MemberSummary, filter: MemberFilter): boolean {
+	const pattern = filter.username === null ? null : new RegExp(`^${filter.username.replaceAll('*', '.*')}$`, 'i');
+	return (pattern === null || pattern.test(member.username)) && (filter.groupId === null || member.groupId === filter.groupId);
 }
 
 export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppDeps {
@@ -207,6 +219,18 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 	return {
 		config: { load: async () => ({ ...boardConfig, ...data.config }) },
 		users: { findViewer: async (id) => data.users.find((u) => u.viewer.id === id) ?? null },
+		members: {
+			countMembers: async (filter) => (data.members ?? []).filter((m) => matchMember(m, filter)).length,
+			listMembers: async (filter, sort, direction, offset, limit) =>
+				(data.members ?? [])
+					.filter((m) => matchMember(m, filter))
+					.sort((a, b) => (a[sortKey(sort)] < b[sortKey(sort)] ? -1 : 1) * (direction === 'asc' ? 1 : -1))
+					.slice(offset, offset + limit),
+			listGroups: async () => [
+				{ id: GroupId.Admin, title: 'Administrateurs' },
+				{ id: GroupId.Member, title: 'Membres' },
+			],
+		},
 		topics: {
 			findReadable: async (id, groupId) => {
 				const found = data.topics.find((t) => t.id === id) ?? null;

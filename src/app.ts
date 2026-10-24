@@ -12,6 +12,7 @@ import nunjucks from 'nunjucks';
 import { ForumController, type ForumQuery } from './controllers/ForumController.ts';
 import { IndexController } from './controllers/IndexController.ts';
 import { TopicController, type TopicQuery } from './controllers/TopicController.ts';
+import { UserlistController, type UserlistParams } from './controllers/UserlistController.ts';
 import type { BoardConfig, Viewer } from './domain/models.ts';
 import { ASSETS_PREFIX, createAssetUrl } from './http/assets.ts';
 import { type LayoutDeps, renderMessage, renderMinimalMessage } from './http/layout.ts';
@@ -23,7 +24,7 @@ import type { PostReader } from './repositories/PostRepository.ts';
 import type { StatsReader } from './repositories/StatsRepository.ts';
 import type { TopicLabelReader } from './repositories/TopicLabelRepository.ts';
 import type { TopicReader } from './repositories/TopicRepository.ts';
-import type { UserReader } from './repositories/UserRepository.ts';
+import type { MemberListReader, UserReader } from './repositories/UserRepository.ts';
 import type { UsersInfoReader } from './repositories/UsersInfoLoader.ts';
 import type { AvatarLocator } from './services/avatars.ts';
 
@@ -39,6 +40,7 @@ declare module 'fastify' {
 export interface AppDeps extends LayoutDeps {
 	config: ConfigReader;
 	users: UserReader;
+	members: MemberListReader;
 	topics: TopicReader;
 	posts: PostReader;
 	avatars: AvatarLocator;
@@ -56,7 +58,7 @@ export interface AppDeps extends LayoutDeps {
 }
 
 /** Pages déjà servies par Node ; les autres liens partent vers l'installation PHP. */
-const PORTED_PAGES = new Set(['index.php', 'viewforum.php', 'viewtopic.php']);
+const PORTED_PAGES = new Set(['index.php', 'userlist.php', 'viewforum.php', 'viewtopic.php']);
 
 const ROOT_DIR = path.join(import.meta.dirname, '..');
 
@@ -115,6 +117,9 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 
 	const forums = new ForumController({ ...deps, trackCookieName });
 	app.get<{ Querystring: ForumQuery }>('/viewforum.php', { preHandler: authenticate }, forums.show);
+
+	const userlist = new UserlistController(deps);
+	app.get<{ Querystring: UserlistParams }>('/userlist.php', { preHandler: authenticate }, userlist.show);
 
 	const topics = new TopicController(deps);
 	app.get<{ Querystring: TopicQuery }>('/viewtopic.php', { preHandler: authenticate }, topics.show);

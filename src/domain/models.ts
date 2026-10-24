@@ -27,6 +27,7 @@ export interface Group {
 	canSendEmail: boolean;
 	canPostTopics: boolean;
 	canSearch: boolean;
+	canSearchUsers: boolean;
 	/** Messagerie privée autorisée au groupe (g_pm, mod APMS). */
 	canUsePrivateMessages: boolean;
 	/** Nombre maximal de MP conservés (g_pm_limit) ; 0 = illimité. */
@@ -276,4 +277,28 @@ export interface TopicSummary {
 	movedTo: number | null;
 	/** Le membre a écrit dans ce sujet (« le point ») ; toujours faux si o_show_dot est désactivé. */
 	hasPosted: boolean;
+}
+
+/** Membre dans la liste des membres (userlist.php). */
+export interface MemberSummary {
+	id: number;
+	username: string;
+	title: string;
+	numPosts: number;
+	registered: number;
+	groupId: number;
+	groupUserTitle: string;
+}
+
+export interface GroupSummary {
+	id: number;
+	title: string;
+}
+
+export type MemberSort = 'username' | 'registered' | 'num_posts';
+
+export interface MemberFilter {
+	/** Motif de pseudo, « * » jouant le rôle du joker ; null pour tous. */
+	username: string | null;
+	groupId: number | null;
 }

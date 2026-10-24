@@ -40,7 +40,7 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
   - [x] ~~Pièces jointes~~ : sans objet, les uploads sont insérés par `[img]`/`[url]` (gestionnaire : lot 5)
 - [x] **index** : catégories, forums, derniers messages, statistiques, utilisateurs en ligne (nouveau gabarit en `<div>`)
 - [x] **viewforum** : liste des sujets, pagination, épinglés, déplacés, icônes lu/non lu (lecture seule)
-- [ ] **userlist** : recherche, tri, pagination
+- [x] **userlist** : recherche, tri, pagination
 - [ ] **profile** (consultation) : sections publiques, biographie (`UP_Ma_biographie`) **(PV)**
 - [ ] **help** (aide BBCode et émoticônes) — `balises.php` n'est pas une page mais l'inclusion qui colore les balises dans viewforum (fait, `styleSubject()`)
 - [ ] **search** : formulaire et résultats (lecture de l'index existant `search_*`, `search_cache`)

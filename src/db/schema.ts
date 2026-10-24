@@ -92,6 +92,7 @@ export interface GroupsTable {
 	g_send_email: number;
 	g_post_topics: number;
 	g_search: number;
+	g_search_users: number;
 	g_pm: number;
 	g_pm_limit: number;
 	g_rep_enable: number;

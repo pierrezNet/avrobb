@@ -30,10 +30,12 @@ const clock = (): number => Math.floor(Date.now() / 1000);
 const phpCache = config.legacyRoot !== '' ? new PhpCacheFiles(path.join(config.legacyRoot, 'cache')) : null;
 
 const stats = new StatsRepository(db);
+const users = new UserRepository(db);
 
 const app = await buildApp({
 	config: new ConfigLoader(new ConfigRepository(db), phpCache, clock),
-	users: new UserRepository(db),
+	users,
+	members: users,
 	topics: new TopicRepository(db),
 	posts: new PostRepository(db),
 	forums: new ForumRepository(db),

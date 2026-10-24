@@ -1,0 +1,78 @@
+{#- Liste des membres (userlist.php). Données : `view` (presenters/userlistPage.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/navigation.njk" as navigation %}
+
+{% block main %}
+<h1 class="page-title">{{ lang.common.userList }}</h1>
+
+<section class="form-box" aria-labelledby="usersearch-title">
+	<h2 class="form-box__title" id="usersearch-title">{{ lang.userlist.userSearch }}</h2>
+	<form id="userlist" class="form" method="get" action="{{ url('userlist.php') }}">
+		<fieldset class="form__fieldset">
+			<legend class="form__legend">{{ lang.userlist.userFindLegend }}</legend>
+			<div class="form__grid">
+				{% if view.form.showUsername %}
+				<p class="form__field">
+					<label for="ul-username">{{ lang.userlist.username }}</label>
+					<input type="search" id="ul-username" name="username" value="{{ view.form.username }}" maxlength="25" autocomplete="off">
+				</p>
+				{% endif %}
+				<p class="form__field">
+					<label for="ul-group">{{ lang.userlist.userGroup }}</label>
+					<select id="ul-group" name="show_group">
+						<option value="-1"{% if view.form.allGroupsSelected %} selected{% endif %}>{{ lang.userlist.allUsers }}</option>
+						{% for group in view.form.groups %}<option value="{{ group.id }}"{% if group.selected %} selected{% endif %}>{{ group.title }}</option>{% endfor %}
+					</select>
+				</p>
+				<p class="form__field">
+					<label for="ul-sort">{{ lang.userlist.sortBy }}</label>
+					<select id="ul-sort" name="sort_by">
+						{% for sort in view.form.sorts %}<option value="{{ sort.value }}"{% if sort.selected %} selected{% endif %}>{{ sort.label }}</option>{% endfor %}
+					</select>
+				</p>
+				<p class="form__field">
+					<label for="ul-dir">{{ lang.userlist.sortOrder }}</label>
+					<select id="ul-dir" name="sort_dir">
+						<option value="ASC"{% if not view.form.descending %} selected{% endif %}>{{ lang.userlist.ascending }}</option>
+						<option value="DESC"{% if view.form.descending %} selected{% endif %}>{{ lang.userlist.descending }}</option>
+					</select>
+				</p>
+			</div>
+			<p class="form__help">{{ view.form.help }}</p>
+		</fieldset>
+		<p class="form__buttons"><button type="submit" class="button button--primary" name="search" value="1">{{ lang.userlist.submit }}</button></p>
+	</form>
+</section>
+
+<div class="page-bar">{{ navigation.pagination(view.pagination, lang) }}</div>
+
+<section class="category" id="users1" aria-labelledby="users-title">
+	<h2 class="category__title" id="users-title">{{ lang.common.userList }}</h2>
+	{% if view.members.length %}
+	<table class="data-table">
+		<thead>
+			<tr>
+				<th scope="col">{{ lang.userlist.username }}</th>
+				<th scope="col">{{ lang.userlist.title }}</th>
+				{% if view.showPostCount %}<th scope="col" class="data-table__num">{{ lang.userlist.posts }}</th>{% endif %}
+				<th scope="col">{{ lang.userlist.registered }}</th>
+			</tr>
+		</thead>
+		<tbody>
+		{% for member in view.members %}
+			<tr>
+				<th scope="row" data-label="{{ lang.userlist.username }}"><a href="{{ url(member.href) }}">{{ member.username }}</a></th>
+				<td data-label="{{ lang.userlist.title }}">{{ member.title }}</td>
+				{% if view.showPostCount %}<td class="data-table__num" data-label="{{ lang.userlist.posts }}">{{ member.numPosts }}</td>{% endif %}
+				<td data-label="{{ lang.userlist.registered }}">{{ member.registered }}</td>
+			</tr>
+		{% endfor %}
+		</tbody>
+	</table>
+	{% else %}
+	<p class="forum-row">{{ lang.userlist.noHits }}</p>
+	{% endif %}
+</section>
+
+<div class="page-bar">{{ navigation.pagination(view.pagination, lang) }}</div>
+{% endblock %}

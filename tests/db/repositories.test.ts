@@ -56,6 +56,30 @@ describe('UserRepository', () => {
 	});
 });
 
+describe('liste des membres', () => {
+	const members = new UserRepository(db);
+	const all = { username: null, groupId: null };
+
+	it('exclut l’invité, trie et filtre par pseudo (joker *) ou groupe', async () => {
+		expect(await members.countMembers(all)).toBe(3);
+		expect((await members.listMembers(all, 'username', 'asc', 0, 50)).map((m) => m.username)).toEqual(['admin', 'MaxDUO', 'Tessy']);
+		expect((await members.listMembers(all, 'registered', 'desc', 0, 2)).map((m) => m.id)).toEqual([5, 3]);
+		expect((await members.listMembers({ username: 'm*', groupId: null }, 'username', 'asc', 0, 50)).map((m) => m.username)).toEqual([
+			'MaxDUO',
+		]);
+		expect(await members.countMembers({ username: null, groupId: GroupId.Member })).toBe(1);
+		expect((await members.listMembers(all, 'num_posts', 'desc', 0, 1))[0]).toMatchObject({
+			username: 'Tessy',
+			title: 'Pilote de ligne',
+			numPosts: 2,
+		});
+	});
+
+	it('propose tous les groupes sauf les invités', async () => {
+		expect((await members.listGroups()).map((g) => g.id)).toEqual([1, 2, 4]);
+	});
+});
+
 describe('TopicRepository', () => {
 	const topics = new TopicRepository(db);
 
@@ -242,6 +266,7 @@ describe('viewtopic de bout en bout', () => {
 		return buildApp({
 			config: new ConfigLoader(new ConfigRepository(db), null, () => NOW),
 			users: new UserRepository(db),
+			members: new UserRepository(db),
 			topics: new TopicRepository(db),
 			posts: new PostRepository(db),
 			forums: new ForumRepository(db),

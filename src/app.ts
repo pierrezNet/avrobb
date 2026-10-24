@@ -22,7 +22,6 @@ import type { BoardConfig, Viewer } from './domain/models.ts';
 import { ASSETS_PREFIX, createAssetUrl } from './http/assets.ts';
 import { type LayoutDeps, renderBlock, renderMessage, renderMinimalMessage } from './http/layout.ts';
 import { checkAccess, purgeOnline, type SessionDeps, startSession } from './http/session.ts';
-import type { BanReader } from './repositories/BanRepository.ts';
 import type { CensorReader } from './repositories/CensorRepository.ts';
 import type { ConfigReader } from './repositories/ConfigLoader.ts';
 import type { FeedReader } from './repositories/FeedRepository.ts';
@@ -33,7 +32,7 @@ import type { StatsReader } from './repositories/StatsRepository.ts';
 import type { StopwordsReader } from './repositories/StopwordsLoader.ts';
 import type { TopicLabelReader } from './repositories/TopicLabelRepository.ts';
 import type { TopicReader } from './repositories/TopicRepository.ts';
-import type { MemberListReader, ProfileReader, UserReader } from './repositories/UserRepository.ts';
+import type { MemberListReader, ProfileReader } from './repositories/UserRepository.ts';
 import type { UsersInfoReader } from './repositories/UsersInfoLoader.ts';
 import type { AvatarLocator } from './services/avatars.ts';
 

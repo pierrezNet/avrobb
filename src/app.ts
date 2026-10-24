@@ -20,8 +20,8 @@ import { TopicController, type TopicQuery } from './controllers/TopicController.
 import { UserlistController, type UserlistParams } from './controllers/UserlistController.ts';
 import type { BoardConfig, Viewer } from './domain/models.ts';
 import { ASSETS_PREFIX, createAssetUrl } from './http/assets.ts';
-import { type LayoutDeps, renderMessage, renderMinimalMessage } from './http/layout.ts';
-import { resolveViewer } from './http/session.ts';
+import { type LayoutDeps, renderBlock, renderMessage, renderMinimalMessage } from './http/layout.ts';
+import { checkAccess, purgeOnline, type SessionDeps, startSession } from './http/session.ts';
 import type { BanReader } from './repositories/BanRepository.ts';
 import type { CensorReader } from './repositories/CensorRepository.ts';
 import type { ConfigReader } from './repositories/ConfigLoader.ts';
@@ -46,15 +46,13 @@ declare module 'fastify' {
 	}
 }
 
-export interface AppDeps extends LayoutDeps {
+export interface AppDeps extends LayoutDeps, SessionDeps {
 	config: ConfigReader;
-	users: UserReader;
 	members: MemberListReader;
 	profiles: ProfileReader;
 	topics: TopicReader;
 	posts: PostReader;
 	avatars: AvatarLocator;
-	bans: BanReader;
 	censorship: CensorReader;
 	topicLabels: TopicLabelReader;
 	stats: StatsReader;
@@ -63,7 +61,6 @@ export interface AppDeps extends LayoutDeps {
 	gallery: GalleryReader;
 	stopwords: StopwordsReader;
 	usersInfo: UsersInfoReader;
-	legacyCookie: { name: string; seed: string };
 	/** URL de l'installation PHP : les liens vers les pages non portées y renvoient. */
 	legacyBaseUrl: string;
 	/** Derrière un reverse proxy : l'IP du client est lue dans X-Forwarded-For. */
@@ -122,12 +119,23 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 	app.decorateRequest('viewer', null as unknown as Viewer);
 	app.decorateRequest('board', null as unknown as BoardConfig);
 
-	// Équivalent de common.php : réglages du forum puis utilisateur courant. Déclaré par route
-	// (et non globalement) pour que les fichiers statiques ne coûtent aucune requête SQL.
-	const authenticate = async (request: FastifyRequest): Promise<void> => {
-		request.board = await deps.config.load();
-		request.viewer = await resolveViewer(request.cookies[deps.legacyCookie.name], deps.users, deps.legacyCookie.seed, deps.page.clock());
-	};
+	// Équivalent de common.php : réglages, visiteur et présence, maintenance, bannissements. Déclaré
+	// par route (et non globalement) pour que les fichiers statiques ne coûtent aucune requête SQL.
+	const session =
+		(options: { quiet?: boolean; allowDuringMaintenance?: boolean } = {}) =>
+		async (request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply | undefined> => {
+			const now = deps.page.clock();
+			request.board = await deps.config.load();
+			request.viewer = await startSession(request, reply, deps, request.board, now, { quiet: options.quiet ?? false });
+
+			const block = await checkAccess(request, deps, request.viewer, request.board, now, options.allowDuringMaintenance ?? false);
+			if (block !== null) return renderBlock(request, reply, deps, block);
+
+			await purgeOnline(deps, request.board, now);
+			return undefined;
+		};
+	const authenticate = session();
+	const quietSession = session({ quiet: true });
 
 	app.setErrorHandler((error: FastifyError, request, reply) => handleError(error, request, reply, deps));
 	app.setNotFoundHandler({ preHandler: authenticate }, (request, reply) =>
@@ -149,7 +157,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 	app.get<{ Querystring: UserlistParams }>('/userlist.php', { preHandler: authenticate }, userlist.show);
 
 	const extern = new ExternController(deps);
-	app.get<{ Querystring: ExternQuery }>('/extern.php', { preHandler: authenticate }, extern.show);
+	app.get<{ Querystring: ExternQuery }>('/extern.php', { preHandler: quietSession }, extern.show);
 
 	const gallery = new GalleryController(deps);
 	app.get<{ Querystring: GalleryQuery }>('/gallery.php', { preHandler: authenticate }, gallery.show);

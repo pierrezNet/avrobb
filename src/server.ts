@@ -15,6 +15,7 @@ import { ConfigRepository } from './repositories/ConfigRepository.ts';
 import { FeedRepository } from './repositories/FeedRepository.ts';
 import { ForumRepository } from './repositories/ForumRepository.ts';
 import { GalleryRepository } from './repositories/GalleryRepository.ts';
+import { OnlineRepository } from './repositories/OnlineRepository.ts';
 import { PhpCacheFiles } from './repositories/PhpCacheFiles.ts';
 import { PostRepository } from './repositories/PostRepository.ts';
 import { PrivateMessageRepository } from './repositories/PrivateMessageRepository.ts';
@@ -47,6 +48,8 @@ const app = await buildApp({
 	reports: new ReportRepository(db),
 	privateMessages: new PrivateMessageRepository(db),
 	bans: new BanRepository(db),
+	online: new OnlineRepository(db),
+	phpCache,
 	censorship: new CensorRepository(db),
 	topicLabels: new TopicLabelRepository(db),
 	stats,

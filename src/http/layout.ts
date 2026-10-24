@@ -13,8 +13,9 @@ import type { ForumReader } from '../repositories/ForumRepository.ts';
 import type { PrivateMessageReader } from '../repositories/PrivateMessageRepository.ts';
 import type { ReportReader } from '../repositories/ReportRepository.ts';
 import { escapeHtml } from '../services/bbcode.ts';
-import type { DateWords } from '../services/dateFormat.ts';
+import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
 import { canUsePrivateMessages, isAnyModerator } from '../services/permissions.ts';
+import type { SessionBlock } from './session.ts';
 
 /** Dépendances de présentation partagées par les contrôleurs. */
 export interface PageContext {
@@ -90,6 +91,50 @@ export async function renderMessage(
 		'message.njk',
 		{ pageId: 'message', titleParts: [request.board.boardTitle, lang.common.info] },
 		{ message },
+	);
+}
+
+/** Page de maintenance (maintenance_message()) ou de bannissement (check_bans()). */
+export async function renderBlock(
+	request: FastifyRequest,
+	reply: FastifyReply,
+	deps: LayoutDeps,
+	block: SessionBlock,
+): Promise<FastifyReply> {
+	const { lang } = deps.page;
+	const config = request.board;
+
+	if (block.kind === 'maintenance') {
+		reply.code(503).header('Retry-After', '3600');
+		return renderPage(
+			request,
+			reply,
+			deps,
+			'maintenance.njk',
+			{ pageId: 'maint', titleParts: [config.boardTitle, lang.common.maintenance] },
+			{
+				messageHtml: config.maintenanceMessage,
+			},
+		);
+	}
+
+	const viewer = request.viewer;
+	const expires =
+		block.expire !== null
+			? formatTime(block.expire, viewerTimeSettings(viewer), deps.page.dateWords, deps.page.clock(), true).toLowerCase()
+			: null;
+	reply.code(403);
+	return renderPage(
+		request,
+		reply,
+		deps,
+		'banned.njk',
+		{ pageId: 'message', titleParts: [config.boardTitle, lang.common.info] },
+		{
+			expires,
+			reason: block.message !== '' ? block.message : null,
+			adminEmail: config.adminEmail,
+		},
 	);
 }
 

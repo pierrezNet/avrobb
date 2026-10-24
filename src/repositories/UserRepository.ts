@@ -15,11 +15,14 @@ import {
 	type UserProfile,
 	type Viewer,
 } from '../domain/models.ts';
+import type { Presence } from '../services/presence.ts';
 
 /** Viewer accompagné du hash de mot de passe, nécessaire à la vérification du cookie. */
 export interface ViewerRecord {
 	viewer: Viewer;
 	passwordHash: string;
+	/** Ligne online du membre (null s'il n'y figure pas), lue avec lui comme dans check_cookie(). */
+	presence: Presence | null;
 }
 
 export interface UserReader {
@@ -47,7 +50,10 @@ export class UserRepository implements UserReader, MemberListReader, ProfileRead
 		const row = await this.db
 			.selectFrom('users as u')
 			.innerJoin('groups as g', 'g.g_id', 'u.group_id')
+			.leftJoin('online as o', 'o.user_id', 'u.id')
 			.select([
+				'o.logged',
+				'o.idle',
 				'u.id',
 				'u.username',
 				'u.password',
@@ -114,6 +120,7 @@ export class UserRepository implements UserReader, MemberListReader, ProfileRead
 
 		return {
 			passwordHash: row.password,
+			presence: row.logged !== null && row.idle !== null ? { logged: row.logged, idle: row.idle === 1 } : null,
 			viewer: {
 				id: row.id,
 				username: row.username,
@@ -126,6 +133,8 @@ export class UserRepository implements UserReader, MemberListReader, ProfileRead
 				showAvatars: row.show_avatars === 1,
 				showSignatures: row.show_sig === 1,
 				lastVisit: row.last_visit,
+				// Fixé par la session (http/session.ts) ; par défaut, la dernière visite connue.
+				logged: row.logged ?? row.last_visit,
 				style: row.style,
 				usesPrivateMessages: row.use_pm === 1,
 				privateMessageCount: row.num_pms,

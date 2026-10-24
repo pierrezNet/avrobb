@@ -2,6 +2,15 @@
  * Configuration de l'application, lue depuis l'environnement (.env).
  */
 
+/** $cookie_name, $cookie_seed, $cookie_path, $cookie_domain, $cookie_secure du config.php PHP. */
+export interface LegacyCookieConfig {
+	name: string;
+	seed: string;
+	path: string;
+	domain: string;
+	secure: boolean;
+}
+
 export interface AppConfig {
 	port: number;
 	db: {
@@ -13,10 +22,7 @@ export interface AppConfig {
 		tablePrefix: string;
 	};
 	/** Cookie de session de l'installation FluxBB/PiloteVirtuel (cohabitation). */
-	legacyCookie: {
-		name: string;
-		seed: string;
-	};
+	legacyCookie: LegacyCookieConfig;
 	/** URL de l'installation PHP, pour les pages pas encore portées. */
 	legacyBaseUrl: string;
 	/** Racine de l'installation PHP sur le disque (avatars, fichiers de cache) ; vide si inaccessible. */
@@ -47,6 +53,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
 		legacyCookie: {
 			name: required(env, 'LEGACY_COOKIE_NAME'),
 			seed: required(env, 'LEGACY_COOKIE_SEED'),
+			path: env.LEGACY_COOKIE_PATH ?? '/',
+			domain: env.LEGACY_COOKIE_DOMAIN ?? '',
+			secure: env.LEGACY_COOKIE_SECURE === '1',
 		},
 		legacyBaseUrl: (env.LEGACY_BASE_URL ?? '').replace(/\/$/, ''),
 		legacyRoot: env.LEGACY_ROOT ?? '',

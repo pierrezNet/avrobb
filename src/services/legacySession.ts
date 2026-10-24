@@ -63,3 +63,29 @@ export function punHash(text: string): string {
 export function logoutToken(userId: number, remoteAddress: string): string {
 	return punHash(`${userId}${punHash(remoteAddress)}`);
 }
+
+/** Durée d'un cookie « se souvenir de moi » et du renouvellement au-delà de la visite (14 jours). */
+export const REMEMBER_ME_SECONDS = 1_209_600;
+/** Durée du cookie invité posé après un cookie refusé (un an). */
+export const GUEST_COOKIE_SECONDS = 31_536_000;
+
+/** Valeur du cookie de session écrite par pun_setcookie(). */
+export function buildLegacyCookie(userId: number, passwordHash: string, expires: number, seed: string): string {
+	return `${userId}|${forumHmac(passwordHash, `${seed}_password_hash`)}|${expires}|${forumHmac(`${userId}|${expires}`, `${seed}_cookie_hash`)}`;
+}
+
+/**
+ * Nouvelle échéance du cookie à chaque page (check_cookie()) : un cookie « se souvenir de moi »
+ * (échéance au-delà de la durée de visite) repart pour 14 jours, les autres pour une visite.
+ */
+export function renewedExpiry(currentExpiry: number, now: number, timeoutVisit: number): number {
+	return currentExpiry > now + timeoutVisit ? now + REMEMBER_ME_SECONDS : now + timeoutVisit;
+}
+
+/**
+ * forum_setcookie() : une échéance qui ne dépasse pas la durée de visite donne un cookie de session
+ * (null) ; sinon la durée de vie en secondes.
+ */
+export function cookieMaxAge(expires: number, now: number, timeoutVisit: number): number | null {
+	return expires - now - timeoutVisit < 1 ? null : expires - now;
+}

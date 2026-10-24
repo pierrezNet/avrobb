@@ -29,6 +29,11 @@ export interface BalisesModoTable {
 export interface BansTable {
 	id: Generated<number>;
 	username: string | null;
+	ip: string | null;
+	email: string | null;
+	message: string | null;
+	expire: number | null;
+	ban_creator: number;
 }
 
 export interface CategoriesTable {
@@ -122,6 +127,8 @@ export interface OnlineTable {
 	ident: string;
 	logged: number;
 	idle: number;
+	last_post: number | null;
+	last_search: number | null;
 }
 
 export interface PostsTable {

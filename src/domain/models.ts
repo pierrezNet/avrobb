@@ -54,6 +54,8 @@ export interface Viewer {
 	showSignatures: boolean;
 	/** Date de la visite précédente (users.last_visit), en secondes Unix. */
 	lastVisit: number;
+	/** Début de la visite en cours (online.logged), recopié dans last_visit à la déconnexion. */
+	logged: number;
 	/** Thème choisi (users.style), à valider avant usage : voir services/themes.ts. */
 	style: string;
 	/** Le membre a activé la messagerie privée (users.use_pm). */
@@ -155,6 +157,12 @@ export interface BoardConfig {
 	/** Signalements reçus dans le forum (o_report_method 0 ou 2) ou seulement par e-mail. */
 	reportsByBoard: boolean;
 	maintenance: boolean;
+	/** Message du mode maintenance (o_maintenance_message), HTML saisi par l'administrateur. */
+	maintenanceMessage: string;
+	/** Durée d'une visite (o_timeout_visit) et délai d'inactivité de la liste des présents (o_timeout_online), en secondes. */
+	timeoutVisit: number;
+	timeoutOnline: number;
+	adminEmail: string;
 	/** Annonce affichée en haut de chaque page ; null si désactivée (HTML saisi par l'administrateur). */
 	announcement: string | null;
 	quickjump: boolean;

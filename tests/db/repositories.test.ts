@@ -16,6 +16,7 @@ import { ConfigRepository } from '../../src/repositories/ConfigRepository.ts';
 import { FeedRepository } from '../../src/repositories/FeedRepository.ts';
 import { ForumRepository } from '../../src/repositories/ForumRepository.ts';
 import { GalleryRepository } from '../../src/repositories/GalleryRepository.ts';
+import { OnlineRepository } from '../../src/repositories/OnlineRepository.ts';
 import { PostRepository } from '../../src/repositories/PostRepository.ts';
 import { PrivateMessageRepository } from '../../src/repositories/PrivateMessageRepository.ts';
 import { ReportRepository } from '../../src/repositories/ReportRepository.ts';
@@ -295,6 +296,39 @@ describe('SearchRepository', () => {
 	});
 });
 
+describe('OnlineRepository et bannissements (écritures)', () => {
+	const online = new OnlineRepository(db);
+	const bans = new BanRepository(db);
+
+	it('entrée, rafraîchissement et purge de la liste des présents', async () => {
+		await online.enter(1, '198.51.100.7', NOW - 1000);
+		await online.enter(2, 'admin', NOW - 5000);
+		// REPLACE INTO : une seconde entrée remplace la première au lieu de la dupliquer.
+		await online.enter(1, '198.51.100.7', NOW - 900);
+		expect(await online.findGuestPresence('198.51.100.7')).toEqual({ logged: NOW - 900, idle: false });
+
+		const stale = await online.listStale(NOW - 300);
+		expect(stale.map((e) => e.ident).sort()).toEqual(['198.51.100.7', 'Tessy', 'admin', '192.0.2.9', 'MaxDUO'].sort());
+
+		await online.applyPurge({ removeGuests: ['198.51.100.7'], endVisits: [{ userId: 2, logged: NOW - 5000 }], markIdle: [] });
+		expect(await online.findGuestPresence('198.51.100.7')).toBeNull();
+		const user = await db.selectFrom('users').select('last_visit').where('id', '=', 2).executeTakeFirstOrThrow();
+		expect(user.last_visit).toBe(NOW - 5000);
+		expect(await db.selectFrom('online').select('user_id').where('user_id', '=', 2).execute()).toEqual([]);
+
+		await online.refreshMember(3, NOW);
+		expect((await new UserRepository(db).findViewer(3))?.presence).toEqual({ logged: NOW, idle: false });
+	});
+
+	it('supprime des bannissements échus', async () => {
+		await db.insertInto('bans').values({ username: 'ancien', ip: null, email: null, message: null, expire: 1, ban_creator: 2 }).execute();
+		const all = await bans.listBans();
+		const expired = all.filter((ban) => ban.expire === 1).map((ban) => ban.id);
+		await bans.deleteBans(expired);
+		expect((await bans.listBans()).length).toBe(all.length - 1);
+	});
+});
+
 describe('ReportRepository et PrivateMessageRepository', () => {
 	it('détecte les signalements non traités', async () => {
 		expect(await new ReportRepository(db).hasPending()).toBe(true);
@@ -382,7 +416,9 @@ describe('viewtopic de bout en bout', () => {
 			usersInfo: new UsersInfoLoader(new StatsRepository(db), null, () => NOW),
 			avatars: { urlFor: async () => null },
 			page: { lang: fr, dateWords: frDateWords, clock: () => NOW },
-			legacyCookie: { name: 'punbb_cookie', seed },
+			legacyCookie: { name: 'punbb_cookie', seed, path: '/', domain: '', secure: false },
+			online: new OnlineRepository(db),
+			phpCache: null,
 			legacyBaseUrl: 'http://php.test',
 		});
 	}

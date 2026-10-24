@@ -5,13 +5,21 @@
  */
 
 import type { Db } from '../db/database.ts';
+import type { Ban } from '../services/bans.ts';
 
 export interface BanReader {
 	/** Pseudos bannis, en minuscules. */
 	listBannedUsernames(): Promise<Set<string>>;
+	/** Tous les bannissements, dans l'ordre de la table ($pun_bans). */
+	listBans(): Promise<Ban[]>;
 }
 
-export class BanRepository implements BanReader {
+export interface BanWriter {
+	/** Supprime des bannissements échus (check_bans()) ; l'appelant invalide cache_bans.php. */
+	deleteBans(ids: readonly number[]): Promise<void>;
+}
+
+export class BanRepository implements BanReader, BanWriter {
 	constructor(private readonly db: Db) {}
 
 	async listBannedUsernames(): Promise<Set<string>> {
@@ -22,5 +30,21 @@ export class BanRepository implements BanReader {
 			.where('username', '!=', '')
 			.execute();
 		return new Set(rows.map((row) => (row.username ?? '').toLowerCase()));
+	}
+
+	async listBans(): Promise<Ban[]> {
+		const rows = await this.db.selectFrom('bans').select(['id', 'username', 'ip', 'email', 'message', 'expire']).orderBy('id').execute();
+		return rows.map((row) => ({
+			id: row.id,
+			username: row.username ?? '',
+			ip: row.ip ?? '',
+			email: row.email ?? '',
+			message: row.message ?? '',
+			expire: row.expire,
+		}));
+	}
+
+	async deleteBans(ids: readonly number[]): Promise<void> {
+		if (ids.length > 0) await this.db.deleteFrom('bans').where('id', 'in', ids).execute();
 	}
 }

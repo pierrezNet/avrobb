@@ -37,6 +37,10 @@ export function toBoardConfig(values: ReadonlyMap<string, string>): BoardConfig 
 		// header.php : 0 = forum seulement, 1 = e-mail seulement, 2 = les deux.
 		reportsByBoard: reportMethod === '0' || reportMethod === '2',
 		maintenance: flag('o_maintenance'),
+		maintenanceMessage: text('o_maintenance_message'),
+		timeoutVisit: Number(text('o_timeout_visit', '1800')) || 1800,
+		timeoutOnline: Number(text('o_timeout_online', '300')) || 300,
+		adminEmail: text('o_admin_email'),
 		announcement: flag('o_announcement') ? text('o_announcement_message') : null,
 		quickjump: flag('o_quickjump'),
 		feedType: FEED_TYPES[text('o_feed_type')] ?? 'none',

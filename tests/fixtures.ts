@@ -24,8 +24,10 @@ import {
 	type Viewer,
 } from '../src/domain/models.ts';
 import { fr, frDateWords } from '../src/lang/fr/index.ts';
+import type { OnlineWriter } from '../src/repositories/OnlineRepository.ts';
 import type { PostLocation } from '../src/repositories/TopicRepository.ts';
 import type { ViewerRecord } from '../src/repositories/UserRepository.ts';
+import type { Ban } from '../src/services/bans.ts';
 import type { CensoredWord } from '../src/services/censor.ts';
 
 export const NOW = 1_782_900_000;
@@ -68,6 +70,7 @@ export function viewer(overrides: Partial<Viewer> = {}): Viewer {
 		showAvatars: true,
 		showSignatures: true,
 		lastVisit: NOW - 7200,
+		logged: NOW - 600,
 		style: 'Air',
 		usesPrivateMessages: true,
 		privateMessageCount: 0,
@@ -164,6 +167,10 @@ export const boardConfig: BoardConfig = {
 	additionalNavlinks: '',
 	reportsByBoard: true,
 	maintenance: false,
+	maintenanceMessage: 'Le forum est fermé pour <b>maintenance</b>.',
+	timeoutVisit: 1800,
+	timeoutOnline: 300,
+	adminEmail: 'admin@forum.test',
 	announcement: null,
 	quickjump: true,
 	feedType: 'atom',
@@ -186,7 +193,8 @@ export const forumCategories: ForumCategory[] = [
 ];
 
 export interface FakeData {
-	users: ViewerRecord[];
+	/** Membres connus ; `presence` vaut null par défaut (pas encore dans la liste des présents). */
+	users: (Omit<ViewerRecord, 'presence'> & { presence?: ViewerRecord['presence'] })[];
 	topics: Topic[];
 	/** Messages par sujet, dans l'ordre. */
 	posts: Map<number, Post[]>;
@@ -210,6 +218,28 @@ export interface FakeData {
 	galleryImages?: GalleryImage[];
 	recentTopics?: RecentTopic[];
 	online?: OnlineVisitor[];
+	bans?: Ban[];
+}
+
+/** Liste des présents en mémoire : chaque écriture est consignée dans `log` pour les tests. */
+export interface FakeOnline extends OnlineWriter {
+	log: string[];
+}
+
+export function fakeOnline(visitors: readonly OnlineVisitor[] = []): FakeOnline {
+	const log: string[] = [];
+	return {
+		log,
+		findGuestPresence: async (ip) => (visitors.some((v) => v.userId === 1 && v.ident === ip) ? { logged: NOW - 60, idle: false } : null),
+		enter: async (userId, ident) => void log.push(`enter ${userId} ${ident}`),
+		refreshMember: async (userId) => void log.push(`refresh ${userId}`),
+		refreshGuest: async (ip) => void log.push(`refresh guest ${ip}`),
+		setLastVisit: async (userId, at) => void log.push(`last_visit ${userId} ${at}`),
+		listStale: async () => [],
+		applyPurge: async () => undefined,
+		removeMember: async (userId) => void log.push(`remove ${userId}`),
+		removeIdent: async (ident) => void log.push(`remove ident ${ident}`),
+	};
 }
 
 const sortKey = (sort: MemberSort): 'username' | 'registered' | 'numPosts' => (sort === 'num_posts' ? 'numPosts' : sort);
@@ -225,7 +255,12 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 
 	return {
 		config: { load: async () => ({ ...boardConfig, ...data.config }) },
-		users: { findViewer: async (id) => data.users.find((u) => u.viewer.id === id) ?? null },
+		users: {
+			findViewer: async (id) => {
+				const found = data.users.find((u) => u.viewer.id === id);
+				return found === undefined ? null : { presence: null, ...found };
+			},
+		},
 		profiles: { findProfile: async (id) => data.profiles?.find((p) => p.id === id) ?? null },
 		members: {
 			countMembers: async (filter) => (data.members ?? []).filter((m) => matchMember(m, filter)).length,
@@ -288,14 +323,22 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 		reports: { hasPending: async () => data.pendingReports ?? false },
 		privateMessages: { countUnread: async (userId) => data.unreadPrivateMessages?.get(userId) ?? 0 },
 		avatars: { urlFor: async () => null },
-		bans: { listBannedUsernames: async () => new Set(data.bannedUsernames ?? []) },
+		bans: {
+			listBannedUsernames: async () => new Set(data.bannedUsernames ?? []),
+			listBans: async () => data.bans ?? [],
+			deleteBans: async (ids) => {
+				data.bans = (data.bans ?? []).filter((ban) => !ids.includes(ban.id));
+			},
+		},
+		online: fakeOnline(data.online ?? []),
+		phpCache: null,
 		censorship: { listWords: async () => data.censoredWords ?? [] },
 		topicLabels: {
 			listForTopics: async (ids) => new Map([...(data.topicLabels ?? [])].filter(([id]) => ids.includes(id))),
 			listDefinitions: async () => data.labelDefinitions ?? [],
 		},
 		page: { lang: fr, dateWords: frDateWords, clock: () => NOW },
-		legacyCookie: { name: 'punbb_cookie', seed: 'graine-de-test' },
+		legacyCookie: { name: 'punbb_cookie', seed: 'graine-de-test', path: '/', domain: '', secure: false },
 		legacyBaseUrl: 'http://php.test',
 		...overrides,
 	};

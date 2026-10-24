@@ -14,6 +14,12 @@ export const common = {
 	/** Absent de FluxBB : remplace la page d'erreur technique de error(). */
 	serverError: 'Une erreur est survenue. Veuillez réessayer dans quelques instants.',
 
+	// Bannissement (check_bans())
+	banMessage: 'Vous êtes banni(e) de ce forum.',
+	banExpires: (date: string) => `Votre bannissement expire le ${date}.`,
+	banReason: "L'administrateur ou le modérateur qui vous a banni envoie le message suivant\u00a0:",
+	banContact: "Pour toute question, contactez l'administrateur",
+
 	// Divers
 	announcement: 'Annonce',
 	info: 'Info',

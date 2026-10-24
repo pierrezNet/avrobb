@@ -10,6 +10,8 @@ import fastifyView from '@fastify/view';
 import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import nunjucks from 'nunjucks';
 import type { Mailer } from './adapters/mailer.ts';
+import { DeleteController, type DeleteQuery } from './controllers/DeleteController.ts';
+import { EditController, type EditQuery } from './controllers/EditController.ts';
 import { ExternController, type ExternQuery } from './controllers/ExternController.ts';
 import { ForumController, type ForumQuery } from './controllers/ForumController.ts';
 import { GalleryController, type GalleryQuery } from './controllers/GalleryController.ts';
@@ -35,6 +37,7 @@ import type { ConfigReader } from './repositories/ConfigLoader.ts';
 import type { FeedReader } from './repositories/FeedRepository.ts';
 import type { GalleryReader } from './repositories/GalleryRepository.ts';
 import type { MailTemplateReader } from './repositories/MailTemplateFiles.ts';
+import type { PostEditStore } from './repositories/PostEditRepository.ts';
 import type { PostingStore } from './repositories/PostingRepository.ts';
 import type { PostReader } from './repositories/PostRepository.ts';
 import type { RegistrationStore } from './repositories/RegistrationRepository.ts';
@@ -72,6 +75,7 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	topicWriter: TopicWriter;
 	posts: PostReader;
 	posting: PostingStore;
+	postEdits: PostEditStore;
 	toolbar: ToolbarReader;
 	avatars: AvatarLocator;
 	censorship: CensorReader;
@@ -91,6 +95,8 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 
 /** Pages déjà servies par Node ; les autres liens partent vers l'installation PHP. */
 const PORTED_PAGES = new Set([
+	'delete.php',
+	'edit.php',
 	'extern.php',
 	'gallery.php',
 	'help.php',
@@ -230,6 +236,14 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 	const post = new PostController({ ...deps, trackCookieName });
 	app.get<{ Querystring: PostQuery }>('/post.php', { preHandler: authenticate }, post.show);
 	app.post<{ Querystring: PostQuery; Body: FormBody }>('/post.php', { preHandler: [authenticate, verifyCsrf] }, post.submit);
+
+	const edit = new EditController(deps);
+	app.get<{ Querystring: EditQuery }>('/edit.php', { preHandler: authenticate }, edit.show);
+	app.post<{ Querystring: EditQuery; Body: FormBody }>('/edit.php', { preHandler: [authenticate, verifyCsrf] }, edit.submit);
+
+	const deletion = new DeleteController(deps);
+	app.get<{ Querystring: DeleteQuery }>('/delete.php', { preHandler: authenticate }, deletion.show);
+	app.post<{ Querystring: DeleteQuery; Body: FormBody }>('/delete.php', { preHandler: [authenticate, verifyCsrf] }, deletion.confirm);
 
 	const topics = new TopicController({ ...deps, topicViews: deps.topicWriter, trackCookieName });
 	app.get<{ Querystring: TopicQuery }>('/viewtopic.php', { preHandler: authenticate }, topics.show);

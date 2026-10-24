@@ -1,0 +1,27 @@
+{#- Suppression d'un message (delete.php). Données : `view` (presenters/deletePage.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/forms.njk" as forms %}
+{% import "partials/navigation.njk" as navigation %}
+
+{% block main %}
+{{ navigation.breadcrumbs(view.crumbs, lang) }}
+<h1 class="page-title">{{ lang.delete.deletePost }}</h1>
+
+<form class="form-box form" method="post" action="{{ url(view.formAction) }}">
+	{{ forms.csrf(layout) }}
+	<h2 class="form-box__title">{% if view.isTopicPost %}{{ lang.delete.topicBy }}{% else %}{{ lang.delete.replyBy }}{% endif %} <strong>{{ view.poster }}</strong> - {{ view.postedAt }}</h2>
+	<p><strong>{% if view.isTopicPost %}{{ lang.delete.topicWarning }}{% else %}{{ lang.delete.warning }}{% endif %}</strong><br>{{ lang.delete.deleteInfo }}</p>
+	<p class="form__buttons">
+		<button type="submit" class="button button--primary" name="delete" value="1">{{ lang.delete.delete }}</button>
+		<a class="button" href="{{ url(view.crumbs[2].href) }}">{{ lang.common.goBack }}</a>
+	</p>
+</form>
+
+<article class="post post--review" aria-label="{{ view.poster }}">
+	<h2 class="post__meta"><span>{{ view.poster }}</span> <span class="post__date">{{ view.postedAt }}</span></h2>
+	<div class="post__content">
+		{#- HTML de parseMessage() : échappé par construction (services/bbcode.ts). #}
+		<div class="post__message bbcode">{{ view.messageHtml | safe }}</div>
+	</div>
+</article>
+{% endblock %}

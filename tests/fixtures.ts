@@ -27,6 +27,7 @@ import {
 } from '../src/domain/models.ts';
 import { fr, frDateWords } from '../src/lang/fr/index.ts';
 import type { OnlineWriter } from '../src/repositories/OnlineRepository.ts';
+import type { PostEditStore, PostUpdate } from '../src/repositories/PostEditRepository.ts';
 import type { NewReply, NewTopic, PostingStore } from '../src/repositories/PostingRepository.ts';
 import type { NewUser } from '../src/repositories/RegistrationRepository.ts';
 import type { PostLocation } from '../src/repositories/TopicRepository.ts';
@@ -273,6 +274,10 @@ export interface FakeData {
 	/** Réponses et discussions enregistrées par post.php. */
 	savedReplies?: NewReply[];
 	savedTopics?: NewTopic[];
+	/** Écritures de edit.php et delete.php. */
+	postUpdates?: PostUpdate[];
+	deletedPosts?: number[];
+	deletedTopics?: number[];
 }
 
 /** Liste des présents en mémoire : chaque écriture est consignée dans `log` pour les tests. */
@@ -302,6 +307,44 @@ const sortKey = (sort: MemberSort): 'username' | 'registered' | 'numPosts' => (s
 function matchMember(member: MemberSummary, filter: MemberFilter): boolean {
 	const pattern = filter.username === null ? null : new RegExp(`^${filter.username.replaceAll('*', '.*')}$`, 'i');
 	return (pattern === null || pattern.test(member.username)) && (filter.groupId === null || member.groupId === filter.groupId);
+}
+
+/** Modification et suppression en mémoire, à partir des sujets et messages de `data`. */
+function fakePostEdits(data: FakeData): PostEditStore {
+	return {
+		findPost: async (postId, groupId) => {
+			for (const [topicId, posts] of data.posts) {
+				const found = posts.find((p) => p.id === postId);
+				const topic = data.topics.find((t) => t.id === topicId);
+				if (found === undefined || topic === undefined) continue;
+				const readers = data.forumReaders?.get(topic.forum.id);
+				if (readers !== undefined && !readers.includes(groupId)) return null;
+				return {
+					id: found.id,
+					poster: found.username,
+					posterId: found.author?.id ?? 1,
+					posterIsAdmin: found.author?.groupId === GroupId.Admin,
+					message: found.message,
+					hideSmilies: found.hideSmilies,
+					posted: found.posted,
+					topic: { id: topic.id, subject: topic.subject, sticky: topic.sticky, closed: topic.closed, firstPostId: topic.firstPostId },
+					forum: topic.forum,
+				};
+			}
+			return null;
+		},
+		updatePost: async (update) => {
+			data.postUpdates = [...(data.postUpdates ?? []), update];
+		},
+		deletePost: async (post) => {
+			data.deletedPosts = [...(data.deletedPosts ?? []), post.id];
+			const posts = data.posts.get(post.topic.id) ?? [];
+			return posts.filter((p) => p.id < post.id).at(-1)?.id ?? null;
+		},
+		deleteTopic: async (post) => {
+			data.deletedTopics = [...(data.deletedTopics ?? []), post.topic.id];
+		},
+	};
 }
 
 /** Rédaction en mémoire : cibles tirées de `topics` et `forumInfos`, écritures consignées dans `data`. */
@@ -453,6 +496,7 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 		posts: { listPage: async (topicId, offset, limit) => (data.posts.get(topicId) ?? []).slice(offset, offset + limit) },
 		posting: fakePosting(data),
 		toolbar: { load: async () => null },
+		postEdits: fakePostEdits(data),
 		forums: {
 			listReadable: async () => forumCategories,
 			listIndex: async () => data.indexCategories ?? [],

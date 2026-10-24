@@ -17,7 +17,7 @@ function data(overrides: Partial<FakeData> = {}): FakeData {
 			{ viewer: admin, passwordHash: 'hash-admin' },
 		],
 		topics: [topic({ id: 10, subject: '<script>alert(1)</script>' })],
-		posts: new Map([[10, [post(100), post(101, { message: '[b]gras[/b] <img src=x onerror=alert(1)>' })]]]),
+		posts: new Map([[10, [post(100, { posted: NOW - 600 }), post(101, { message: '[b]gras[/b] <img src=x onerror=alert(1)>' })]]]),
 		...overrides,
 	};
 }
@@ -73,7 +73,7 @@ describe('GET /viewtopic.php', () => {
 		expect(res.headers.location).toBe('viewtopic.php?id=20&p=2#p227');
 	});
 
-	it('pagine et renvoie vers le PHP pour les pages non portées', async () => {
+	it('pagine, avec les liens des pages portées en local', async () => {
 		const many = Array.from({ length: 30 }, (_, i) => post(200 + i));
 		app = await buildApp(fakeDeps(data({ topics: [topic({ id: 20, numReplies: 29, firstPostId: 200 })], posts: new Map([[20, many]]) })));
 
@@ -84,7 +84,6 @@ describe('GET /viewtopic.php', () => {
 		expect(res.body).toContain('href="viewforum.php?id=1"');
 		expect(res.body).toContain('href="profile.php?id=3"');
 		expect(res.body).toContain('href="post.php?tid=20"');
-		expect(res.body).toContain('href="http://php.test/edit.php?id=225"');
 		expect(res.body).toContain('href="viewtopic.php?id=20"');
 	});
 });

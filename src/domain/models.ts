@@ -455,3 +455,17 @@ export interface Subscriber {
 	/** Notification avec le texte du message (notify_with_post). */
 	notifyWithPost: boolean;
 }
+
+/** Message à modifier ou supprimer (edit.php, delete.php), avec son sujet et son forum. */
+export interface EditablePost {
+	id: number;
+	poster: string;
+	posterId: number;
+	/** L'auteur est administrateur : un simple modérateur ne peut pas toucher à son message. */
+	posterIsAdmin: boolean;
+	message: string;
+	hideSmilies: boolean;
+	posted: number;
+	topic: { id: number; subject: string; sticky: boolean; closed: boolean; firstPostId: number };
+	forum: { id: number; name: string; moderators: ReadonlyMap<string, number> };
+}

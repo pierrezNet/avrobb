@@ -3,7 +3,15 @@
  * (viewtopic.php les recopiait en trois endroits, header.php et les mods en ajoutaient d'autres).
  */
 
-import { type BoardConfig, type ForumInfo, GroupId, type PostingTarget, type Topic, type Viewer } from '../domain/models.ts';
+import {
+	type BoardConfig,
+	type EditablePost,
+	type ForumInfo,
+	GroupId,
+	type PostingTarget,
+	type Topic,
+	type Viewer,
+} from '../domain/models.ts';
 
 export function isAdmin(viewer: Viewer): boolean {
 	return viewer.group.id === GroupId.Admin;
@@ -54,6 +62,49 @@ export function canQuickPost(viewer: Viewer, topic: Topic, config: BoardConfig):
 	return config.posting.quickpost && hasReplyPermission(viewer, topic) && (!topic.closed || isForumModerator(viewer, topic.forum));
 }
 
+/**
+ * Délai pendant lequel un membre peut modifier son message (edit.php de PV : 30 minutes). Écart
+ * assumé : PV comparait strtotime(<timestamp>), toujours faux, si bien que seuls les modérateurs
+ * pouvaient modifier ; on applique la règle voulue, à partir de l'heure du message lui-même.
+ */
+export const EDIT_WINDOW_SECONDS = 1800;
+
+/** Ce qu'il faut savoir d'un message pour décider qui peut le modifier ou le supprimer. */
+export interface PostOwnership {
+	posterId: number;
+	posterIsAdmin: boolean;
+	posted: number;
+	isTopicPost: boolean;
+	topic: { closed: boolean };
+	forum: { moderators: ReadonlyMap<string, number> };
+}
+
+/** Droits sur un message lu par edit.php ou delete.php. */
+export function ownershipOf(post: EditablePost): PostOwnership {
+	return { ...post, isTopicPost: post.id === post.topic.firstPostId };
+}
+
+/** Modérateur du forum, sauf sur le message d'un administrateur s'il ne l'est pas lui-même. */
+function moderates(viewer: Viewer, post: PostOwnership): boolean | null {
+	if (!isForumModerator(viewer, post.forum)) return null;
+	return isAdmin(viewer) || !post.posterIsAdmin;
+}
+
+const ownsOpenPost = (viewer: Viewer, post: PostOwnership): boolean => !viewer.isGuest && post.posterId === viewer.id && !post.topic.closed;
+
+/** edit.php */
+export function canEditPost(viewer: Viewer, post: PostOwnership, now: number): boolean {
+	return moderates(viewer, post) ?? (ownsOpenPost(viewer, post) && viewer.group.canEditPosts && now - post.posted <= EDIT_WINDOW_SECONDS);
+}
+
+/** delete.php : supprimer le premier message supprime la discussion (g_delete_topics en plus). */
+export function canDeletePost(viewer: Viewer, post: PostOwnership): boolean {
+	return (
+		moderates(viewer, post) ??
+		(ownsOpenPost(viewer, post) && viewer.group.canDeletePosts && (!post.isTopicPost || viewer.group.canDeleteTopics))
+	);
+}
+
 export interface PostActionRights {
 	report: boolean;
 	delete: boolean;
@@ -61,29 +112,16 @@ export interface PostActionRights {
 	quote: boolean;
 }
 
-/**
- * Actions proposées sous un message.
- * @param position rang du message dans le sujet (1 = message d'ouverture)
- * @param posterIsAdmin l'auteur est-il administrateur (un modérateur ne peut pas toucher à ses messages)
- */
-export function postActions(viewer: Viewer, topic: Topic, posterId: number, position: number, posterIsAdmin: boolean): PostActionRights {
-	if (isForumModerator(viewer, topic.forum)) {
-		const canModify = isAdmin(viewer) || !posterIsAdmin;
-		return { report: true, delete: canModify, edit: canModify, quote: true };
-	}
-
-	const rights: PostActionRights = { report: !viewer.isGuest, delete: false, edit: false, quote: false };
-
-	if (topic.closed) return rights;
-
-	if (!viewer.isGuest && posterId === viewer.id) {
-		rights.delete = position === 1 ? viewer.group.canDeleteTopics : viewer.group.canDeletePosts;
-		rights.edit = viewer.group.canEditPosts;
-	}
-
-	rights.quote = hasReplyPermission(viewer, topic);
-
-	return rights;
+/** Actions proposées sous un message de viewtopic. */
+export function postActions(viewer: Viewer, topic: Topic, post: Omit<PostOwnership, 'topic' | 'forum'>, now: number): PostActionRights {
+	const ownership: PostOwnership = { ...post, topic, forum: topic.forum };
+	const moderator = isForumModerator(viewer, topic.forum);
+	return {
+		report: moderator || !viewer.isGuest,
+		delete: canDeletePost(viewer, ownership),
+		edit: canEditPost(viewer, ownership, now),
+		quote: moderator || (!topic.closed && hasReplyPermission(viewer, topic)),
+	};
 }
 
 /** Messagerie privée disponible pour ce membre (conditions de plugins/apms/header_add1.php). */

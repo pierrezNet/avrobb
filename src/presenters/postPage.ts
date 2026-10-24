@@ -3,7 +3,7 @@
  * prévisualisation et rappel des derniers messages du sujet. Fonction pure.
  */
 
-import type { BoardConfig, PostingTarget, ReviewPost, Viewer } from '../domain/models.ts';
+import type { BoardConfig, EditablePost, PostingTarget, ReviewPost, Viewer } from '../domain/models.ts';
 import type { Lang } from '../lang/fr/index.ts';
 import { parseMessage } from '../services/bbcode.ts';
 import type { Censor } from '../services/censor.ts';
@@ -43,7 +43,7 @@ export interface PostPageInput {
 }
 
 export interface Checkbox {
-	name: 'stick_topic' | 'hide_smilies' | 'subscribe';
+	name: 'stick_topic' | 'hide_smilies' | 'subscribe' | 'silent';
 	label: string;
 	checked: boolean;
 }
@@ -52,7 +52,10 @@ export interface PostPageView {
 	crumbs: Crumb[];
 	heading: string;
 	formAction: string;
-	isNewTopic: boolean;
+	/** Légende du formulaire (rédaction ou modification). */
+	legend: string;
+	/** Champ « Sujet » : nouvelle discussion, ou modification du premier message. */
+	showSubject: boolean;
 	/** Champs d'un invité : pseudo et e-mail (obligatoire avec p_force_guest_email). */
 	guest: { emailField: 'req_email' | 'email'; emailRequired: boolean } | null;
 	form: PostFormState;
@@ -134,7 +137,8 @@ export function buildPostPage(input: PostPageInput): PostPageView {
 		crumbs: crumbs(...path),
 		heading,
 		formAction,
-		isNewTopic,
+		legend: t.writeMessageLegend,
+		showSubject: isNewTopic,
 		guest: viewer.isGuest
 			? { emailField: config.posting.forceGuestEmail ? 'req_email' : 'email', emailRequired: config.posting.forceGuestEmail }
 			: null,
@@ -153,5 +157,55 @@ export function buildPostPage(input: PostPageInput): PostPageView {
 			postedAt: formatTime(post.posted, time, input.dateWords, input.now),
 			messageHtml: parseMessage(post.message, messageParserOptions(config, viewer, lang, censor, post.hideSmilies)),
 		})),
+	};
+}
+
+export interface EditPageInput {
+	viewer: Viewer;
+	config: BoardConfig;
+	post: EditablePost;
+	/** Modérateur du forum : épinglage et modification silencieuse. */
+	isForumModerator: boolean;
+	form: PostFormState & { silent: boolean };
+	errors: readonly string[];
+	preview: string | null;
+	toolbar: ToolbarSettings;
+	censor: Censor | null;
+	lang: Lang;
+}
+
+/** Modèle de vue de edit.php, affiché par le même gabarit que post.php. */
+export function buildEditPage(input: EditPageInput): PostPageView {
+	const { viewer, config, post, lang, censor, form } = input;
+	const t = lang.post;
+	const isTopicPost = post.id === post.topic.firstPostId;
+	const subject = censor !== null ? censor(post.topic.subject) : post.topic.subject;
+
+	const checkboxes: Checkbox[] = [];
+	if (isTopicPost && input.isForumModerator) checkboxes.push({ name: 'stick_topic', label: t.stickTopic, checked: form.stickTopic });
+	if (config.smilies) checkboxes.push({ name: 'hide_smilies', label: t.hideSmilies, checked: form.hideSmilies });
+	if (input.isForumModerator) checkboxes.push({ name: 'silent', label: t.silentEdit, checked: form.silent });
+
+	return {
+		crumbs: crumbs(
+			{ label: lang.common.index, href: 'index.php' },
+			{ label: post.forum.name, href: `viewforum.php?id=${post.forum.id}` },
+			{ label: subject, href: `viewtopic.php?id=${post.topic.id}` },
+			{ label: t.editPost, href: `edit.php?id=${post.id}` },
+		),
+		heading: t.editPost,
+		formAction: `edit.php?id=${post.id}&action=edit`,
+		legend: t.editPostLegend,
+		showSubject: isTopicPost,
+		guest: null,
+		form,
+		errors: input.errors,
+		previewHtml:
+			input.preview !== null ? parseMessage(input.preview, messageParserOptions(config, viewer, lang, censor, form.hideSmilies)) : null,
+		subjectPrefixes: isTopicPost ? { simulators: SIMULATOR_PREFIXES, other: OTHER_PREFIXES } : null,
+		bbcodeStatus: bbcodeStatus(config, viewer, lang),
+		toolbar: toolbarView(input.toolbar, 'form', config, lang),
+		checkboxes,
+		review: [],
 	};
 }

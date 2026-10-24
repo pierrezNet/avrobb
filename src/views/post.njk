@@ -1,4 +1,4 @@
-{#- Réponse ou nouvelle discussion (post.php). Données : `view` (presenters/postPage.ts). -#}
+{#- Rédaction : réponse ou nouvelle discussion (post.php) et modification (edit.php). Données : `view` (presenters/postPage.ts). -#}
 {% extends "layout.njk" %}
 {% block head %}<script src="{{ asset('js/post.js') }}" defer></script>
 {% if view.toolbar %}<script src="{{ asset('js/toolbar.js') }}" defer></script>{% endif %}{% endblock %}
@@ -25,9 +25,9 @@
 	{{ forms.csrf(layout) }}
 	<input type="hidden" name="form_sent" value="1">
 	<fieldset class="form__fieldset">
-		<legend class="form__legend">{{ lang.post.writeMessageLegend }}</legend>
+		<legend class="form__legend">{{ view.legend }}</legend>
 		{% if view.guest %}{{ postFields.guestFields(view.guest, view.form, lang) }}{% endif %}
-		{% if view.isNewTopic %}
+		{% if view.showSubject %}
 		<p class="form__field">
 			<label for="req_subject">{{ lang.post.subject }} <span class="form__required">{{ lang.post.required }}</span></label>
 			<input type="text" id="req_subject" name="req_subject" value="{{ view.form.subject }}" maxlength="70" required>

@@ -9,6 +9,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { createDatabase } from '../../src/db/database.ts';
 import type { Database } from '../../src/db/schema.ts';
 import { updateForum } from '../../src/repositories/forumCounters.ts';
+import { PostEditRepository } from '../../src/repositories/PostEditRepository.ts';
 import { PostingRepository } from '../../src/repositories/PostingRepository.ts';
 import { stripSearchIndex, updateSearchIndex } from '../../src/repositories/searchIndexSql.ts';
 import { ToolbarRepository } from '../../src/repositories/ToolbarRepository.ts';
@@ -245,6 +246,109 @@ describe('ToolbarRepository', () => {
 					{ name: 'link', code: 'url', func: 2, image: '', enableForm: true, enableQuick: true },
 					{ name: 'italic', code: 'i', func: 0, image: 'bt_italic.png', enableForm: true, enableQuick: false },
 				],
+			});
+		});
+	});
+});
+
+describe('PostEditRepository', () => {
+	const topicRow = (trx: Kysely<Database>, id: number) =>
+		trx
+			.selectFrom('topics')
+			.select(['subject', 'sticky', 'num_replies', 'last_post_id', 'last_poster'])
+			.where('id', '=', id)
+			.executeTakeFirst();
+
+	it('lit le message avec ses droits, auteur administrateur compris', async () => {
+		const edits = new PostEditRepository(db);
+		expect(await edits.findPost(102, 4)).toMatchObject({
+			id: 102,
+			poster: 'admin',
+			posterId: 2,
+			posterIsAdmin: true,
+			topic: { id: 10, firstPostId: 100, closed: false },
+			forum: { id: 2, moderators: new Map([['MaxDUO', 5]]) },
+		});
+		expect(await edits.findPost(101, 4)).toMatchObject({ posterIsAdmin: false });
+		expect(await edits.findPost(110, 3)).toBeNull();
+	});
+
+	it('modifie le message, le sujet et ses liens de déplacement, et l’index', async () => {
+		await inRollback(async (trx) => {
+			await new PostEditRepository(trx).updatePost({
+				postId: 100,
+				topicId: 10,
+				message: 'Message revu',
+				hideSmilies: true,
+				edited: { at: 1782900000, by: 'Tessy' },
+				topic: { subject: 'Sujet revu', sticky: true },
+				words: { post: ['message', 'revu'], subject: ['sujet', 'revu'] },
+			});
+			expect(
+				await trx.selectFrom('posts').select(['message', 'hide_smilies', 'edited', 'edited_by']).where('id', '=', 100).executeTakeFirst(),
+			).toEqual({
+				message: 'Message revu',
+				hide_smilies: 1,
+				edited: 1782900000,
+				edited_by: 'Tessy',
+			});
+			expect(await topicRow(trx, 10)).toMatchObject({ subject: 'Sujet revu', sticky: 1 });
+			// Le lien laissé dans le forum 1 par le déplacement (sujet 12) suit.
+			expect(await topicRow(trx, 12)).toMatchObject({ subject: 'Sujet revu' });
+			expect(await indexOf(trx, 100)).toEqual(['message', 'revu', 'revu (sujet)', 'sujet (sujet)']);
+		});
+	});
+
+	it('modification silencieuse : pas de mention', async () => {
+		await inRollback(async (trx) => {
+			await new PostEditRepository(trx).updatePost({
+				postId: 101,
+				topicId: 10,
+				message: 'x',
+				hideSmilies: false,
+				edited: null,
+				topic: null,
+				words: { post: [], subject: [] },
+			});
+			expect(await trx.selectFrom('posts').select(['edited', 'edited_by']).where('id', '=', 101).executeTakeFirst()).toEqual({
+				edited: 1782800150,
+				edited_by: 'MaxDUO',
+			});
+		});
+	});
+
+	it('supprime le dernier message : le sujet et le forum reprennent l’avant-dernier', async () => {
+		await inRollback(async (trx) => {
+			const edits = new PostEditRepository(trx);
+			const post = await edits.findPost(102, 4);
+			if (post === null) throw new Error('message 102 absent');
+			expect(await edits.deletePost(post)).toBe(101);
+			expect(await topicRow(trx, 10)).toMatchObject({ num_replies: 1, last_post_id: 101, last_poster: 'MaxDUO' });
+			expect(await trx.selectFrom('forums').select(['num_posts', 'last_post_id']).where('id', '=', 2).executeTakeFirst()).toEqual({
+				num_posts: 2,
+				last_post_id: 101,
+			});
+		});
+	});
+
+	it('supprime une discussion : messages, index, abonnements, liens de déplacement', async () => {
+		await inRollback(async (trx) => {
+			const edits = new PostEditRepository(trx);
+			const post = await edits.findPost(100, 4);
+			if (post === null) throw new Error('message 100 absent');
+			await edits.deleteTopic(post);
+			expect(await trx.selectFrom('topics').select('id').where('id', 'in', [10, 12]).execute()).toEqual([]);
+			expect(await trx.selectFrom('posts').select('id').where('topic_id', '=', 10).execute()).toEqual([]);
+			expect(await trx.selectFrom('topic_subscriptions').selectAll().where('topic_id', '=', 10).execute()).toEqual([]);
+			// Fidèle à strip_search_index() : « vintage », compté deux fois (messages 100 et 101), reste orphelin.
+			expect(await words(trx)).toEqual(['avion', 'interne', 'vintage']);
+			expect(await trx.selectFrom('search_matches').select('post_id').where('post_id', 'in', [100, 101, 102]).execute()).toEqual([]);
+			expect(
+				await trx.selectFrom('forums').select(['num_topics', 'num_posts', 'last_post']).where('id', '=', 2).executeTakeFirst(),
+			).toEqual({
+				num_topics: 0,
+				num_posts: 0,
+				last_post: null,
 			});
 		});
 	});

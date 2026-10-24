@@ -53,6 +53,10 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   préfixe du sujet en JavaScript et seulement pour une nouvelle discussion ; pas de réponse dans le
   lien d'un sujet déplacé ; un échec d'envoi des notifications n'annule pas le message ; modèles
   d'e-mail en français pour tous ; brouillons encore servis par le PHP.
+- Modification (`edit.php`) : un membre peut modifier son message pendant 30 minutes, comme PV le
+  voulait (son code comparait `strtotime()` d'un timestamp, toujours faux : seuls les modérateurs
+  pouvaient modifier) ; le lien « Modifier » de viewtopic suit la même règle. Le lien « Supprimer »
+  suit exactement la règle de `delete.php` (le PHP pouvait afficher un lien refusé ensuite).
 - Le menu mobile est un `<details>` sans JavaScript (PV : bouton burger en JS) ; pas d'icônes rapides.
 - `profile.php` : Node ne sert que la consultation ; tout cas de modification est redirigé vers
   `LEGACY_BASE_URL`, qui doit donc désigner une adresse servie par le PHP (sinon boucle).

@@ -71,6 +71,8 @@ export interface PostContext {
 	/** Membre existant au pseudo identique ou trop ressemblant à celui de l'invité (check_username()). */
 	similarUsername: string | null;
 	guestLabel: string;
+	/** Anti-flood (g_post_flood) : pas pour une modification (edit.php). */
+	checkFlood?: boolean;
 }
 
 export interface ValidatedPost {
@@ -132,7 +134,7 @@ export function validatePost(form: PostForm, context: PostContext): ValidatedPos
 	const { viewer, censor } = context;
 	const errors: PostError[] = [];
 
-	const flood = form.preview ? null : floodError(viewer, context.now);
+	const flood = form.preview || context.checkFlood === false ? null : floodError(viewer, context.now);
 	if (flood !== null) errors.push(flood);
 
 	const subject = form.subject !== null ? punTrim(form.subject) : '';

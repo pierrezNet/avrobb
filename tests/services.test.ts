@@ -9,7 +9,7 @@ import { forumHmac, isCookiePasswordValid, isCookieSignatureValid, parseLegacyCo
 import { clampPage, paginate } from '../src/services/pagination.ts';
 import { canReply, postActions } from '../src/services/permissions.ts';
 import { parseModerators } from '../src/services/phpSerialize.ts';
-import { group, guest, topic, viewer } from './fixtures.ts';
+import { group, guest, NOW, topic, viewer } from './fixtures.ts';
 
 describe('parseModerators', () => {
 	it('lit le tableau sérialisé par PHP, longueurs en octets', () => {
@@ -58,11 +58,21 @@ describe('permissions', () => {
 		expect(canReply(viewer(), topic({ forumReplyPermission: false }))).toBe(false);
 	});
 
-	it('postActions : un membre modifie ses messages, un modérateur pas ceux des admins', () => {
-		expect(postActions(viewer(), topic(), 3, 1, false)).toEqual({ report: true, delete: true, edit: true, quote: true });
-		expect(postActions(viewer(), topic(), 4, 2, false)).toEqual({ report: true, delete: false, edit: false, quote: true });
+	it('postActions : un membre modifie ses messages (30 minutes), un modérateur pas ceux des admins', () => {
+		const own = { posterId: 3, posterIsAdmin: false, posted: NOW - 600, isTopicPost: true };
+		expect(postActions(viewer(), topic(), own, NOW)).toEqual({ report: true, delete: true, edit: true, quote: true });
+		expect(postActions(viewer(), topic(), { ...own, posted: NOW - 1801 }, NOW)).toMatchObject({ edit: false, delete: true });
+		expect(postActions(viewer({ group: group({ canDeleteTopics: false }) }), topic(), own, NOW)).toMatchObject({ delete: false });
+		expect(postActions(viewer(), topic({ closed: true }), own, NOW)).toEqual({ report: true, delete: false, edit: false, quote: false });
+		expect(postActions(viewer(), topic(), { ...own, posterId: 4 }, NOW)).toEqual({ report: true, delete: false, edit: false, quote: true });
 		const modTopic = topic({ forum: { id: 1, name: 'F', moderators: new Map([['MaxDUO', 5]]) } });
-		expect(postActions(mod, modTopic, 2, 2, true)).toEqual({ report: true, delete: false, edit: false, quote: true });
+		expect(postActions(mod, modTopic, { ...own, posterId: 2, posterIsAdmin: true, posted: 0 }, NOW)).toEqual({
+			report: true,
+			delete: false,
+			edit: false,
+			quote: true,
+		});
+		expect(postActions(mod, modTopic, { ...own, posterId: 4, posted: 0 }, NOW)).toMatchObject({ delete: true, edit: true });
 	});
 });
 

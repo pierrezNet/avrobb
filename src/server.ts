@@ -19,6 +19,7 @@ import { GalleryRepository } from './repositories/GalleryRepository.ts';
 import { MailTemplateFiles } from './repositories/MailTemplateFiles.ts';
 import { OnlineRepository } from './repositories/OnlineRepository.ts';
 import { PhpCacheFiles } from './repositories/PhpCacheFiles.ts';
+import { PostEditRepository } from './repositories/PostEditRepository.ts';
 import { PostingRepository } from './repositories/PostingRepository.ts';
 import { PostRepository } from './repositories/PostRepository.ts';
 import { PrivateMessageRepository } from './repositories/PrivateMessageRepository.ts';
@@ -57,6 +58,7 @@ const app = await buildApp({
 	topicWriter: topics,
 	posts: new PostRepository(db),
 	posting: new PostingRepository(db),
+	postEdits: new PostEditRepository(db),
 	toolbar: new ToolbarRepository(db),
 	forums: new ForumRepository(db),
 	reports: new ReportRepository(db),

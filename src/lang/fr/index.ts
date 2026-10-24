@@ -5,6 +5,7 @@
 
 import type { DateWords } from '../../services/dateFormat.ts';
 import { common } from './common.ts';
+import { deletePage } from './delete.ts';
 import { forum } from './forum.ts';
 import { gallery } from './gallery.ts';
 import { help } from './help.ts';
@@ -36,6 +37,7 @@ export const fr = {
 	pms,
 	post,
 	toolbar,
+	delete: deletePage,
 };
 
 export const frDateWords: DateWords = {

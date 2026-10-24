@@ -276,7 +276,17 @@ export function buildTopicPage(input: TopicPageInput): TopicPageView {
 				showSignatures && author !== null && author.signature !== '' ? parseSignature(author.signature, parser.signature) : null,
 			edited: post.edited !== null ? { by: post.editedBy, at: format(post.edited) } : null,
 			actions: actionLinks(
-				postActions(viewer, topic, author?.id ?? 0, position, author?.groupId === GroupId.Admin),
+				postActions(
+					viewer,
+					topic,
+					{
+						posterId: author?.id ?? 0,
+						posterIsAdmin: author?.groupId === GroupId.Admin,
+						posted: post.posted,
+						isTopicPost: post.id === topic.firstPostId,
+					},
+					input.now,
+				),
 				post.id,
 				topic.id,
 				lang,

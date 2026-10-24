@@ -11,6 +11,7 @@ import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply, ty
 import nunjucks from 'nunjucks';
 import { ForumController, type ForumQuery } from './controllers/ForumController.ts';
 import { IndexController } from './controllers/IndexController.ts';
+import { ProfileController, type ProfileQuery } from './controllers/ProfileController.ts';
 import { TopicController, type TopicQuery } from './controllers/TopicController.ts';
 import { UserlistController, type UserlistParams } from './controllers/UserlistController.ts';
 import type { BoardConfig, Viewer } from './domain/models.ts';
@@ -24,7 +25,7 @@ import type { PostReader } from './repositories/PostRepository.ts';
 import type { StatsReader } from './repositories/StatsRepository.ts';
 import type { TopicLabelReader } from './repositories/TopicLabelRepository.ts';
 import type { TopicReader } from './repositories/TopicRepository.ts';
-import type { MemberListReader, UserReader } from './repositories/UserRepository.ts';
+import type { MemberListReader, ProfileReader, UserReader } from './repositories/UserRepository.ts';
 import type { UsersInfoReader } from './repositories/UsersInfoLoader.ts';
 import type { AvatarLocator } from './services/avatars.ts';
 
@@ -41,6 +42,7 @@ export interface AppDeps extends LayoutDeps {
 	config: ConfigReader;
 	users: UserReader;
 	members: MemberListReader;
+	profiles: ProfileReader;
 	topics: TopicReader;
 	posts: PostReader;
 	avatars: AvatarLocator;
@@ -58,7 +60,7 @@ export interface AppDeps extends LayoutDeps {
 }
 
 /** Pages déjà servies par Node ; les autres liens partent vers l'installation PHP. */
-const PORTED_PAGES = new Set(['index.php', 'userlist.php', 'viewforum.php', 'viewtopic.php']);
+const PORTED_PAGES = new Set(['index.php', 'profile.php', 'userlist.php', 'viewforum.php', 'viewtopic.php']);
 
 const ROOT_DIR = path.join(import.meta.dirname, '..');
 
@@ -120,6 +122,9 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 
 	const userlist = new UserlistController(deps);
 	app.get<{ Querystring: UserlistParams }>('/userlist.php', { preHandler: authenticate }, userlist.show);
+
+	const profiles = new ProfileController(deps);
+	app.get<{ Querystring: ProfileQuery }>('/profile.php', { preHandler: authenticate }, profiles.show);
 
 	const topics = new TopicController(deps);
 	app.get<{ Querystring: TopicQuery }>('/viewtopic.php', { preHandler: authenticate }, topics.show);

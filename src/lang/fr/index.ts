@@ -8,10 +8,11 @@ import { common } from './common.ts';
 import { forum } from './forum.ts';
 import { indexPage } from './indexPage.ts';
 import { pms } from './pms.ts';
+import { profile } from './profile.ts';
 import { topic } from './topic.ts';
 import { userlist } from './userlist.ts';
 
-export const fr = { common, index: indexPage, forum, topic, userlist, pms };
+export const fr = { common, index: indexPage, forum, topic, userlist, profile, pms };
 
 export const frDateWords: DateWords = {
 	today: "Aujourd'hui",

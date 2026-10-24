@@ -1,0 +1,40 @@
+/**
+ * Textes de la consultation d'un profil. Source : lang/French/profile.php, pms.php et le plugile
+ * UP_Ma_biographie (propre à PV).
+ */
+
+export const profile = {
+	usersProfile: (username: string) => `Profil de ${username}`,
+	profile: 'Profil',
+	sectionPersonal: 'Personnel',
+	sectionMessaging: 'Messagerie',
+	sectionPersonality: 'Personnalité',
+	userActivity: "Activité de l'utilisateur",
+	username: "Nom d'utilisateur",
+	title: "Titre de l'utilisateur",
+	realname: 'Nom',
+	location: 'Lieu',
+	website: 'Site Web',
+	email: 'E-mail',
+	sendEmail: 'Envoyer un e-mail',
+	pm: 'MP',
+	pmTitle: 'Messages privés',
+	quickMessage: 'Envoyer un message privé',
+	contacts: 'Contacts',
+	addToContacts: 'Ajouter aux contacts',
+	jabber: 'Jabber',
+	icq: 'ICQ',
+	msn: 'Compte Microsoft',
+	aim: 'AOL IM',
+	yahoo: 'Yahoo! Messenger',
+	avatar: 'Avatar',
+	signature: 'Signature',
+	posts: 'Messages',
+	showTopics: 'Afficher toutes les discussions',
+	showPosts: 'Voir les messages de cet utilisateur',
+	showSubscriptions: 'Afficher toutes les discussions suivies',
+	lastPost: 'Dernier message',
+	registered: "Date d'inscription",
+	biography: 'Biographie',
+	noBiography: "Ce membre n'a pas écrit sa biographie",
+};

@@ -889,6 +889,58 @@ a.site-status__alert {
 	border-top: 1px solid var(--color-border);
 }
 
+/* ---------- Profil ---------- */
+
+.profile {
+	display: grid;
+	gap: 1rem;
+	margin-bottom: 1rem;
+}
+
+.profile__section {
+	padding: 0.75rem 1rem;
+	border: 1px solid var(--color-border);
+	border-radius: 0.5rem;
+	background: var(--color-surface);
+	min-width: 0;
+}
+
+.profile__title {
+	margin: 0 0 0.5rem;
+	font-size: 1.0625rem;
+}
+
+.profile__fields {
+	margin: 0;
+}
+
+.profile__field {
+	padding: 0.375rem 0;
+	border-top: 1px solid var(--color-border);
+}
+
+.profile__field:first-child {
+	border-top: 0;
+}
+
+.profile__field dt {
+	color: var(--color-muted);
+	font-size: 0.875rem;
+}
+
+.profile__field dd {
+	margin: 0;
+	overflow-wrap: anywhere;
+}
+
+.profile__avatar {
+	max-width: 8rem;
+}
+
+.profile__biography {
+	overflow-wrap: anywhere;
+}
+
 /* ---------- Formulaires ---------- */
 
 .form-box {
@@ -1164,6 +1216,20 @@ a.site-status__alert {
 
 	.form__grid {
 		grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+	}
+
+	.profile {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.profile__field {
+		display: grid;
+		grid-template-columns: 12rem minmax(0, 1fr);
+		gap: 1rem;
+	}
+
+	#biographie {
+		grid-column: 1 / -1;
 	}
 
 	.data-table thead {

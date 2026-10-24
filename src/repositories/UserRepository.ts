@@ -12,6 +12,7 @@ import {
 	type MemberFilter,
 	type MemberSort,
 	type MemberSummary,
+	type UserProfile,
 	type Viewer,
 } from '../domain/models.ts';
 
@@ -32,10 +33,14 @@ export interface MemberListReader {
 	listGroups(): Promise<GroupSummary[]>;
 }
 
+export interface ProfileReader {
+	findProfile(userId: number): Promise<UserProfile | null>;
+}
+
 /** Comptes en attente de validation (PUN_UNVERIFIED) : jamais listés. */
 const UNVERIFIED_GROUP = 0;
 
-export class UserRepository implements UserReader, MemberListReader {
+export class UserRepository implements UserReader, MemberListReader, ProfileReader {
 	constructor(private readonly db: Db) {}
 
 	async findViewer(userId: number): Promise<ViewerRecord | null> {
@@ -65,6 +70,7 @@ export class UserRepository implements UserReader, MemberListReader {
 				'g.g_user_title',
 				'g.g_moderator',
 				'g.g_mod_promote_users',
+				'g.g_mod_edit_users',
 				'g.g_read_board',
 				'g.g_view_users',
 				'g.g_post_replies',
@@ -90,6 +96,7 @@ export class UserRepository implements UserReader, MemberListReader {
 			userTitle: row.g_user_title ?? '',
 			isModerator: row.g_moderator === 1,
 			canModPromoteUsers: row.g_mod_promote_users === 1,
+			canModEditUsers: row.g_mod_edit_users === 1,
 			canReadBoard: row.g_read_board === 1,
 			canViewUsers: row.g_view_users === 1,
 			canPostReplies: row.g_post_replies === 1,
@@ -181,5 +188,65 @@ export class UserRepository implements UserReader, MemberListReader {
 			.orderBy('g_id')
 			.execute();
 		return rows.map((row) => ({ id: row.g_id, title: row.g_title }));
+	}
+
+	async findProfile(userId: number): Promise<UserProfile | null> {
+		const row = await this.db
+			.selectFrom('users as u')
+			.leftJoin('groups as g', 'g.g_id', 'u.group_id')
+			.select([
+				'u.id',
+				'u.username',
+				'u.email',
+				'u.email_setting',
+				'u.title',
+				'u.realname',
+				'u.url',
+				'u.location',
+				'u.jabber',
+				'u.icq',
+				'u.msn',
+				'u.aim',
+				'u.yahoo',
+				'u.signature',
+				'u.biographie',
+				'u.num_posts',
+				'u.last_post',
+				'u.registered',
+				'u.use_pm',
+				'u.group_id',
+				'g.g_user_title',
+				'g.g_moderator',
+				'g.g_pm',
+			])
+			.where('u.id', '=', userId)
+			.executeTakeFirst();
+
+		if (row === undefined) return null;
+
+		return {
+			id: row.id,
+			username: row.username,
+			email: row.email,
+			emailSetting: row.email_setting,
+			title: row.title ?? '',
+			realname: row.realname ?? '',
+			url: row.url ?? '',
+			location: row.location ?? '',
+			jabber: row.jabber ?? '',
+			icq: row.icq ?? '',
+			msn: row.msn ?? '',
+			aim: row.aim ?? '',
+			yahoo: row.yahoo ?? '',
+			signature: row.signature ?? '',
+			biography: row.biographie ?? '',
+			numPosts: row.num_posts,
+			lastPost: row.last_post !== null && row.last_post > 0 ? row.last_post : null,
+			registered: row.registered,
+			groupId: row.group_id,
+			groupUserTitle: row.g_user_title ?? '',
+			groupIsModerator: row.g_moderator === 1,
+			acceptsPrivateMessages: row.use_pm === 1 && row.g_pm === 1,
+		};
 	}
 }

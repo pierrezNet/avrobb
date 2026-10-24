@@ -87,3 +87,5 @@ INSERT INTO fo_bans (username, ip, email, message, expire, ban_creator) VALUES
 	(NULL, '192.0.2.66', NULL, NULL, NULL, 2);
 
 INSERT INTO fo_censoring (search_for, replace_with) VALUES ('zut', '***'), ('flûte*', '[censuré]');
+
+UPDATE fo_users SET biographie = 'Pilote de ligne depuis 2003 :)' WHERE id = 3;

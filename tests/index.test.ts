@@ -111,14 +111,14 @@ describe('GET /index.php', () => {
 		expect(res.body).toContain('<title>Forum de test</title>');
 		expect(res.body).toContain('Simulateurs &lt;FS&gt;');
 		expect(res.body).toContain('<div class="forum-row__desc"><em>Réglages</em></div>');
-		expect(res.body).toContain('<a href="http://php.test/profile.php?id=5">MaxDUO</a>');
+		expect(res.body).toContain('<a href="profile.php?id=5">MaxDUO</a>');
 		expect(res.body).toContain('<span class="forum-row__redirect">Lien vers :</span> <a href="https://example.test">Forum 2</a>');
 		expect(res.body).toContain('<dd>12.3 k</dd>');
 		expect(res.body).toContain('- - -');
 		expect(res.body).toContain('Jamais');
 		expect(res.body).toContain('Nombre total de messages : <strong>56 789</strong>');
 		expect(res.body).toContain('Invités en ligne : <strong>2</strong>');
-		expect(res.body).toContain('<a href="http://php.test/profile.php?id=6">valdefsx</a>');
+		expect(res.body).toContain('<a href="profile.php?id=6">valdefsx</a>');
 		expect(res.body).not.toContain('Nouveaux messages');
 		expect(res.body).not.toContain('misc.php?action=markread');
 		// L'index est porté : ses liens restent locaux.

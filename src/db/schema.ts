@@ -83,6 +83,7 @@ export interface GroupsTable {
 	g_user_title: string | null;
 	g_moderator: number;
 	g_mod_promote_users: number;
+	g_mod_edit_users: number;
 	g_read_board: number;
 	g_view_users: number;
 	g_post_replies: number;
@@ -156,8 +157,16 @@ export interface UsersTable {
 	password: string;
 	email: string;
 	title: string | null;
+	realname: string | null;
 	url: string | null;
+	jabber: string | null;
+	icq: string | null;
+	msn: string | null;
+	aim: string | null;
+	yahoo: string | null;
 	location: string | null;
+	biographie: string | null;
+	last_post: number | null;
 	signature: string | null;
 	disp_topics: number | null;
 	disp_posts: number | null;

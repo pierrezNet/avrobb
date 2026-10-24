@@ -1,0 +1,34 @@
+{#- Consultation d'un profil (profile.php, branche « view »). Données : `view` (presenters/profilePage.ts). -#}
+{% extends "layout.njk" %}
+
+{% block main %}
+<h1 class="page-title">{{ lang.profile.usersProfile(view.username) }}</h1>
+
+<div class="profile" id="viewprofile">
+{% for section in view.sections %}
+	<section class="profile__section" aria-labelledby="profile-{{ section.id }}">
+		<h2 class="profile__title" id="profile-{{ section.id }}">{{ section.title }}</h2>
+		<dl class="profile__fields">
+		{% for field in section.fields %}
+			<div class="profile__field">
+				<dt>{{ field.label }}</dt>
+				<dd>
+					{%- if field.imageUrl %}<img class="profile__avatar" src="{{ field.imageUrl }}" alt="">{% endif -%}
+					{#- HTML de parseSignature() : échappé par construction (services/bbcode.ts). #}
+					{%- if field.html %}<div class="bbcode post__signature">{{ field.html | safe }}</div>{% endif -%}
+					{%- if field.text %}{{ field.text }}{% endif -%}
+					{%- for link in field.links %}{% if field.text or not loop.first %} - {% endif %}<a href="{{ link.href if link.external else url(link.href) }}"{% if link.external %} rel="nofollow ugc"{% endif %}>{{ link.label }}</a>{% endfor -%}
+				</dd>
+			</div>
+		{% endfor %}
+		</dl>
+	</section>
+{% endfor %}
+
+	<section class="profile__section" id="biographie" aria-labelledby="profile-biography">
+		<h2 class="profile__title" id="profile-biography">{{ lang.profile.biography }}</h2>
+		{#- HTML de parseMessage() : échappé par construction (services/bbcode.ts). #}
+		{% if view.biographyHtml %}<div class="bbcode profile__biography">{{ view.biographyHtml | safe }}</div>{% else %}<p>{{ lang.profile.noBiography }}</p>{% endif %}
+	</section>
+</div>
+{% endblock %}

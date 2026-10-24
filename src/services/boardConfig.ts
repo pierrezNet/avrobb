@@ -20,6 +20,7 @@ export function toBoardConfig(values: ReadonlyMap<string, string>): BoardConfig 
 		defaultTopicsPerPage: Number(text('o_disp_topics_default', '30')) || 30,
 		showDot: flag('o_show_dot'),
 		forumSubscriptions: flag('o_forum_subscriptions'),
+		topicSubscriptions: flag('o_topic_subscriptions'),
 		dateFormat: text('o_date_format', 'Y-m-d'),
 		timeFormat: text('o_time_format', 'H:i:s'),
 		showUserInfo: flag('o_show_user_info'),

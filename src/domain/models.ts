@@ -18,6 +18,8 @@ export interface Group {
 	userTitle: string;
 	isModerator: boolean;
 	canModPromoteUsers: boolean;
+	/** Les modérateurs de ce groupe peuvent modifier les profils (g_mod_edit_users). */
+	canModEditUsers: boolean;
 	canReadBoard: boolean;
 	canViewUsers: boolean;
 	canPostReplies: boolean;
@@ -133,6 +135,7 @@ export interface BoardConfig {
 	/** « Le point » devant les sujets où le membre a écrit (o_show_dot). */
 	showDot: boolean;
 	forumSubscriptions: boolean;
+	topicSubscriptions: boolean;
 	dateFormat: string;
 	timeFormat: string;
 	showUserInfo: boolean;
@@ -301,4 +304,32 @@ export interface MemberFilter {
 	/** Motif de pseudo, « * » jouant le rôle du joker ; null pour tous. */
 	username: string | null;
 	groupId: number | null;
+}
+
+/** Profil public d'un membre (branche « consultation » de profile.php). */
+export interface UserProfile {
+	id: number;
+	username: string;
+	email: string;
+	emailSetting: number;
+	title: string;
+	realname: string;
+	url: string;
+	location: string;
+	/** Messageries instantanées : Jabber, ICQ, MSN, AOL IM, Yahoo. */
+	jabber: string;
+	icq: string;
+	msn: string;
+	aim: string;
+	yahoo: string;
+	signature: string;
+	/** Biographie (plugile UP_Ma_biographie, propre à PV) ; vide si non rédigée. */
+	biography: string;
+	numPosts: number;
+	lastPost: number | null;
+	registered: number;
+	groupId: number;
+	groupUserTitle: string;
+	groupIsModerator: boolean;
+	acceptsPrivateMessages: boolean;
 }

@@ -51,5 +51,8 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
 - Balises PV réservées aux modérateurs (`balises_modo`) absentes du pied de viewtopic → lot Modération.
 - Pas d'abonnement au sujet ni de réponse rapide sous viewtopic → lot Rédaction.
 - Le menu mobile est un `<details>` sans JavaScript (PV : bouton burger en JS) ; pas d'icônes rapides.
+- `profile.php` : Node ne sert que la consultation ; tout cas de modification est redirigé vers
+  `LEGACY_BASE_URL`, qui doit donc désigner une adresse servie par le PHP (sinon boucle).
+- Biographie affichée directement sur le profil (le PHP la cache derrière `?plugin=UP_Ma_biographie.php`).
 - Le jeton du lien « Déconnexion » dépend de l'IP vue par le serveur : derrière un proxy, régler
   `TRUST_PROXY=1` (et `FORUM_BEHIND_REVERSE_PROXY` côté PHP) pour que les deux voient la même.

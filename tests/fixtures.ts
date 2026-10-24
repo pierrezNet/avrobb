@@ -19,6 +19,7 @@ import {
 	type Topic,
 	type TopicLabel,
 	type TopicSummary,
+	type UserProfile,
 	type Viewer,
 } from '../src/domain/models.ts';
 import { fr, frDateWords } from '../src/lang/fr/index.ts';
@@ -35,6 +36,7 @@ export function group(overrides: Partial<Group> = {}): Group {
 		userTitle: '',
 		isModerator: false,
 		canModPromoteUsers: false,
+		canModEditUsers: false,
 		canReadBoard: true,
 		canViewUsers: true,
 		canPostReplies: true,
@@ -144,6 +146,7 @@ export const boardConfig: BoardConfig = {
 	defaultTopicsPerPage: 30,
 	showDot: false,
 	forumSubscriptions: true,
+	topicSubscriptions: true,
 	dateFormat: 'Y-m-d',
 	timeFormat: 'H:i:s',
 	showUserInfo: true,
@@ -201,6 +204,7 @@ export interface FakeData {
 	forumTopics?: Map<number, TopicSummary[]>;
 	labelDefinitions?: TopicLabel[];
 	members?: MemberSummary[];
+	profiles?: UserProfile[];
 	recentTopics?: RecentTopic[];
 	online?: OnlineVisitor[];
 }
@@ -219,6 +223,7 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 	return {
 		config: { load: async () => ({ ...boardConfig, ...data.config }) },
 		users: { findViewer: async (id) => data.users.find((u) => u.viewer.id === id) ?? null },
+		profiles: { findProfile: async (id) => data.profiles?.find((p) => p.id === id) ?? null },
 		members: {
 			countMembers: async (filter) => (data.members ?? []).filter((m) => matchMember(m, filter)).length,
 			listMembers: async (filter, sort, direction, offset, limit) =>

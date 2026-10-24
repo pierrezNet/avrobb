@@ -89,3 +89,15 @@ export function canSeeReputation(viewer: Viewer, config: BoardConfig, author: { 
 export function canVoteReputation(viewer: Viewer, authorUsername: string): boolean {
 	return !viewer.isGuest && viewer.username !== authorUsername;
 }
+
+/**
+ * Le lecteur peut-il modifier ce profil ? (condition « View or edit? » de profile.php) : le sien,
+ * ou en administrateur, ou en modérateur autorisé (g_mod_edit_users) sur un membre qui n'est ni
+ * administrateur ni modérateur.
+ */
+export function canEditProfile(viewer: Viewer, target: { id: number; groupId: number; groupIsModerator: boolean }): boolean {
+	if (!viewer.isGuest && viewer.id === target.id) return true;
+	if (!isAnyModerator(viewer)) return false;
+	if (isAdmin(viewer)) return true;
+	return viewer.group.canModEditUsers && target.groupId !== GroupId.Admin && !target.groupIsModerator;
+}

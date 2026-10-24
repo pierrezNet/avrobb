@@ -75,6 +75,20 @@ describe('liste des membres', () => {
 		});
 	});
 
+	it('lit le profil public avec groupe, biographie et messagerie', async () => {
+		expect(await members.findProfile(3)).toMatchObject({
+			username: 'Tessy',
+			title: 'Pilote de ligne',
+			biography: 'Pilote de ligne depuis 2003 :)',
+			icq: '',
+			groupId: GroupId.Member,
+			groupIsModerator: false,
+			acceptsPrivateMessages: true,
+		});
+		expect((await members.findProfile(5))?.groupIsModerator).toBe(true);
+		expect(await members.findProfile(999)).toBeNull();
+	});
+
 	it('propose tous les groupes sauf les invités', async () => {
 		expect((await members.listGroups()).map((g) => g.id)).toEqual([1, 2, 4]);
 	});
@@ -267,6 +281,7 @@ describe('viewtopic de bout en bout', () => {
 			config: new ConfigLoader(new ConfigRepository(db), null, () => NOW),
 			users: new UserRepository(db),
 			members: new UserRepository(db),
+			profiles: new UserRepository(db),
 			topics: new TopicRepository(db),
 			posts: new PostRepository(db),
 			forums: new ForumRepository(db),

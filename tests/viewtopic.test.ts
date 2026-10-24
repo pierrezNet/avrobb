@@ -77,13 +77,13 @@ describe('GET /viewtopic.php', () => {
 		const many = Array.from({ length: 30 }, (_, i) => post(200 + i));
 		app = await buildApp(fakeDeps(data({ topics: [topic({ id: 20, numReplies: 29, firstPostId: 200 })], posts: new Map([[20, many]]) })));
 
-		const res = await app.inject('/viewtopic.php?id=20&p=2');
+		const res = await app.inject({ url: '/viewtopic.php?id=20&p=2', headers: { cookie: sessionCookie(3, 'hash-tessy') } });
 		expect(res.body).toContain('id="p225"');
 		expect(res.body).not.toContain('id="p224"');
 		expect(res.body).toContain('<strong aria-current="page">2</strong>');
 		expect(res.body).toContain('href="viewforum.php?id=1"');
 		expect(res.body).toContain('href="profile.php?id=3"');
-		expect(res.body).toContain('href="http://php.test/register.php"');
+		expect(res.body).toContain('href="http://php.test/post.php?tid=20"');
 		expect(res.body).toContain('href="viewtopic.php?id=20"');
 	});
 });

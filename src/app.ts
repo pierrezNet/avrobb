@@ -19,6 +19,7 @@ import { LoginController, type LoginQuery } from './controllers/LoginController.
 import { MiscController, type MiscQuery } from './controllers/MiscController.ts';
 import { PasswordResetController } from './controllers/PasswordResetController.ts';
 import { ProfileController, type ProfileQuery } from './controllers/ProfileController.ts';
+import { RegisterController, type RegisterQuery } from './controllers/RegisterController.ts';
 import { SearchController, type SearchQuery } from './controllers/SearchController.ts';
 import { TopicController, type TopicQuery } from './controllers/TopicController.ts';
 import { UserlistController, type UserlistParams } from './controllers/UserlistController.ts';
@@ -34,6 +35,7 @@ import type { FeedReader } from './repositories/FeedRepository.ts';
 import type { GalleryReader } from './repositories/GalleryRepository.ts';
 import type { MailTemplateReader } from './repositories/MailTemplateFiles.ts';
 import type { PostReader } from './repositories/PostRepository.ts';
+import type { RegistrationStore } from './repositories/RegistrationRepository.ts';
 import type { SearchReader } from './repositories/SearchRepository.ts';
 import type { StatsReader } from './repositories/StatsRepository.ts';
 import type { StopwordsReader } from './repositories/StopwordsLoader.ts';
@@ -61,6 +63,7 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	passwordResets: PasswordResetStore;
 	mailTemplates: MailTemplateReader;
 	mailer: Mailer;
+	registrations: RegistrationStore;
 	profiles: ProfileReader;
 	topics: TopicReader;
 	topicWriter: TopicWriter;
@@ -90,6 +93,7 @@ const PORTED_PAGES = new Set([
 	'login.php',
 	'misc.php',
 	'profile.php',
+	'register.php',
 	'search.php',
 	'userlist.php',
 	'viewforum.php',
@@ -206,6 +210,10 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 	const misc = new MiscController({ ...deps, trackCookieName });
 	app.get<{ Querystring: MiscQuery }>('/misc.php', { preHandler: miscSession }, misc.show);
 	app.post<{ Querystring: MiscQuery; Body: FormBody }>('/misc.php', { preHandler: [miscSession, verifyCsrf] }, misc.markRead);
+
+	const register = new RegisterController(deps);
+	app.get<{ Querystring: RegisterQuery }>('/register.php', { preHandler: authenticate }, register.show);
+	app.post<{ Querystring: RegisterQuery; Body: FormBody }>('/register.php', { preHandler: [authenticate, verifyCsrf] }, register.submit);
 
 	const help = new HelpController(deps);
 	app.get('/help.php', { preHandler: authenticate }, help.show);

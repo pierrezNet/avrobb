@@ -6,6 +6,7 @@
 import type { Db } from '../db/database.ts';
 import type { ForumCategory, ForumInfo, IndexCategory, TopicSort } from '../domain/models.ts';
 import { parseModerators } from '../services/phpSerialize.ts';
+import { forumReadable } from './forumPermissions.ts';
 
 export interface ForumReader {
 	/** Catégories et forums lisibles par le groupe, dans l'ordre d'affichage. */
@@ -41,7 +42,7 @@ export class ForumRepository implements ForumReader {
 			.selectFrom('categories as c')
 			.innerJoin('forums as f', 'f.cat_id', 'c.id')
 			.leftJoin('forum_perms as fp', (join) => join.onRef('fp.forum_id', '=', 'f.id').on('fp.group_id', '=', groupId))
-			.where((eb) => eb.or([eb('fp.read_forum', 'is', null), eb('fp.read_forum', '=', 1)]))
+			.where(forumReadable)
 			.orderBy('c.disp_position')
 			.orderBy('c.id')
 			.orderBy('f.disp_position');
@@ -104,7 +105,7 @@ export class ForumRepository implements ForumReader {
 				's.user_id as subscriber',
 			])
 			.where('f.id', '=', forumId)
-			.where((eb) => eb.or([eb('fp.read_forum', 'is', null), eb('fp.read_forum', '=', 1)]))
+			.where(forumReadable)
 			.executeTakeFirst();
 
 		if (row === undefined) return null;

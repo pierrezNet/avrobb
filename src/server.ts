@@ -21,6 +21,7 @@ import { OnlineRepository } from './repositories/OnlineRepository.ts';
 import { PhpCacheFiles } from './repositories/PhpCacheFiles.ts';
 import { PostRepository } from './repositories/PostRepository.ts';
 import { PrivateMessageRepository } from './repositories/PrivateMessageRepository.ts';
+import { RegistrationRepository } from './repositories/RegistrationRepository.ts';
 import { ReportRepository } from './repositories/ReportRepository.ts';
 import { SearchRepository } from './repositories/SearchRepository.ts';
 import { StatsRepository } from './repositories/StatsRepository.ts';
@@ -48,6 +49,7 @@ const app = await buildApp({
 	passwordResets: users,
 	mailTemplates: new MailTemplateFiles(config.legacyRoot),
 	mailer: new NodeMailer(config.mailOutbox),
+	registrations: new RegistrationRepository(db),
 	profiles: users,
 	topics,
 	topicWriter: topics,

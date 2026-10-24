@@ -63,5 +63,8 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
 - Connexion : jeton CSRF, adresse de retour limitée aux pages du forum (le PHP permettait une
   redirection ouverte), redirection immédiate sans page « Redirection… », page accessible en
   maintenance (le PHP empêchait un administrateur déconnecté de revenir).
+- Inscription : mot de passe de 6 caractères au moins, comme l'annonce le formulaire (le code PHP
+  en acceptait 4) ; pas de choix de la langue (une seule installée).
+- « Marquer comme lu » : formulaire POST ; un ancien lien GET affiche une confirmation.
 - Le jeton du lien « Déconnexion » dépend de l'IP vue par le serveur : derrière un proxy, régler
   `TRUST_PROXY=1` (et `FORUM_BEHIND_REVERSE_PROXY` côté PHP) pour que les deux voient la même.

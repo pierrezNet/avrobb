@@ -1,0 +1,17 @@
+{#- Conditions d'utilisation avant l'inscription (register.php, o_rules). -#}
+{% extends "layout.njk" %}
+
+{% block main %}
+<form id="rules" class="form-box form" method="get" action="{{ url('register.php') }}">
+	<h1 class="form-box__title">{{ lang.register.forumRules }}</h1>
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ lang.register.rulesLegend }}</legend>
+		{#- o_rules_message : HTML saisi par l'administrateur, affiché tel quel comme dans register.php. #}
+		<div class="usercontent">{{ view.rulesHtml | safe }}</div>
+	</fieldset>
+	<p class="form__buttons">
+		<button type="submit" class="button button--primary" name="agree" value="1">{{ lang.register.agree }}</button>
+		<button type="submit" class="button" name="cancel" value="1">{{ lang.register.cancel }}</button>
+	</p>
+</form>
+{% endblock %}

@@ -25,6 +25,7 @@ import {
 } from '../src/domain/models.ts';
 import { fr, frDateWords } from '../src/lang/fr/index.ts';
 import type { OnlineWriter } from '../src/repositories/OnlineRepository.ts';
+import type { NewUser } from '../src/repositories/RegistrationRepository.ts';
 import type { PostLocation } from '../src/repositories/TopicRepository.ts';
 import type { ViewerRecord } from '../src/repositories/UserRepository.ts';
 import type { Ban } from '../src/services/bans.ts';
@@ -177,6 +178,17 @@ export const boardConfig: BoardConfig = {
 	webmasterEmail: 'webmaster@forum.test',
 	smtp: { host: '', user: '', pass: '', ssl: false },
 	defaultUserGroup: 4,
+	registration: {
+		verify: false,
+		report: false,
+		mailingList: 'liste@forum.test',
+		allowBannedEmail: false,
+		allowDupeEmail: false,
+		defaultEmailSetting: 1,
+		defaultTimezone: 0,
+		defaultDst: false,
+		defaultLang: 'French',
+	},
 	announcement: null,
 	quickjump: true,
 	feedType: 'atom',
@@ -224,6 +236,8 @@ export interface FakeData {
 	accounts?: { id: number; username: string; email: string; lastEmailSent: number | null }[];
 	pendingPasswords?: { userId: number; passwordHash: string; key: string; now: number }[];
 	sentMails?: MailMessage[];
+	recentRegistrationIps?: string[];
+	createdUsers?: NewUser[];
 	/** Sujets dont le compteur de vues a été incrémenté. */
 	viewedTopics?: number[];
 	profiles?: UserProfile[];
@@ -305,6 +319,18 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 		mailer: {
 			send: async (message) => {
 				data.sentMails = [...(data.sentMails ?? []), message];
+			},
+		},
+		registrations: {
+			hasRecentRegistration: async (ip) => (data.recentRegistrationIps ?? []).includes(ip),
+			findSimilarUsername: async (username, skeleton) =>
+				data.users.find(
+					(u) => [username.toUpperCase(), skeleton.toUpperCase()].includes(u.viewer.username.toUpperCase()) && !u.viewer.isGuest,
+				)?.viewer.username ?? null,
+			listUsernamesByEmail: async (email) => (data.accounts ?? []).filter((a) => a.email === email).map((a) => a.username),
+			createUser: async (user) => {
+				data.createdUsers = [...(data.createdUsers ?? []), user];
+				return 100 + (data.createdUsers?.length ?? 0);
 			},
 		},
 		profiles: { findProfile: async (id) => data.profiles?.find((p) => p.id === id) ?? null },

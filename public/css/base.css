@@ -1215,6 +1215,20 @@ a.site-status__alert {
 	font-size: 1rem;
 }
 
+.form__intro {
+	margin-bottom: 1rem;
+	padding-bottom: 0.5rem;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.form__intro p {
+	margin: 0 0 0.5rem;
+}
+
+.form__buttons .button + .button {
+	margin-left: 0.5rem;
+}
+
 .form__help {
 	margin: 0.75rem 0 0;
 	color: var(--color-muted);

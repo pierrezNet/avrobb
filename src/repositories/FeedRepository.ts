@@ -4,6 +4,7 @@
  */
 
 import type { Db } from '../db/database.ts';
+import { forumReadable } from './forumPermissions.ts';
 
 export interface FeedPostRow {
 	id: number;
@@ -57,7 +58,7 @@ export class FeedRepository implements FeedReader {
 			.select(['t.subject', 't.first_post_id'])
 			.where('t.id', '=', topicId)
 			.where('t.moved_to', 'is', null)
-			.where((eb) => eb.or([eb('fp.read_forum', 'is', null), eb('fp.read_forum', '=', 1)]))
+			.where(forumReadable)
 			.executeTakeFirst();
 		return row !== undefined ? { subject: row.subject, firstPostId: row.first_post_id } : null;
 	}
@@ -99,7 +100,7 @@ export class FeedRepository implements FeedReader {
 			.leftJoin('forum_perms as fp', (join) => join.onRef('fp.forum_id', '=', 'f.id').on('fp.group_id', '=', groupId))
 			.select('f.forum_name')
 			.where('f.id', '=', forumId)
-			.where((eb) => eb.or([eb('fp.read_forum', 'is', null), eb('fp.read_forum', '=', 1)]))
+			.where(forumReadable)
 			.executeTakeFirst();
 		return row?.forum_name ?? null;
 	}
@@ -127,7 +128,7 @@ export class FeedRepository implements FeedReader {
 				'u.email_setting',
 				'u.email',
 			])
-			.where((eb) => eb.or([eb('fp.read_forum', 'is', null), eb('fp.read_forum', '=', 1)]))
+			.where(forumReadable)
 			.where('t.moved_to', 'is', null)
 			.orderBy(query.orderPosted ? 't.posted' : 't.last_post', 'desc')
 			.limit(query.limit);

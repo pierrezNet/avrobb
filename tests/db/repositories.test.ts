@@ -19,6 +19,7 @@ import { GalleryRepository } from '../../src/repositories/GalleryRepository.ts';
 import { OnlineRepository } from '../../src/repositories/OnlineRepository.ts';
 import { PostRepository } from '../../src/repositories/PostRepository.ts';
 import { PrivateMessageRepository } from '../../src/repositories/PrivateMessageRepository.ts';
+import { RegistrationRepository } from '../../src/repositories/RegistrationRepository.ts';
 import { ReportRepository } from '../../src/repositories/ReportRepository.ts';
 import { SearchRepository } from '../../src/repositories/SearchRepository.ts';
 import { StatsRepository } from '../../src/repositories/StatsRepository.ts';
@@ -347,6 +348,41 @@ describe('OnlineRepository et bannissements (écritures)', () => {
 	});
 });
 
+describe('RegistrationRepository', () => {
+	const registrations = new RegistrationRepository(db);
+
+	it('pseudo ressemblant, adresses utilisées, anti-flood par IP, création du compte', async () => {
+		expect(await registrations.findSimilarUsername('tessy', 'tessy')).toBe('Tessy');
+		expect(await registrations.findSimilarUsername('Max.DUO', 'MaxDUO')).toBe('MaxDUO');
+		expect(await registrations.findSimilarUsername('Nouveau', 'Nouveau')).toBeNull();
+		expect(await registrations.listUsernamesByEmail('tessy@example.test')).toEqual(['Tessy']);
+
+		const id = await registrations.createUser({
+			username: 'Nouveau',
+			groupId: 4,
+			passwordHash: 'h',
+			email: 'nouveau@example.test',
+			emailSetting: 1,
+			timezone: 1,
+			dst: true,
+			language: 'French',
+			style: 'Air',
+			registeredAt: NOW,
+			ip: '203.0.113.9',
+		});
+		expect(id).toBeGreaterThan(5);
+		expect(await registrations.hasRecentRegistration('203.0.113.9', NOW - 3600)).toBe(true);
+		expect(await registrations.hasRecentRegistration('203.0.113.10', NOW - 3600)).toBe(false);
+		expect((await new UserRepository(db).findViewer(id))?.viewer).toMatchObject({
+			username: 'Nouveau',
+			timezone: 1,
+			dst: true,
+			showSmilies: true,
+		});
+		await db.deleteFrom('users').where('id', '=', id).execute();
+	});
+});
+
 describe('ReportRepository et PrivateMessageRepository', () => {
 	it('détecte les signalements non traités', async () => {
 		expect(await new ReportRepository(db).hasPending()).toBe(true);
@@ -419,6 +455,7 @@ describe('viewtopic de bout en bout', () => {
 			members: new UserRepository(db),
 			credentials: new UserRepository(db),
 			passwordResets: new UserRepository(db),
+			registrations: new RegistrationRepository(db),
 			mailTemplates: { load: async () => ({ subject: '', body: '' }) },
 			mailer: { send: async () => undefined },
 			profiles: new UserRepository(db),

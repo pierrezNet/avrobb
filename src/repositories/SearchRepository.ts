@@ -8,6 +8,7 @@ import { sql } from 'kysely';
 import type { Db } from '../db/database.ts';
 import type { SearchPost, SearchTopic } from '../domain/models.ts';
 import type { ShowAs, SortBy, WordHit } from '../services/search.ts';
+import { forumReadable } from './forumPermissions.ts';
 
 /** Forums auxquels limiter la recherche ; null pour tous les forums lisibles. */
 export type ForumScope = readonly number[] | null;
@@ -63,7 +64,7 @@ export class SearchRepository implements SearchReader {
 			.selectFrom('posts as p')
 			.innerJoin('topics as t', 't.id', 'p.topic_id')
 			.leftJoin('forum_perms as fp', (join) => join.onRef('fp.forum_id', '=', 't.forum_id').on('fp.group_id', '=', groupId))
-			.where((eb) => eb.or([eb('fp.read_forum', 'is', null), eb('fp.read_forum', '=', 1)]));
+			.where(forumReadable);
 		if (scope !== null) query = scope.length > 0 ? query.where('t.forum_id', 'in', scope) : query.where(sql<boolean>`1 = 0`);
 		return query;
 	}
@@ -119,7 +120,7 @@ export class SearchRepository implements SearchReader {
 			.selectFrom('topics as t')
 			.leftJoin('forum_perms as fp', (join) => join.onRef('fp.forum_id', '=', 't.forum_id').on('fp.group_id', '=', query.groupId))
 			.select('t.id')
-			.where((eb) => eb.or([eb('fp.read_forum', 'is', null), eb('fp.read_forum', '=', 1)]))
+			.where(forumReadable)
 			.orderBy('t.last_post', 'desc');
 
 		switch (query.action) {

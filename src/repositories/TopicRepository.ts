@@ -6,6 +6,7 @@ import { sql } from 'kysely';
 import type { Db } from '../db/database.ts';
 import type { RecentTopic, Topic, TopicSort, TopicSummary } from '../domain/models.ts';
 import { parseModerators } from '../services/phpSerialize.ts';
+import { forumReadable } from './forumPermissions.ts';
 
 export interface PostLocation {
 	topicId: number;
@@ -58,7 +59,7 @@ export class TopicRepository implements TopicReader, TopicWriter {
 			])
 			.where('t.id', '=', topicId)
 			.where('t.moved_to', 'is', null)
-			.where((eb) => eb.or([eb('fp.read_forum', 'is', null), eb('fp.read_forum', '=', 1)]))
+			.where(forumReadable)
 			.executeTakeFirst();
 
 		if (row === undefined) return null;
@@ -110,7 +111,7 @@ export class TopicRepository implements TopicReader, TopicWriter {
 			.innerJoin('forums as f', 'f.id', 't.forum_id')
 			.leftJoin('forum_perms as fp', (join) => join.onRef('fp.forum_id', '=', 'f.id').on('fp.group_id', '=', groupId))
 			.select(['t.forum_id', 't.id', 't.last_post'])
-			.where((eb) => eb.or([eb('fp.read_forum', 'is', null), eb('fp.read_forum', '=', 1)]))
+			.where(forumReadable)
 			.where('t.last_post', '>', since)
 			.where('t.moved_to', 'is', null)
 			.execute();

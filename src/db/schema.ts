@@ -189,6 +189,9 @@ export interface TopicsTable {
 	forum_id: number;
 }
 
+/**
+ * Colonnes en Generated<…> : valeur par défaut de la base à l'insertion (register.php ne les fixe pas).
+ */
 export interface UsersTable {
 	id: Generated<number>;
 	group_id: number;
@@ -210,26 +213,28 @@ export interface UsersTable {
 	disp_topics: number | null;
 	disp_posts: number | null;
 	email_setting: number;
-	show_avatars: number;
-	show_sig: number;
+	show_avatars: Generated<number>;
+	show_sig: Generated<number>;
 	timezone: number;
 	dst: number;
-	num_posts: number;
+	num_posts: Generated<number>;
 	registered: number;
+	registration_ip: string;
+	language: string;
 	last_visit: number;
 	admin_note: string | null;
 	activate_string: string | null;
 	activate_key: string | null;
 	last_email_sent: number | null;
 	style: string;
-	use_pm: number;
-	num_pms: number;
-	show_smilies: number;
-	show_img: number;
-	show_img_sig: number;
-	rep_plus: number;
-	rep_minus: number;
-	reputation_enable: number;
+	use_pm: Generated<number>;
+	num_pms: Generated<number>;
+	show_smilies: Generated<number>;
+	show_img: Generated<number>;
+	show_img_sig: Generated<number>;
+	rep_plus: Generated<number>;
+	rep_minus: Generated<number>;
+	reputation_enable: Generated<number>;
 }
 
 export interface Database {

@@ -3,6 +3,7 @@
  */
 
 export const topic = {
+	quickPost: 'Réponse rapide',
 	postReply: 'Répondre',
 	topicClosed: 'Discussion fermée',
 	from: 'Lieu\u00a0:',

@@ -1,6 +1,8 @@
 {#- Lecture d'un sujet (viewtopic.php). Données : `view` (presenters/topicPage.ts). -#}
 {% extends "layout.njk" %}
 {% import "partials/navigation.njk" as navigation %}
+{% import "partials/forms.njk" as forms %}
+{% import "partials/postFields.njk" as postFields %}
 
 {% macro topicBar(view, lang) %}
 <div class="page-bar">
@@ -79,5 +81,25 @@
 </div>
 
 {{ topicBar(view, lang) }}
+
+{% if view.quickPost %}
+<form id="quickpostform" class="form-box form post-form" method="post" action="{{ url(view.quickPost.formAction) }}" aria-labelledby="quickpost-title">
+	<h2 id="quickpost-title" class="form-box__title">{{ lang.topic.quickPost }}</h2>
+	{{ forms.csrf(layout) }}
+	<input type="hidden" name="form_sent" value="1">
+	{% if view.quickPost.keepSubscribed %}<input type="hidden" name="subscribe" value="1">{% endif %}
+	{% if view.quickPost.guest %}{{ postFields.guestFields(view.quickPost.guest, { username: '', email: '' }, lang) }}{% endif %}
+	<p class="form__field">
+		<label for="req_message">{{ lang.post.message }} <span class="form__required">{{ lang.post.required }}</span></label>
+		<textarea id="req_message" name="req_message" rows="7" required></textarea>
+	</p>
+	{{ postFields.bbcodeStatus(view.quickPost.bbcodeStatus, lang) }}
+	<p class="form__buttons">
+		<button type="submit" class="button button--primary" name="submit" value="1" accesskey="s">{{ lang.post.submit }}</button>
+		<button type="submit" class="button" name="preview" value="1" accesskey="p">{{ lang.post.preview }}</button>
+	</p>
+</form>
+{% endif %}
+
 {{ navigation.breadcrumbs(view.crumbs, lang) }}
 {% endblock %}

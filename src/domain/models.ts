@@ -100,6 +100,8 @@ export interface Topic {
 	forum: Forum;
 	/** Permission « répondre » propre au forum pour le groupe ; null = celle du groupe. */
 	forumReplyPermission: boolean | null;
+	/** Le lecteur suit ce sujet (topic_subscriptions) ; toujours faux pour un invité. */
+	isSubscribed: boolean;
 }
 
 /** Auteur inscrit d'un message (absent pour un invité ou un compte supprimé). */
@@ -211,6 +213,8 @@ export interface BoardConfig {
 		messageAllCaps: boolean;
 		/** p_force_guest_email : adresse e-mail obligatoire pour un invité. */
 		forceGuestEmail: boolean;
+		/** o_quickpost : formulaire de réponse rapide sous la discussion. */
+		quickpost: boolean;
 	};
 	/** Annonce affichée en haut de chaque page ; null si désactivée (HTML saisi par l'administrateur). */
 	announcement: string | null;

@@ -3,6 +3,7 @@
 {% block head %}<script src="{{ asset('js/post.js') }}" defer></script>{% endblock %}
 {% import "partials/forms.njk" as forms %}
 {% import "partials/navigation.njk" as navigation %}
+{% import "partials/postFields.njk" as postFields %}
 
 {% block main %}
 {{ navigation.breadcrumbs(view.crumbs, lang) }}
@@ -24,18 +25,7 @@
 	<input type="hidden" name="form_sent" value="1">
 	<fieldset class="form__fieldset">
 		<legend class="form__legend">{{ lang.post.writeMessageLegend }}</legend>
-		{% if view.guest %}
-		<div class="form__grid form__grid--two">
-			<p class="form__field">
-				<label for="req_username">{{ lang.post.guestName }} <span class="form__required">{{ lang.post.required }}</span></label>
-				<input type="text" id="req_username" name="req_username" value="{{ view.form.username }}" maxlength="25" required autocomplete="nickname">
-			</p>
-			<p class="form__field">
-				<label for="guest_email">{{ lang.post.email }}{% if view.guest.emailRequired %} <span class="form__required">{{ lang.post.required }}</span>{% endif %}</label>
-				<input type="email" id="guest_email" name="{{ view.guest.emailField }}" value="{{ view.form.email }}" maxlength="80"{% if view.guest.emailRequired %} required{% endif %} autocomplete="email">
-			</p>
-		</div>
-		{% endif %}
+		{% if view.guest %}{{ postFields.guestFields(view.guest, view.form, lang) }}{% endif %}
 		{% if view.isNewTopic %}
 		<p class="form__field">
 			<label for="req_subject">{{ lang.post.subject }} <span class="form__required">{{ lang.post.required }}</span></label>
@@ -55,10 +45,7 @@
 			<label for="req_message">{{ lang.post.message }} <span class="form__required">{{ lang.post.required }}</span></label>
 			<textarea id="req_message" name="req_message" rows="14" required>{{ view.form.message }}</textarea>
 		</p>
-		<ul class="bbcode-status">
-			{% for item in view.bbcodeStatus %}<li><a href="{{ url(item.href) }}" target="_blank">{{ item.label }}</a> {% if item.on %}{{ lang.post.on }}{% else %}{{ lang.post.off }}{% endif %}</li>{% endfor %}
-			<li><a href="{{ url('gestionnaire.php') }}" target="_blank" rel="noopener">{{ lang.post.fileManager }}</a></li>
-		</ul>
+		{{ postFields.bbcodeStatus(view.bbcodeStatus, lang) }}
 	</fieldset>
 
 	{% if view.checkboxes.length %}

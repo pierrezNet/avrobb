@@ -119,6 +119,7 @@ export function topic(overrides: Partial<Topic> = {}): Topic {
 		numReplies: 0,
 		forum: { id: 1, name: 'Forum', moderators: new Map() },
 		forumReplyPermission: null,
+		isSubscribed: false,
 		...overrides,
 	};
 }
@@ -200,7 +201,15 @@ export const boardConfig: BoardConfig = {
 		defaultDst: false,
 		defaultLang: 'French',
 	},
-	posting: { topicReview: 15, quoteDepth: 3, makeLinks: true, subjectAllCaps: false, messageAllCaps: false, forceGuestEmail: true },
+	posting: {
+		topicReview: 15,
+		quoteDepth: 3,
+		makeLinks: true,
+		subjectAllCaps: false,
+		messageAllCaps: false,
+		forceGuestEmail: true,
+		quickpost: true,
+	},
 	announcement: null,
 	quickjump: true,
 	feedType: 'atom',
@@ -421,10 +430,11 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			],
 		},
 		topics: {
-			findReadable: async (id, groupId) => {
+			findReadable: async (id, groupId, userId) => {
 				const found = data.topics.find((t) => t.id === id) ?? null;
 				const readers = found !== null ? data.forumReaders?.get(found.forum.id) : undefined;
-				return readers === undefined || readers.includes(groupId) ? found : null;
+				if (found === null || (readers !== undefined && !readers.includes(groupId))) return null;
+				return { ...found, isSubscribed: userId !== undefined && userId > 1 && (data.subscribedTopics ?? []).includes(id) };
 			},
 			locatePost: async (postId): Promise<PostLocation | null> => {
 				const hit = allPosts().find((p) => p.post.id === postId);

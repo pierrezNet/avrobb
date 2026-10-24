@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { forumHmac } from '../src/services/legacySession.ts';
-import { type FakeData, fakeDeps, group, guest, NOW, post, topic, viewer } from './fixtures.ts';
+import { boardConfig, type FakeData, fakeDeps, group, guest, NOW, post, topic, viewer } from './fixtures.ts';
 
 const SEED = 'graine-de-test';
 const tessy = viewer();
@@ -184,5 +184,45 @@ describe('viewtopic : contenu propre à PV', () => {
 		const asAuthor = await app.inject({ url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(3, 'hash-tessy') } });
 		expect(asAuthor.body).toContain('<strong>3</strong>');
 		expect(asAuthor.body).not.toContain('method=1');
+	});
+});
+
+describe('réponse rapide (o_quickpost)', () => {
+	it('proposée au membre qui peut répondre, avec l’abonnement conservé', async () => {
+		app = await buildApp(fakeDeps(data({ subscribedTopics: [10] })));
+		const res = await app.inject({ url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(3, 'hash-tessy') } });
+		expect(res.body).toContain('id="quickpostform"');
+		expect(res.body).toContain('action="post.php?action=post&amp;tid=10"');
+		expect(res.body).toMatch(/name="csrf_token" value="[0-9a-f]{64}"/);
+		expect(res.body).toContain('<input type="hidden" name="subscribe" value="1">');
+		expect(res.body).not.toContain('name="req_username"');
+	});
+
+	it('invité autorisé : pseudo et e-mail ; sinon, pas de formulaire', async () => {
+		app = await buildApp(fakeDeps(data()));
+		expect((await app.inject('/viewtopic.php?id=10')).body).not.toContain('quickpostform');
+		await app.close();
+
+		app = await buildApp(fakeDeps(data({ topics: [topic({ id: 10, forumReplyPermission: true })] })));
+		const res = await app.inject('/viewtopic.php?id=10');
+		expect(res.body).toContain('id="quickpostform"');
+		expect(res.body).toContain('name="req_email"');
+		expect(res.body).not.toContain('name="subscribe"');
+	});
+
+	it('fermée sur un sujet clos, sauf pour un modérateur ; absente si désactivée', async () => {
+		app = await buildApp(fakeDeps(data({ topics: [topic({ id: 10, closed: true })] })));
+		expect((await app.inject({ url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(3, 'hash-tessy') } })).body).not.toContain(
+			'quickpostform',
+		);
+		expect((await app.inject({ url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(2, 'hash-admin') } })).body).toContain(
+			'quickpostform',
+		);
+		await app.close();
+
+		app = await buildApp(fakeDeps(data({ config: { posting: { ...boardConfig.posting, quickpost: false } } })));
+		expect((await app.inject({ url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(3, 'hash-tessy') } })).body).not.toContain(
+			'quickpostform',
+		);
 	});
 });

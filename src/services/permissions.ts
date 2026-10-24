@@ -45,6 +45,15 @@ export function canPostIn(viewer: Viewer, target: PostingTarget): boolean {
 	return !target.topic.closed && (target.replyPermission ?? viewer.group.canPostReplies);
 }
 
+/**
+ * Réponse rapide sous viewtopic (o_quickpost) : permission de répondre du forum ou du groupe, et
+ * sujet ouvert sauf pour un modérateur. Contrairement au lien « Répondre », un modérateur n'y a pas
+ * accès dans un forum où son groupe ne peut pas répondre (fidèle à viewtopic.php).
+ */
+export function canQuickPost(viewer: Viewer, topic: Topic, config: BoardConfig): boolean {
+	return config.posting.quickpost && hasReplyPermission(viewer, topic) && (!topic.closed || isForumModerator(viewer, topic.forum));
+}
+
 export interface PostActionRights {
 	report: boolean;
 	delete: boolean;

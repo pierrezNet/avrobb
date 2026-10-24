@@ -64,7 +64,7 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
 
 - [x] Service d'**indexation de recherche** (`include/search_idx.php`) : ajout, mise à jour, suppression — `preparse_bbcode()` porté avec, parité vérifiée contre le PHP
 - [x] **post** : nouveau sujet, réponse, citation, prévisualisation, anti-flood, mise à jour des compteurs (notifications aux abonnés comprises)
-- [ ] Réponse rapide sous viewtopic
+- [x] Réponse rapide sous viewtopic
 - [ ] Barre d'outils BBCode (FluxToolBar : `toolbar_conf`, `toolbar_tags`) en JS progressif
 - [ ] **edit** et **delete** (message, sujet)
 - [ ] Brouillons (`brouillons`, `draft_list`, `draft_edit`) **(PV)**

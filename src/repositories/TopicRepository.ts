@@ -4,7 +4,7 @@
 
 import { sql } from 'kysely';
 import type { Db } from '../db/database.ts';
-import type { RecentTopic, Topic, TopicSort, TopicSummary } from '../domain/models.ts';
+import { GUEST_USER_ID, type RecentTopic, type Topic, type TopicSort, type TopicSummary } from '../domain/models.ts';
 import { parseModerators } from '../services/phpSerialize.ts';
 import { forumReadable } from './forumPermissions.ts';
 
@@ -16,7 +16,8 @@ export interface PostLocation {
 
 export interface TopicReader {
 	/** Sujet lisible par le groupe donné (permissions de forum appliquées), ou null. */
-	findReadable(topicId: number, groupId: number): Promise<Topic | null>;
+	/** Sujet lisible par le groupe ; `userId` : membre dont on lit l'abonnement au sujet. */
+	findReadable(topicId: number, groupId: number, userId?: number): Promise<Topic | null>;
 	locatePost(postId: number): Promise<PostLocation | null>;
 	findLastPostId(topicId: number): Promise<number | null>;
 	/** Sujets lisibles par le groupe dont le dernier message est postérieur à `since` (index.php). */
@@ -40,11 +41,12 @@ const SORT_COLUMNS = { lastPost: 't.last_post', posted: 't.posted', subject: 't.
 export class TopicRepository implements TopicReader, TopicWriter {
 	constructor(private readonly db: Db) {}
 
-	async findReadable(topicId: number, groupId: number): Promise<Topic | null> {
+	async findReadable(topicId: number, groupId: number, userId = GUEST_USER_ID): Promise<Topic | null> {
 		const row = await this.db
 			.selectFrom('topics as t')
 			.innerJoin('forums as f', 'f.id', 't.forum_id')
 			.leftJoin('forum_perms as fp', (join) => join.onRef('fp.forum_id', '=', 'f.id').on('fp.group_id', '=', groupId))
+			.leftJoin('topic_subscriptions as s', (join) => join.onRef('s.topic_id', '=', 't.id').on('s.user_id', '=', userId))
 			.select([
 				't.id',
 				't.subject',
@@ -56,6 +58,7 @@ export class TopicRepository implements TopicReader, TopicWriter {
 				'f.forum_name',
 				'f.moderators',
 				'fp.post_replies',
+				's.user_id as subscribed',
 			])
 			.where('t.id', '=', topicId)
 			.where('t.moved_to', 'is', null)
@@ -77,6 +80,8 @@ export class TopicRepository implements TopicReader, TopicWriter {
 				moderators: parseModerators(row.moderators),
 			},
 			forumReplyPermission: row.post_replies === null ? null : row.post_replies === 1,
+			// L'invité (id 1) n'a jamais d'abonnement.
+			isSubscribed: row.subscribed !== null && userId !== GUEST_USER_ID,
 		};
 	}
 

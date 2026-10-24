@@ -71,7 +71,7 @@ export class TopicController {
 			if (lastPostId !== null) return reply.redirect(`viewtopic.php?pid=${lastPostId}#p${lastPostId}`);
 		}
 
-		const topic = await this.deps.topics.findReadable(id, viewer.group.id);
+		const topic = await this.deps.topics.findReadable(id, viewer.group.id, viewer.id);
 		if (topic === null) return this.notFound(request, reply);
 
 		const numPages = pageCount(topic.numReplies + 1, perPage);

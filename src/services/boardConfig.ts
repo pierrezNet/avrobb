@@ -64,6 +64,7 @@ export function toBoardConfig(values: ReadonlyMap<string, string>): BoardConfig 
 			subjectAllCaps: flag('p_subject_all_caps'),
 			messageAllCaps: flag('p_message_all_caps'),
 			forceGuestEmail: flag('p_force_guest_email'),
+			quickpost: flag('o_quickpost'),
 		},
 		announcement: flag('o_announcement') ? text('o_announcement_message') : null,
 		quickjump: flag('o_quickjump'),

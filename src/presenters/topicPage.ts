@@ -13,6 +13,7 @@ import type { Censor } from '../services/censor.ts';
 import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
 import { safeExternalUrl } from '../services/links.ts';
 import {
+	canQuickPost,
 	canReply,
 	canSeeReputation,
 	canUsePrivateMessages,
@@ -25,6 +26,7 @@ import { labelledSubject } from '../services/topicLabels.ts';
 import { userTitle } from '../services/userTitle.ts';
 import { type Crumb, crumbs, type PaginationLink, paginationLinks } from './navigation.ts';
 import { bbcodeLabels, messageParserOptions } from './parserOptions.ts';
+import { type BbcodeStatus, bbcodeStatus } from './postPage.ts';
 
 /** Lien d'action sous un message ; `kind` sert aussi de classe CSS (postreport…, comme FluxBB). */
 export interface PostAction {
@@ -85,6 +87,30 @@ export interface TopicPageView {
 	/** Lien « Répondre » ; null si le membre ne peut pas répondre. */
 	replyUrl: string | null;
 	posts: PostView[];
+	/** Formulaire de réponse rapide, ou null. */
+	quickPost: QuickPostView | null;
+}
+
+export interface QuickPostView {
+	formAction: string;
+	/** Champs d'un invité, comme dans post.php. */
+	guest: { emailField: 'req_email' | 'email'; emailRequired: boolean } | null;
+	/** Abonnement conservé (abonnement automatique ou déjà abonné) : champ caché « subscribe ». */
+	keepSubscribed: boolean;
+	bbcodeStatus: BbcodeStatus;
+}
+
+function quickPost(input: TopicPageInput): QuickPostView | null {
+	const { viewer, config, topic, lang } = input;
+	if (!canQuickPost(viewer, topic, config)) return null;
+	return {
+		formAction: `post.php?action=post&tid=${topic.id}`,
+		guest: viewer.isGuest
+			? { emailField: config.posting.forceGuestEmail ? 'req_email' : 'email', emailRequired: config.posting.forceGuestEmail }
+			: null,
+		keepSubscribed: !viewer.isGuest && config.topicSubscriptions && (viewer.autoNotify || topic.isSubscribed),
+		bbcodeStatus: bbcodeStatus(config, viewer, lang),
+	};
 }
 
 export interface TopicPageInput {
@@ -263,5 +289,6 @@ export function buildTopicPage(input: TopicPageInput): TopicPageView {
 		pagination: paginationLinks(input.numPages, input.page, (page) => topicUrl(topic.id, page)),
 		replyUrl: canReply(viewer, topic) ? `post.php?tid=${topic.id}` : null,
 		posts,
+		quickPost: quickPost(input),
 	};
 }

@@ -121,6 +121,8 @@ describe('TopicRepository', () => {
 
 		expect(await topics.findReadable(11, GroupId.Guest)).toBeNull();
 		expect((await topics.findReadable(11, GroupId.Member))?.forumReplyPermission).toBeNull();
+		expect((await topics.findReadable(10, GroupId.Member, 3))?.isSubscribed).toBe(true);
+		expect((await topics.findReadable(10, GroupId.Member, 5))?.isSubscribed).toBe(false);
 		expect(await topics.findReadable(12, GroupId.Member)).toBeNull();
 	});
 

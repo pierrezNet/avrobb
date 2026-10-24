@@ -58,7 +58,7 @@ export interface PostPageView {
 	previewHtml: string | null;
 	/** Préfixes de sujet proposés par PV (simulateur, autre), insérés par JavaScript. */
 	subjectPrefixes: { simulators: string[]; other: string[] } | null;
-	bbcodeStatus: { label: string; href: string; on: boolean }[];
+	bbcodeStatus: BbcodeStatus;
 	checkboxes: Checkbox[];
 	review: { poster: string; postedAt: string; messageHtml: string }[];
 }
@@ -75,6 +75,19 @@ function checkboxes(input: PostPageInput, isNewTopic: boolean): Checkbox[] {
 	if (!viewer.isGuest && config.topicSubscriptions)
 		boxes.push({ name: 'subscribe', label: target.topic?.isSubscribed === true ? t.staySubscribed : t.subscribe, checked: form.subscribe });
 	return boxes;
+}
+
+export type BbcodeStatus = { label: string; href: string; on: boolean }[];
+
+/** Ce qui est permis dans le message (liens d'aide sous la zone de saisie). */
+export function bbcodeStatus(config: BoardConfig, viewer: Viewer, lang: Lang): BbcodeStatus {
+	const t = lang.post;
+	return [
+		{ label: t.bbcode, href: 'help.php#bbcode', on: config.bbcode },
+		{ label: t.urlTag, href: 'help.php#url', on: config.bbcode && viewer.group.canPostLinks },
+		{ label: t.imgTag, href: 'help.php#img', on: config.bbcode && config.imgTag },
+		{ label: t.smilies, href: 'help.php#smilies', on: config.smilies },
+	];
 }
 
 export function buildPostPage(input: PostPageInput): PostPageView {
@@ -108,12 +121,7 @@ export function buildPostPage(input: PostPageInput): PostPageView {
 				? parseMessage(input.preview, messageParserOptions(config, viewer, lang, censor, input.form.hideSmilies))
 				: null,
 		subjectPrefixes: isNewTopic ? { simulators: SIMULATOR_PREFIXES, other: OTHER_PREFIXES } : null,
-		bbcodeStatus: [
-			{ label: t.bbcode, href: 'help.php#bbcode', on: config.bbcode },
-			{ label: t.urlTag, href: 'help.php#url', on: config.bbcode && viewer.group.canPostLinks },
-			{ label: t.imgTag, href: 'help.php#img', on: config.bbcode && config.imgTag },
-			{ label: t.smilies, href: 'help.php#smilies', on: config.smilies },
-		],
+		bbcodeStatus: bbcodeStatus(config, viewer, lang),
 		checkboxes: checkboxes(input, isNewTopic),
 		review: input.review.map((post) => ({
 			poster: post.poster,

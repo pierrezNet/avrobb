@@ -133,6 +133,28 @@ export interface ReportsTable {
 	zapped: number | null;
 }
 
+export interface SearchCacheTable {
+	id: number;
+	ident: string;
+	search_data: string | null;
+}
+
+export interface SearchMatchesTable {
+	post_id: number;
+	word_id: number;
+	subject_match: number;
+}
+
+export interface SearchWordsTable {
+	id: Generated<number>;
+	word: string;
+}
+
+export interface TopicSubscriptionsTable {
+	user_id: number;
+	topic_id: number;
+}
+
 export interface TopicsTable {
 	id: Generated<number>;
 	poster: string;
@@ -205,6 +227,10 @@ export interface Database {
 	online: OnlineTable;
 	posts: PostsTable;
 	reports: ReportsTable;
+	search_cache: SearchCacheTable;
+	search_matches: SearchMatchesTable;
+	search_words: SearchWordsTable;
+	topic_subscriptions: TopicSubscriptionsTable;
 	topics: TopicsTable;
 	users: UsersTable;
 }
@@ -224,6 +250,10 @@ export const TABLE_NAMES: readonly (keyof Database)[] = [
 	'online',
 	'posts',
 	'reports',
+	'search_cache',
+	'search_matches',
+	'search_words',
+	'topic_subscriptions',
 	'topics',
 	'users',
 ];

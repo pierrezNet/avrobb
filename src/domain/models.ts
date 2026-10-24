@@ -136,6 +136,8 @@ export interface BoardConfig {
 	showDot: boolean;
 	forumSubscriptions: boolean;
 	topicSubscriptions: boolean;
+	/** Recherche dans plusieurs forums (o_search_all_forums) ; sinon un seul forum à choisir. */
+	searchAllForums: boolean;
 	dateFormat: string;
 	timeFormat: string;
 	showUserInfo: boolean;
@@ -332,4 +334,27 @@ export interface UserProfile {
 	groupUserTitle: string;
 	groupIsModerator: boolean;
 	acceptsPrivateMessages: boolean;
+}
+
+/** Sujet trouvé par une recherche (affichage « discussions »). */
+export interface SearchTopic extends TopicSummary {
+	forumId: number;
+	forumName: string;
+}
+
+/** Message trouvé par une recherche (affichage « messages »). */
+export interface SearchPost {
+	id: number;
+	poster: string;
+	posterId: number;
+	posted: number;
+	message: string;
+	hideSmilies: boolean;
+	topicId: number;
+	subject: string;
+	firstPostId: number;
+	topicLastPost: number;
+	numReplies: number;
+	forumId: number;
+	forumName: string;
 }

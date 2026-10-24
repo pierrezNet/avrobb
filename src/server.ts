@@ -17,7 +17,9 @@ import { PhpCacheFiles } from './repositories/PhpCacheFiles.ts';
 import { PostRepository } from './repositories/PostRepository.ts';
 import { PrivateMessageRepository } from './repositories/PrivateMessageRepository.ts';
 import { ReportRepository } from './repositories/ReportRepository.ts';
+import { SearchRepository } from './repositories/SearchRepository.ts';
 import { StatsRepository } from './repositories/StatsRepository.ts';
+import { StopwordsLoader } from './repositories/StopwordsLoader.ts';
 import { TopicLabelRepository } from './repositories/TopicLabelRepository.ts';
 import { TopicRepository } from './repositories/TopicRepository.ts';
 import { UserRepository } from './repositories/UserRepository.ts';
@@ -46,6 +48,8 @@ const app = await buildApp({
 	censorship: new CensorRepository(db),
 	topicLabels: new TopicLabelRepository(db),
 	stats,
+	search: new SearchRepository(db),
+	stopwords: new StopwordsLoader(config.legacyRoot),
 	usersInfo: new UsersInfoLoader(stats, phpCache, clock),
 	avatars: new FileAvatarLocator(config.legacyRoot, config.legacyBaseUrl),
 	page: { lang: fr, dateWords: frDateWords, clock },

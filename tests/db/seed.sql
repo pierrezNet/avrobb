@@ -89,3 +89,10 @@ INSERT INTO fo_bans (username, ip, email, message, expire, ban_creator) VALUES
 INSERT INTO fo_censoring (search_for, replace_with) VALUES ('zut', '***'), ('flûte*', '[censuré]');
 
 UPDATE fo_users SET biographie = 'Pilote de ligne depuis 2003 :)' WHERE id = 3;
+
+-- Index de recherche : « vintage » dans le sujet (post 100) et le message 101, « avion » dans 101 et 110.
+INSERT INTO fo_search_words (id, word) VALUES (1, 'vintage'), (2, 'avion'), (3, 'interne');
+INSERT INTO fo_search_matches (post_id, word_id, subject_match) VALUES
+	(100, 1, 1), (101, 1, 0), (101, 2, 0), (110, 2, 0), (110, 3, 0);
+INSERT INTO fo_topic_subscriptions (user_id, topic_id) VALUES (3, 10);
+INSERT INTO fo_search_cache (id, ident, search_data) VALUES (77, 'Tessy', 'a:1:{s:3:"foo";i:1;}');

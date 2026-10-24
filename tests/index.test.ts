@@ -142,7 +142,7 @@ describe('GET /index.php', () => {
 		);
 
 		const fresh = await app.inject({ url: '/index.php', headers: { cookie: cookie(3, 'hash-tessy') } });
-		expect(fresh.body).toContain('href="http://php.test/search.php?action=show_new&amp;fid=1">Nouveaux messages</a>');
+		expect(fresh.body).toContain('href="search.php?action=show_new&amp;fid=1">Nouveaux messages</a>');
 		expect(fresh.body).toContain('misc.php?action=markread');
 
 		const read = await app.inject({ url: '/index.php', headers: { cookie: `${cookie(3, 'hash-tessy')}; punbb_cookie_track=t7=${NOW}` } });

@@ -13,6 +13,7 @@ import { ForumController, type ForumQuery } from './controllers/ForumController.
 import { HelpController } from './controllers/HelpController.ts';
 import { IndexController } from './controllers/IndexController.ts';
 import { ProfileController, type ProfileQuery } from './controllers/ProfileController.ts';
+import { SearchController, type SearchQuery } from './controllers/SearchController.ts';
 import { TopicController, type TopicQuery } from './controllers/TopicController.ts';
 import { UserlistController, type UserlistParams } from './controllers/UserlistController.ts';
 import type { BoardConfig, Viewer } from './domain/models.ts';
@@ -23,7 +24,9 @@ import type { BanReader } from './repositories/BanRepository.ts';
 import type { CensorReader } from './repositories/CensorRepository.ts';
 import type { ConfigReader } from './repositories/ConfigLoader.ts';
 import type { PostReader } from './repositories/PostRepository.ts';
+import type { SearchReader } from './repositories/SearchRepository.ts';
 import type { StatsReader } from './repositories/StatsRepository.ts';
+import type { StopwordsReader } from './repositories/StopwordsLoader.ts';
 import type { TopicLabelReader } from './repositories/TopicLabelRepository.ts';
 import type { TopicReader } from './repositories/TopicRepository.ts';
 import type { MemberListReader, ProfileReader, UserReader } from './repositories/UserRepository.ts';
@@ -51,6 +54,8 @@ export interface AppDeps extends LayoutDeps {
 	censorship: CensorReader;
 	topicLabels: TopicLabelReader;
 	stats: StatsReader;
+	search: SearchReader;
+	stopwords: StopwordsReader;
 	usersInfo: UsersInfoReader;
 	legacyCookie: { name: string; seed: string };
 	/** URL de l'installation PHP : les liens vers les pages non portées y renvoient. */
@@ -61,7 +66,7 @@ export interface AppDeps extends LayoutDeps {
 }
 
 /** Pages déjà servies par Node ; les autres liens partent vers l'installation PHP. */
-const PORTED_PAGES = new Set(['help.php', 'index.php', 'profile.php', 'userlist.php', 'viewforum.php', 'viewtopic.php']);
+const PORTED_PAGES = new Set(['help.php', 'index.php', 'profile.php', 'search.php', 'userlist.php', 'viewforum.php', 'viewtopic.php']);
 
 const ROOT_DIR = path.join(import.meta.dirname, '..');
 
@@ -120,6 +125,9 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 
 	const forums = new ForumController({ ...deps, trackCookieName });
 	app.get<{ Querystring: ForumQuery }>('/viewforum.php', { preHandler: authenticate }, forums.show);
+
+	const search = new SearchController({ ...deps, trackCookieName });
+	app.get<{ Querystring: SearchQuery }>('/search.php', { preHandler: authenticate }, search.show);
 
 	const userlist = new UserlistController(deps);
 	app.get<{ Querystring: UserlistParams }>('/userlist.php', { preHandler: authenticate }, userlist.show);

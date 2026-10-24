@@ -17,6 +17,7 @@ import { ForumRepository } from '../../src/repositories/ForumRepository.ts';
 import { PostRepository } from '../../src/repositories/PostRepository.ts';
 import { PrivateMessageRepository } from '../../src/repositories/PrivateMessageRepository.ts';
 import { ReportRepository } from '../../src/repositories/ReportRepository.ts';
+import { SearchRepository } from '../../src/repositories/SearchRepository.ts';
 import { StatsRepository } from '../../src/repositories/StatsRepository.ts';
 import { TopicLabelRepository } from '../../src/repositories/TopicLabelRepository.ts';
 import { TopicRepository } from '../../src/repositories/TopicRepository.ts';
@@ -211,6 +212,54 @@ describe('viewforum : forum et sujets', () => {
 	});
 });
 
+describe('SearchRepository', () => {
+	const search = new SearchRepository(db);
+
+	it('cherche un mot dans l’index, selon sujet ou message et les permissions', async () => {
+		const ids = async (pattern: string, searchIn: 0 | 1 | -1, group: number) =>
+			(await search.matchWord(pattern, searchIn, group, null, 0, 'posts')).map((hit) => hit.postId).sort();
+		expect(await ids('vintage', 0, GroupId.Member)).toEqual([100, 101]);
+		expect(await ids('vintage', 1, GroupId.Member)).toEqual([101]);
+		expect(await ids('vintage', -1, GroupId.Member)).toEqual([100]);
+		expect(await ids('avion', 0, GroupId.Member)).toEqual([101, 110]);
+		expect(await ids('avion', 0, GroupId.Guest)).toEqual([101]);
+		expect(await ids('av%', 0, GroupId.Member)).toEqual([101, 110]);
+		expect((await search.matchWord('avion', 0, GroupId.Member, [3], 0, 'posts')).map((hit) => hit.postId)).toEqual([110]);
+		expect(await search.matchWord('avion', 0, GroupId.Member, [], 0, 'posts')).toEqual([]);
+	});
+
+	it('trouve les messages d’un auteur, triés', async () => {
+		const hits = await search.matchAuthor('max%', GroupId.Member, null, 0, 'posts', 'DESC');
+		expect(hits.map((hit) => hit.postId)).toEqual([101]);
+		expect((await search.matchAuthor('admin', GroupId.Member, null, 0, 'posts', 'ASC')).map((hit) => hit.postId)).toEqual([110, 102]);
+	});
+
+	it('recherches rapides', async () => {
+		expect(await search.quickSearch({ action: 'show_unanswered', groupId: GroupId.Member })).toEqual([11, 13]);
+		expect(await search.quickSearch({ action: 'show_recent', groupId: GroupId.Guest, since: 1_782_700_000, forumId: null })).toEqual([10]);
+		expect(await search.quickSearch({ action: 'show_replies', groupId: GroupId.Member, userId: 3 })).toEqual([10]);
+		expect(await search.quickSearch({ action: 'show_user_topics', groupId: GroupId.Member, userId: 2 })).toEqual([11]);
+		expect(await search.quickSearch({ action: 'show_user_posts', groupId: GroupId.Member, userId: 2 })).toEqual([102, 110]);
+		expect(await search.quickSearch({ action: 'show_subscriptions', groupId: GroupId.Member, userId: 3 })).toEqual([10]);
+	});
+
+	it('charge les résultats et relit search_cache pour son propriétaire', async () => {
+		expect((await search.listTopics([10, 11], 2, 'ASC')).map((t) => [t.id, t.forumName])).toEqual([
+			[10, "Captures d'écran & Vidéos"],
+			[11, 'Équipe'],
+		]);
+		expect((await search.listPosts([101], 0, 'DESC'))[0]).toMatchObject({
+			poster: 'MaxDUO',
+			subject: 'Postez un « vintage »',
+			firstPostId: 100,
+			numReplies: 2,
+		});
+		expect(await search.findCachedSearch(77, 'Tessy')).toBe('a:1:{s:3:"foo";i:1;}');
+		expect(await search.findCachedSearch(77, 'admin')).toBeNull();
+		expect(await search.findUsername(6)).toBeNull();
+	});
+});
+
 describe('ReportRepository et PrivateMessageRepository', () => {
 	it('détecte les signalements non traités', async () => {
 		expect(await new ReportRepository(db).hasPending()).toBe(true);
@@ -291,6 +340,8 @@ describe('viewtopic de bout en bout', () => {
 			censorship: new CensorRepository(db),
 			topicLabels: new TopicLabelRepository(db),
 			stats: new StatsRepository(db),
+			search: new SearchRepository(db),
+			stopwords: { load: async () => new Set<string>() },
 			usersInfo: new UsersInfoLoader(new StatsRepository(db), null, () => NOW),
 			avatars: { urlFor: async () => null },
 			page: { lang: fr, dateWords: frDateWords, clock: () => NOW },

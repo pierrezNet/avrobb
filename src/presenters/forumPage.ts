@@ -81,48 +81,60 @@ function hasNewPosts(topic: TopicSummary, forumId: number, viewer: Viewer, track
 	return at > viewer.lastVisit && (topicRead === undefined || topicRead < at) && (forumRead === undefined || forumRead < at);
 }
 
+/** Contexte commun à toutes les lignes de sujet d'une page (viewforum, résultats de recherche). */
+export interface TopicRowContext {
+	viewer: Viewer;
+	config: BoardConfig;
+	tracked: TrackedTopics;
+	censor: Censor | null;
+	labelDefinitions: readonly TopicLabel[];
+	dateWords: DateWords;
+	now: number;
+}
+
+/** Ligne d'un sujet : statut, balises PV colorées, nouveaux messages, mini-pagination, compteurs. */
+export function buildTopicRow(topic: TopicSummary, forumId: number, labels: readonly TopicLabel[], context: TopicRowContext): TopicRowView {
+	const { viewer, config, censor } = context;
+	const moved = topic.movedTo !== null;
+	const subject = labelledSubject(censor !== null ? censor(topic.subject) : topic.subject, labels);
+	const topicPages = pageCount(topic.numReplies + 1, viewer.postsPerPage ?? config.defaultPostsPerPage);
+	const isNew = hasNewPosts(topic, forumId, viewer, context.tracked);
+
+	return {
+		id: topic.id,
+		href: topicUrl(topic.movedTo ?? topic.id),
+		subject: styleSubject(subject, context.labelDefinitions).map((part) => ({
+			text: part.text,
+			css: part.style !== null ? labelCss(part.style) : null,
+		})),
+		poster: topic.poster,
+		sticky: topic.sticky,
+		closed: topic.closed && !moved,
+		moved,
+		newPostsUrl: isNew ? `viewtopic.php?id=${topic.id}&action=new` : null,
+		hasPosted: config.showDot && !viewer.isGuest && topic.hasPosted,
+		pages:
+			topicPages > 1
+				? paginationLinks(topicPages, 1, (page) => topicUrl(topic.id, page)).map((link) =>
+						link.kind === 'page' ? { ...link, current: false } : link,
+					)
+				: [],
+		replies: moved ? '-' : forumNumberFormat(topic.numReplies),
+		views: moved ? '-' : forumNumberFormat(topic.numViews),
+		lastPost:
+			!moved && topic.lastPost !== null
+				? {
+						href: `viewtopic.php?pid=${topic.lastPost.postId}#p${topic.lastPost.postId}`,
+						at: formatTime(topic.lastPost.postedAt, viewerTimeSettings(viewer), context.dateWords, context.now),
+						by: topic.lastPost.poster,
+					}
+				: null,
+	};
+}
+
 export function buildForumPage(input: ForumPageInput): ForumPageView {
-	const { viewer, config, forum, lang, censor } = input;
-	const time = viewerTimeSettings(viewer);
-	const postsPerPage = viewer.postsPerPage ?? config.defaultPostsPerPage;
-
-	const topics = input.topics.map((topic): TopicRowView => {
-		const moved = topic.movedTo !== null;
-		const subject = labelledSubject(censor !== null ? censor(topic.subject) : topic.subject, input.topicLabels.get(topic.id) ?? []);
-		const topicPages = pageCount(topic.numReplies + 1, postsPerPage);
-		const isNew = hasNewPosts(topic, forum.id, viewer, input.tracked);
-
-		return {
-			id: topic.id,
-			href: topicUrl(topic.movedTo ?? topic.id),
-			subject: styleSubject(subject, input.labelDefinitions).map((part) => ({
-				text: part.text,
-				css: part.style !== null ? labelCss(part.style) : null,
-			})),
-			poster: topic.poster,
-			sticky: topic.sticky,
-			closed: topic.closed && !moved,
-			moved,
-			newPostsUrl: isNew ? `viewtopic.php?id=${topic.id}&action=new` : null,
-			hasPosted: config.showDot && !viewer.isGuest && topic.hasPosted,
-			pages:
-				topicPages > 1
-					? paginationLinks(topicPages, 1, (page) => topicUrl(topic.id, page)).map((link) =>
-							link.kind === 'page' ? { ...link, current: false } : link,
-						)
-					: [],
-			replies: moved ? '-' : forumNumberFormat(topic.numReplies),
-			views: moved ? '-' : forumNumberFormat(topic.numViews),
-			lastPost:
-				!moved && topic.lastPost !== null
-					? {
-							href: `viewtopic.php?pid=${topic.lastPost.postId}#p${topic.lastPost.postId}`,
-							at: formatTime(topic.lastPost.postedAt, time, input.dateWords, input.now),
-							by: topic.lastPost.poster,
-						}
-					: null,
-		};
-	});
+	const { viewer, config, forum, lang } = input;
+	const topics = input.topics.map((topic) => buildTopicRow(topic, forum.id, input.topicLabels.get(topic.id) ?? [], input));
 
 	const member = !viewer.isGuest;
 

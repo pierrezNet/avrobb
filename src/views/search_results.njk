@@ -1,0 +1,83 @@
+{#- Résultats de recherche (search.php). Données : `view` (presenters/searchPage.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/navigation.njk" as navigation %}
+{% import "partials/people.njk" as people %}
+
+{% block main %}
+{{ navigation.breadcrumbs(view.crumbs, lang) }}
+<h1 class="page-title">{{ lang.search.results }}</h1>
+<div class="page-bar">{{ navigation.pagination(view.pagination, lang) }}</div>
+
+{% if view.showAs == 'topics' %}
+<section class="category" id="vf" aria-labelledby="vf-title">
+	<h2 class="category__title" id="vf-title">{{ lang.search.results }}</h2>
+	<div class="forum-list__head forum-list__head--search" aria-hidden="true">
+		<span>{{ lang.search.replies }}</span> <span>{{ lang.search.lastPost }}</span>
+	</div>
+	<ul class="forum-list">
+	{% for topic in view.topics %}
+		<li class="forum-row topic-row topic-row--search{% if topic.sticky %} topic-row--sticky{% endif %}{% if topic.newPostsUrl %} forum-row--new{% endif %}">
+			<div class="forum-row__main">
+				<h3 class="forum-row__name topic-row__subject">
+					{%- if topic.sticky %}<span class="badge">{{ lang.forum.sticky }}</span> {% endif -%}
+					{%- if topic.closed %}<span class="badge">{{ lang.forum.closed }}</span> {% endif -%}
+					<a href="{{ url(topic.href) }}">
+						{%- if topic.newPostsUrl %}<strong>{% endif -%}
+						{%- for part in topic.subject %}{% if part.css %}<span style="{{ part.css }}">{{ part.text }}</span>{% else %}{{ part.text }}{% endif %}{% endfor -%}
+						{%- if topic.newPostsUrl %}</strong>{% endif -%}
+					</a>
+					<span class="forum-row__by"> {{ lang.forum.by }} {{ topic.poster }}</span>
+					{% if topic.newPostsUrl %} <a class="badge badge--new" href="{{ url(topic.newPostsUrl) }}" title="{{ lang.forum.newPostsInfo }}">{{ lang.forum.newPosts }}</a>{% endif %}
+				</h3>
+				<p class="topic-row__forum">{{ lang.search.forum }}&#160;: <a href="{{ url(topic.forumHref) }}">{{ topic.forumName }}</a></p>
+				{% if topic.pages.length %}
+				<nav class="topic-row__pages" aria-label="{{ lang.forum.topicPages }}">
+					{% for link in topic.pages %}{% if link.kind == 'page' %}<a href="{{ url(link.href) }}">{{ link.page }}</a>{% elif link.kind == 'gap' %}<span>{{ lang.common.spacer }}</span>{% endif %}{% endfor %}
+				</nav>
+				{% endif %}
+			</div>
+			<dl class="forum-row__stats">
+				<div class="forum-row__count"><dt>{{ lang.search.replies }}</dt> <dd>{{ topic.replies }}</dd></div>
+				<div class="forum-row__last">
+					<dt>{{ lang.search.lastPost }}</dt>
+					<dd>{% if topic.lastPost %}<a href="{{ url(topic.lastPost.href) }}">{{ topic.lastPost.at }}</a> <span class="forum-row__by">{{ lang.forum.by }} {{ topic.lastPost.by }}</span>{% else %}- - -{% endif %}</dd>
+				</div>
+			</dl>
+		</li>
+	{% endfor %}
+	</ul>
+</section>
+{% else %}
+<div class="post-list">
+{% for post in view.posts %}
+<article class="post post--result{% if post.isNew %} post--new{% endif %}" aria-labelledby="sr{{ post.id }}">
+	<h2 class="post__meta" id="sr{{ post.id }}">
+		<span>{% if not post.isFirstPost %}{{ lang.topic.re }} {% endif %}<a href="{{ url(post.forumHref) }}">{{ post.forumName }}</a> » <a href="{{ url(post.topicHref) }}">{{ post.subject }}</a> » <a href="{{ url(post.permalink) }}">{{ post.postedAt }}</a></span>
+		<span class="post__number">#{{ post.number }}</span>
+	</h2>
+	<div class="post__author">
+		<div class="post__identity">
+			<p class="post__username">{{ people.person(post.poster) }}</p>
+			{% if post.replies !== null %}<p class="post__usertitle">{{ lang.search.repliesLabel }} {{ post.replies }}</p>{% endif %}
+		</div>
+	</div>
+	<div class="post__content">
+		{#- HTML produit par parseMessage() : texte échappé avant de reconnaître les balises (services/bbcode.ts). #}
+		<div class="post__message bbcode">{{ post.messageHtml | safe }}</div>
+	</div>
+	<footer class="post__footer">
+		<p class="post__presence">{% if post.isNew %}{{ lang.forum.newPosts }}{% endif %}</p>
+		<ul class="post__actions">
+			<li><a href="{{ url(post.topicHref) }}">{{ lang.search.goToTopic }}</a></li>
+			<li><a href="{{ url(post.permalink) }}">{{ lang.search.goToPost }}</a></li>
+		</ul>
+	</footer>
+</article>
+{% endfor %}
+</div>
+{% endif %}
+
+<div class="page-bar">{{ navigation.pagination(view.pagination, lang) }}</div>
+{{ navigation.breadcrumbs(view.crumbs, lang) }}
+{% if view.markReadUrl %}<p class="forum-actions"><a href="{{ url(view.markReadUrl) }}">{{ lang.search.markAllAsRead }}</a></p>{% endif %}
+{% endblock %}

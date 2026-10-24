@@ -1,0 +1,79 @@
+{#- Formulaire de recherche (search.php sans paramètre). Données : `view` (presenters/searchPage.ts). -#}
+{% extends "layout.njk" %}
+
+{% block main %}
+<h1 class="page-title">{{ lang.search.search }}</h1>
+
+<form id="search" class="form-box form" method="get" action="{{ url('search.php') }}" role="search">
+	<input type="hidden" name="action" value="search">
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ lang.search.criteriaLegend }}</legend>
+		<div class="form__grid">
+			<p class="form__field">
+				<label for="s-keywords">{{ lang.search.keywordSearch }}</label>
+				<input type="search" id="s-keywords" name="keywords" maxlength="100">
+			</p>
+			<p class="form__field">
+				<label for="s-author">{{ lang.search.authorSearch }}</label>
+				<input type="search" id="s-author" name="author" maxlength="25" autocomplete="off">
+			</p>
+		</div>
+		<p class="form__help">{{ lang.search.searchInfo }}</p>
+	</fieldset>
+
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ lang.search.searchInLegend }}</legend>
+		{% if view.multipleForums %}
+		<div class="checklist">
+			<p class="checklist__title">{{ lang.search.forumSearch }}</p>
+			{% for category in view.categories %}
+			<fieldset class="checklist__group">
+				<legend>{{ category.name }}</legend>
+				{% for forum in category.forums %}
+				<label class="checklist__item"><input type="checkbox" name="forums" value="{{ forum.id }}"> {{ forum.name }}</label>
+				{% endfor %}
+			</fieldset>
+			{% endfor %}
+		</div>
+		{% else %}
+		<p class="form__field">
+			<label for="s-forum">{{ lang.search.forumSearch }}</label>
+			<select id="s-forum" name="forum">
+			{% for category in view.categories %}
+				<optgroup label="{{ category.name }}">{% for forum in category.forums %}<option value="{{ forum.id }}">{{ forum.name }}</option>{% endfor %}</optgroup>
+			{% endfor %}
+			</select>
+		</p>
+		{% endif %}
+		<p class="form__field">
+			<label for="s-in">{{ lang.search.searchIn }}</label>
+			<select id="s-in" name="search_in">
+				<option value="0">{{ lang.search.messageAndSubject }}</option>
+				<option value="1">{{ lang.search.messageOnly }}</option>
+				<option value="-1">{{ lang.search.topicOnly }}</option>
+			</select>
+		</p>
+		<p class="form__help">{{ lang.search.searchInInfo }}{% if view.multipleForums %} {{ lang.search.multipleForumsInfo }}{% endif %}</p>
+	</fieldset>
+
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ lang.search.resultsLegend }}</legend>
+		<div class="form__grid">
+			<p class="form__field">
+				<label for="s-sort">{{ lang.search.sortBy }}</label>
+				<select id="s-sort" name="sort_by">{% for sort in view.sorts %}<option value="{{ sort.value }}">{{ sort.label }}</option>{% endfor %}</select>
+			</p>
+			<p class="form__field">
+				<label for="s-dir">{{ lang.search.sortOrder }}</label>
+				<select id="s-dir" name="sort_dir"><option value="DESC">{{ lang.search.descending }}</option><option value="ASC">{{ lang.search.ascending }}</option></select>
+			</p>
+			<p class="form__field">
+				<label for="s-show">{{ lang.search.showAs }}</label>
+				<select id="s-show" name="show_as"><option value="topics">{{ lang.search.showAsTopics }}</option><option value="posts">{{ lang.search.showAsPosts }}</option></select>
+			</p>
+		</div>
+		<p class="form__help">{{ lang.search.resultsInfo }}</p>
+	</fieldset>
+	<p class="form__buttons"><button type="submit" class="button button--primary">{{ lang.search.submit }}</button></p>
+</form>
+{% endblock %}

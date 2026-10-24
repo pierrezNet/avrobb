@@ -10,10 +10,11 @@ import { help } from './help.ts';
 import { indexPage } from './indexPage.ts';
 import { pms } from './pms.ts';
 import { profile } from './profile.ts';
+import { search } from './search.ts';
 import { topic } from './topic.ts';
 import { userlist } from './userlist.ts';
 
-export const fr = { common, index: indexPage, forum, topic, userlist, profile, help, pms };
+export const fr = { common, index: indexPage, forum, topic, userlist, profile, help, search, pms };
 
 export const frDateWords: DateWords = {
 	today: "Aujourd'hui",

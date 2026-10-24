@@ -114,7 +114,7 @@ describe('GET /viewforum.php', () => {
 		expect(res.body).toContain('<span class="badge">Déplacée :</span> <a href="viewtopic.php?id=40">');
 		expect(res.body).toContain('<span style="color: #00AA00; font-weight: bold">[Réglé]</span> Sujet 13');
 		expect(res.body).toContain('<dd>1 500</dd>');
-		expect(res.body).toContain('href="http://php.test/post.php?fid=2"');
+		expect(res.body).toContain('href="post.php?fid=2"');
 		expect(res.body).not.toContain('misc.php?action=subscribe');
 		expect(res.body).not.toContain('moderate.php?fid=2');
 		// Le point n'est affiché qu'aux membres, et seulement si o_show_dot est activé.

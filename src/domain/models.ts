@@ -427,3 +427,27 @@ export interface GalleryImage {
 	/** Extension du fichier, « .jpg » ou « .gif ». */
 	extension: '.jpg' | '.gif';
 }
+
+/** Où l'on écrit (post.php) : forum, permissions du groupe, et sujet s'il s'agit d'une réponse. */
+export interface PostingTarget {
+	forum: { id: number; name: string; moderators: ReadonlyMap<string, number>; isRedirect: boolean };
+	/** Permissions propres au forum pour le groupe (forum_perms) ; null = celles du groupe. */
+	replyPermission: boolean | null;
+	topicPermission: boolean | null;
+	topic: { id: number; subject: string; closed: boolean; isSubscribed: boolean } | null;
+}
+
+/** Message rappelé sous le formulaire de réponse (o_topic_review). */
+export interface ReviewPost {
+	poster: string;
+	message: string;
+	hideSmilies: boolean;
+	posted: number;
+}
+
+/** Abonné à prévenir d'une nouvelle réponse ou discussion. */
+export interface Subscriber {
+	email: string;
+	/** Notification avec le texte du message (notify_with_post). */
+	notifyWithPost: boolean;
+}

@@ -40,7 +40,6 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
 
 ## Écarts connus avec FluxBB
 
-- Pas d'écriture : ni compteur de vues, ni suivi des sujets lus (`action=new` va au dernier message).
 - BBCode : écarts volontaires listés en tête de `src/services/bbcode.ts` (émojis au lieu des images,
   `[video]` en lecteur intégré, `[spoiler]` en `<details>`, liens `[topic]`… corrigés, balises
   déséquilibrées laissées en texte). Tout le reste est comparé au parseur PHP (`tests/bbcode/`).
@@ -49,7 +48,11 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
 - Textes en français seulement.
 - Liens de modération du pied de page affichés : PV les masque visuellement (`sr-only`) sans autre accès.
 - Balises PV réservées aux modérateurs (`balises_modo`) absentes du pied de viewtopic → lot Modération.
-- Pas d'abonnement au sujet ni de réponse rapide sous viewtopic → lot Rédaction.
+- Rédaction (`post.php`) : émojis conservés (le PHP remplaçait les caractères de 4 octets par « ? »,
+  héritage d'une base en utf8 sur 3 octets) ; redirection immédiate vers le message ; boutons de
+  préfixe du sujet en JavaScript et seulement pour une nouvelle discussion ; pas de réponse dans le
+  lien d'un sujet déplacé ; un échec d'envoi des notifications n'annule pas le message ; modèles
+  d'e-mail en français pour tous ; brouillons encore servis par le PHP.
 - Le menu mobile est un `<details>` sans JavaScript (PV : bouton burger en JS) ; pas d'icônes rapides.
 - `profile.php` : Node ne sert que la consultation ; tout cas de modification est redirigé vers
   `LEGACY_BASE_URL`, qui doit donc désigner une adresse servie par le PHP (sinon boucle).

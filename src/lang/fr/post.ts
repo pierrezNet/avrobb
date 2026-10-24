@@ -3,7 +3,10 @@
  * de BBCode lang/French/common.php, profile.php et fluxtoolbar.php.
  */
 
+import { forumNumberFormat } from '../../services/numberFormat.ts';
+import { MAX_POST_SIZE, type PostError } from '../../services/posting.ts';
 import type { PreparseError } from '../../services/preparse.ts';
+import { register } from './register.ts';
 
 /** Erreurs de preparse_bbcode() ; « message » désigne le texte saisi (message ou signature). */
 export function preparseErrorText(error: PreparseError): string {
@@ -31,6 +34,40 @@ export function preparseErrorText(error: PreparseError): string {
 	}
 }
 
+/** Erreurs de validation du formulaire de post.php. */
+export function postErrorText(error: PostError): string {
+	switch (error.kind) {
+		case 'flood':
+			return post.flood(error.interval, error.wait);
+		case 'noSubject':
+			return post.noSubject;
+		case 'noSubjectAfterCensoring':
+			return post.noSubjectAfterCensoring;
+		case 'tooLongSubject':
+			return post.tooLongSubject;
+		case 'allCapsSubject':
+			return post.allCapsSubject;
+		case 'username':
+			return register.errors[error.error];
+		case 'usernameDupe':
+			return register.usernameDupe(error.existing);
+		case 'invalidEmail':
+			return post.invalidEmail;
+		case 'bannedEmail':
+			return post.bannedEmail;
+		case 'tooLongMessage':
+			return post.tooLongMessage(forumNumberFormat(MAX_POST_SIZE));
+		case 'allCapsMessage':
+			return post.allCapsMessage;
+		case 'bbcode':
+			return preparseErrorText(error.error);
+		case 'noMessage':
+			return post.noMessage;
+		case 'noMessageAfterCensoring':
+			return post.noMessageAfterCensoring;
+	}
+}
+
 export const post = {
 	// Validation
 	noSubject: 'Vous devez indiquer un sujet.',
@@ -47,6 +84,7 @@ export const post = {
 	invalidEmail: "L'adresse électronique que vous avez saisie est invalide.",
 	bannedEmail: "L'adresse électronique saisie est bannie de ces forums. Veuillez en choisir une autre.",
 	preparseError: preparseErrorText,
+	postError: postErrorText,
 
 	// Formulaire
 	postErrors: 'Erreurs dans le message',
@@ -78,7 +116,8 @@ export const post = {
 	smilies: 'Émoticônes :',
 	on: 'activé',
 	off: 'désactivé',
-	fileManager: 'Gestionnaire de fichiers',
+	/** Gestionnaire d'envois de PV (mod Uploadile, lang/French/uploadile.php). */
+	fileManager: 'Gestion de mes uploads',
 
 	// Modification
 	editPostLegend: 'Modifier le message et valider les modifications',

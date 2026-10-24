@@ -13,7 +13,12 @@ export type MailTemplateName =
 	| 'welcome'
 	| 'new_user'
 	| 'banned_email_register'
-	| 'dupe_email_register';
+	| 'dupe_email_register'
+	| 'new_reply'
+	| 'new_reply_full'
+	| 'new_topic'
+	| 'new_topic_full'
+	| 'banned_email_post';
 
 export interface MailTemplateReader {
 	load(name: MailTemplateName): Promise<MailTemplate>;

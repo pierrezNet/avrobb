@@ -17,6 +17,7 @@ import { FeedRepository } from '../../src/repositories/FeedRepository.ts';
 import { ForumRepository } from '../../src/repositories/ForumRepository.ts';
 import { GalleryRepository } from '../../src/repositories/GalleryRepository.ts';
 import { OnlineRepository } from '../../src/repositories/OnlineRepository.ts';
+import { PostingRepository } from '../../src/repositories/PostingRepository.ts';
 import { PostRepository } from '../../src/repositories/PostRepository.ts';
 import { PrivateMessageRepository } from '../../src/repositories/PrivateMessageRepository.ts';
 import { RegistrationRepository } from '../../src/repositories/RegistrationRepository.ts';
@@ -462,6 +463,7 @@ describe('viewtopic de bout en bout', () => {
 			topics: new TopicRepository(db),
 			topicWriter: new TopicRepository(db),
 			posts: new PostRepository(db),
+			posting: new PostingRepository(db),
 			forums: new ForumRepository(db),
 			reports: new ReportRepository(db),
 			privateMessages: new PrivateMessageRepository(db),

@@ -1,0 +1,97 @@
+{#- Réponse ou nouvelle discussion (post.php). Données : `view` (presenters/postPage.ts). -#}
+{% extends "layout.njk" %}
+{% block head %}<script src="{{ asset('js/post.js') }}" defer></script>{% endblock %}
+{% import "partials/forms.njk" as forms %}
+{% import "partials/navigation.njk" as navigation %}
+
+{% block main %}
+{{ navigation.breadcrumbs(view.crumbs, lang) }}
+<h1 class="page-title">{{ view.heading }}</h1>
+{{ forms.errors(lang.post.postErrors, lang.post.postErrorsInfo, view.errors) }}
+
+{% if view.previewHtml %}
+<section class="post post--preview" id="postpreview" aria-labelledby="postpreview-title">
+	<h2 class="post__meta" id="postpreview-title">{{ lang.post.postPreview }}</h2>
+	<div class="post__content">
+		{#- HTML de parseMessage() : échappé par construction (services/bbcode.ts). #}
+		<div class="post__message bbcode">{{ view.previewHtml | safe }}</div>
+	</div>
+</section>
+{% endif %}
+
+<form id="post" class="form-box form post-form" method="post" action="{{ url(view.formAction) }}">
+	{{ forms.csrf(layout) }}
+	<input type="hidden" name="form_sent" value="1">
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ lang.post.writeMessageLegend }}</legend>
+		{% if view.guest %}
+		<div class="form__grid form__grid--two">
+			<p class="form__field">
+				<label for="req_username">{{ lang.post.guestName }} <span class="form__required">{{ lang.post.required }}</span></label>
+				<input type="text" id="req_username" name="req_username" value="{{ view.form.username }}" maxlength="25" required autocomplete="nickname">
+			</p>
+			<p class="form__field">
+				<label for="guest_email">{{ lang.post.email }}{% if view.guest.emailRequired %} <span class="form__required">{{ lang.post.required }}</span>{% endif %}</label>
+				<input type="email" id="guest_email" name="{{ view.guest.emailField }}" value="{{ view.form.email }}" maxlength="80"{% if view.guest.emailRequired %} required{% endif %} autocomplete="email">
+			</p>
+		</div>
+		{% endif %}
+		{% if view.isNewTopic %}
+		<p class="form__field">
+			<label for="req_subject">{{ lang.post.subject }} <span class="form__required">{{ lang.post.required }}</span></label>
+			<input type="text" id="req_subject" name="req_subject" value="{{ view.form.subject }}" maxlength="70" required>
+		</p>
+		{% endif %}
+		{% if view.subjectPrefixes %}
+		{#- Préfixes de sujet de PV : insérés par public/js/post.js, masqués sans JavaScript. #}
+		<div class="subject-prefixes" data-subject-prefixes hidden>
+			<p class="subject-prefixes__group"><span>{{ lang.post.simulators }}</span>
+			{% for prefix in view.subjectPrefixes.simulators %}<button type="button" class="button button--small" data-prefix="[{{ prefix }}]">{{ prefix }}</button>{% endfor %}</p>
+			<p class="subject-prefixes__group"><span>{{ lang.post.other }}</span>
+			{% for prefix in view.subjectPrefixes.other %}<button type="button" class="button button--small" data-prefix="[{{ prefix }}]">{{ prefix }}</button>{% endfor %}</p>
+		</div>
+		{% endif %}
+		<p class="form__field">
+			<label for="req_message">{{ lang.post.message }} <span class="form__required">{{ lang.post.required }}</span></label>
+			<textarea id="req_message" name="req_message" rows="14" required>{{ view.form.message }}</textarea>
+		</p>
+		<ul class="bbcode-status">
+			{% for item in view.bbcodeStatus %}<li><a href="{{ url(item.href) }}" target="_blank">{{ item.label }}</a> {% if item.on %}{{ lang.post.on }}{% else %}{{ lang.post.off }}{% endif %}</li>{% endfor %}
+			<li><a href="{{ url('gestionnaire.php') }}" target="_blank" rel="noopener">{{ lang.post.fileManager }}</a></li>
+		</ul>
+	</fieldset>
+
+	{% if view.checkboxes.length %}
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ lang.post.options }}</legend>
+		{% for box in view.checkboxes %}
+		<p class="form__check"><label><input type="checkbox" name="{{ box.name }}" value="1"{% if box.checked %} checked{% endif %}> {{ box.label }}</label></p>
+		{% endfor %}
+	</fieldset>
+	{% endif %}
+
+	<p class="form__buttons">
+		<button type="submit" class="button button--primary" name="submit" value="1" accesskey="s">{{ lang.post.submit }}</button>
+		<button type="submit" class="button" name="preview" value="1" accesskey="p">{{ lang.post.preview }}</button>
+	</p>
+</form>
+
+{% if view.review.length %}
+<section class="post-review" id="postreview" aria-labelledby="postreview-title">
+	<h2 id="postreview-title" class="post-review__title">{{ lang.post.topicReview }}</h2>
+	<div class="post-list">
+	{% for post in view.review %}
+	<article class="post post--review">
+		<h3 class="post__meta"><span>{{ post.poster }}</span> <span class="post__date">{{ post.postedAt }}</span></h3>
+		<div class="post__content">
+			{#- HTML de parseMessage() : échappé par construction (services/bbcode.ts). #}
+			<div class="post__message bbcode">{{ post.messageHtml | safe }}</div>
+		</div>
+	</article>
+	{% endfor %}
+	</div>
+</section>
+{% endif %}
+{% endblock %}
+
+

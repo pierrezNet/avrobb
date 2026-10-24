@@ -24,6 +24,7 @@ import {
 import { labelledSubject } from '../services/topicLabels.ts';
 import { userTitle } from '../services/userTitle.ts';
 import { type Crumb, crumbs, type PaginationLink, paginationLinks } from './navigation.ts';
+import { bbcodeLabels, messageParserOptions } from './parserOptions.ts';
 
 /** Lien d'action sous un message ; `kind` sert aussi de classe CSS (postreport…, comme FluxBB). */
 export interface PostAction {
@@ -131,24 +132,13 @@ function actionLinks(rights: PostActionRights, postId: number, topicId: number, 
 /** Options de parse_message() et parse_signature() pour ce lecteur. */
 function parserOptions(input: TopicPageInput): { message: (post: Post) => BbcodeOptions; signature: BbcodeOptions } {
 	const { config, viewer, lang, censor } = input;
-	const common = {
-		censor,
-		baseUrl: config.baseUrl,
-		indentSpaces: config.indentSpaces,
-		labels: { wrote: lang.common.wrote, imageLink: lang.common.imageLink, spoiler: lang.common.spoiler, video: lang.common.video },
-	};
-	const message: BbcodeOptions = {
-		...common,
-		bbcode: config.bbcode,
-		imgTag: config.imgTag,
-		showImages: viewer.showImages,
-		smilies: config.smilies && viewer.showSmilies,
-	};
-
 	return {
-		message: (post) => (post.hideSmilies ? { ...message, smilies: false } : message),
+		message: (post) => messageParserOptions(config, viewer, lang, censor, post.hideSmilies),
 		signature: {
-			...common,
+			censor,
+			baseUrl: config.baseUrl,
+			indentSpaces: config.indentSpaces,
+			labels: bbcodeLabels(lang),
 			bbcode: config.signatureBbcode,
 			imgTag: config.signatureImgTag,
 			showImages: viewer.showSignatureImages,

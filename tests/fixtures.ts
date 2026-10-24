@@ -16,7 +16,9 @@ import {
 	type MemberSummary,
 	type OnlineVisitor,
 	type Post,
+	type PostingTarget,
 	type RecentTopic,
+	type Subscriber,
 	type Topic,
 	type TopicLabel,
 	type TopicSummary,
@@ -25,6 +27,7 @@ import {
 } from '../src/domain/models.ts';
 import { fr, frDateWords } from '../src/lang/fr/index.ts';
 import type { OnlineWriter } from '../src/repositories/OnlineRepository.ts';
+import type { NewReply, NewTopic, PostingStore } from '../src/repositories/PostingRepository.ts';
 import type { NewUser } from '../src/repositories/RegistrationRepository.ts';
 import type { PostLocation } from '../src/repositories/TopicRepository.ts';
 import type { ViewerRecord } from '../src/repositories/UserRepository.ts';
@@ -254,6 +257,13 @@ export interface FakeData {
 	recentTopics?: RecentTopic[];
 	online?: OnlineVisitor[];
 	bans?: Ban[];
+	/** Sujets suivis par le visiteur (topic_subscriptions). */
+	subscribedTopics?: number[];
+	/** Abonnés à prévenir d'une réponse ou d'une discussion. */
+	subscribers?: Subscriber[];
+	/** Réponses et discussions enregistrées par post.php. */
+	savedReplies?: NewReply[];
+	savedTopics?: NewTopic[];
 }
 
 /** Liste des présents en mémoire : chaque écriture est consignée dans `log` pour les tests. */
@@ -283,6 +293,60 @@ const sortKey = (sort: MemberSort): 'username' | 'registered' | 'numPosts' => (s
 function matchMember(member: MemberSummary, filter: MemberFilter): boolean {
 	const pattern = filter.username === null ? null : new RegExp(`^${filter.username.replaceAll('*', '.*')}$`, 'i');
 	return (pattern === null || pattern.test(member.username)) && (filter.groupId === null || member.groupId === filter.groupId);
+}
+
+/** Rédaction en mémoire : cibles tirées de `topics` et `forumInfos`, écritures consignées dans `data`. */
+function fakePosting(data: FakeData): PostingStore {
+	const readable = (forumId: number, groupId: number): boolean => {
+		const readers = data.forumReaders?.get(forumId);
+		return readers === undefined || readers.includes(groupId);
+	};
+	return {
+		findTarget: async (target, viewer): Promise<PostingTarget | null> => {
+			if ('forumId' in target) {
+				const forum = data.forumInfos?.find((f) => f.id === target.forumId);
+				if (forum === undefined || !readable(forum.id, viewer.groupId)) return null;
+				return {
+					forum: { id: forum.id, name: forum.name, moderators: forum.moderators, isRedirect: forum.redirectUrl !== null },
+					replyPermission: null,
+					topicPermission: forum.topicPermission,
+					topic: null,
+				};
+			}
+			const topic = data.topics.find((t) => t.id === target.topicId);
+			if (topic === undefined || !readable(topic.forum.id, viewer.groupId)) return null;
+			return {
+				forum: { ...topic.forum, isRedirect: false },
+				replyPermission: topic.forumReplyPermission,
+				topicPermission: null,
+				topic: {
+					id: topic.id,
+					subject: topic.subject,
+					closed: topic.closed,
+					isSubscribed: (data.subscribedTopics ?? []).includes(topic.id),
+				},
+			};
+		},
+		findQuote: async (postId, topicId) => {
+			const found = (data.posts.get(topicId) ?? []).find((p) => p.id === postId);
+			return found === undefined ? null : { poster: found.username, message: found.message };
+		},
+		listReview: async (topicId, limit) =>
+			(data.posts.get(topicId) ?? [])
+				.toReversed()
+				.slice(0, limit)
+				.map((p) => ({ poster: p.username, message: p.message, hideSmilies: p.hideSmilies, posted: p.posted })),
+		createReply: async (reply) => {
+			data.savedReplies = [...(data.savedReplies ?? []), reply];
+			return 900 + data.savedReplies.length;
+		},
+		createTopic: async (topic) => {
+			data.savedTopics = [...(data.savedTopics ?? []), topic];
+			return { topicId: 800 + data.savedTopics.length, postId: 900 + data.savedTopics.length };
+		},
+		listTopicSubscribers: async () => data.subscribers ?? [],
+		listForumSubscribers: async () => data.subscribers ?? [],
+	};
 }
 
 export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppDeps {
@@ -377,6 +441,7 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			},
 		},
 		posts: { listPage: async (topicId, offset, limit) => (data.posts.get(topicId) ?? []).slice(offset, offset + limit) },
+		posting: fakePosting(data),
 		forums: {
 			listReadable: async () => forumCategories,
 			listIndex: async () => data.indexCategories ?? [],

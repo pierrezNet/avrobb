@@ -18,6 +18,7 @@ import { IndexController } from './controllers/IndexController.ts';
 import { LoginController, type LoginQuery } from './controllers/LoginController.ts';
 import { MiscController, type MiscQuery } from './controllers/MiscController.ts';
 import { PasswordResetController } from './controllers/PasswordResetController.ts';
+import { PostController, type PostQuery } from './controllers/PostController.ts';
 import { ProfileController, type ProfileQuery } from './controllers/ProfileController.ts';
 import { RegisterController, type RegisterQuery } from './controllers/RegisterController.ts';
 import { SearchController, type SearchQuery } from './controllers/SearchController.ts';
@@ -34,6 +35,7 @@ import type { ConfigReader } from './repositories/ConfigLoader.ts';
 import type { FeedReader } from './repositories/FeedRepository.ts';
 import type { GalleryReader } from './repositories/GalleryRepository.ts';
 import type { MailTemplateReader } from './repositories/MailTemplateFiles.ts';
+import type { PostingStore } from './repositories/PostingRepository.ts';
 import type { PostReader } from './repositories/PostRepository.ts';
 import type { RegistrationStore } from './repositories/RegistrationRepository.ts';
 import type { SearchReader } from './repositories/SearchRepository.ts';
@@ -68,6 +70,7 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	topics: TopicReader;
 	topicWriter: TopicWriter;
 	posts: PostReader;
+	posting: PostingStore;
 	avatars: AvatarLocator;
 	censorship: CensorReader;
 	topicLabels: TopicLabelReader;
@@ -92,6 +95,7 @@ const PORTED_PAGES = new Set([
 	'index.php',
 	'login.php',
 	'misc.php',
+	'post.php',
 	'profile.php',
 	'register.php',
 	'search.php',
@@ -220,6 +224,10 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 
 	const profiles = new ProfileController(deps);
 	app.get<{ Querystring: ProfileQuery }>('/profile.php', { preHandler: authenticate }, profiles.show);
+
+	const post = new PostController({ ...deps, trackCookieName });
+	app.get<{ Querystring: PostQuery }>('/post.php', { preHandler: authenticate }, post.show);
+	app.post<{ Querystring: PostQuery; Body: FormBody }>('/post.php', { preHandler: [authenticate, verifyCsrf] }, post.submit);
 
 	const topics = new TopicController({ ...deps, topicViews: deps.topicWriter, trackCookieName });
 	app.get<{ Querystring: TopicQuery }>('/viewtopic.php', { preHandler: authenticate }, topics.show);

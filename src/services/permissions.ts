@@ -3,7 +3,7 @@
  * (viewtopic.php les recopiait en trois endroits, header.php et les mods en ajoutaient d'autres).
  */
 
-import { type BoardConfig, type ForumInfo, GroupId, type Topic, type Viewer } from '../domain/models.ts';
+import { type BoardConfig, type ForumInfo, GroupId, type PostingTarget, type Topic, type Viewer } from '../domain/models.ts';
 
 export function isAdmin(viewer: Viewer): boolean {
 	return viewer.group.id === GroupId.Admin;
@@ -33,6 +33,16 @@ export function canReply(viewer: Viewer, topic: Topic): boolean {
 	if (isForumModerator(viewer, topic.forum)) return true;
 
 	return !topic.closed && hasReplyPermission(viewer, topic);
+}
+
+/**
+ * Droit d'écrire dans post.php : modérateur du forum, sinon permission du forum (ou du groupe) de
+ * répondre ou de créer une discussion, et sujet ouvert.
+ */
+export function canPostIn(viewer: Viewer, target: PostingTarget): boolean {
+	if (isForumModerator(viewer, target.forum)) return true;
+	if (target.topic === null) return target.topicPermission ?? viewer.group.canPostTopics;
+	return !target.topic.closed && (target.replyPermission ?? viewer.group.canPostReplies);
 }
 
 export interface PostActionRights {

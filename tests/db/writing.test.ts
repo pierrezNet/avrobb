@@ -9,6 +9,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { createDatabase } from '../../src/db/database.ts';
 import type { Database } from '../../src/db/schema.ts';
 import { updateForum } from '../../src/repositories/forumCounters.ts';
+import { PostingRepository } from '../../src/repositories/PostingRepository.ts';
 import { stripSearchIndex, updateSearchIndex } from '../../src/repositories/searchIndexSql.ts';
 import { testDbConfig } from './testDatabase.ts';
 
@@ -96,5 +97,122 @@ describe('update_forum()', () => {
 				.executeTakeFirstOrThrow();
 			expect(forum).toEqual({ num_topics: 0, num_posts: 0, last_post: null });
 		});
+	});
+});
+
+describe('PostingRepository', () => {
+	const words = { post: ['réponse'], subject: [] };
+
+	it('lit la cible : permissions du groupe, abonnement, forum de redirection', async () => {
+		const posting = new PostingRepository(db);
+		expect(await posting.findTarget({ topicId: 10 }, { id: 3, groupId: 4 })).toMatchObject({
+			forum: { id: 2, isRedirect: false },
+			replyPermission: false,
+			topicPermission: true,
+			topic: { id: 10, subject: 'Postez un « vintage »', closed: false, isSubscribed: true },
+		});
+		expect(await posting.findTarget({ topicId: 11 }, { id: 1, groupId: 3 })).toBeNull();
+		expect(await posting.findTarget({ topicId: 12 }, { id: 3, groupId: 4 })).toBeNull();
+		expect(await posting.findTarget({ forumId: 4 }, { id: 3, groupId: 4 })).toMatchObject({ forum: { isRedirect: true }, topic: null });
+		expect(await posting.findQuote(101, 10)).toEqual({ poster: 'MaxDUO', message: 'Deuxième message' });
+		expect(await posting.findQuote(110, 10)).toBeNull();
+		expect((await posting.listReview(10, 2)).map((p) => p.message)).toEqual(['Troisième message', 'Deuxième message']);
+	});
+
+	it('enregistre une réponse avec tous les effets de bord de post.php', async () => {
+		await inRollback(async (trx) => {
+			const posting = new PostingRepository(trx);
+			const postId = await posting.createReply({
+				topicId: 10,
+				forumId: 2,
+				author: { kind: 'member', id: 3, username: 'Tessy', promoteTo: 2 },
+				ip: '192.0.2.1',
+				message: 'Une réponse',
+				hideSmilies: true,
+				now: 1782900000,
+				words,
+				subscription: 'remove',
+			});
+			const post = await trx.selectFrom('posts').selectAll().where('id', '=', postId).executeTakeFirstOrThrow();
+			expect(post).toMatchObject({
+				poster: 'Tessy',
+				poster_id: 3,
+				poster_ip: '192.0.2.1',
+				hide_smilies: 1,
+				topic_id: 10,
+				poster_email: null,
+			});
+			expect(
+				await trx
+					.selectFrom('topics')
+					.select(['num_replies', 'last_post', 'last_post_id', 'last_poster'])
+					.where('id', '=', 10)
+					.executeTakeFirst(),
+			).toEqual({
+				num_replies: 3,
+				last_post: 1782900000,
+				last_post_id: postId,
+				last_poster: 'Tessy',
+			});
+			expect(await trx.selectFrom('forums').select(['num_posts', 'last_post_id']).where('id', '=', 2).executeTakeFirst()).toEqual({
+				num_posts: 4,
+				last_post_id: postId,
+			});
+			expect(
+				await trx.selectFrom('users').select(['num_posts', 'last_post', 'group_id']).where('id', '=', 3).executeTakeFirst(),
+			).toMatchObject({
+				last_post: 1782900000,
+				group_id: 2,
+			});
+			expect(await trx.selectFrom('topic_subscriptions').selectAll().where('user_id', '=', 3).execute()).toEqual([]);
+			expect(await indexOf(trx, postId)).toEqual(['réponse']);
+		});
+	});
+
+	it('crée une discussion d’invité', async () => {
+		await inRollback(async (trx) => {
+			const posting = new PostingRepository(trx);
+			await trx.insertInto('online').values({ user_id: 1, ident: '198.51.100.20', logged: 1782899000, idle: 0 }).execute();
+			const { topicId, postId } = await posting.createTopic({
+				forumId: 1,
+				subject: 'Premier vol',
+				sticky: false,
+				subscribe: false,
+				author: { kind: 'guest', username: 'Pilote', email: 'pilote@example.test' },
+				ip: '198.51.100.20',
+				message: 'Bonjour',
+				hideSmilies: false,
+				now: 1782900000,
+				words: { post: ['bonjour'], subject: ['premier'] },
+			});
+			expect(await trx.selectFrom('topics').selectAll().where('id', '=', topicId).executeTakeFirst()).toMatchObject({
+				poster: 'Pilote',
+				subject: 'Premier vol',
+				first_post_id: postId,
+				last_post_id: postId,
+				num_replies: 0,
+				forum_id: 1,
+			});
+			expect(await trx.selectFrom('posts').select(['poster_id', 'poster_email']).where('id', '=', postId).executeTakeFirst()).toEqual({
+				poster_id: 1,
+				poster_email: 'pilote@example.test',
+			});
+			expect(await trx.selectFrom('forums').select(['num_topics', 'last_post_id']).where('id', '=', 1).executeTakeFirst()).toEqual({
+				num_topics: 3,
+				last_post_id: postId,
+			});
+			expect(await trx.selectFrom('online').select('last_post').where('ident', '=', '198.51.100.20').executeTakeFirst()).toEqual({
+				last_post: 1782900000,
+			});
+			expect(await indexOf(trx, postId)).toEqual(['bonjour', 'premier (sujet)']);
+		});
+	});
+
+	it('abonnés à prévenir : venus depuis le message précédent, non bannis, sauf l’auteur', async () => {
+		const posting = new PostingRepository(db);
+		// Tessy (abonnée au sujet 10) est en ligne depuis 1782899000, après le message précédent.
+		expect(await posting.listTopicSubscribers(10, 2, 2)).toEqual([{ email: 'tessy@example.test', notifyWithPost: false }]);
+		expect(await posting.listTopicSubscribers(10, 2, 3)).toEqual([]);
+		expect(await posting.listForumSubscribers(2, 5)).toEqual([{ email: 'tessy@example.test', notifyWithPost: false }]);
 	});
 });

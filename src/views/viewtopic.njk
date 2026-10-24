@@ -16,6 +16,8 @@
 </div>
 {% endmacro %}
 
+{% block head %}{% if view.quickPost and view.quickPost.toolbar %}<script src="{{ asset('js/toolbar.js') }}" defer></script>{% endif %}{% endblock %}
+
 {% block main %}
 {{ navigation.breadcrumbs(view.crumbs, lang) }}
 <h1 class="page-title">{{ view.topic.subject }}</h1>
@@ -89,10 +91,11 @@
 	<input type="hidden" name="form_sent" value="1">
 	{% if view.quickPost.keepSubscribed %}<input type="hidden" name="subscribe" value="1">{% endif %}
 	{% if view.quickPost.guest %}{{ postFields.guestFields(view.quickPost.guest, { username: '', email: '' }, lang) }}{% endif %}
-	<p class="form__field">
+	<div class="form__field">
 		<label for="req_message">{{ lang.post.message }} <span class="form__required">{{ lang.post.required }}</span></label>
+		{% if view.quickPost.toolbar %}{{ postFields.toolbar(view.quickPost.toolbar) }}{% endif %}
 		<textarea id="req_message" name="req_message" rows="7" required></textarea>
-	</p>
+	</div>
 	{{ postFields.bbcodeStatus(view.quickPost.bbcodeStatus, lang) }}
 	<p class="form__buttons">
 		<button type="submit" class="button button--primary" name="submit" value="1" accesskey="s">{{ lang.post.submit }}</button>

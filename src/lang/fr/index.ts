@@ -16,10 +16,27 @@ import { post } from './post.ts';
 import { profile } from './profile.ts';
 import { register } from './register.ts';
 import { search } from './search.ts';
+import { toolbar } from './toolbar.ts';
 import { topic } from './topic.ts';
 import { userlist } from './userlist.ts';
 
-export const fr = { common, index: indexPage, forum, topic, userlist, profile, help, search, gallery, login, misc, register, pms, post };
+export const fr = {
+	common,
+	index: indexPage,
+	forum,
+	topic,
+	userlist,
+	profile,
+	help,
+	search,
+	gallery,
+	login,
+	misc,
+	register,
+	pms,
+	post,
+	toolbar,
+};
 
 export const frDateWords: DateWords = {
 	today: "Aujourd'hui",

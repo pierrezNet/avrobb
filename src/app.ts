@@ -41,6 +41,7 @@ import type { RegistrationStore } from './repositories/RegistrationRepository.ts
 import type { SearchReader } from './repositories/SearchRepository.ts';
 import type { StatsReader } from './repositories/StatsRepository.ts';
 import type { StopwordsReader } from './repositories/StopwordsLoader.ts';
+import type { ToolbarReader } from './repositories/ToolbarRepository.ts';
 import type { TopicLabelReader } from './repositories/TopicLabelRepository.ts';
 import type { TopicReader, TopicWriter } from './repositories/TopicRepository.ts';
 import type { CredentialsStore, MemberListReader, PasswordResetStore, ProfileReader } from './repositories/UserRepository.ts';
@@ -71,6 +72,7 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	topicWriter: TopicWriter;
 	posts: PostReader;
 	posting: PostingStore;
+	toolbar: ToolbarReader;
 	avatars: AvatarLocator;
 	censorship: CensorReader;
 	topicLabels: TopicLabelReader;

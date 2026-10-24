@@ -3,6 +3,10 @@
  * (mobile et bureau), éventuellement avec un cookie de session.
  *
  *   npm run screenshot -- <url> [--widths 320,375,768,1280] [--cookie nom=valeur] [--out dossier] [--open-menu]
+ *                          [--eval 'expression JavaScript']
+ *
+ * --eval : expression évaluée dans la page avant chaque capture (clics, saisie…) ; sa valeur est
+ * affichée, ce qui permet de vérifier le comportement d'un script de la page.
  *
  * Pilote un Chrome sans tête (CHROME_BIN, ou chrome-headless-shell de Playwright s'il est présent)
  * par le protocole DevTools, avec le WebSocket natif de Node : aucune dépendance à installer.
@@ -21,6 +25,7 @@ const { values, positionals } = parseArgs({
 		cookie: { type: 'string' },
 		out: { type: 'string', default: 'screenshots' },
 		'open-menu': { type: 'boolean', default: false },
+		eval: { type: 'string' },
 	},
 });
 
@@ -102,6 +107,16 @@ async function capture(page: DevTools, url: string, width: number, file: string)
 
 	if (values['open-menu']) {
 		await page.send('Runtime.evaluate', { expression: "document.querySelector('details.site-nav')?.setAttribute('open', '')" });
+		await delay(200);
+	}
+
+	if (values.eval !== undefined) {
+		const evaluated = await page.send<{ result: { value?: unknown; description?: string } }>('Runtime.evaluate', {
+			expression: values.eval,
+			returnByValue: true,
+			awaitPromise: true,
+		});
+		console.log(`  --eval à ${width} px :`, JSON.stringify(evaluated.result.value ?? evaluated.result.description));
 		await delay(200);
 	}
 

@@ -452,6 +452,7 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 		},
 		posts: { listPage: async (topicId, offset, limit) => (data.posts.get(topicId) ?? []).slice(offset, offset + limit) },
 		posting: fakePosting(data),
+		toolbar: { load: async () => null },
 		forums: {
 			listReadable: async () => forumCategories,
 			listIndex: async () => data.indexCategories ?? [],

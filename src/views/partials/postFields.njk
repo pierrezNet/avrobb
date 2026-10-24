@@ -21,3 +21,8 @@
 	<li><a href="{{ url('gestionnaire.php') }}" target="_blank" rel="noopener">{{ lang.post.fileManager }}</a></li>
 </ul>
 {% endmacro %}
+
+{#- Emplacement de la barre d'outils BBCode, remplie par public/js/toolbar.js (masquée sans JavaScript). -#}
+{% macro toolbar(toolbar) %}
+<div class="bbcode-toolbar" data-toolbar="{{ toolbar.config }}" data-toolbar-images="{{ url(toolbar.imageDir) }}" data-toolbar-for="req_message" hidden></div>
+{% endmacro %}

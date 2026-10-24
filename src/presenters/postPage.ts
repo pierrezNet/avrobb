@@ -8,6 +8,8 @@ import type { Lang } from '../lang/fr/index.ts';
 import { parseMessage } from '../services/bbcode.ts';
 import type { Censor } from '../services/censor.ts';
 import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
+import { SMILIES } from '../services/smilies.ts';
+import { type ToolbarSettings, toolbarButtons } from '../services/toolbar.ts';
 import { type Crumb, crumbs } from './navigation.ts';
 import { messageParserOptions } from './parserOptions.ts';
 
@@ -33,6 +35,7 @@ export interface PostPageInput {
 	/** Message pré-traité à prévisualiser, ou null. */
 	preview: string | null;
 	review: readonly ReviewPost[];
+	toolbar: ToolbarSettings;
 	censor: Censor | null;
 	lang: Lang;
 	dateWords: DateWords;
@@ -59,6 +62,7 @@ export interface PostPageView {
 	/** Préfixes de sujet proposés par PV (simulateur, autre), insérés par JavaScript. */
 	subjectPrefixes: { simulators: string[]; other: string[] } | null;
 	bbcodeStatus: BbcodeStatus;
+	toolbar: ToolbarView | null;
 	checkboxes: Checkbox[];
 	review: { poster: string; postedAt: string; messageHtml: string }[];
 }
@@ -75,6 +79,26 @@ function checkboxes(input: PostPageInput, isNewTopic: boolean): Checkbox[] {
 	if (!viewer.isGuest && config.topicSubscriptions)
 		boxes.push({ name: 'subscribe', label: target.topic?.isSubscribed === true ? t.staySubscribed : t.subscribe, checked: form.subscribe });
 	return boxes;
+}
+
+/** Barre d'outils : dossier des icônes et configuration JSON lue par public/js/toolbar.js. */
+export interface ToolbarView {
+	imageDir: string;
+	config: string;
+}
+
+/** Une seule entrée par émoji (le PHP retirait les images en double). */
+const TOOLBAR_SMILIES = SMILIES.filter((smiley, i) => SMILIES.findIndex((other) => other.emoji === smiley.emoji) === i).map(
+	({ code, emoji, name }) => ({ code, emoji, name }),
+);
+
+export function toolbarView(settings: ToolbarSettings, form: 'form' | 'quickform', config: BoardConfig, lang: Lang): ToolbarView | null {
+	const toolbar = toolbarButtons(settings, form, { bbcode: config.bbcode, imgTag: config.imgTag, smilies: config.smilies }, lang.toolbar);
+	if (toolbar === null) return null;
+	return {
+		imageDir: toolbar.imageDir,
+		config: JSON.stringify({ label: lang.toolbar.label, buttons: toolbar.buttons, smilies: TOOLBAR_SMILIES }),
+	};
 }
 
 export type BbcodeStatus = { label: string; href: string; on: boolean }[];
@@ -122,6 +146,7 @@ export function buildPostPage(input: PostPageInput): PostPageView {
 				: null,
 		subjectPrefixes: isNewTopic ? { simulators: SIMULATOR_PREFIXES, other: OTHER_PREFIXES } : null,
 		bbcodeStatus: bbcodeStatus(config, viewer, lang),
+		toolbar: toolbarView(input.toolbar, 'form', config, lang),
 		checkboxes: checkboxes(input, isNewTopic),
 		review: input.review.map((post) => ({
 			poster: post.poster,

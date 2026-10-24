@@ -1,6 +1,7 @@
 {#- Réponse ou nouvelle discussion (post.php). Données : `view` (presenters/postPage.ts). -#}
 {% extends "layout.njk" %}
-{% block head %}<script src="{{ asset('js/post.js') }}" defer></script>{% endblock %}
+{% block head %}<script src="{{ asset('js/post.js') }}" defer></script>
+{% if view.toolbar %}<script src="{{ asset('js/toolbar.js') }}" defer></script>{% endif %}{% endblock %}
 {% import "partials/forms.njk" as forms %}
 {% import "partials/navigation.njk" as navigation %}
 {% import "partials/postFields.njk" as postFields %}
@@ -41,10 +42,11 @@
 			{% for prefix in view.subjectPrefixes.other %}<button type="button" class="button button--small" data-prefix="[{{ prefix }}]">{{ prefix }}</button>{% endfor %}</p>
 		</div>
 		{% endif %}
-		<p class="form__field">
+		<div class="form__field">
 			<label for="req_message">{{ lang.post.message }} <span class="form__required">{{ lang.post.required }}</span></label>
+			{% if view.toolbar %}{{ postFields.toolbar(view.toolbar) }}{% endif %}
 			<textarea id="req_message" name="req_message" rows="14" required>{{ view.form.message }}</textarea>
-		</p>
+		</div>
 		{{ postFields.bbcodeStatus(view.bbcodeStatus, lang) }}
 	</fieldset>
 

@@ -22,11 +22,12 @@ import {
 	type PostActionRights,
 	postActions,
 } from '../services/permissions.ts';
+import type { ToolbarSettings } from '../services/toolbar.ts';
 import { labelledSubject } from '../services/topicLabels.ts';
 import { userTitle } from '../services/userTitle.ts';
 import { type Crumb, crumbs, type PaginationLink, paginationLinks } from './navigation.ts';
 import { bbcodeLabels, messageParserOptions } from './parserOptions.ts';
-import { type BbcodeStatus, bbcodeStatus } from './postPage.ts';
+import { type BbcodeStatus, bbcodeStatus, type ToolbarView, toolbarView } from './postPage.ts';
 
 /** Lien d'action sous un message ; `kind` sert aussi de classe CSS (postreport…, comme FluxBB). */
 export interface PostAction {
@@ -98,6 +99,7 @@ export interface QuickPostView {
 	/** Abonnement conservé (abonnement automatique ou déjà abonné) : champ caché « subscribe ». */
 	keepSubscribed: boolean;
 	bbcodeStatus: BbcodeStatus;
+	toolbar: ToolbarView | null;
 }
 
 function quickPost(input: TopicPageInput): QuickPostView | null {
@@ -110,6 +112,7 @@ function quickPost(input: TopicPageInput): QuickPostView | null {
 			: null,
 		keepSubscribed: !viewer.isGuest && config.topicSubscriptions && (viewer.autoNotify || topic.isSubscribed),
 		bbcodeStatus: bbcodeStatus(config, viewer, lang),
+		toolbar: toolbarView(input.toolbar, 'quickform', config, lang),
 	};
 }
 
@@ -129,6 +132,8 @@ export interface TopicPageInput {
 	bannedUsernames: ReadonlySet<string>;
 	/** Censure (o_censoring), ou null si désactivée. */
 	censor: Censor | null;
+	/** Barre d'outils BBCode de la réponse rapide. */
+	toolbar: ToolbarSettings;
 	lang: Lang;
 	dateWords: DateWords;
 	now: number;

@@ -172,6 +172,24 @@ export interface SearchWordsTable {
 	word: string;
 }
 
+/** Barre d'outils BBCode (mod FluxToolBar) : réglages et boutons. */
+export interface ToolbarConfTable {
+	conf_name: string;
+	conf_value: string | null;
+}
+
+export interface ToolbarTagsTable {
+	id: Generated<number>;
+	name: string;
+	code: string;
+	enable_form: number;
+	enable_quick: number;
+	image: string;
+	/** 0 : balise simple, 1 : argument demandé, 2 : deux valeurs demandées, 3 : contenu demandé. */
+	func: string | null;
+	position: number;
+}
+
 export interface TopicSubscriptionsTable {
 	user_id: number;
 	topic_id: number;
@@ -264,6 +282,8 @@ export interface Database {
 	search_cache: SearchCacheTable;
 	search_matches: SearchMatchesTable;
 	search_words: SearchWordsTable;
+	toolbar_conf: ToolbarConfTable;
+	toolbar_tags: ToolbarTagsTable;
 	topic_subscriptions: TopicSubscriptionsTable;
 	topics: TopicsTable;
 	users: UsersTable;
@@ -288,6 +308,8 @@ export const TABLE_NAMES: readonly (keyof Database)[] = [
 	'search_cache',
 	'search_matches',
 	'search_words',
+	'toolbar_conf',
+	'toolbar_tags',
 	'topic_subscriptions',
 	'topics',
 	'users',

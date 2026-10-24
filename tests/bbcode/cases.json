@@ -1,0 +1,212 @@
+[
+	{
+		"name": "texte simple",
+		"text": "Bonjour le forum"
+	},
+	{
+		"name": "échappement HTML",
+		"text": "<script>alert(1)</script> & \"guillemets\" 'apostrophes'"
+	},
+	{
+		"name": "paragraphes et retours",
+		"text": "ligne 1\nligne 2\n\nparagraphe 2\n\n\n\nparagraphe 3"
+	},
+	{
+		"name": "CRLF",
+		"text": "a\r\nb\r\n\r\nc"
+	},
+	{
+		"name": "tabulations et espaces",
+		"text": "a\tb    c  d"
+	},
+	{
+		"name": "gras italique souligné barré",
+		"text": "[b]g[/b] [i]i[/i] [u]u[/u] [s]s[/s] [del]d[/del] [ins]n[/ins] [em]e[/em]"
+	},
+	{
+		"name": "balises imbriquées",
+		"text": "[b][i]x[/i][/b] [b]a [b]b[/b] c[/b]"
+	},
+	{
+		"name": "couleurs",
+		"text": "[color=red]r[/color] [colour=#FF0000]h[/colour] [color=#abc]c[/color] [color=red;x]refus[/color]"
+	},
+	{
+		"name": "titre h",
+		"text": "avant\n[h]Titre[/h]\naprès"
+	},
+	{
+		"name": "citation simple",
+		"text": "[quote]cité[/quote]"
+	},
+	{
+		"name": "citation avec auteur",
+		"text": "[quote=Tessy]bonjour[/quote]"
+	},
+	{
+		"name": "citation auteur entre guillemets",
+		"text": "[quote=\"Max DUO\"]x[/quote] [quote='Ana [b]']y[/quote]"
+	},
+	{
+		"name": "citations imbriquées",
+		"text": "[quote=A][quote=B]interne[/quote]externe[/quote]"
+	},
+	{
+		"name": "code",
+		"text": "avant [code]<b>[b]brut[/b]</b>\n\tindenté[/code] après"
+	},
+	{
+		"name": "code imbriqué",
+		"text": "[code]a [code]b[/code] c[/code]"
+	},
+	{
+		"name": "code long",
+		"text": "[code]l0\nl1\nl2\nl3\nl4\nl5\nl6\nl7\nl8\nl9\nl10\nl11\nl12\nl13\nl14\nl15\nl16\nl17\nl18\nl19\nl20\nl21\nl22\nl23\nl24\nl25\nl26\nl27\nl28\nl29\nl30\nl31\nl32\nl33\nl34[/code]"
+	},
+	{
+		"name": "liste à puces",
+		"text": "[list]\n[*]un[/*]\n[*]deux[/*]\n[/list]"
+	},
+	{
+		"name": "liste numérotée et alpha",
+		"text": "[list=1][*]a[/*][/list][list=a][*]b[/*][/list]"
+	},
+	{
+		"name": "listes imbriquées",
+		"text": "[list][*]x[list=1][*]y[/*][/list][/*][/list]"
+	},
+	{
+		"name": "url simple",
+		"text": "[url]http://example.test/page?a=1&b=2[/url]"
+	},
+	{
+		"name": "url avec libellé",
+		"text": "[url=https://example.test]Exemple[/url]"
+	},
+	{
+		"name": "url sans schéma",
+		"text": "[url]www.example.test[/url] [url]ftp.example.test[/url] [url]example.test[/url]"
+	},
+	{
+		"name": "url relative",
+		"text": "[url=/viewtopic.php?id=4]sujet[/url]"
+	},
+	{
+		"name": "url longue abrégée",
+		"text": "[url]http://example.test/un/chemin/tres/long/pour/verifier/la/troncature/du/libelle.html[/url]"
+	},
+	{
+		"name": "url javascript neutralisée",
+		"text": "[url=javascript:alert(1)]x[/url] [url]javascript:alert(1)[/url]"
+	},
+	{
+		"name": "url avec guillemets",
+		"text": "[url]http://a.test/?q=\"x\"[/url]"
+	},
+	{
+		"name": "image",
+		"text": "[img]http://example.test/photo.jpg[/img]"
+	},
+	{
+		"name": "image avec alt",
+		"text": "[img=Mon avion]https://example.test/a.png[/img]"
+	},
+	{
+		"name": "image refusée",
+		"text": "[img]javascript:alert(1)[/img] [img]/local.png[/img]"
+	},
+	{
+		"name": "image dans un lien",
+		"text": "[url=http://a.test][img]http://a.test/i.png[/img][/url]"
+	},
+	{
+		"name": "email",
+		"text": "[email]a@b.test[/email] [email=a@b.test]écrire[/email]"
+	},
+	{
+		"name": "acronym",
+		"text": "[acronym]ATC[/acronym] [acronym=Air Traffic Control]ATC[/acronym]"
+	},
+	{
+		"name": "q sup sub",
+		"text": "[q]cit[/q] m[sup]2[/sup] H[sub]2[/sub]O"
+	},
+	{
+		"name": "alignements",
+		"text": "[center]milieu[/center][right]droite[/right][left]gauche[/left][justify]j[/justify]"
+	},
+	{
+		"name": "émoticônes",
+		"text": "Salut :) :D ;) :lol: :cool: =| :P\n:(fin"
+	},
+	{
+		"name": "émoticônes collées",
+		"text": "http://a.test/:) a:) :)b (:))"
+	},
+	{
+		"name": "balise inconnue",
+		"text": "[foo]bar[/foo] [b]non fermé"
+	},
+	{
+		"name": "crochets seuls",
+		"text": "tableau[0] et [ ] vides"
+	},
+	{
+		"name": "spoiler",
+		"text": "[spoiler]la fin[/spoiler]"
+	},
+	{
+		"name": "vidéo youtube",
+		"text": "[video]https://www.youtube.com/watch?v=dQw4w9WgXcQ[/video]"
+	},
+	{
+		"name": "lien interne",
+		"text": "[topic]4[/topic] [post=12]message[/post]"
+	},
+	{
+		"name": "signature simple",
+		"text": "[b]sig[/b] :) [img]http://a.test/s.png[/img]",
+		"signature": true
+	},
+	{
+		"name": "signature sans listes ni code",
+		"text": "[list][*]x[/*][/list] [code]c[/code]",
+		"signature": true
+	},
+	{
+		"name": "citation non fermée",
+		"text": "[quote=A]sans fin"
+	},
+	{
+		"name": "citation fermée en trop",
+		"text": "texte[/quote] suite"
+	},
+	{
+		"name": "liste non fermée",
+		"text": "[list][*]a[/*]"
+	},
+	{
+		"name": "injection attribut acronym",
+		"text": "[acronym=\" onmouseover=\"alert(1)]x[/acronym]"
+	},
+	{
+		"name": "injection auteur citation",
+		"text": "[quote=\"><script>alert(1)</script>]x[/quote]"
+	},
+	{
+		"name": "injection image",
+		"text": "[img]http://a.test/x.png\" onerror=\"alert(1)[/img] [img=\" onerror=alert(1) x=]http://a.test/y.png[/img]"
+	},
+	{
+		"name": "injection url",
+		"text": "[url=http://a.test/\" onclick=\"alert(1)]x[/url] [url=data:text/html;base64,PHNjcmlwdD4=]d[/url]"
+	},
+	{
+		"name": "injection email",
+		"text": "[email]\"><script>x</script>@a.test[/email]"
+	},
+	{
+		"name": "marqueur interne",
+		"text": "a\u0001b [code]c[/code]"
+	}
+]

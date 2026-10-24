@@ -5,10 +5,42 @@
 
 import type { Generated } from 'kysely';
 
+/** Balises de sujet de PV (mod PunBalise : « [Réglé] », « [En cours] »…). */
+export interface BalisesTable {
+	id: Generated<number>;
+	nom: string;
+	couleur: string;
+	gras: number;
+	ital: number;
+	souli: number;
+	position: number;
+	/** 0 = [nom], 1 = *nom*, 2 = #nom#. */
+	baltype: number;
+}
+
+/**
+ * Balises posées sur les sujets : une ligne par sujet (npost = id du SUJET, en texte) et une colonne
+ * bal<id> (0/1) par balise. Colonnes dynamiques : lues avec selectAll() puis par leur nom.
+ */
+export interface BalisesModoTable {
+	npost: string;
+}
+
+export interface BansTable {
+	id: Generated<number>;
+	username: string | null;
+}
+
 export interface CategoriesTable {
 	id: Generated<number>;
 	cat_name: string;
 	disp_position: number;
+}
+
+export interface CensoringTable {
+	id: Generated<number>;
+	search_for: string;
+	replace_with: string;
 }
 
 export interface ConfigTable {
@@ -49,6 +81,7 @@ export interface GroupsTable {
 	g_search: number;
 	g_pm: number;
 	g_pm_limit: number;
+	g_rep_enable: number;
 }
 
 /** Messagerie privée (mod APMS) : une ligne par exemplaire d'un message, `owner` étant son détenteur. */
@@ -118,10 +151,20 @@ export interface UsersTable {
 	style: string;
 	use_pm: number;
 	num_pms: number;
+	show_smilies: number;
+	show_img: number;
+	show_img_sig: number;
+	rep_plus: number;
+	rep_minus: number;
+	reputation_enable: number;
 }
 
 export interface Database {
+	balises: BalisesTable;
+	balises_modo: BalisesModoTable;
+	bans: BansTable;
 	categories: CategoriesTable;
+	censoring: CensoringTable;
 	config: ConfigTable;
 	forums: ForumsTable;
 	forum_perms: ForumPermsTable;
@@ -135,7 +178,11 @@ export interface Database {
 }
 
 export const TABLE_NAMES: readonly (keyof Database)[] = [
+	'balises',
+	'balises_modo',
+	'bans',
 	'categories',
+	'censoring',
 	'config',
 	'forums',
 	'forum_perms',

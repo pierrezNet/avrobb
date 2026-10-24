@@ -20,5 +20,8 @@ export const topic = {
 	edit: 'Modifier',
 	quote: 'Citer',
 	re: 'Re\u00a0:',
-	wrote: (author: string) => `${author} a écrit\u00a0:`,
+	/** lang/French/reputation.php */
+	reputation: 'Renommée',
+	reputationPlus: 'Augmentation de renommée',
+	reputationMinus: 'Réduction de renommée',
 };

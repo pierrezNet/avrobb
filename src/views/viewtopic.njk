@@ -39,11 +39,20 @@
 			{% if post.numPosts !== null %}<div><dt>{{ lang.topic.posts }}</dt> <dd>{{ post.numPosts }}</dd></div>{% endif %}
 			{% if post.adminNote %}<div><dt>{{ lang.topic.note }}</dt> <dd><strong>{{ post.adminNote }}</strong></dd></div>{% endif %}
 		</dl>
-		{% if post.ip or post.emailUrl or post.websiteUrl %}
+		{% if post.reputation %}
+		<p class="post__reputation">
+			<a href="{{ url(post.reputation.href) }}">{{ lang.topic.reputation }}</a>&#160;:
+			{% if post.reputation.vote %}<a class="post__vote" href="{{ url(post.reputation.vote.plusUrl) }}" title="{{ lang.topic.reputationPlus }}" aria-label="{{ lang.topic.reputationPlus }}">+</a>{% endif %}
+			<strong>{{ post.reputation.score }}</strong>
+			{% if post.reputation.vote %}<a class="post__vote" href="{{ url(post.reputation.vote.minusUrl) }}" title="{{ lang.topic.reputationMinus }}" aria-label="{{ lang.topic.reputationMinus }}">−</a>{% endif %}
+		</p>
+		{% endif %}
+		{% if post.ip or post.contacts.length %}
 		<ul class="post__contacts">
 			{% if post.ip %}<li><a href="{{ url(post.ip.href) }}" title="{{ post.ip.address }}">{{ lang.topic.ipAddressLogged }}</a></li>{% endif %}
-			{% if post.emailUrl %}<li><a href="{{ url(post.emailUrl) }}">{{ lang.topic.email }}</a></li>{% endif %}
-			{% if post.websiteUrl %}<li><a href="{{ post.websiteUrl }}" rel="nofollow ugc">{{ lang.topic.website }}</a></li>{% endif %}
+			{% for contact in post.contacts %}
+			<li class="{{ contact.kind }}"><a href="{{ contact.href if contact.external else url(contact.href) }}"{% if contact.external %} rel="nofollow ugc"{% endif %}>{% if contact.abbrTitle %}<abbr title="{{ contact.abbrTitle }}">{{ contact.label }}</abbr>{% else %}{{ contact.label }}{% endif %}</a></li>
+			{% endfor %}
 		</ul>
 		{% endif %}
 	</div>

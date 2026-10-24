@@ -71,3 +71,16 @@ export function canUsePrivateMessages(viewer: Viewer, config: BoardConfig): bool
 export function canSearch(viewer: Viewer): boolean {
 	return viewer.group.canReadBoard && viewer.group.canSearch;
 }
+
+/**
+ * Renommée affichée sous un auteur (include/reputation/rep_viewtopic.php). Le PHP teste aussi
+ * $pun_user['reputation_enable_adm'], colonne absente du schéma connu : considérée comme activée.
+ */
+export function canSeeReputation(viewer: Viewer, config: BoardConfig, author: { reputationEnabled: boolean }): boolean {
+	return config.reputationEnabled && viewer.group.canUseReputation && viewer.reputationEnabled && author.reputationEnabled;
+}
+
+/** Vote de renommée : ni les invités, ni l'auteur lui-même (comparaison des pseudos, comme le PHP). */
+export function canVoteReputation(viewer: Viewer, authorUsername: string): boolean {
+	return !viewer.isGuest && viewer.username !== authorUsername;
+}

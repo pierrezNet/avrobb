@@ -30,14 +30,14 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
 
 ## Lot 1 — Lecture publique
 
-- [ ] **viewtopic** : terminer le POC
-  - [ ] BBCode complet (`include/parser.php`) : listes, couleurs, citations imbriquées, code, img, url, email
-  - [ ] Smileys (`smilies`) et censure (`censoring`)
-  - [ ] Balises propres à PV (`balises`, `balises_modo`, `balises.php`) **(PV)**
-  - [ ] Rangs et titre des bannis (`get_title()` complet)
-  - [ ] Affichage de la réputation sous l'auteur (`include/reputation/rep_viewtopic.php`) **(PV)**
-  - [ ] Affichage du sondage du sujet **(PV)**
-  - [ ] Pièces jointes et uploads affichés **(PV)**
+- [x] **viewtopic** : terminer le POC
+  - [x] BBCode complet (`include/parser.php`) : parité vérifiée contre le vrai parseur PHP (`npm run bbcode:reference`)
+  - [x] Smileys en émojis Unicode (décision du 24/10/2026, pas d'images) et censure (`censoring`)
+  - [x] Balises propres à PV (`balises`, `balises_modo`) en préfixe du sujet **(PV)**
+  - [x] Titre des bannis (`get_title()` complet ; FluxBB 1.5 n'a plus de rangs)
+  - [x] Affichage de la réputation sous l'auteur (`include/reputation/rep_viewtopic.php`) et lien MP (APMS) **(PV)**
+  - [x] ~~Affichage du sondage du sujet~~ : sans objet, PV n'affiche aucun sondage (`AP_Sondage` est un reste sans table ni affichage)
+  - [x] ~~Pièces jointes~~ : sans objet, les uploads sont insérés par `[img]`/`[url]` (gestionnaire : lot 5)
 - [ ] **index** : catégories, forums, derniers messages, statistiques, utilisateurs en ligne (nouveau gabarit en `<div>`)
 - [ ] **viewforum** : liste des sujets, pagination, épinglés, déplacés, icônes lu/non lu (lecture seule)
 - [ ] **userlist** : recherche, tri, pagination

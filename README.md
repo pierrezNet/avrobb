@@ -41,8 +41,11 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
 ## Écarts connus avec FluxBB
 
 - Pas d'écriture : ni compteur de vues, ni suivi des sujets lus (`action=new` va au dernier message).
-- BBCode partiel (pas de listes, smilies, censure, balises propres à PiloteVirtuel).
-- Pas de rangs ni de bannis dans le titre des membres, pas de réponse rapide.
+- BBCode : écarts volontaires listés en tête de `src/services/bbcode.ts` (émojis au lieu des images,
+  `[video]` en lecteur intégré, `[spoiler]` en `<details>`, liens `[topic]`… corrigés, balises
+  déséquilibrées laissées en texte). Tout le reste est comparé au parseur PHP (`tests/bbcode/`).
+- Renommée : la condition PHP sur `reputation_enable_adm` (colonne absente du schéma local) est ignorée.
+- Site web du profil : préfixé de `http://` s'il n'a pas de schéma (le PHP laissait passer `javascript:`).
 - Textes en français seulement.
 - Liens de modération du pied de page affichés : PV les masque visuellement (`sr-only`) sans autre accès.
 - Balises PV réservées aux modérateurs (`balises_modo`) absentes du pied de viewtopic → lot Modération.

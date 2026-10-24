@@ -14,8 +14,11 @@ import type { BoardConfig, Viewer } from './domain/models.ts';
 import { ASSETS_PREFIX, createAssetUrl } from './http/assets.ts';
 import { type LayoutDeps, renderMessage, renderMinimalMessage } from './http/layout.ts';
 import { resolveViewer } from './http/session.ts';
+import type { BanReader } from './repositories/BanRepository.ts';
+import type { CensorReader } from './repositories/CensorRepository.ts';
 import type { ConfigReader } from './repositories/ConfigLoader.ts';
 import type { PostReader } from './repositories/PostRepository.ts';
+import type { TopicLabelReader } from './repositories/TopicLabelRepository.ts';
 import type { TopicReader } from './repositories/TopicRepository.ts';
 import type { UserReader } from './repositories/UserRepository.ts';
 import type { AvatarLocator } from './services/avatars.ts';
@@ -35,6 +38,9 @@ export interface AppDeps extends LayoutDeps {
 	topics: TopicReader;
 	posts: PostReader;
 	avatars: AvatarLocator;
+	bans: BanReader;
+	censorship: CensorReader;
+	topicLabels: TopicLabelReader;
 	legacyCookie: { name: string; seed: string };
 	/** URL de l'installation PHP : les liens vers les pages non portées y renvoient. */
 	legacyBaseUrl: string;

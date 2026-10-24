@@ -130,3 +130,56 @@ describe('gestion des erreurs', () => {
 		expect(res.body).toContain('Le lien que vous avez suivi est incorrect');
 	});
 });
+
+describe('viewtopic : contenu propre à PV', () => {
+	const label = { id: 1, name: 'Réglé', style: 'brackets' as const, color: '#00AA00', bold: true, italic: false, underline: false };
+
+	it('préfixe le sujet de ses balises et applique la censure partout', async () => {
+		app = await buildApp(
+			fakeDeps(
+				data({
+					topics: [topic({ id: 10, subject: 'Panne de zut' })],
+					posts: new Map([
+						[10, [post(100, { message: 'zut alors :)', author: { ...post(1).author!, location: 'Zutville', title: 'zut' } })]],
+					]),
+					config: { censoring: true },
+					censoredWords: [{ searchFor: 'zut', replaceWith: '***' }],
+					topicLabels: new Map([[10, [label]]]),
+				}),
+			),
+		);
+
+		const res = await app.inject('/viewtopic.php?id=10');
+		expect(res.body).toContain('<title>[Réglé] Panne de *** (Page 1) / Forum / Forum de test</title>');
+		expect(res.body).toContain('<h1 class="page-title">[Réglé] Panne de ***</h1>');
+		expect(res.body).toContain('*** alors <span class="smiley" role="img" aria-label="smile">🙂</span>');
+		expect(res.body).toContain('<p class="post__usertitle">***</p>');
+		expect(res.body).not.toContain('zut');
+	});
+
+	it('titre « En vacances » des bannis, renommée et lien MP', async () => {
+		app = await buildApp(
+			fakeDeps(
+				data({
+					posts: new Map([
+						[10, [post(100, { author: { ...post(1).author!, reputationPlus: 5, reputationMinus: 2, url: 'javascript:alert(1)' } })]],
+					]),
+					bannedUsernames: ['tessy'],
+					config: { reputationEnabled: true, privateMessagesEnabled: true },
+				}),
+			),
+		);
+
+		const asAdmin = await app.inject({ url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(2, 'hash-admin') } });
+		expect(asAdmin.body).toContain('<p class="post__usertitle">En vacances</p>');
+		expect(asAdmin.body).toContain('<strong>3</strong>');
+		expect(asAdmin.body).toContain('reputation.php?pid=100&amp;uid=3&amp;method=1');
+		expect(asAdmin.body).toContain('pms_send.php?uid=3');
+		expect(asAdmin.body).toContain('href="http://javascript:alert(1)"');
+
+		// L'auteur voit sa renommée mais ne peut pas voter pour lui-même.
+		const asAuthor = await app.inject({ url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(3, 'hash-tessy') } });
+		expect(asAuthor.body).toContain('<strong>3</strong>');
+		expect(asAuthor.body).not.toContain('method=1');
+	});
+});

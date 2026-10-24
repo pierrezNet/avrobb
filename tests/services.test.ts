@@ -4,39 +4,12 @@ import { type Database, TABLE_NAMES } from '../src/db/schema.ts';
 import { TablePrefixPlugin } from '../src/db/TablePrefixPlugin.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { frDateWords } from '../src/lang/fr/index.ts';
-import { parseBbcode } from '../src/services/bbcode.ts';
 import { formatTime, viewerTimeSettings } from '../src/services/dateFormat.ts';
 import { forumHmac, isCookiePasswordValid, isCookieSignatureValid, parseLegacyCookie } from '../src/services/legacySession.ts';
 import { clampPage, paginate } from '../src/services/pagination.ts';
 import { canReply, postActions } from '../src/services/permissions.ts';
 import { parseModerators } from '../src/services/phpSerialize.ts';
 import { group, guest, topic, viewer } from './fixtures.ts';
-
-describe('parseBbcode', () => {
-	const parse = (text: string) => parseBbcode(text, { bbcode: true, showImages: true });
-
-	it('échappe le HTML avant de reconnaître les balises', () => {
-		expect(parse('<b onclick="x">a</b> [b]b[/b]')).toBe('<p>&lt;b onclick=&quot;x&quot;&gt;a&lt;/b&gt; <strong>b</strong></p>');
-	});
-
-	it('refuse les schémas dangereux dans [url] et [img]', () => {
-		expect(parse('[url=javascript:alert(1)]x[/url]')).not.toContain('href');
-		expect(parse('[img]javascript:alert(1)[/img]')).not.toContain('<img');
-		expect(parse('[url]http://a.test/?q="x"[/url]')).toContain('href="http://a.test/?q=&quot;x&quot;"');
-		expect(parse('[color=red;background:url(x)]t[/color]')).not.toContain('style');
-	});
-
-	it('gère les citations imbriquées et le code non interprété', () => {
-		const html = parse('[quote=Tessy][quote]a[/quote]b[/quote]\n[code][b]brut[/b] <x>[/code]');
-		expect(html).toContain('<cite>Tessy a écrit :</cite>');
-		expect(html.match(/class="quotebox"/g)).toHaveLength(2);
-		expect(html).toContain('<pre><code>[b]brut[/b] &lt;x&gt;</code></pre>');
-	});
-
-	it('découpe les paragraphes sur les lignes vides', () => {
-		expect(parse('a\nb\n\nc')).toBe('<p>a<br />b</p><p>c</p>');
-	});
-});
 
 describe('parseModerators', () => {
 	it('lit le tableau sérialisé par PHP, longueurs en octets', () => {

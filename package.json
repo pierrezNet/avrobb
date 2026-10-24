@@ -18,7 +18,8 @@
 		"check": "biome check . && tsc --noEmit && vitest run",
 		"screenshot": "tsx scripts/screenshot.ts",
 		"test:db": "vitest run --config vitest.db.config.ts",
-		"parity": "tsx scripts/parity.ts"
+		"parity": "tsx scripts/parity.ts",
+		"bbcode:reference": "tsx scripts/bbcode-reference.ts"
 	},
 	"dependencies": {
 		"@fastify/cookie": "^11.1.3",

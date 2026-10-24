@@ -465,6 +465,24 @@ a.site-status__alert {
 	margin: 0;
 }
 
+.post__reputation {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.25rem;
+	margin: 0;
+}
+
+.post__vote {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 2.75rem;
+	min-height: 2.75rem;
+	font-weight: 700;
+	text-decoration: none;
+}
+
 .post__contacts {
 	display: flex;
 	flex-wrap: wrap;
@@ -607,6 +625,85 @@ a.site-status__alert {
 	background: var(--color-code-bg);
 	font-size: 0.875rem;
 	overflow-x: auto;
+	tab-size: 4;
+}
+
+.bbcode .postimg img,
+.bbcode .sigimage {
+	max-width: 100%;
+	height: auto;
+}
+
+.bbcode pre.vscroll {
+	max-height: 35em;
+	overflow-y: auto;
+}
+
+.bbcode ul,
+.bbcode ol {
+	margin: 0 0 0.75rem;
+	padding-left: 1.5rem;
+}
+
+.bbcode li p {
+	margin: 0;
+}
+
+.bbcode ol.alpha {
+	list-style-type: lower-alpha;
+}
+
+.bbcode ol.decimal {
+	list-style-type: decimal;
+}
+
+.bbcode .bbcode-left {
+	text-align: left;
+}
+
+.bbcode .bbcode-right {
+	text-align: right;
+}
+
+.bbcode .bbcode-center {
+	text-align: center;
+}
+
+.bbcode .bbcode-justify {
+	text-align: justify;
+}
+
+.bbcode .smiley {
+	font-size: 1.2em;
+	line-height: 1;
+}
+
+.bbcode .spoiler {
+	margin: 0.75rem 0;
+	padding: 0.5rem 0.75rem;
+	border: 1px dashed var(--color-border);
+	border-radius: 0.25rem;
+}
+
+.bbcode .spoiler summary {
+	min-height: 2.75rem;
+	display: flex;
+	align-items: center;
+	font-weight: 700;
+	cursor: pointer;
+}
+
+/* Lecteur vidéo intégré : 16/9, jamais plus large que le message. */
+.bbcode .video {
+	max-width: 40rem;
+	margin: 0.75rem 0;
+	aspect-ratio: 16 / 9;
+}
+
+.bbcode .video iframe {
+	width: 100%;
+	height: 100%;
+	border: 0;
 }
 
 /* ---------- Pages d'information ---------- */
@@ -723,6 +820,24 @@ a.site-status__alert {
 
 	.post__details {
 		flex-direction: column;
+	}
+
+	.post__reputation {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.25rem;
+		margin: 0;
+	}
+
+	.post__vote {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 2.75rem;
+		min-height: 2.75rem;
+		font-weight: 700;
+		text-decoration: none;
 	}
 
 	.post__contacts {

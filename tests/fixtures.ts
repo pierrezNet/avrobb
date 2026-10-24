@@ -3,10 +3,20 @@
  */
 
 import type { AppDeps } from '../src/app.ts';
-import { type BoardConfig, type ForumCategory, type Group, GroupId, type Post, type Topic, type Viewer } from '../src/domain/models.ts';
+import {
+	type BoardConfig,
+	type ForumCategory,
+	type Group,
+	GroupId,
+	type Post,
+	type Topic,
+	type TopicLabel,
+	type Viewer,
+} from '../src/domain/models.ts';
 import { fr, frDateWords } from '../src/lang/fr/index.ts';
 import type { PostLocation } from '../src/repositories/TopicRepository.ts';
 import type { ViewerRecord } from '../src/repositories/UserRepository.ts';
+import type { CensoredWord } from '../src/services/censor.ts';
 
 export const NOW = 1_782_900_000;
 
@@ -27,6 +37,7 @@ export function group(overrides: Partial<Group> = {}): Group {
 		canSearch: true,
 		canUsePrivateMessages: true,
 		privateMessageLimit: 0,
+		canUseReputation: true,
 		...overrides,
 	};
 }
@@ -46,6 +57,10 @@ export function viewer(overrides: Partial<Viewer> = {}): Viewer {
 		style: 'Air',
 		usesPrivateMessages: true,
 		privateMessageCount: 0,
+		showSmilies: true,
+		showImages: true,
+		showSignatureImages: true,
+		reputationEnabled: true,
 		...overrides,
 	};
 }
@@ -103,6 +118,10 @@ export function post(id: number, overrides: Partial<Post> = {}): Post {
 			groupId: GroupId.Member,
 			groupUserTitle: '',
 			isOnline: false,
+			acceptsPrivateMessages: true,
+			reputationPlus: 0,
+			reputationMinus: 0,
+			reputationEnabled: true,
 		},
 		...overrides,
 	};
@@ -131,6 +150,14 @@ export const boardConfig: BoardConfig = {
 	feedType: 'atom',
 	shownVersion: null,
 	privateMessagesEnabled: false,
+	smilies: true,
+	signatureSmilies: true,
+	censoring: false,
+	signatureBbcode: true,
+	signatureImgTag: false,
+	baseUrl: 'http://forum.test',
+	indentSpaces: 4,
+	reputationEnabled: false,
 };
 
 export const forumCategories: ForumCategory[] = [
@@ -149,6 +176,10 @@ export interface FakeData {
 	pendingReports?: boolean;
 	/** MP non lus par membre. */
 	unreadPrivateMessages?: Map<number, number>;
+	bannedUsernames?: string[];
+	censoredWords?: CensoredWord[];
+	/** Balises PV posées, par sujet. */
+	topicLabels?: Map<number, TopicLabel[]>;
 }
 
 export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppDeps {
@@ -175,6 +206,11 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 		reports: { hasPending: async () => data.pendingReports ?? false },
 		privateMessages: { countUnread: async (userId) => data.unreadPrivateMessages?.get(userId) ?? 0 },
 		avatars: { urlFor: async () => null },
+		bans: { listBannedUsernames: async () => new Set(data.bannedUsernames ?? []) },
+		censorship: { listWords: async () => data.censoredWords ?? [] },
+		topicLabels: {
+			listForTopics: async (ids) => new Map([...(data.topicLabels ?? [])].filter(([id]) => ids.includes(id))),
+		},
 		page: { lang: fr, dateWords: frDateWords, clock: () => NOW },
 		legacyCookie: { name: 'punbb_cookie', seed: 'graine-de-test' },
 		legacyBaseUrl: 'http://php.test',

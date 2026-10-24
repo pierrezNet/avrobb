@@ -39,6 +39,11 @@ export class PostRepository implements PostReader {
 				'u.num_posts',
 				'u.registered',
 				'u.admin_note',
+				'u.use_pm',
+				'u.rep_plus',
+				'u.rep_minus',
+				'u.reputation_enable',
+				'g.g_pm',
 				'g.g_id',
 				'g.g_user_title',
 				'o.user_id as online_user_id',
@@ -76,6 +81,10 @@ export class PostRepository implements PostReader {
 							groupId: row.g_id,
 							groupUserTitle: row.g_user_title ?? '',
 							isOnline: row.online_user_id === row.poster_id,
+							acceptsPrivateMessages: row.use_pm === 1 && row.g_pm === 1,
+							reputationPlus: row.rep_plus,
+							reputationMinus: row.rep_minus,
+							reputationEnabled: row.reputation_enable === 1,
 						},
 		}));
 	}

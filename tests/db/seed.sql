@@ -70,3 +70,17 @@ INSERT INTO fo_messages (shared_id, owner, subject, showed, show_message) VALUES
 	(3, 3, 'Lu', 1, 1),
 	(4, 3, 'Supprimé', 0, 0),
 	(1, 2, 'Bonjour', 0, 1);
+
+-- Balises PV : « [Réglé] » et « #En cours# » posées sur le sujet 10, aucune sur le 11.
+ALTER TABLE fo_balises_modo ADD COLUMN bal3 tinyint(1) NOT NULL DEFAULT 0;
+INSERT INTO fo_balises (id, nom, couleur, gras, ital, souli, position, baltype, affich) VALUES
+	(1, 'Réglé', '#00AA00', 1, 0, 0, 2, 0, 1),
+	(2, 'En cours', '#FF9900', 0, 1, 0, 1, 2, 1),
+	(3, 'Archivé', '#999999', 0, 0, 0, 3, 1, 1);
+INSERT INTO fo_balises_modo (npost, bal1, bal2, bal3) VALUES ('10', 1, 1, 0), ('11', 0, 0, 0);
+
+INSERT INTO fo_bans (username, ip, email, message, expire, ban_creator) VALUES
+	('MaxDUO', NULL, NULL, NULL, 1700000000, 2),
+	(NULL, '192.0.2.66', NULL, NULL, NULL, 2);
+
+INSERT INTO fo_censoring (search_for, replace_with) VALUES ('zut', '***'), ('flûte*', '[censuré]');

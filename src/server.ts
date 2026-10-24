@@ -8,6 +8,8 @@ import { buildApp } from './app.ts';
 import { loadConfig } from './config.ts';
 import { createDatabase } from './db/database.ts';
 import { fr, frDateWords } from './lang/fr/index.ts';
+import { BanRepository } from './repositories/BanRepository.ts';
+import { CensorRepository } from './repositories/CensorRepository.ts';
 import { ConfigLoader } from './repositories/ConfigLoader.ts';
 import { ConfigRepository } from './repositories/ConfigRepository.ts';
 import { ForumRepository } from './repositories/ForumRepository.ts';
@@ -15,6 +17,7 @@ import { PhpCacheFiles } from './repositories/PhpCacheFiles.ts';
 import { PostRepository } from './repositories/PostRepository.ts';
 import { PrivateMessageRepository } from './repositories/PrivateMessageRepository.ts';
 import { ReportRepository } from './repositories/ReportRepository.ts';
+import { TopicLabelRepository } from './repositories/TopicLabelRepository.ts';
 import { TopicRepository } from './repositories/TopicRepository.ts';
 import { UserRepository } from './repositories/UserRepository.ts';
 import { FileAvatarLocator } from './services/avatars.ts';
@@ -32,6 +35,9 @@ const app = await buildApp({
 	forums: new ForumRepository(db),
 	reports: new ReportRepository(db),
 	privateMessages: new PrivateMessageRepository(db),
+	bans: new BanRepository(db),
+	censorship: new CensorRepository(db),
+	topicLabels: new TopicLabelRepository(db),
 	avatars: new FileAvatarLocator(config.legacyRoot, config.legacyBaseUrl),
 	page: { lang: fr, dateWords: frDateWords, clock },
 	legacyCookie: config.legacyCookie,

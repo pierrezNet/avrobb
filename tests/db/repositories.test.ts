@@ -9,12 +9,15 @@ import { buildApp } from '../../src/app.ts';
 import { createDatabase } from '../../src/db/database.ts';
 import { GroupId } from '../../src/domain/models.ts';
 import { fr, frDateWords } from '../../src/lang/fr/index.ts';
+import { BanRepository } from '../../src/repositories/BanRepository.ts';
+import { CensorRepository } from '../../src/repositories/CensorRepository.ts';
 import { ConfigLoader } from '../../src/repositories/ConfigLoader.ts';
 import { ConfigRepository } from '../../src/repositories/ConfigRepository.ts';
 import { ForumRepository } from '../../src/repositories/ForumRepository.ts';
 import { PostRepository } from '../../src/repositories/PostRepository.ts';
 import { PrivateMessageRepository } from '../../src/repositories/PrivateMessageRepository.ts';
 import { ReportRepository } from '../../src/repositories/ReportRepository.ts';
+import { TopicLabelRepository } from '../../src/repositories/TopicLabelRepository.ts';
 import { TopicRepository } from '../../src/repositories/TopicRepository.ts';
 import { UserRepository } from '../../src/repositories/UserRepository.ts';
 import { forumHmac } from '../../src/services/legacySession.ts';
@@ -127,6 +130,29 @@ describe('ReportRepository et PrivateMessageRepository', () => {
 	});
 });
 
+describe('balises, bannissements, censure', () => {
+	it('lit les balises posées sur les sujets, par colonne bal<id>, dans l’ordre des positions', async () => {
+		const labels = await new TopicLabelRepository(db).listForTopics([10, 11, 999]);
+		expect([...labels.keys()]).toEqual([10]);
+		expect(labels.get(10)?.map((l) => [l.name, l.style, l.bold])).toEqual([
+			['En cours', 'hashes', false],
+			['Réglé', 'brackets', true],
+		]);
+		expect((await new TopicLabelRepository(db).listForTopics([])).size).toBe(0);
+	});
+
+	it('liste les pseudos bannis en minuscules, expirés compris', async () => {
+		expect(await new BanRepository(db).listBannedUsernames()).toEqual(new Set(['maxduo']));
+	});
+
+	it('liste les mots censurés', async () => {
+		expect(await new CensorRepository(db).listWords()).toEqual([
+			{ searchFor: 'zut', replaceWith: '***' },
+			{ searchFor: 'flûte*', replaceWith: '[censuré]' },
+		]);
+	});
+});
+
 describe('ConfigLoader sur la table config', () => {
 	it('lit et convertit les options, NULL compris', async () => {
 		const loader = new ConfigLoader(new ConfigRepository(db), null, () => NOW);
@@ -156,6 +182,9 @@ describe('viewtopic de bout en bout', () => {
 			forums: new ForumRepository(db),
 			reports: new ReportRepository(db),
 			privateMessages: new PrivateMessageRepository(db),
+			bans: new BanRepository(db),
+			censorship: new CensorRepository(db),
+			topicLabels: new TopicLabelRepository(db),
 			avatars: { urlFor: async () => null },
 			page: { lang: fr, dateWords: frDateWords, clock: () => NOW },
 			legacyCookie: { name: 'punbb_cookie', seed },
@@ -169,7 +198,9 @@ describe('viewtopic de bout en bout', () => {
 		await server.close();
 
 		expect(res.statusCode).toBe(200);
-		expect(res.body).toContain('<title>Postez un « vintage » (Page 2) / Captures d&#39;écran &amp; Vidéos / Forum de test</title>');
+		expect(res.body).toContain(
+			'<title>[Réglé] #En cours# Postez un « vintage » (Page 2) / Captures d&#39;écran &amp; Vidéos / Forum de test</title>',
+		);
 		expect(res.body).toContain('themes/GreenDark.css');
 		expect(res.body).toContain('id="p101"');
 		expect(res.body).not.toContain('id="p100"');

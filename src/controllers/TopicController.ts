@@ -6,9 +6,13 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { buildTopicPage, topicUrl } from '../presenters/topicPage.ts';
+import type { BanReader } from '../repositories/BanRepository.ts';
+import type { CensorReader } from '../repositories/CensorRepository.ts';
 import type { PostReader } from '../repositories/PostRepository.ts';
+import type { TopicLabelReader } from '../repositories/TopicLabelRepository.ts';
 import type { TopicReader } from '../repositories/TopicRepository.ts';
 import type { AvatarLocator } from '../services/avatars.ts';
+import { buildCensor } from '../services/censor.ts';
 import { clampPage, pageCount } from '../services/pagination.ts';
 import { positiveInt } from './params.ts';
 
@@ -16,6 +20,9 @@ export interface TopicControllerDeps extends LayoutDeps {
 	topics: TopicReader;
 	posts: PostReader;
 	avatars: AvatarLocator;
+	bans: BanReader;
+	censorship: CensorReader;
+	topicLabels: TopicLabelReader;
 }
 
 export interface TopicQuery {
@@ -56,7 +63,12 @@ export class TopicController {
 		const page = clampPage(request.query.p, numPages);
 		const offset = (page - 1) * perPage;
 
-		const posts = await this.deps.posts.listPage(topic.id, offset, perPage);
+		const [posts, labels, bannedUsernames, censoredWords] = await Promise.all([
+			this.deps.posts.listPage(topic.id, offset, perPage),
+			this.deps.topicLabels.listForTopics([topic.id]),
+			this.deps.bans.listBannedUsernames(),
+			config.censoring ? this.deps.censorship.listWords() : [],
+		]);
 
 		const avatars = new Map<number, string | null>();
 		if (config.avatars && viewer.showAvatars) {
@@ -70,11 +82,14 @@ export class TopicController {
 			viewer,
 			config,
 			topic,
+			labels: labels.get(topic.id) ?? [],
 			posts,
 			page,
 			numPages,
 			firstPosition: offset + 1,
 			avatars,
+			bannedUsernames,
+			censor: config.censoring ? buildCensor(censoredWords) : null,
 			lang,
 			dateWords: this.deps.page.dateWords,
 			now: this.deps.page.clock(),
@@ -87,7 +102,7 @@ export class TopicController {
 			'viewtopic.njk',
 			{
 				pageId: 'viewtopic',
-				titleParts: [config.boardTitle, topic.forum.name, topic.subject],
+				titleParts: [config.boardTitle, topic.forum.name, view.topic.subject],
 				pageNumber: page,
 				activeNav: 'index',
 				footer: { kind: 'viewtopic', topic, page },

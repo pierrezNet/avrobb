@@ -37,5 +37,13 @@ export function toBoardConfig(values: ReadonlyMap<string, string>): BoardConfig 
 		feedType: FEED_TYPES[text('o_feed_type')] ?? 'none',
 		shownVersion: flag('o_show_version') ? text('o_cur_version') : null,
 		privateMessagesEnabled: flag('o_pms_enabled'),
+		smilies: flag('o_smilies'),
+		signatureSmilies: flag('o_smilies_sig'),
+		censoring: flag('o_censoring'),
+		signatureBbcode: flag('p_sig_bbcode'),
+		signatureImgTag: flag('p_sig_img_tag'),
+		baseUrl: text('o_base_url').replace(/\/$/, ''),
+		indentSpaces: Number(text('o_indent_num_spaces', '4')) || 0,
+		reputationEnabled: flag('o_reputation_enabled'),
 	};
 }

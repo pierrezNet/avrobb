@@ -36,6 +36,10 @@ export class UserRepository implements UserReader {
 				'u.style',
 				'u.use_pm',
 				'u.num_pms',
+				'u.show_smilies',
+				'u.show_img',
+				'u.show_img_sig',
+				'u.reputation_enable',
 				'g.g_id',
 				'g.g_title',
 				'g.g_user_title',
@@ -51,6 +55,7 @@ export class UserRepository implements UserReader {
 				'g.g_search',
 				'g.g_pm',
 				'g.g_pm_limit',
+				'g.g_rep_enable',
 			])
 			.where('u.id', '=', userId)
 			.executeTakeFirst();
@@ -73,6 +78,7 @@ export class UserRepository implements UserReader {
 			canSearch: row.g_search === 1,
 			canUsePrivateMessages: row.g_pm === 1,
 			privateMessageLimit: row.g_pm_limit,
+			canUseReputation: row.g_rep_enable === 1,
 		};
 
 		return {
@@ -91,6 +97,10 @@ export class UserRepository implements UserReader {
 				style: row.style,
 				usesPrivateMessages: row.use_pm === 1,
 				privateMessageCount: row.num_pms,
+				showSmilies: row.show_smilies === 1,
+				showImages: row.show_img === 1,
+				showSignatureImages: row.show_img_sig === 1,
+				reputationEnabled: row.reputation_enable === 1,
 			},
 		};
 	}

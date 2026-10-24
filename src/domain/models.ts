@@ -30,6 +30,8 @@ export interface Group {
 	canUsePrivateMessages: boolean;
 	/** Nombre maximal de MP conservés (g_pm_limit) ; 0 = illimité. */
 	privateMessageLimit: number;
+	/** Renommée (mod Reputation) accessible au groupe (g_rep_enable). */
+	canUseReputation: boolean;
 }
 
 /** Utilisateur qui consulte la page (invité ou membre connecté). */
@@ -52,6 +54,12 @@ export interface Viewer {
 	usesPrivateMessages: boolean;
 	/** MP conservés dans ses boîtes (users.num_pms). */
 	privateMessageCount: number;
+	/** Préférences d'affichage : émoticônes, images des messages, images des signatures. */
+	showSmilies: boolean;
+	showImages: boolean;
+	showSignatureImages: boolean;
+	/** Le membre participe à la renommée (users.reputation_enable). */
+	reputationEnabled: boolean;
 }
 
 export interface Forum {
@@ -88,6 +96,12 @@ export interface PostAuthor {
 	groupId: number;
 	groupUserTitle: string;
 	isOnline: boolean;
+	/** Messagerie privée activée par le membre (use_pm) et autorisée à son groupe (g_pm). */
+	acceptsPrivateMessages: boolean;
+	/** Renommée : votes positifs et négatifs reçus, et participation du membre. */
+	reputationPlus: number;
+	reputationMinus: number;
+	reputationEnabled: boolean;
 }
 
 export interface Post {
@@ -135,6 +149,30 @@ export interface BoardConfig {
 	/** Version de FluxBB affichée dans « Propulsé par » ; null si o_show_version est désactivé. */
 	shownVersion: string | null;
 	privateMessagesEnabled: boolean;
+	/** Émoticônes dans les messages (o_smilies) et dans les signatures (o_smilies_sig). */
+	smilies: boolean;
+	signatureSmilies: boolean;
+	censoring: boolean;
+	/** BBCode et balise [img] dans les signatures (p_sig_bbcode, p_sig_img_tag). */
+	signatureBbcode: boolean;
+	signatureImgTag: boolean;
+	/** o_base_url, sans « / » final. */
+	baseUrl: string;
+	/** o_indent_num_spaces : espaces remplaçant une tabulation hors [code]. */
+	indentSpaces: number;
+	reputationEnabled: boolean;
+}
+
+/** Balise de sujet de PV (« [Réglé] »…), posée par les modérateurs. */
+export interface TopicLabel {
+	id: number;
+	name: string;
+	/** Forme du préfixe : [nom], *nom* ou #nom# (balises.baltype). */
+	style: 'brackets' | 'stars' | 'hashes';
+	color: string;
+	bold: boolean;
+	italic: boolean;
+	underline: boolean;
 }
 
 /** Forum proposé dans la liste « Atteindre » du pied de page. */

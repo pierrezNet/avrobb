@@ -27,6 +27,13 @@ export const common = {
 	pages: 'Pages',
 	page: (n: number) => `Page ${n}`,
 
+	// BBCode (include/parser.php)
+	wrote: (author: string) => `${author} a écrit\u00a0:`,
+	imageLink: 'image',
+	/** Absents de FluxBB : libellés du spoiler (mod Spoiler) et du lecteur vidéo intégré. */
+	spoiler: 'Spoiler',
+	video: 'Vidéo',
+
 	// Titres
 	member: 'Membre',
 	moderator: 'Modérateur',

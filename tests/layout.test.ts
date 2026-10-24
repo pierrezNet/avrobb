@@ -21,6 +21,7 @@ function input(overrides: Partial<LayoutInput> = {}): LayoutInput {
 		dateWords: frDateWords,
 		now: NOW,
 		remoteAddress: '127.0.0.1',
+		csrfToken: 'jeton',
 		options: { pageId: 'test', titleParts: ['Forum', 'Page'] },
 		pendingReports: false,
 		unreadPrivateMessages: 0,

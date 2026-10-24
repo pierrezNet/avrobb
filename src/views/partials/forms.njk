@@ -1,0 +1,15 @@
+{#- Éléments communs des formulaires. -#}
+
+{#- Jeton CSRF (http/csrf.ts), obligatoire dans tout formulaire POST. -#}
+{% macro csrf(layout) %}<input type="hidden" name="csrf_token" value="{{ layout.csrfToken }}">{% endmacro %}
+
+{#- Liste d'erreurs de validation, comme le bloc #posterror du PHP. -#}
+{% macro errors(title, intro, items) %}
+{% if items.length %}
+<section class="form-errors" id="posterror" role="alert" aria-labelledby="posterror-title">
+	<h2 id="posterror-title" class="form-errors__title">{{ title }}</h2>
+	<p>{{ intro }}</p>
+	<ul>{% for item in items %}<li><strong>{{ item }}</strong></li>{% endfor %}</ul>
+</section>
+{% endif %}
+{% endmacro %}

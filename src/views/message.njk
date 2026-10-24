@@ -4,7 +4,7 @@
 {% block main %}
 <section class="message-box" id="msg" aria-labelledby="msg-title">
 	<h1 id="msg-title" class="message-box__title">{{ lang.common.info }}</h1>
-	<p>{{ view.message }}</p>
+	<p>{{ view.message }}{% if view.link %} <a href="{{ url(view.link.href) }}">{{ view.link.label }}</a>{% endif %}</p>
 	<p><a href="{{ url('index.php') }}">{{ lang.common.backToIndex }}</a></p>
 </section>
 {% endblock %}

@@ -48,6 +48,7 @@ export async function loadLayout(request: FastifyRequest, deps: LayoutDeps, opti
 		dateWords: deps.page.dateWords,
 		now: deps.page.clock(),
 		remoteAddress: request.ip,
+		csrfToken: request.csrfToken,
 		options,
 		pendingReports,
 		unreadPrivateMessages,
@@ -81,6 +82,7 @@ export async function renderMessage(
 	deps: LayoutDeps,
 	status: number,
 	message: string,
+	link: { href: string; label: string } | null = null,
 ): Promise<FastifyReply> {
 	const { lang } = deps.page;
 	reply.code(status);
@@ -90,7 +92,7 @@ export async function renderMessage(
 		deps,
 		'message.njk',
 		{ pageId: 'message', titleParts: [request.board.boardTitle, lang.common.info] },
-		{ message },
+		{ message, link },
 	);
 }
 
@@ -143,7 +145,7 @@ export async function renderMinimalMessage(reply: FastifyReply, lang: Lang, stat
 	const layout = buildMinimalLayout(lang, lang.common.info);
 	reply.code(status);
 	try {
-		return await sendView(reply, 'message.njk', { layout, lang, view: { message } });
+		return await sendView(reply, 'message.njk', { layout, lang, view: { message, link: null } });
 	} catch (error) {
 		// Dernier recours si les gabarits eux-mêmes sont en cause : page statique, sans détail technique.
 		reply.log.error({ err: error }, "Échec du rendu de la page d'erreur minimale");

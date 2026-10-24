@@ -14,12 +14,15 @@ import { ForumController, type ForumQuery } from './controllers/ForumController.
 import { GalleryController, type GalleryQuery } from './controllers/GalleryController.ts';
 import { HelpController } from './controllers/HelpController.ts';
 import { IndexController } from './controllers/IndexController.ts';
+import { LoginController, type LoginQuery } from './controllers/LoginController.ts';
 import { ProfileController, type ProfileQuery } from './controllers/ProfileController.ts';
 import { SearchController, type SearchQuery } from './controllers/SearchController.ts';
 import { TopicController, type TopicQuery } from './controllers/TopicController.ts';
 import { UserlistController, type UserlistParams } from './controllers/UserlistController.ts';
 import type { BoardConfig, Viewer } from './domain/models.ts';
 import { ASSETS_PREFIX, createAssetUrl } from './http/assets.ts';
+import { ensureCsrfToken, isValidCsrf } from './http/csrf.ts';
+import { type FormBody, registerFormParser } from './http/forms.ts';
 import { type LayoutDeps, renderBlock, renderMessage, renderMinimalMessage } from './http/layout.ts';
 import { checkAccess, purgeOnline, type SessionDeps, startSession } from './http/session.ts';
 import type { CensorReader } from './repositories/CensorRepository.ts';
@@ -32,7 +35,7 @@ import type { StatsReader } from './repositories/StatsRepository.ts';
 import type { StopwordsReader } from './repositories/StopwordsLoader.ts';
 import type { TopicLabelReader } from './repositories/TopicLabelRepository.ts';
 import type { TopicReader } from './repositories/TopicRepository.ts';
-import type { MemberListReader, ProfileReader } from './repositories/UserRepository.ts';
+import type { CredentialsStore, MemberListReader, ProfileReader } from './repositories/UserRepository.ts';
 import type { UsersInfoReader } from './repositories/UsersInfoLoader.ts';
 import type { AvatarLocator } from './services/avatars.ts';
 
@@ -42,12 +45,15 @@ declare module 'fastify' {
 		viewer: Viewer;
 		/** Réglages du forum chargés pour cette requête. */
 		board: BoardConfig;
+		/** Jeton CSRF du visiteur, à placer dans chaque formulaire POST (http/csrf.ts). */
+		csrfToken: string;
 	}
 }
 
 export interface AppDeps extends LayoutDeps, SessionDeps {
 	config: ConfigReader;
 	members: MemberListReader;
+	credentials: CredentialsStore;
 	profiles: ProfileReader;
 	topics: TopicReader;
 	posts: PostReader;
@@ -73,6 +79,7 @@ const PORTED_PAGES = new Set([
 	'gallery.php',
 	'help.php',
 	'index.php',
+	'login.php',
 	'profile.php',
 	'search.php',
 	'userlist.php',
@@ -95,6 +102,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 	const asset = createAssetUrl(path.join(ROOT_DIR, 'public'));
 
 	await app.register(fastifyCookie);
+	registerFormParser(app);
 	await app.register(fastifyView, {
 		engine: { nunjucks },
 		root: path.join(import.meta.dirname, 'views'),
@@ -117,15 +125,18 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 
 	app.decorateRequest('viewer', null as unknown as Viewer);
 	app.decorateRequest('board', null as unknown as BoardConfig);
+	app.decorateRequest('csrfToken', '');
 
 	// Équivalent de common.php : réglages, visiteur et présence, maintenance, bannissements. Déclaré
 	// par route (et non globalement) pour que les fichiers statiques ne coûtent aucune requête SQL.
 	const session =
-		(options: { quiet?: boolean; allowDuringMaintenance?: boolean } = {}) =>
+		(options: { quiet?: boolean | ((request: FastifyRequest) => boolean); allowDuringMaintenance?: boolean } = {}) =>
 		async (request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply | undefined> => {
 			const now = deps.page.clock();
 			request.board = await deps.config.load();
-			request.viewer = await startSession(request, reply, deps, request.board, now, { quiet: options.quiet ?? false });
+			const quiet = typeof options.quiet === 'function' ? options.quiet(request) : (options.quiet ?? false);
+			request.viewer = await startSession(request, reply, deps, request.board, now, { quiet });
+			request.csrfToken = ensureCsrfToken(request, reply, deps.legacyCookie, request.viewer.id);
 
 			const block = await checkAccess(request, deps, request.viewer, request.board, now, options.allowDuringMaintenance ?? false);
 			if (block !== null) return renderBlock(request, reply, deps, block);
@@ -134,6 +145,11 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 			return undefined;
 		};
 	const authenticate = session();
+	/** Formulaires POST : session puis jeton CSRF (403 sinon), avant toute écriture. */
+	const verifyCsrf = async (request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply | undefined> =>
+		isValidCsrf(request, deps.legacyCookie, request.viewer.id)
+			? undefined
+			: renderMessage(request, reply, deps, 403, deps.page.lang.common.badCsrf);
 	const quietSession = session({ quiet: true });
 
 	app.setErrorHandler((error: FastifyError, request, reply) => handleError(error, request, reply, deps));
@@ -160,6 +176,17 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 
 	const gallery = new GalleryController(deps);
 	app.get<{ Querystring: GalleryQuery }>('/gallery.php', { preHandler: authenticate }, gallery.show);
+
+	// login.php : visite discrète dès qu'une action est demandée (PUN_QUIET_VISIT), et accessible en
+	// maintenance pour qu'un administrateur puisse se connecter (le PHP le bloquait aussi).
+	const loginSession = session({ quiet: (request) => (request.query as LoginQuery).action !== undefined, allowDuringMaintenance: true });
+	const login = new LoginController(deps);
+	app.get<{ Querystring: LoginQuery }>('/login.php', { preHandler: loginSession }, login.show);
+	app.post<{ Querystring: LoginQuery; Body: FormBody }>('/login.php', { preHandler: [loginSession, verifyCsrf] }, (request, reply) =>
+		request.query.action === 'in'
+			? login.login(request, reply)
+			: renderMessage(request, reply, deps, 400, deps.page.lang.common.badRequest),
+	);
 
 	const help = new HelpController(deps);
 	app.get('/help.php', { preHandler: authenticate }, help.show);

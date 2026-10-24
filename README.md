@@ -60,5 +60,8 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
 - Galerie : informations visibles sous chaque vignette (le PHP les montrait au survol, inaccessible
   au clavier et au toucher) ; envoi et modération restent en PHP.
 - extern.php : pas d'authentification HTTP Basic ni de cache des flux (`o_feed_ttl`).
+- Connexion : jeton CSRF, adresse de retour limitée aux pages du forum (le PHP permettait une
+  redirection ouverte), redirection immédiate sans page « Redirection… », page accessible en
+  maintenance (le PHP empêchait un administrateur déconnecté de revenir).
 - Le jeton du lien « Déconnexion » dépend de l'IP vue par le serveur : derrière un proxy, régler
   `TRUST_PROXY=1` (et `FORUM_BEHIND_REVERSE_PROXY` côté PHP) pour que les deux voient la même.

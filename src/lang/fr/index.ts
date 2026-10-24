@@ -9,13 +9,14 @@ import { forum } from './forum.ts';
 import { gallery } from './gallery.ts';
 import { help } from './help.ts';
 import { indexPage } from './indexPage.ts';
+import { login } from './login.ts';
 import { pms } from './pms.ts';
 import { profile } from './profile.ts';
 import { search } from './search.ts';
 import { topic } from './topic.ts';
 import { userlist } from './userlist.ts';
 
-export const fr = { common, index: indexPage, forum, topic, userlist, profile, help, search, gallery, pms };
+export const fr = { common, index: indexPage, forum, topic, userlist, profile, help, search, gallery, login, pms };
 
 export const frDateWords: DateWords = {
 	today: "Aujourd'hui",

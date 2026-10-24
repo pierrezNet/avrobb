@@ -171,6 +171,7 @@ export const boardConfig: BoardConfig = {
 	timeoutVisit: 1800,
 	timeoutOnline: 300,
 	adminEmail: 'admin@forum.test',
+	defaultUserGroup: 4,
 	announcement: null,
 	quickjump: true,
 	feedType: 'atom',
@@ -259,6 +260,22 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			findViewer: async (id) => {
 				const found = data.users.find((u) => u.viewer.id === id);
 				return found === undefined ? null : { presence: null, ...found };
+			},
+		},
+		credentials: {
+			findCredentials: async (username) => {
+				const found = data.users.find((u) => !u.viewer.isGuest && u.viewer.username.toLowerCase() === username.toLowerCase());
+				return found === undefined
+					? null
+					: { id: found.viewer.id, username: found.viewer.username, passwordHash: found.passwordHash, groupId: found.viewer.group.id };
+			},
+			updatePasswordHash: async (userId, hash) => {
+				const found = data.users.find((u) => u.viewer.id === userId);
+				if (found !== undefined) found.passwordHash = hash;
+			},
+			setGroup: async (userId, groupId) => {
+				const found = data.users.find((u) => u.viewer.id === userId);
+				if (found !== undefined) found.viewer = { ...found.viewer, group: { ...found.viewer.group, id: groupId } };
 			},
 		},
 		profiles: { findProfile: async (id) => data.profiles?.find((p) => p.id === id) ?? null },

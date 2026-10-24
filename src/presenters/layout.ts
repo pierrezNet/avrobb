@@ -100,6 +100,8 @@ export interface LayoutView {
 	modControls: { href: string; label: string }[];
 	quickjump: QuickjumpView | null;
 	poweredByVersion: string | null;
+	/** Jeton CSRF à placer dans les formulaires POST (partials/forms.njk). */
+	csrfToken: string;
 }
 
 export interface LayoutInput {
@@ -109,6 +111,7 @@ export interface LayoutInput {
 	dateWords: DateWords;
 	now: number;
 	remoteAddress: string;
+	csrfToken: string;
 	options: PageOptions;
 	pendingReports: boolean;
 	unreadPrivateMessages: number;
@@ -322,6 +325,7 @@ export function buildLayout(input: LayoutInput): LayoutView {
 		modControls: buildModControls(footer, viewer, lang),
 		quickjump: buildQuickjump(input.forums, footer),
 		poweredByVersion: config.shownVersion,
+		csrfToken: input.csrfToken,
 	};
 }
 
@@ -346,5 +350,6 @@ export function buildMinimalLayout(lang: Lang, title: string): LayoutView {
 		modControls: [],
 		quickjump: null,
 		poweredByVersion: null,
+		csrfToken: '',
 	};
 }

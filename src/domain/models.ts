@@ -163,6 +163,8 @@ export interface BoardConfig {
 	timeoutVisit: number;
 	timeoutOnline: number;
 	adminEmail: string;
+	/** Groupe des nouveaux membres (o_default_user_group). */
+	defaultUserGroup: number;
 	/** Annonce affichée en haut de chaque page ; null si désactivée (HTML saisi par l'administrateur). */
 	announcement: string | null;
 	quickjump: boolean;

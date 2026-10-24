@@ -41,6 +41,7 @@ const app = await buildApp({
 	config: new ConfigLoader(new ConfigRepository(db), phpCache, clock),
 	users,
 	members: users,
+	credentials: users,
 	profiles: users,
 	topics: new TopicRepository(db),
 	posts: new PostRepository(db),

@@ -1,0 +1,33 @@
+{#- Connexion (login.php). Données : `view.redirectUrl`. -#}
+{% extends "layout.njk" %}
+{% import "partials/forms.njk" as forms %}
+
+{% block main %}
+<h1 class="page-title">{{ lang.login.login }}</h1>
+
+<form id="login" class="form-box form" method="post" action="{{ url('login.php?action=in') }}">
+	{{ forms.csrf(layout) }}
+	<input type="hidden" name="form_sent" value="1">
+	<input type="hidden" name="redirect_url" value="{{ view.redirectUrl }}">
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ lang.login.loginLegend }}</legend>
+		<div class="form__grid">
+			<p class="form__field">
+				<label for="login-username">{{ lang.login.username }} <span class="form__required">{{ lang.login.required }}</span></label>
+				<input type="text" id="login-username" name="req_username" maxlength="25" required autocomplete="username" autocapitalize="none" spellcheck="false">
+			</p>
+			<p class="form__field">
+				<label for="login-password">{{ lang.login.password }} <span class="form__required">{{ lang.login.required }}</span></label>
+				<input type="password" id="login-password" name="req_password" required autocomplete="current-password">
+			</p>
+		</div>
+		<p class="form__check"><label><input type="checkbox" name="save_pass" value="1"> {{ lang.login.rememberMe }}</label></p>
+		<p class="form__help">{{ lang.login.loginInfo }}</p>
+		<p class="form__links">
+			<a href="{{ url('register.php') }}">{{ lang.login.notRegistered }}</a>
+			<a href="{{ url('login.php?action=forget') }}">{{ lang.login.forgottenPass }}</a>
+		</p>
+	</fieldset>
+	<p class="form__buttons"><button type="submit" class="button button--primary" name="login" value="1">{{ lang.login.submit }}</button></p>
+</form>
+{% endblock %}

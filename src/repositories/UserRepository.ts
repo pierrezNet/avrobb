@@ -40,10 +40,27 @@ export interface ProfileReader {
 	findProfile(userId: number): Promise<UserProfile | null>;
 }
 
+/** Identifiants d'un compte, pour la connexion. */
+export interface Credentials {
+	id: number;
+	username: string;
+	passwordHash: string;
+	groupId: number;
+}
+
+export interface CredentialsStore {
+	/** Compte par pseudo (comparaison de la base, insensible à la casse comme en PHP sous MySQL). */
+	findCredentials(username: string): Promise<Credentials | null>;
+	/** Remplace un ancien hash (MD5 de FluxBB 1.2) par le SHA-1 actuel, après une connexion réussie. */
+	updatePasswordHash(userId: number, passwordHash: string): Promise<void>;
+	/** Première connexion d'un compte non validé : passage dans le groupe par défaut. */
+	setGroup(userId: number, groupId: number): Promise<void>;
+}
+
 /** Comptes en attente de validation (PUN_UNVERIFIED) : jamais listés. */
 const UNVERIFIED_GROUP = 0;
 
-export class UserRepository implements UserReader, MemberListReader, ProfileReader {
+export class UserRepository implements UserReader, MemberListReader, ProfileReader, CredentialsStore {
 	constructor(private readonly db: Db) {}
 
 	async findViewer(userId: number): Promise<ViewerRecord | null> {
@@ -257,5 +274,23 @@ export class UserRepository implements UserReader, MemberListReader, ProfileRead
 			groupIsModerator: row.g_moderator === 1,
 			acceptsPrivateMessages: row.use_pm === 1 && row.g_pm === 1,
 		};
+	}
+
+	async findCredentials(username: string): Promise<Credentials | null> {
+		const row = await this.db
+			.selectFrom('users')
+			.select(['id', 'username', 'password', 'group_id'])
+			.where('username', '=', username)
+			.where('id', '>', GUEST_USER_ID)
+			.executeTakeFirst();
+		return row !== undefined ? { id: row.id, username: row.username, passwordHash: row.password, groupId: row.group_id } : null;
+	}
+
+	async updatePasswordHash(userId: number, passwordHash: string): Promise<void> {
+		await this.db.updateTable('users').set({ password: passwordHash }).where('id', '=', userId).execute();
+	}
+
+	async setGroup(userId: number, groupId: number): Promise<void> {
+		await this.db.updateTable('users').set({ group_id: groupId }).where('id', '=', userId).execute();
 	}
 }

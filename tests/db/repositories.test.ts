@@ -399,6 +399,7 @@ describe('viewtopic de bout en bout', () => {
 			config: new ConfigLoader(new ConfigRepository(db), null, () => NOW),
 			users: new UserRepository(db),
 			members: new UserRepository(db),
+			credentials: new UserRepository(db),
 			profiles: new UserRepository(db),
 			topics: new TopicRepository(db),
 			posts: new PostRepository(db),

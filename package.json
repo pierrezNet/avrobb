@@ -16,7 +16,8 @@
 		"lint": "biome check .",
 		"format": "biome check --write .",
 		"check": "biome check . && tsc --noEmit && vitest run",
-		"screenshot": "tsx scripts/screenshot.ts"
+		"screenshot": "tsx scripts/screenshot.ts",
+		"test:db": "vitest run --config vitest.db.config.ts"
 	},
 	"dependencies": {
 		"@fastify/cookie": "^11.1.3",

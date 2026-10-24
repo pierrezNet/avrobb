@@ -126,6 +126,8 @@ export interface GroupsTable {
 	g_post_topics: number;
 	g_post_links: number;
 	g_post_flood: number;
+	g_email_flood: number;
+	g_report_flood: number;
 	g_search: number;
 	g_search_users: number;
 	g_pm: number;
@@ -167,7 +169,14 @@ export interface PostsTable {
 
 export interface ReportsTable {
 	id: Generated<number>;
-	zapped: number | null;
+	post_id: number;
+	topic_id: number;
+	forum_id: number;
+	reported_by: number;
+	created: number;
+	message: string | null;
+	zapped: Generated<number | null>;
+	zapped_by: Generated<number | null>;
 }
 
 export interface SearchCacheTable {
@@ -267,6 +276,7 @@ export interface UsersTable {
 	activate_string: string | null;
 	activate_key: string | null;
 	last_email_sent: number | null;
+	last_report_sent: Generated<number | null>;
 	style: string;
 	use_pm: Generated<number>;
 	num_pms: Generated<number>;

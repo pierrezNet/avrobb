@@ -18,7 +18,9 @@ export type MailTemplateName =
 	| 'new_reply_full'
 	| 'new_topic'
 	| 'new_topic_full'
-	| 'banned_email_post';
+	| 'banned_email_post'
+	| 'form_email'
+	| 'new_report';
 
 export interface MailTemplateReader {
 	load(name: MailTemplateName): Promise<MailTemplate>;

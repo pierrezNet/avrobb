@@ -1,0 +1,22 @@
+{#- Signalement d'un message (misc.php?report=…). Données : `view` (ContactController). -#}
+{% extends "layout.njk" %}
+{% import "partials/forms.njk" as forms %}
+{% import "partials/navigation.njk" as navigation %}
+
+{% block main %}
+{{ navigation.breadcrumbs(view.crumbs, lang) }}
+<h1 class="page-title">{{ lang.misc.reportPost }}</h1>
+{{ forms.errors(lang.misc.formErrors, lang.misc.formErrorsInfo, view.errors) }}
+<form id="report" class="form-box form post-form" method="post" action="{{ url(view.formAction) }}">
+	{{ forms.csrf(layout) }}
+	<input type="hidden" name="form_sent" value="1">
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ lang.misc.reasonDesc }}</legend>
+		<p class="form__field">
+			<label for="req_reason">{{ lang.misc.reason }} <span class="form__required">{{ lang.misc.required }}</span></label>
+			<textarea id="req_reason" name="req_reason" rows="5" required>{{ view.reason }}</textarea>
+		</p>
+	</fieldset>
+	<p class="form__buttons"><button type="submit" class="button button--primary" name="submit" value="1" accesskey="s">{{ lang.misc.submit }}</button></p>
+</form>
+{% endblock %}

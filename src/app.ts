@@ -10,6 +10,7 @@ import fastifyView from '@fastify/view';
 import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import nunjucks from 'nunjucks';
 import type { Mailer } from './adapters/mailer.ts';
+import { ContactController, type ContactQuery } from './controllers/ContactController.ts';
 import { DeleteController, type DeleteQuery } from './controllers/DeleteController.ts';
 import { DraftController, type DraftQuery } from './controllers/DraftController.ts';
 import { EditController, type EditQuery } from './controllers/EditController.ts';
@@ -35,6 +36,7 @@ import { type LayoutDeps, renderBlock, renderMessage, renderMinimalMessage } fro
 import { checkAccess, purgeOnline, type SessionDeps, startSession } from './http/session.ts';
 import type { CensorReader } from './repositories/CensorRepository.ts';
 import type { ConfigReader } from './repositories/ConfigLoader.ts';
+import type { ContactStore } from './repositories/ContactRepository.ts';
 import type { DraftStore } from './repositories/DraftRepository.ts';
 import type { FeedReader } from './repositories/FeedRepository.ts';
 import type { GalleryReader } from './repositories/GalleryRepository.ts';
@@ -43,6 +45,7 @@ import type { PostEditStore } from './repositories/PostEditRepository.ts';
 import type { PostingStore } from './repositories/PostingRepository.ts';
 import type { PostReader } from './repositories/PostRepository.ts';
 import type { RegistrationStore } from './repositories/RegistrationRepository.ts';
+import type { ReportWriter } from './repositories/ReportRepository.ts';
 import type { SearchReader } from './repositories/SearchRepository.ts';
 import type { StatsReader } from './repositories/StatsRepository.ts';
 import type { StopwordsReader } from './repositories/StopwordsLoader.ts';
@@ -81,6 +84,8 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	postEdits: PostEditStore;
 	drafts: DraftStore;
 	subscriptions: SubscriptionStore;
+	contacts: ContactStore;
+	reportWriter: ReportWriter;
 	toolbar: ToolbarReader;
 	avatars: AvatarLocator;
 	censorship: CensorReader;
@@ -227,11 +232,21 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 	// misc.php : visite discrète dès qu'une action est demandée (PUN_QUIET_VISIT).
 	const miscSession = session({ quiet: (request) => (request.query as MiscQuery).action !== undefined });
 	const misc = new MiscController({ ...deps, trackCookieName });
-	app.get<{ Querystring: MiscQuery }>('/misc.php', { preHandler: miscSession }, misc.show);
-	app.post<{ Querystring: MiscQuery; Body: FormBody }>('/misc.php', { preHandler: [miscSession, verifyCsrf] }, (request, reply) =>
-		request.query.action === 'subscribe' || request.query.action === 'unsubscribe'
-			? misc.subscription(request, reply)
-			: misc.markRead(request, reply),
+	const contact = new ContactController(deps);
+	app.get<{ Querystring: MiscQuery & ContactQuery }>('/misc.php', { preHandler: miscSession }, (request, reply) => {
+		if (request.query.email !== undefined) return contact.emailForm(request, reply);
+		if (request.query.report !== undefined) return contact.reportForm(request, reply);
+		return misc.show(request, reply);
+	});
+	app.post<{ Querystring: MiscQuery & ContactQuery; Body: FormBody }>(
+		'/misc.php',
+		{ preHandler: [miscSession, verifyCsrf] },
+		(request, reply) => {
+			if (request.query.email !== undefined) return contact.sendEmail(request, reply);
+			if (request.query.report !== undefined) return contact.sendReport(request, reply);
+			if (request.query.action === 'subscribe' || request.query.action === 'unsubscribe') return misc.subscription(request, reply);
+			return misc.markRead(request, reply);
+		},
 	);
 
 	const register = new RegisterController(deps);

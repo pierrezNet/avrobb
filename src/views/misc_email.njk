@@ -1,0 +1,26 @@
+{#- E-mail à un membre (misc.php?email=…). Données : `view` (ContactController). -#}
+{% extends "layout.njk" %}
+{% import "partials/forms.njk" as forms %}
+
+{% block main %}
+<h1 class="page-title">{{ view.title }}</h1>
+{{ forms.errors(lang.misc.formErrors, lang.misc.formErrorsInfo, view.errors) }}
+<form id="email" class="form-box form post-form" method="post" action="{{ url(view.formAction) }}">
+	{{ forms.csrf(layout) }}
+	<input type="hidden" name="form_sent" value="1">
+	<input type="hidden" name="redirect_url" value="{{ view.redirectUrl }}">
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ lang.misc.writeEmail }}</legend>
+		<p class="form__field">
+			<label for="req_subject">{{ lang.misc.emailSubject }} <span class="form__required">{{ lang.misc.required }}</span></label>
+			<input type="text" id="req_subject" name="req_subject" value="{{ view.subject }}" maxlength="70" required>
+		</p>
+		<p class="form__field">
+			<label for="req_message">{{ lang.misc.emailMessage }} <span class="form__required">{{ lang.misc.required }}</span></label>
+			<textarea id="req_message" name="req_message" rows="10" required>{{ view.message }}</textarea>
+		</p>
+		<p class="form__help">{{ lang.misc.emailDisclosureNote }}</p>
+	</fieldset>
+	<p class="form__buttons"><button type="submit" class="button button--primary" name="submit" value="1" accesskey="s">{{ lang.misc.submit }}</button></p>
+</form>
+{% endblock %}

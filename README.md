@@ -77,6 +77,9 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   maintenance (le PHP empêchait un administrateur déconnecté de revenir).
 - Inscription : mot de passe de 6 caractères au moins, comme l'annonce le formulaire (le code PHP
   en acceptait 4) ; pas de choix de la langue (une seule installée).
+- E-mail à un membre et signalement (`misc.php`) : les erreurs réaffichent le formulaire au lieu
+  d'une page de message ; adresse de retour limitée aux pages du forum ; signaler exige de pouvoir
+  lire le message.
 - « Marquer comme lu » et abonnements (sujet, forum) : formulaire POST ; un ancien lien GET (pages
   PHP, lien de désabonnement des e-mails) affiche une confirmation.
 - Le jeton du lien « Déconnexion » dépend de l'IP vue par le serveur : derrière un proxy, régler

@@ -175,6 +175,8 @@ export interface BoardConfig {
 	additionalNavlinks: string;
 	/** Signalements reçus dans le forum (o_report_method 0 ou 2) ou seulement par e-mail. */
 	reportsByBoard: boolean;
+	/** Signalements envoyés aussi par e-mail à la liste d'administration (o_report_method 1 ou 2). */
+	reportsByEmail: boolean;
 	maintenance: boolean;
 	/** Message du mode maintenance (o_maintenance_message), HTML saisi par l'administrateur. */
 	maintenanceMessage: string;

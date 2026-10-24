@@ -38,6 +38,7 @@ export function toBoardConfig(values: ReadonlyMap<string, string>): BoardConfig 
 		additionalNavlinks: text('o_additional_navlinks'),
 		// header.php : 0 = forum seulement, 1 = e-mail seulement, 2 = les deux.
 		reportsByBoard: reportMethod === '0' || reportMethod === '2',
+		reportsByEmail: reportMethod === '1' || reportMethod === '2',
 		maintenance: flag('o_maintenance'),
 		maintenanceMessage: text('o_maintenance_message'),
 		timeoutVisit: Number(text('o_timeout_visit', '1800')) || 1800,

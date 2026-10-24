@@ -27,11 +27,13 @@ import {
 	type Viewer,
 } from '../src/domain/models.ts';
 import { fr, frDateWords } from '../src/lang/fr/index.ts';
+import type { Recipient, SenderLimits } from '../src/repositories/ContactRepository.ts';
 import type { DraftStore, NewDraft } from '../src/repositories/DraftRepository.ts';
 import type { OnlineWriter } from '../src/repositories/OnlineRepository.ts';
 import type { PostEditStore, PostUpdate } from '../src/repositories/PostEditRepository.ts';
 import type { NewReply, NewTopic, PostingStore } from '../src/repositories/PostingRepository.ts';
 import type { NewUser } from '../src/repositories/RegistrationRepository.ts';
+import type { ReportTarget } from '../src/repositories/ReportRepository.ts';
 import type { PostLocation } from '../src/repositories/TopicRepository.ts';
 import type { ViewerRecord } from '../src/repositories/UserRepository.ts';
 import type { Ban } from '../src/services/bans.ts';
@@ -184,6 +186,7 @@ export const boardConfig: BoardConfig = {
 	rules: false,
 	registrationsAllowed: true,
 	additionalNavlinks: '',
+	reportsByEmail: false,
 	reportsByBoard: true,
 	maintenance: false,
 	maintenanceMessage: 'Le forum est fermé pour <b>maintenance</b>.',
@@ -284,6 +287,12 @@ export interface FakeData {
 	/** Brouillons (table brouillons), modifiés en place. */
 	drafts?: Draft[];
 	createdDrafts?: NewDraft[];
+	/** Destinataires du formulaire d'e-mail, par identifiant. */
+	recipients?: Map<number, Recipient>;
+	senderLimits?: SenderLimits;
+	/** Envois enregistrés par misc.php (e-mail, signalement). */
+	contactLog?: string[];
+	createdReports?: { target: ReportTarget; reportedBy: number; created: number; message: string }[];
 }
 
 /** Liste des présents en mémoire : chaque écriture est consignée dans `log` pour les tests. */
@@ -524,6 +533,29 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 		toolbar: { load: async () => null },
 		postEdits: fakePostEdits(data),
 		drafts: fakeDrafts(data),
+		contacts: {
+			findRecipient: async (id) => data.recipients?.get(id) ?? null,
+			findSenderLimits: async () => data.senderLimits ?? { lastEmailSent: null, emailFlood: 60, lastReportSent: null, reportFlood: 60 },
+			markEmailSent: async (userId, at) => {
+				data.contactLog = [...(data.contactLog ?? []), `email ${userId} ${at}`];
+			},
+			markReportSent: async (userId, at) => {
+				data.contactLog = [...(data.contactLog ?? []), `report ${userId} ${at}`];
+			},
+		},
+		reportWriter: {
+			findTarget: async (postId) => {
+				for (const [topicId, posts] of data.posts) {
+					const topic = data.topics.find((t) => t.id === topicId);
+					if (topic !== undefined && posts.some((p) => p.id === postId))
+						return { postId, topicId, subject: topic.subject, forumId: topic.forum.id, forumName: topic.forum.name };
+				}
+				return null;
+			},
+			create: async (report) => {
+				data.createdReports = [...(data.createdReports ?? []), report];
+			},
+		},
 		subscriptions: {
 			isReadable: async (target) =>
 				target.kind === 'topic' ? data.topics.some((t) => t.id === target.id) : (data.forumInfos ?? []).some((f) => f.id === target.id),

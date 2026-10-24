@@ -69,8 +69,8 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
 - [x] **edit** et **delete** (message, sujet)
 - [x] Brouillons (`brouillons`, `draft_list`, `draft_edit`) **(PV)**
 - [x] Abonnements aux sujets et forums + notifications par e-mail
-- [ ] Signalement d'un message (`misc.php?report`) et e-mail à un membre (`misc.php?email`)
-- [ ] Création et vote dans les sondages **(PV)**
+- [x] Signalement d'un message (`misc.php?report`) et e-mail à un membre (`misc.php?email`)
+- [x] ~~Création et vote dans les sondages~~ : sans objet, `AP_Sondage` est un reste sans table ni affichage (voir lot 1) **(PV)**
 
 ## Lot 4 — Profil (édition)
 

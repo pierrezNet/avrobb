@@ -13,6 +13,7 @@ import { BanRepository } from '../../src/repositories/BanRepository.ts';
 import { CensorRepository } from '../../src/repositories/CensorRepository.ts';
 import { ConfigLoader } from '../../src/repositories/ConfigLoader.ts';
 import { ConfigRepository } from '../../src/repositories/ConfigRepository.ts';
+import { ContactRepository } from '../../src/repositories/ContactRepository.ts';
 import { DraftRepository } from '../../src/repositories/DraftRepository.ts';
 import { FeedRepository } from '../../src/repositories/FeedRepository.ts';
 import { ForumRepository } from '../../src/repositories/ForumRepository.ts';
@@ -473,6 +474,8 @@ describe('viewtopic de bout en bout', () => {
 			postEdits: new PostEditRepository(db),
 			drafts: new DraftRepository(db),
 			subscriptions: new SubscriptionRepository(db),
+			contacts: new ContactRepository(db),
+			reportWriter: new ReportRepository(db),
 			toolbar: new ToolbarRepository(db),
 			forums: new ForumRepository(db),
 			reports: new ReportRepository(db),

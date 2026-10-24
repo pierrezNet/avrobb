@@ -8,10 +8,12 @@ import type { Kysely } from 'kysely';
 import { afterAll, describe, expect, it } from 'vitest';
 import { createDatabase } from '../../src/db/database.ts';
 import type { Database } from '../../src/db/schema.ts';
+import { ContactRepository } from '../../src/repositories/ContactRepository.ts';
 import { DraftRepository } from '../../src/repositories/DraftRepository.ts';
 import { updateForum } from '../../src/repositories/forumCounters.ts';
 import { PostEditRepository } from '../../src/repositories/PostEditRepository.ts';
 import { PostingRepository } from '../../src/repositories/PostingRepository.ts';
+import { ReportRepository } from '../../src/repositories/ReportRepository.ts';
 import { SubscriptionRepository } from '../../src/repositories/SubscriptionRepository.ts';
 import { stripSearchIndex, updateSearchIndex } from '../../src/repositories/searchIndexSql.ts';
 import { ToolbarRepository } from '../../src/repositories/ToolbarRepository.ts';
@@ -425,6 +427,50 @@ describe('SubscriptionRepository', () => {
 			expect(await subscriptions.isSubscribed({ kind: 'forum', id: 1 }, 5)).toBe(true);
 			await subscriptions.unsubscribe({ kind: 'topic', id: 10 }, 3);
 			expect(await subscriptions.isSubscribed({ kind: 'topic', id: 10 }, 3)).toBe(false);
+		});
+	});
+});
+
+describe('ContactRepository et signalements', () => {
+	it('destinataire, délais de l’expéditeur et dates d’envoi', async () => {
+		const contacts = new ContactRepository(db);
+		expect(await contacts.findRecipient(5)).toEqual({ username: 'MaxDUO', email: 'max@example.test', emailSetting: 1 });
+		expect(await contacts.findRecipient(1)).toBeNull();
+		await inRollback(async (trx) => {
+			const writer = new ContactRepository(trx);
+			await writer.markEmailSent(3, 1782900000);
+			await writer.markReportSent(3, 1782900100);
+			expect(await writer.findSenderLimits(3)).toEqual({
+				lastEmailSent: 1782900000,
+				emailFlood: 60,
+				lastReportSent: 1782900100,
+				reportFlood: 60,
+			});
+		});
+	});
+
+	it('cible lisible et création d’un signalement', async () => {
+		const reports = new ReportRepository(db);
+		expect(await reports.findTarget(101, 4)).toEqual({
+			postId: 101,
+			topicId: 10,
+			subject: 'Postez un « vintage »',
+			forumId: 2,
+			forumName: "Captures d'écran & Vidéos",
+		});
+		expect(await reports.findTarget(110, 3)).toBeNull();
+		await inRollback(async (trx) => {
+			const writer = new ReportRepository(trx);
+			const target = await writer.findTarget(101, 4);
+			if (target === null) throw new Error('message 101 absent');
+			await writer.create({ target, reportedBy: 3, created: 1782900000, message: 'Hors sujet' });
+			expect(
+				await trx
+					.selectFrom('reports')
+					.select(['post_id', 'topic_id', 'forum_id', 'reported_by', 'message', 'zapped'])
+					.where('created', '=', 1782900000)
+					.execute(),
+			).toEqual([{ post_id: 101, topic_id: 10, forum_id: 2, reported_by: 3, message: 'Hors sujet', zapped: null }]);
 		});
 	});
 });

@@ -13,6 +13,7 @@ import { BanRepository } from './repositories/BanRepository.ts';
 import { CensorRepository } from './repositories/CensorRepository.ts';
 import { ConfigLoader } from './repositories/ConfigLoader.ts';
 import { ConfigRepository } from './repositories/ConfigRepository.ts';
+import { ContactRepository } from './repositories/ContactRepository.ts';
 import { DraftRepository } from './repositories/DraftRepository.ts';
 import { FeedRepository } from './repositories/FeedRepository.ts';
 import { ForumRepository } from './repositories/ForumRepository.ts';
@@ -45,6 +46,7 @@ const phpCache = config.legacyRoot !== '' ? new PhpCacheFiles(path.join(config.l
 const stats = new StatsRepository(db);
 const users = new UserRepository(db);
 const topics = new TopicRepository(db);
+const reports = new ReportRepository(db);
 
 const app = await buildApp({
 	config: new ConfigLoader(new ConfigRepository(db), phpCache, clock),
@@ -63,9 +65,11 @@ const app = await buildApp({
 	postEdits: new PostEditRepository(db),
 	drafts: new DraftRepository(db),
 	subscriptions: new SubscriptionRepository(db),
+	contacts: new ContactRepository(db),
+	reportWriter: reports,
 	toolbar: new ToolbarRepository(db),
 	forums: new ForumRepository(db),
-	reports: new ReportRepository(db),
+	reports,
 	privateMessages: new PrivateMessageRepository(db),
 	bans: new BanRepository(db),
 	online: new OnlineRepository(db),

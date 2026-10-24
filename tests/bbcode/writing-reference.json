@@ -1,0 +1,281 @@
+{
+	"texte simple": {
+		"text": "Bonjour le forum",
+		"errors": []
+	},
+	"majuscules des balises": {
+		"text": "[b]gras[/b] [url=http://a.fr]lien[/url] [color=Red]rouge[/color]",
+		"errors": []
+	},
+	"balises vides": {
+		"text": "avant    après",
+		"errors": []
+	},
+	"seulement vide": {
+		"text": "",
+		"errors": [
+			"Il semblerait que votre message ne comporte que des balises BBCode vides. Il est possible que cela se soit passé par exemple parce que la citation imbriquée la plus ancienne a été supprimé pour cause de niveau d'imbrication de citations supérieur à celui autorisé."
+		]
+	},
+	"code vide": {
+		"text": "x  y",
+		"errors": []
+	},
+	"espaces de bord": {
+		"text": "texte entouré",
+		"errors": []
+	},
+	"chevauchement réparé": {
+		"text": "[b]gras [i]les deux[/i][/b][i] italique[/i]",
+		"errors": []
+	},
+	"fermeture orpheline": {
+		"text": "texte [/b] fin",
+		"errors": ["La balise [/b] a été trouvée sans balise [b] correspondante"]
+	},
+	"ouverture non fermée": {
+		"text": "[b]jamais fermé",
+		"errors": ["La balise [b] a été trouvée sans balise [/b] correspondante"]
+	},
+	"imbrication interdite": {
+		"text": "[b][quote]bloc dans en ligne[/quote][/b]",
+		"errors": ["La balise [quote] a été ouverte dans la balise [b], ceci n'est pas autorisé"]
+	},
+	"auto-imbrication": {
+		"text": "[b]a [b]b[/b] c[/b]",
+		"errors": ["La balise [b] a été ouverte dans cette même balise, ceci n'est pas autorisé"]
+	},
+	"attribut vide": {
+		"text": "[url=]x[/url]",
+		"errors": ["La balise [url] comporte un attribut non défini"]
+	},
+	"guillemets d argument": {
+		"text": "[url=http://a.fr]a[/url] [img=alt]http://a.fr/i.png[/img] [color=\"red\"]r[/color]",
+		"errors": []
+	},
+	"citations profondes": {
+		"text": "[quote=a][quote=b][quote=c]c[/quote]b[/quote]a[/quote]",
+		"errors": []
+	},
+	"citations trop profondes seules": {
+		"text": "",
+		"errors": [
+			"Il semblerait que votre message ne comporte que des balises BBCode vides. Il est possible que cela se soit passé par exemple parce que la citation imbriquée la plus ancienne a été supprimé pour cause de niveau d'imbrication de citations supérieur à celui autorisé."
+		]
+	},
+	"listes": {
+		"text": "[list=*]\n[*]un[/*]\n[*]deux[/*]\n[/list]",
+		"errors": []
+	},
+	"listes imbriquées": {
+		"text": "[list=1]\n[*]a[list=*]\n[*]b[/*]\n[*]c[/*]\n[/list][/*]\n[*]d[/*]\n[/list]",
+		"errors": []
+	},
+	"liste non fermée": {
+		"text": "[list][*]a[*]b",
+		"errors": ["La balise [list] a été trouvée sans balise [/list] correspondante"]
+	},
+	"liste type invalide": {
+		"text": "[list=x][*]a[/list]",
+		"errors": ["La balise [] a été trouvée sans balise [/] correspondante"]
+	},
+	"liste majuscules": {
+		"text": "[list=A]\n[*]a[/*]\n[/list]",
+		"errors": []
+	},
+	"élément hors liste": {
+		"text": "[*]seul",
+		"errors": ["La balise [*] a été trouvée sans balise [/*] correspondante"]
+	},
+	"liens www": {
+		"text": "voir [url=http://www.pilote-virtuel.com]www.pilote-virtuel.com[/url] et ([url=http://www.exemple.fr/page]www.exemple.fr/page[/url]) ou <[url=http://www.a.com]www.a.com[/url]>.",
+		"errors": []
+	},
+	"liens http": {
+		"text": "http://a.fr/x?y=1, ftp://b.org [http://c.net] \"http://d.io\" [url=http://HTTP://E.FR]HTTP://E.FR[/url]",
+		"errors": []
+	},
+	"lien avec apostrophe": {
+		"text": "[url=http://a.fr/lavion]http://a.fr/l'avion[/url]",
+		"errors": []
+	},
+	"lien déjà balisé": {
+		"text": "[url]www.a.fr[/url] [url=http://b.fr]www.b.fr[/url] [img]http://c.fr/i.png[/img]",
+		"errors": []
+	},
+	"lien après crochet": {
+		"text": "[b][url=http://www.a.fr]www.a.fr[/url][/b]",
+		"errors": []
+	},
+	"code intact": {
+		"text": "[code][B]pas touché[/B] www.a.fr\t[/code] [b]touché[/b]    fin",
+		"errors": []
+	},
+	"code imbriqué": {
+		"text": "[code]a [code]b[/code] c[/code]",
+		"errors": []
+	},
+	"code non fermé": {
+		"text": "[code]jamais",
+		"errors": ["La balise [code] a été trouvée sans balise [/code] correspondante"]
+	},
+	"tabulations sans code": {
+		"text": "a\tb",
+		"errors": []
+	},
+	"paragraphes en ligne": {
+		"text": "[b]premier[/b]\n\n[b]second[/b]\n\n\n[b]troisième[/b]",
+		"errors": []
+	},
+	"paragraphes en ligne couleur": {
+		"text": "[color=red][i]a[/i][/color]\n\n[color=red][i]b[/i][/color]",
+		"errors": []
+	},
+	"saut simple en ligne": {
+		"text": "[b]a\nb[/b]",
+		"errors": []
+	},
+	"img trim": {
+		"text": "[img]http://a.fr/i.png[/img]",
+		"errors": []
+	},
+	"video": {
+		"text": "[video]https://www.youtube.com/watch?v=abc[/video] [/video]",
+		"errors": []
+	},
+	"alignement": {
+		"text": "[center]centré[/center][right][b]droite[/b][/right]",
+		"errors": []
+	},
+	"bloc dans alignement": {
+		"text": "[center][quote]x[/quote][/center]",
+		"errors": []
+	},
+	"bloc dans h": {
+		"text": "[h][quote]x[/quote][/h]",
+		"errors": ["La balise [quote] a été ouverte dans la balise [h], ceci n'est pas autorisé"]
+	},
+	"balises inconnues": {
+		"text": "[foo]bar[/foo] [b=1]x[/b] [/] []",
+		"errors": []
+	},
+	"url dans url": {
+		"text": "[url=http://a.fr][url]x[/url][/url]",
+		"errors": ["La balise [url] a été ouverte dans cette même balise, ceci n'est pas autorisé"]
+	},
+	"img dans url": {
+		"text": "[url=http://a.fr][img]http://a.fr/i.png[/img][/url]",
+		"errors": []
+	},
+	"b dans img": {
+		"text": "[img][b]x[/b][/img]",
+		"errors": ["La balise [b] a été ouverte dans la balise [img], ceci n'est pas autorisé"]
+	},
+	"liens interdits": {
+		"text": "[url]http://a.fr[/url]",
+		"errors": ["Vous n'êtes pas autorisé à mettre des liens"]
+	},
+	"liens interdits auto": {
+		"text": "[url=http://www.a.fr]www.a.fr[/url]",
+		"errors": ["Vous n'êtes pas autorisé à mettre des liens"]
+	},
+	"signature blocs": {
+		"text": "[quote]x[/quote] [h]t[/h]",
+		"errors": ["L'utilisation des balises BBCode [quote], [code], [list] et [h] n'est pas autorisée dans les signatures."]
+	},
+	"signature alignement": {
+		"text": "[center]x[/center]",
+		"errors": ["Les balises BBCode d'alignement du texte et la balise vidéo ne sont pas autorisées dans les signatures. Veuillez corriger."]
+	},
+	"signature simple": {
+		"text": "[b]Pilote[/b] [url=http://www.a.fr]www.a.fr[/url]",
+		"errors": []
+	},
+	"crlf": {
+		"text": "a\nb\nc",
+		"errors": []
+	},
+	"attribut avec newline": {
+		"text": "[color=red\n]x[/color]",
+		"errors": ["La balise [/color] a été trouvée sans balise [color] correspondante"]
+	},
+	"topic post": {
+		"text": "[topic]12[/topic] [post=3]p[/post] [user]1[/user]",
+		"errors": []
+	},
+	"acronym q sup sub": {
+		"text": "[acronym=Air France]AF[/acronym] [q]c[/q] x[sup]2[/sup] H[sub]2[/sub]O",
+		"errors": []
+	},
+	"fermeture par lot": {
+		"text": "[quote][b][i]x[/quote]",
+		"errors": ["La balise [b] a été trouvée sans balise [/b] correspondante"]
+	},
+	"email": {
+		"text": "[email]a@b.fr[/email] [email=a@b.fr]écrire[/email]",
+		"errors": []
+	},
+	"marqueur code dans texte": {
+		"text": "a[code]c[/code]b",
+		"errors": []
+	},
+	"unicode": {
+		"text": "Été 🛩️ [b]à bord[/b] ✈",
+		"errors": []
+	},
+	"index simple": {
+		"post": ["vol", "nuit", "airbus", "a320", "c'est", "génial"],
+		"subject": []
+	},
+	"index sujet": {
+		"post": ["message", "sujet"],
+		"subject": ["premier", "vol", "atr-72"]
+	},
+	"index balises": {
+		"post": ["gras", "pilote-virtuel", "site", "b737", "png", "avion", "citation"],
+		"subject": []
+	},
+	"index mots vides": {
+		"post": ["avions", "ciel", "pilotes"],
+		"subject": []
+	},
+	"index longueurs": {
+		"post": ["abc", "xxxxxxxxxxxxxxxxxxxx", "a-b", "l'été", "tiret", "apos"],
+		"subject": []
+	},
+	"index opérateurs et jokers": {
+		"post": ["avion", "pilote", "vol", "test"],
+		"subject": []
+	},
+	"index cjk": {
+		"post": ["avion"],
+		"subject": []
+	},
+	"index doublons": {
+		"post": ["avion", "avions"],
+		"subject": []
+	},
+	"index chiffres": {
+		"post": ["a320", "737", "b-747", "2024"],
+		"subject": []
+	},
+	"index sujet zéro": {
+		"post": ["texte"],
+		"subject": []
+	},
+	"index unicode": {
+		"post": ["l'aéroport", "zürich", "décolle", "vite"],
+		"subject": []
+	},
+	"email simple": "Bonjour le forum !!",
+	"email citation": "> Tessy said:\n> ligne 1\n> ligne 2\nréponse",
+	"email citations imbriquées": "> A said:\n>> B said:\n>>> déjà\n>> interne\n> externe\n",
+	"email citation sans auteur": ">  said:\n> x\n",
+	"email liens": "[http://a.fr] [B][1] [a@b.fr] [écrire][2]\n\n\n [1]: http://b.fr\n [2]: c@d.fr",
+	"email images": "[avion.png][1] [alt][2] [[z.png][4]][3]\n\n\n [1]: http://a.fr/x/avion.png\n [2]: http://a.fr/y.png\n [3]: http://c.fr\n [4]: http://c.fr/z.png",
+	"email raccourcis": "[http://forum.test/viewtopic.php?id=12] [le sujet][1] [msg][2] [http://forum.test/profile.php?id=5] [f][3]\n\n\n [1]: http://forum.test/viewtopic.php?id=12\n [2]: http://forum.test/viewtopic.php?pid=3#p3\n [3]: http://forum.test/viewforum.php?id=2",
+	"email liste": "[list]\n * un\n * deux\nfin",
+	"email code": "avant [b]brut[/b]\n\tindenté après    fin",
+	"email répétition": "[A][1] et [A][1]\n\n\n [1]: http://a.fr",
+	"email argument zéro": "[zéro]"
+}

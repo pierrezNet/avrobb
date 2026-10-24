@@ -161,7 +161,7 @@ async function trackGuest(request: FastifyRequest, deps: SessionDeps, now: numbe
 	if (presence === null) await deps.online.enter(GUEST_USER_ID, request.ip, now);
 	else await deps.online.refreshGuest(request.ip, now);
 
-	return { ...guest.viewer, logged: presence?.logged ?? now };
+	return { ...guest.viewer, logged: presence?.logged ?? now, lastPost: presence?.lastPost ?? null };
 }
 
 /** Identifie le visiteur et met à jour sa présence ; pose ou renouvelle les cookies. */

@@ -148,25 +148,42 @@ export function parseSearchRequest(
 /** Balises retirées avant le découpage (split_words()). */
 const BBCODE_TAGS = /\[\/?(b|u|s|ins|del|em|i|h|colou?r|quote|code|img|url|email|list|topic|post|forum|user)(?:=[^\]]*)?\]/g;
 
+/**
+ * Balises FluxToolBar retirées aussi (cache_fluxtoolbar_tag_search.php, généré depuis toolbar_tags) :
+ * ce sont celles que le parseur de PV connaît en plus de FluxBB.
+ */
+const TOOLBAR_TAGS = /\[\/?(acronym|q|sup|sub|left|right|center|justify|video)(?:=[^\]]*)?\]/g;
+
+/** PUN_CJK_HANGUL_REGEX : mots chinois, japonais ou coréens, cherchables mais jamais indexés. */
+const CJK_WORD =
+	/^[\u{1100}-\u{11FF}\u{3130}-\u{318F}\u{AC00}-\u{D7AF}\u{3040}-\u{309F}\u{30A0}-\u{30FF}\u{31F0}-\u{31FF}\u{2E80}-\u{2EFF}\u{2F00}-\u{2FDF}\u{2FF0}-\u{2FFF}\u{3000}-\u{303F}\u{31C0}-\u{31EF}\u{3200}-\u{32FF}\u{3400}-\u{4DBF}\u{4E00}-\u{9FFF}\u{20000}-\u{2A6DF}]+$/u;
+
 const isOperator = (word: string): boolean => word === 'and' || word === 'or' || word === 'not';
 
+/** validate_search_word() : à l'indexation, ni opérateurs ni mots CJK. */
+function isValidWord(word: string, index: boolean, stopwords: ReadonlySet<string>): boolean {
+	if (isOperator(word)) return !index;
+	if (stopwords.has(word)) return false;
+	if (CJK_WORD.test(word)) return !index;
+	const length = lengthWithoutWildcards(word);
+	return length >= SEARCH_MIN_WORD && length <= SEARCH_MAX_WORD;
+}
+
 /**
- * split_words($text, false) : mots de recherche uniques, dans l'ordre, sans mots vides, de 3 à
- * 20 caractères (jokers non comptés) ; « and », « or », « not » sont conservés comme opérateurs.
+ * split_words() : mots uniques, dans l'ordre, sans mots vides, de 3 à 20 caractères. En recherche
+ * (`index` faux), les jokers % et * sont gardés et « and », « or », « not » servent d'opérateurs.
  */
-export function splitSearchWords(text: string, stopwords: ReadonlySet<string>): string[] {
-	let cleaned = text.replace(BBCODE_TAGS, ' ');
+export function splitWords(text: string, index: boolean, stopwords: ReadonlySet<string>): string[] {
+	let cleaned = text.replace(BBCODE_TAGS, ' ').replace(TOOLBAR_TAGS, ' ');
 	cleaned = ` ${cleaned} `.replace(/((?<=[^\p{L}\p{N}])['-]|['-](?=[^\p{L}\p{N}]))/gu, '').slice(1, -1);
-	cleaned = cleaned.replace(/(?!['\-%*])[^\p{L}\p{N}]+/gu, ' ');
+	cleaned = cleaned.replace(index ? /(?!['-])[^\p{L}\p{N}]+/gu : /(?!['\-%*])[^\p{L}\p{N}]+/gu, ' ');
 	cleaned = cleaned.replace(/(\s){2,}/gu, '$1');
 
-	return [...new Set(cleaned.split(' '))].filter((word) => {
-		if (isOperator(word)) return true;
-		if (word === '' || stopwords.has(word)) return false;
-		const length = lengthWithoutWildcards(word);
-		return length >= SEARCH_MIN_WORD && length <= SEARCH_MAX_WORD;
-	});
+	return [...new Set(cleaned.split(' '))].filter((word) => isValidWord(word, index, stopwords));
 }
+
+/** split_words($text, false) : mots-clés d'une recherche. */
+export const splitSearchWords = (text: string, stopwords: ReadonlySet<string>): string[] => splitWords(text, false, stopwords);
 
 export interface WordHit {
 	postId: number;

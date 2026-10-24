@@ -5,11 +5,11 @@
  */
 
 import type { Db } from '../db/database.ts';
-import type { OnlineEntry, OnlinePurge, Presence } from '../services/presence.ts';
+import type { GuestPresence, OnlineEntry, OnlinePurge } from '../services/presence.ts';
 
 export interface OnlineWriter {
 	/** Présence d'un invité, repérée par son adresse IP (online.ident). */
-	findGuestPresence(ip: string): Promise<Presence | null>;
+	findGuestPresence(ip: string): Promise<GuestPresence | null>;
 	/** REPLACE INTO online : arrivée d'un membre (ident = pseudo) ou d'un invité (user_id 1, ident = IP). */
 	enter(userId: number, ident: string, now: number): Promise<void>;
 	/** Visite qui continue : logged = maintenant, et idle remis à 0. */
@@ -25,14 +25,14 @@ export interface OnlineWriter {
 export class OnlineRepository implements OnlineWriter {
 	constructor(private readonly db: Db) {}
 
-	async findGuestPresence(ip: string): Promise<Presence | null> {
+	async findGuestPresence(ip: string): Promise<GuestPresence | null> {
 		const row = await this.db
 			.selectFrom('online')
-			.select(['logged', 'idle'])
+			.select(['logged', 'idle', 'last_post'])
 			.where('ident', '=', ip)
 			.where('user_id', '=', 1)
 			.executeTakeFirst();
-		return row !== undefined ? { logged: row.logged, idle: row.idle === 1 } : null;
+		return row !== undefined ? { logged: row.logged, idle: row.idle === 1, lastPost: row.last_post } : null;
 	}
 
 	async enter(userId: number, ident: string, now: number): Promise<void> {

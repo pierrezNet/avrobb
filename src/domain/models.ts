@@ -28,6 +28,13 @@ export interface Group {
 	canDeleteTopics: boolean;
 	canSendEmail: boolean;
 	canPostTopics: boolean;
+	/** Liens autorisés dans les messages (g_post_links) : sinon [url] est refusée. */
+	canPostLinks: boolean;
+	/** Délai minimal entre deux messages, en secondes (g_post_flood). */
+	postFlood: number;
+	/** Promotion automatique (g_promote_next_group, 0 = aucune) après g_promote_min_posts messages. */
+	promoteNextGroup: number;
+	promoteMinPosts: number;
 	canSearch: boolean;
 	canSearchUsers: boolean;
 	/** Messagerie privée autorisée au groupe (g_pm, mod APMS). */
@@ -68,6 +75,12 @@ export interface Viewer {
 	showSignatureImages: boolean;
 	/** Le membre participe à la renommée (users.reputation_enable). */
 	reputationEnabled: boolean;
+	email: string;
+	numPosts: number;
+	/** Date de son dernier message (users.last_post, ou online.last_post pour un invité), pour l'anti-flood. */
+	lastPost: number | null;
+	/** Abonnement coché par défaut aux sujets où il écrit (users.auto_notify). */
+	autoNotify: boolean;
 }
 
 export interface Forum {
@@ -184,6 +197,20 @@ export interface BoardConfig {
 		defaultTimezone: number;
 		defaultDst: boolean;
 		defaultLang: string;
+	};
+	/** Rédaction des messages (post.php, edit.php). */
+	posting: {
+		/** o_topic_review : derniers messages rappelés sous le formulaire de réponse (0 = aucun). */
+		topicReview: number;
+		/** o_quote_depth : profondeur maximale des citations imbriquées. */
+		quoteDepth: number;
+		/** o_make_links : adresses « www. » transformées en liens. */
+		makeLinks: boolean;
+		/** p_subject_all_caps et p_message_all_caps : sujet ou message tout en capitales autorisé. */
+		subjectAllCaps: boolean;
+		messageAllCaps: boolean;
+		/** p_force_guest_email : adresse e-mail obligatoire pour un invité. */
+		forceGuestEmail: boolean;
 	};
 	/** Annonce affichée en haut de chaque page ; null si désactivée (HTML saisi par l'administrateur). */
 	announcement: string | null;

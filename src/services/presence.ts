@@ -9,6 +9,11 @@ export interface Presence {
 	idle: boolean;
 }
 
+/** Présence d'un invité, avec la date de son dernier message (anti-flood de post.php). */
+export interface GuestPresence extends Presence {
+	lastPost: number | null;
+}
+
 export type PresenceUpdate =
 	| { kind: 'enter' }
 	/** Visite qui continue ; `lastVisit` si la visite précédente avait expiré sans être purgée. */

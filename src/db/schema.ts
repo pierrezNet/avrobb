@@ -96,6 +96,8 @@ export interface GroupsTable {
 	g_id: Generated<number>;
 	g_title: string;
 	g_user_title: string | null;
+	g_promote_min_posts: number;
+	g_promote_next_group: number;
 	g_moderator: number;
 	g_mod_promote_users: number;
 	g_mod_edit_users: number;
@@ -107,6 +109,8 @@ export interface GroupsTable {
 	g_delete_topics: number;
 	g_send_email: number;
 	g_post_topics: number;
+	g_post_links: number;
+	g_post_flood: number;
 	g_search: number;
 	g_search_users: number;
 	g_pm: number;
@@ -134,14 +138,15 @@ export interface OnlineTable {
 export interface PostsTable {
 	id: Generated<number>;
 	poster: string;
-	poster_id: number;
+	/** 1 (invité) par défaut : l'INSERT d'un message d'invité ne la fixe pas. */
+	poster_id: Generated<number>;
 	poster_ip: string | null;
 	poster_email: string | null;
 	message: string | null;
 	hide_smilies: number;
 	posted: number;
-	edited: number | null;
-	edited_by: string | null;
+	edited: Generated<number | null>;
+	edited_by: Generated<string | null>;
 	topic_id: number;
 }
 
@@ -172,20 +177,21 @@ export interface TopicSubscriptionsTable {
 	topic_id: number;
 }
 
+/** Colonnes en Generated<…> : valeur par défaut de la base à la création d'un sujet (post.php). */
 export interface TopicsTable {
 	id: Generated<number>;
 	poster: string;
 	subject: string;
 	posted: number;
-	last_post_id: number | null;
+	last_post_id: Generated<number | null>;
 	last_poster: string | null;
-	num_views: number;
-	first_post_id: number;
-	num_replies: number;
-	closed: number;
+	num_views: Generated<number>;
+	first_post_id: Generated<number>;
+	num_replies: Generated<number>;
+	closed: Generated<number>;
 	sticky: number;
 	last_post: number;
-	moved_to: number | null;
+	moved_to: Generated<number | null>;
 	forum_id: number;
 }
 
@@ -213,6 +219,8 @@ export interface UsersTable {
 	disp_topics: number | null;
 	disp_posts: number | null;
 	email_setting: number;
+	notify_with_post: Generated<number>;
+	auto_notify: Generated<number>;
 	show_avatars: Generated<number>;
 	show_sig: Generated<number>;
 	timezone: number;

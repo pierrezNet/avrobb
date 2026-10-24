@@ -12,13 +12,14 @@ import { indexPage } from './indexPage.ts';
 import { login } from './login.ts';
 import { misc } from './misc.ts';
 import { pms } from './pms.ts';
+import { post } from './post.ts';
 import { profile } from './profile.ts';
 import { register } from './register.ts';
 import { search } from './search.ts';
 import { topic } from './topic.ts';
 import { userlist } from './userlist.ts';
 
-export const fr = { common, index: indexPage, forum, topic, userlist, profile, help, search, gallery, login, misc, register, pms };
+export const fr = { common, index: indexPage, forum, topic, userlist, profile, help, search, gallery, login, misc, register, pms, post };
 
 export const frDateWords: DateWords = {
 	today: "Aujourd'hui",

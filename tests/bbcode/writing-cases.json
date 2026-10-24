@@ -1,0 +1,394 @@
+[
+	{
+		"name": "texte simple",
+		"fn": "preparse",
+		"text": "Bonjour le forum"
+	},
+	{
+		"name": "majuscules des balises",
+		"fn": "preparse",
+		"text": "[B]gras[/B] [Url=http://a.fr]lien[/URL] [COLOR=Red]rouge[/COLOR]"
+	},
+	{
+		"name": "balises vides",
+		"fn": "preparse",
+		"text": "avant [b][/b] [i] [/i] [quote][/quote] après"
+	},
+	{
+		"name": "seulement vide",
+		"fn": "preparse",
+		"text": "[b][/b][i]  [/i]"
+	},
+	{
+		"name": "code vide",
+		"fn": "preparse",
+		"text": "x [code] [/code] y"
+	},
+	{
+		"name": "espaces de bord",
+		"fn": "preparse",
+		"text": "  \n  texte entouré  \n\n "
+	},
+	{
+		"name": "chevauchement réparé",
+		"fn": "preparse",
+		"text": "[b]gras [i]les deux[/b] italique[/i]"
+	},
+	{
+		"name": "fermeture orpheline",
+		"fn": "preparse",
+		"text": "texte [/b] fin"
+	},
+	{
+		"name": "ouverture non fermée",
+		"fn": "preparse",
+		"text": "[b]jamais fermé"
+	},
+	{
+		"name": "imbrication interdite",
+		"fn": "preparse",
+		"text": "[b][quote]bloc dans en ligne[/quote][/b]"
+	},
+	{
+		"name": "auto-imbrication",
+		"fn": "preparse",
+		"text": "[b]a [b]b[/b] c[/b]"
+	},
+	{
+		"name": "attribut vide",
+		"fn": "preparse",
+		"text": "[url=]x[/url]"
+	},
+	{
+		"name": "guillemets d argument",
+		"fn": "preparse",
+		"text": "[url=\"http://a.fr\"]a[/url] [img='alt']http://a.fr/i.png[/img] [color=\"red\"]r[/color]"
+	},
+	{
+		"name": "citations profondes",
+		"fn": "preparse",
+		"text": "[quote=a][quote=b][quote=c][quote=d]trop[/quote]c[/quote]b[/quote]a[/quote]"
+	},
+	{
+		"name": "citations trop profondes seules",
+		"fn": "preparse",
+		"text": "[quote][quote][quote][quote]x[/quote][/quote][/quote][/quote]"
+	},
+	{
+		"name": "listes",
+		"fn": "preparse",
+		"text": "[list]\n[*]un\n[*] deux \n\n[*]\n[/list]"
+	},
+	{
+		"name": "listes imbriquées",
+		"fn": "preparse",
+		"text": "[list=1][*]a[list][*]b[*]c[/list][*]d[/list]"
+	},
+	{
+		"name": "liste non fermée",
+		"fn": "preparse",
+		"text": "[list][*]a[*]b"
+	},
+	{
+		"name": "liste type invalide",
+		"fn": "preparse",
+		"text": "[list=x][*]a[/list]"
+	},
+	{
+		"name": "liste majuscules",
+		"fn": "preparse",
+		"text": "[LIST=A][*]a[/LIST]"
+	},
+	{
+		"name": "élément hors liste",
+		"fn": "preparse",
+		"text": "[*]seul"
+	},
+	{
+		"name": "liens www",
+		"fn": "preparse",
+		"text": "voir www.pilote-virtuel.com et (www.exemple.fr/page) ou <www.a.com>."
+	},
+	{
+		"name": "liens http",
+		"fn": "preparse",
+		"text": "http://a.fr/x?y=1, ftp://b.org [http://c.net] \"http://d.io\" HTTP://E.FR"
+	},
+	{
+		"name": "lien avec apostrophe",
+		"fn": "preparse",
+		"text": "http://a.fr/l'avion"
+	},
+	{
+		"name": "lien déjà balisé",
+		"fn": "preparse",
+		"text": "[url]www.a.fr[/url] [url=http://b.fr]www.b.fr[/url] [img]http://c.fr/i.png[/img]"
+	},
+	{
+		"name": "lien après crochet",
+		"fn": "preparse",
+		"text": "[b]www.a.fr[/b]"
+	},
+	{
+		"name": "code intact",
+		"fn": "preparse",
+		"text": "[code][B]pas touché[/B] www.a.fr\t[/code] [B]touché[/B]\tfin"
+	},
+	{
+		"name": "code imbriqué",
+		"fn": "preparse",
+		"text": "[code]a [code]b[/code] c[/code]"
+	},
+	{
+		"name": "code non fermé",
+		"fn": "preparse",
+		"text": "[code]jamais"
+	},
+	{
+		"name": "tabulations sans code",
+		"fn": "preparse",
+		"text": "a\tb"
+	},
+	{
+		"name": "paragraphes en ligne",
+		"fn": "preparse",
+		"text": "[b]premier\n\nsecond\n\n\ntroisième[/b]"
+	},
+	{
+		"name": "paragraphes en ligne couleur",
+		"fn": "preparse",
+		"text": "[color=red][i]a\n\nb[/i][/color]"
+	},
+	{
+		"name": "saut simple en ligne",
+		"fn": "preparse",
+		"text": "[b]a\nb[/b]"
+	},
+	{
+		"name": "img trim",
+		"fn": "preparse",
+		"text": "[img]  http://a.fr/i.png  [/img]"
+	},
+	{
+		"name": "video",
+		"fn": "preparse",
+		"text": "[video]https://www.youtube.com/watch?v=abc[/video] [/video]"
+	},
+	{
+		"name": "alignement",
+		"fn": "preparse",
+		"text": "[center]centré[/center][right][b]droite[/b][/right]"
+	},
+	{
+		"name": "bloc dans alignement",
+		"fn": "preparse",
+		"text": "[center][quote]x[/quote][/center]"
+	},
+	{
+		"name": "bloc dans h",
+		"fn": "preparse",
+		"text": "[h][quote]x[/quote][/h]"
+	},
+	{
+		"name": "balises inconnues",
+		"fn": "preparse",
+		"text": "[foo]bar[/foo] [b=1]x[/b] [/] []"
+	},
+	{
+		"name": "url dans url",
+		"fn": "preparse",
+		"text": "[url=http://a.fr][url]x[/url][/url]"
+	},
+	{
+		"name": "img dans url",
+		"fn": "preparse",
+		"text": "[url=http://a.fr][img]http://a.fr/i.png[/img][/url]"
+	},
+	{
+		"name": "b dans img",
+		"fn": "preparse",
+		"text": "[img][b]x[/b][/img]"
+	},
+	{
+		"name": "liens interdits",
+		"fn": "preparse",
+		"text": "[url]http://a.fr[/url]",
+		"noLinks": true
+	},
+	{
+		"name": "liens interdits auto",
+		"fn": "preparse",
+		"text": "www.a.fr",
+		"noLinks": true
+	},
+	{
+		"name": "signature blocs",
+		"fn": "preparse",
+		"text": "[quote]x[/quote] [h]t[/h]",
+		"signature": true
+	},
+	{
+		"name": "signature alignement",
+		"fn": "preparse",
+		"text": "[center]x[/center]",
+		"signature": true
+	},
+	{
+		"name": "signature simple",
+		"fn": "preparse",
+		"text": "[b]Pilote[/b] www.a.fr",
+		"signature": true
+	},
+	{
+		"name": "crlf",
+		"fn": "preparse",
+		"text": "a\r\nb\rc"
+	},
+	{
+		"name": "attribut avec newline",
+		"fn": "preparse",
+		"text": "[color=red\n]x[/color]"
+	},
+	{
+		"name": "topic post",
+		"fn": "preparse",
+		"text": "[topic]12[/topic] [post=3]p[/post] [user]1[/user]"
+	},
+	{
+		"name": "acronym q sup sub",
+		"fn": "preparse",
+		"text": "[acronym=Air France]AF[/acronym] [q]c[/q] x[sup]2[/sup] H[sub]2[/sub]O"
+	},
+	{
+		"name": "fermeture par lot",
+		"fn": "preparse",
+		"text": "[quote][b][i]x[/quote]"
+	},
+	{
+		"name": "email",
+		"fn": "preparse",
+		"text": "[email]a@b.fr[/email] [email=a@b.fr]écrire[/email]"
+	},
+	{
+		"name": "marqueur code dans texte",
+		"fn": "preparse",
+		"text": "a\u0001b [code]c[/code]"
+	},
+	{
+		"name": "unicode",
+		"fn": "preparse",
+		"text": "Été 🛩️ [b]à bord[/b] ✈"
+	},
+	{
+		"name": "index simple",
+		"fn": "index",
+		"text": "Le vol de nuit en Airbus A320, c'est génial !"
+	},
+	{
+		"name": "index sujet",
+		"fn": "index",
+		"text": "Message du sujet",
+		"subject": "Premier VOL en ATR-72"
+	},
+	{
+		"name": "index balises",
+		"fn": "index",
+		"text": "[b]gras[/b] [url=http://www.pilote-virtuel.com]le site[/url] [img=avion]http://a.fr/b737.png[/img] [topic]123[/topic] [quote=Tessy]citation[/quote]"
+	},
+	{
+		"name": "index mots vides",
+		"fn": "index",
+		"text": "les avions sont dans le ciel avec des pilotes"
+	},
+	{
+		"name": "index longueurs",
+		"fn": "index",
+		"text": "ab abc xxxxxxxxxxxxxxxxxxxx yyyyyyyyyyyyyyyyyyyyy a-b l'été -tiret- 'apos'"
+	},
+	{
+		"name": "index opérateurs et jokers",
+		"fn": "index",
+		"text": "avion and pilote or not vol* %test%"
+	},
+	{
+		"name": "index cjk",
+		"fn": "index",
+		"text": "飛行機 パイロット 비행기 avion"
+	},
+	{
+		"name": "index doublons",
+		"fn": "index",
+		"text": "Avion avion AVION avions"
+	},
+	{
+		"name": "index chiffres",
+		"fn": "index",
+		"text": "A320 737 b-747 3,14 2024"
+	},
+	{
+		"name": "index sujet zéro",
+		"fn": "index",
+		"text": "texte",
+		"subject": "0"
+	},
+	{
+		"name": "index unicode",
+		"fn": "index",
+		"text": "Été à l'aéroport de Zürich — ça décolle… « vite »"
+	},
+	{
+		"name": "email simple",
+		"fn": "email",
+		"text": "  Bonjour [b]le[/b] [i]forum[/i] [color=red]!![/color]\n"
+	},
+	{
+		"name": "email citation",
+		"fn": "email",
+		"text": "[quote=Tessy]ligne 1\nligne 2[/quote]\nréponse"
+	},
+	{
+		"name": "email citations imbriquées",
+		"fn": "email",
+		"text": "[quote=A][quote=B]> déjà\ninterne[/quote]\nexterne\n[/quote]"
+	},
+	{
+		"name": "email citation sans auteur",
+		"fn": "email",
+		"text": "[quote]x\n[/quote]"
+	},
+	{
+		"name": "email liens",
+		"fn": "email",
+		"text": "[url]http://a.fr[/url] [url=http://b.fr]B[/url] [email]a@b.fr[/email] [email=c@d.fr]écrire[/email]"
+	},
+	{
+		"name": "email images",
+		"fn": "email",
+		"text": "[img]http://a.fr/x/avion.png[/img] [img=alt]http://a.fr/y.png[/img] [url=http://c.fr][img]http://c.fr/z.png[/img][/url]"
+	},
+	{
+		"name": "email raccourcis",
+		"fn": "email",
+		"text": "[topic]12[/topic] [topic=12]le sujet[/topic] [post=3]msg[/post] [user]5[/user] [forum=2]f[/forum]"
+	},
+	{
+		"name": "email liste",
+		"fn": "email",
+		"text": "[list]\n[*]un[/*]\n[*]deux[/*]\n[/list]\nfin"
+	},
+	{
+		"name": "email code",
+		"fn": "email",
+		"text": "avant [code]\n[b]brut[/b]\n\tindenté\n[/code] après\tfin"
+	},
+	{
+		"name": "email répétition",
+		"fn": "email",
+		"text": "[url=http://a.fr]A[/url] et [url=http://a.fr]A[/url]"
+	},
+	{
+		"name": "email argument zéro",
+		"fn": "email",
+		"text": "[url=0]zéro[/url]"
+	}
+]

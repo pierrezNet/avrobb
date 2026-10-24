@@ -50,6 +50,10 @@ export function group(overrides: Partial<Group> = {}): Group {
 		canDeleteTopics: true,
 		canSendEmail: true,
 		canPostTopics: true,
+		canPostLinks: true,
+		postFlood: 30,
+		promoteNextGroup: 0,
+		promoteMinPosts: 0,
 		canSearch: true,
 		canSearchUsers: true,
 		canUsePrivateMessages: true,
@@ -80,6 +84,10 @@ export function viewer(overrides: Partial<Viewer> = {}): Viewer {
 		showImages: true,
 		showSignatureImages: true,
 		reputationEnabled: true,
+		email: 'tessy@example.com',
+		numPosts: 12,
+		lastPost: null,
+		autoNotify: false,
 		...overrides,
 	};
 }
@@ -189,6 +197,7 @@ export const boardConfig: BoardConfig = {
 		defaultDst: false,
 		defaultLang: 'French',
 	},
+	posting: { topicReview: 15, quoteDepth: 3, makeLinks: true, subjectAllCaps: false, messageAllCaps: false, forceGuestEmail: true },
 	announcement: null,
 	quickjump: true,
 	feedType: 'atom',
@@ -256,7 +265,8 @@ export function fakeOnline(visitors: readonly OnlineVisitor[] = []): FakeOnline 
 	const log: string[] = [];
 	return {
 		log,
-		findGuestPresence: async (ip) => (visitors.some((v) => v.userId === 1 && v.ident === ip) ? { logged: NOW - 60, idle: false } : null),
+		findGuestPresence: async (ip) =>
+			visitors.some((v) => v.userId === 1 && v.ident === ip) ? { logged: NOW - 60, idle: false, lastPost: null } : null,
 		enter: async (userId, ident) => void log.push(`enter ${userId} ${ident}`),
 		refreshMember: async (userId) => void log.push(`refresh ${userId}`),
 		refreshGuest: async (ip) => void log.push(`refresh guest ${ip}`),

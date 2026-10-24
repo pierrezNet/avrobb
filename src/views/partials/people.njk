@@ -1,0 +1,2 @@
+{#- Lien vers un profil, ou simple nom si le groupe ne peut pas voir les profils (PersonLink). -#}
+{% macro person(link) %}{% if link.href %}<a href="{{ url(link.href) }}">{{ link.label }}</a>{% else %}{{ link.label }}{% endif %}{% endmacro %}

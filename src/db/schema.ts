@@ -51,7 +51,13 @@ export interface ConfigTable {
 export interface ForumsTable {
 	id: Generated<number>;
 	forum_name: string;
+	forum_desc: string | null;
 	redirect_url: string | null;
+	num_topics: number;
+	num_posts: number;
+	last_post: number | null;
+	last_post_id: number | null;
+	last_poster: string | null;
 	moderators: string | null;
 	disp_position: number;
 	cat_id: number;
@@ -94,6 +100,8 @@ export interface MessagesTable {
 
 export interface OnlineTable {
 	user_id: number;
+	ident: string;
+	logged: number;
 	idle: number;
 }
 
@@ -124,6 +132,7 @@ export interface TopicsTable {
 	num_replies: number;
 	closed: number;
 	sticky: number;
+	last_post: number;
 	moved_to: number | null;
 	forum_id: number;
 }

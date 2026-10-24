@@ -161,6 +161,8 @@ export interface BoardConfig {
 	/** o_indent_num_spaces : espaces remplaçant une tabulation hors [code]. */
 	indentSpaces: number;
 	reputationEnabled: boolean;
+	/** Liste des membres en ligne en bas de l'index (o_users_online). */
+	usersOnline: boolean;
 }
 
 /** Balise de sujet de PV (« [Réglé] »…), posée par les modérateurs. */
@@ -187,4 +189,50 @@ export interface ForumCategory {
 	id: number;
 	name: string;
 	forums: ForumLink[];
+}
+
+/** Dernier message d'un forum ou d'un sujet (forums.last_post*, topics.last_post*). */
+export interface LastPost {
+	postedAt: number;
+	postId: number;
+	poster: string;
+}
+
+/** Forum tel qu'affiché dans la liste de l'index. */
+export interface ForumSummary {
+	id: number;
+	name: string;
+	/** forums.forum_desc : HTML saisi par l'administrateur, affiché tel quel comme en PHP. */
+	descriptionHtml: string;
+	/** Forum de redirection : URL de destination, sinon null. */
+	redirectUrl: string | null;
+	moderators: ReadonlyMap<string, number>;
+	numTopics: number;
+	numPosts: number;
+	lastPost: LastPost | null;
+}
+
+export interface IndexCategory {
+	id: number;
+	name: string;
+	forums: ForumSummary[];
+}
+
+/** Sujet modifié depuis une date (pour l'indicateur de nouveaux messages). */
+export interface RecentTopic {
+	forumId: number;
+	topicId: number;
+	lastPost: number;
+}
+
+/** cache_users_info.php : nombre de membres et dernier inscrit. */
+export interface UsersInfo {
+	totalUsers: number;
+	newestUser: { id: number; username: string } | null;
+}
+
+/** Ligne de la table online (membre ou invité actif). */
+export interface OnlineVisitor {
+	userId: number;
+	ident: string;
 }

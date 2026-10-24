@@ -9,6 +9,7 @@ import fastifyStatic from '@fastify/static';
 import fastifyView from '@fastify/view';
 import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import nunjucks from 'nunjucks';
+import { IndexController } from './controllers/IndexController.ts';
 import { TopicController, type TopicQuery } from './controllers/TopicController.ts';
 import type { BoardConfig, Viewer } from './domain/models.ts';
 import { ASSETS_PREFIX, createAssetUrl } from './http/assets.ts';
@@ -18,9 +19,11 @@ import type { BanReader } from './repositories/BanRepository.ts';
 import type { CensorReader } from './repositories/CensorRepository.ts';
 import type { ConfigReader } from './repositories/ConfigLoader.ts';
 import type { PostReader } from './repositories/PostRepository.ts';
+import type { StatsReader } from './repositories/StatsRepository.ts';
 import type { TopicLabelReader } from './repositories/TopicLabelRepository.ts';
 import type { TopicReader } from './repositories/TopicRepository.ts';
 import type { UserReader } from './repositories/UserRepository.ts';
+import type { UsersInfoReader } from './repositories/UsersInfoLoader.ts';
 import type { AvatarLocator } from './services/avatars.ts';
 
 declare module 'fastify' {
@@ -41,6 +44,8 @@ export interface AppDeps extends LayoutDeps {
 	bans: BanReader;
 	censorship: CensorReader;
 	topicLabels: TopicLabelReader;
+	stats: StatsReader;
+	usersInfo: UsersInfoReader;
 	legacyCookie: { name: string; seed: string };
 	/** URL de l'installation PHP : les liens vers les pages non portées y renvoient. */
 	legacyBaseUrl: string;
@@ -50,7 +55,7 @@ export interface AppDeps extends LayoutDeps {
 }
 
 /** Pages déjà servies par Node ; les autres liens partent vers l'installation PHP. */
-const PORTED_PAGES = new Set(['viewtopic.php']);
+const PORTED_PAGES = new Set(['index.php', 'viewtopic.php']);
 
 const ROOT_DIR = path.join(import.meta.dirname, '..');
 
@@ -101,6 +106,10 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 	app.setNotFoundHandler({ preHandler: authenticate }, (request, reply) =>
 		renderMessage(request, reply, deps, 404, deps.page.lang.common.badRequest),
 	);
+
+	const index = new IndexController({ ...deps, trackCookieName: `${deps.legacyCookie.name}_track` });
+	app.get('/', { preHandler: authenticate }, index.show);
+	app.get('/index.php', { preHandler: authenticate }, index.show);
 
 	const topics = new TopicController(deps);
 	app.get<{ Querystring: TopicQuery }>('/viewtopic.php', { preHandler: authenticate }, topics.show);

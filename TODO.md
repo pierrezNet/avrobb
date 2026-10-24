@@ -38,7 +38,7 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
   - [x] Affichage de la réputation sous l'auteur (`include/reputation/rep_viewtopic.php`) et lien MP (APMS) **(PV)**
   - [x] ~~Affichage du sondage du sujet~~ : sans objet, PV n'affiche aucun sondage (`AP_Sondage` est un reste sans table ni affichage)
   - [x] ~~Pièces jointes~~ : sans objet, les uploads sont insérés par `[img]`/`[url]` (gestionnaire : lot 5)
-- [ ] **index** : catégories, forums, derniers messages, statistiques, utilisateurs en ligne (nouveau gabarit en `<div>`)
+- [x] **index** : catégories, forums, derniers messages, statistiques, utilisateurs en ligne (nouveau gabarit en `<div>`)
 - [ ] **viewforum** : liste des sujets, pagination, épinglés, déplacés, icônes lu/non lu (lecture seule)
 - [ ] **userlist** : recherche, tri, pagination
 - [ ] **profile** (consultation) : sections publiques, biographie (`UP_Ma_biographie`) **(PV)**

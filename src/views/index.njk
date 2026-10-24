@@ -1,0 +1,74 @@
+{#- Index des forums (index.php). Données : `view` (presenters/indexPage.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/people.njk" as people %}
+
+{% block main %}
+<h1 class="visually-hidden">{{ layout.boardTitle }}</h1>
+
+{% for category in view.categories %}
+<section class="category" id="idx{{ loop.index }}" aria-labelledby="cat{{ category.id }}">
+	<h2 class="category__title" id="cat{{ category.id }}">{{ category.name }}</h2>
+	<div class="forum-list__head" aria-hidden="true">
+		<span>{{ lang.index.topics }}</span> <span>{{ lang.index.posts }}</span> <span>{{ lang.index.lastPost }}</span>
+	</div>
+	<ul class="forum-list">
+	{% for forum in category.forums %}
+		<li class="forum-row{% if forum.newPostsUrl %} forum-row--new{% endif %}{% if forum.isRedirect %} forum-row--redirect{% endif %}">
+			<div class="forum-row__main">
+				<h3 class="forum-row__name">
+					{%- if forum.isRedirect -%}
+					<span class="forum-row__redirect">{{ lang.index.linkTo }}</span> <a href="{{ forum.href }}">{{ forum.name }}</a>
+					{%- else -%}
+					<a href="{{ url(forum.href) }}">{{ forum.name }}</a>
+					{%- endif -%}
+					{% if forum.newPostsUrl %} <a class="badge badge--new" href="{{ url(forum.newPostsUrl) }}">{{ lang.index.newPosts }}</a>{% endif %}
+				</h3>
+				{#- forums.forum_desc : HTML saisi par l'administrateur, affiché tel quel comme dans index.php. #}
+				{% if forum.descriptionHtml %}<div class="forum-row__desc">{{ forum.descriptionHtml | safe }}</div>{% endif %}
+				{% if forum.moderators.length %}
+				<p class="forum-row__mods">(<em>{{ lang.index.moderatedBy }}</em> {% for moderator in forum.moderators %}{{ people.person(moderator) }}{% if not loop.last %}, {% endif %}{% endfor %})</p>
+				{% endif %}
+			</div>
+			<dl class="forum-row__stats">
+				<div class="forum-row__count"><dt>{{ lang.index.topics }}</dt> <dd>{{ forum.numTopics }}</dd></div>
+				<div class="forum-row__count"><dt>{{ lang.index.posts }}</dt> <dd>{{ forum.numPosts }}</dd></div>
+				<div class="forum-row__last">
+					<dt>{{ lang.index.lastPost }}</dt>
+					<dd>{% if forum.lastPost %}<a href="{{ url(forum.lastPost.href) }}">{{ forum.lastPost.at }}</a> <span class="forum-row__by">{{ lang.index.by }} {{ forum.lastPost.by }}</span>{% else %}{{ forum.lastPostPlaceholder }}{% endif %}</dd>
+				</div>
+			</dl>
+		</li>
+	{% endfor %}
+	</ul>
+</section>
+{% else %}
+<p class="message-box" id="idx0">{{ lang.index.emptyBoard }}</p>
+{% endfor %}
+
+{% if view.markReadUrl %}
+<p class="page-bar"><a class="button" href="{{ url(view.markReadUrl) }}">{{ lang.index.markAllAsRead }}</a></p>
+{% endif %}
+
+<section class="board-stats" id="brdstats" aria-labelledby="brdstats-title">
+	<h2 class="board-stats__title" id="brdstats-title">{{ lang.index.boardInfo }}</h2>
+	<div class="board-stats__columns">
+		<dl class="board-stats__list">
+			<dt>{{ lang.index.boardStats }}</dt>
+			<dd>{{ lang.index.totalUsers }} <strong>{{ view.stats.totalUsers }}</strong></dd>
+			<dd>{{ lang.index.totalTopics }} <strong>{{ view.stats.totalTopics }}</strong></dd>
+			<dd>{{ lang.index.totalPosts }} <strong>{{ view.stats.totalPosts }}</strong></dd>
+		</dl>
+		<dl class="board-stats__list">
+			<dt>{{ lang.index.userInfo }}</dt>
+			{% if view.stats.newestUser %}<dd>{{ lang.index.newestUser }} {{ people.person(view.stats.newestUser) }}</dd>{% endif %}
+			{% if view.online %}
+			<dd>{{ lang.index.usersOnline }} <strong>{{ view.online.numUsers }}</strong></dd>
+			<dd>{{ lang.index.guestsOnline }} <strong>{{ view.online.numGuests }}</strong></dd>
+			{% endif %}
+		</dl>
+	</div>
+	{% if view.online and view.online.users.length %}
+	<p class="board-stats__online" id="onlinelist"><strong>{{ lang.index.online }}</strong> {% for user in view.online.users %}{{ people.person(user) }}{% if not loop.last %}, {% endif %}{% endfor %}</p>
+	{% endif %}
+</section>
+{% endblock %}

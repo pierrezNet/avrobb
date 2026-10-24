@@ -5,10 +5,11 @@
 
 import type { DateWords } from '../../services/dateFormat.ts';
 import { common } from './common.ts';
+import { indexPage } from './indexPage.ts';
 import { pms } from './pms.ts';
 import { topic } from './topic.ts';
 
-export const fr = { common, topic, pms };
+export const fr = { common, index: indexPage, topic, pms };
 
 export const frDateWords: DateWords = {
 	today: "Aujourd'hui",

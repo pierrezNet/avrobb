@@ -6,6 +6,7 @@
 import { describe, expect, it } from 'vitest';
 import { ConfigLoader } from '../src/repositories/ConfigLoader.ts';
 import type { PhpCacheName, PhpCacheStore } from '../src/repositories/PhpCacheFiles.ts';
+import { UsersInfoLoader } from '../src/repositories/UsersInfoLoader.ts';
 import { toBoardConfig } from '../src/services/boardConfig.ts';
 import { parsePhpCacheVariable, toStringMap } from '../src/services/phpVarExport.ts';
 
@@ -141,5 +142,32 @@ describe('ConfigLoader', () => {
 		await loader.invalidate();
 		expect(store.files.has('config')).toBe(false);
 		expect((await loader.load()).boardTitle).toBe('Titre en base');
+	});
+});
+
+describe('UsersInfoLoader', () => {
+	const CACHE =
+		"<?php\n\ndefine('PUN_USERS_INFO_LOADED', 1);\n\n$stats = array (\n  'total_users' => '5',\n  'last_user' => \n  array (\n    'id' => '2',\n    'username' => 'admin',\n  ),\n);\n\n?>";
+
+	it('lit cache_users_info.php comme index.php, sinon la base', async () => {
+		const store = new FakeCacheStore();
+		let dbReads = 0;
+		const loader = new UsersInfoLoader(
+			{
+				loadUsersInfo: async () => {
+					dbReads++;
+					return { totalUsers: 9, newestUser: null };
+				},
+			},
+			store,
+			() => 1000,
+		);
+
+		expect(await loader.load()).toEqual({ totalUsers: 9, newestUser: null });
+		store.files.set('users_info', { content: CACHE, version: 1 });
+		expect(await loader.load()).toEqual({ totalUsers: 5, newestUser: { id: 2, username: 'admin' } });
+		await loader.load();
+		expect(store.reads).toBe(1);
+		expect(dbReads).toBe(1);
 	});
 });

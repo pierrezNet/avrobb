@@ -8,7 +8,10 @@ import {
 	type ForumCategory,
 	type Group,
 	GroupId,
+	type IndexCategory,
+	type OnlineVisitor,
 	type Post,
+	type RecentTopic,
 	type Topic,
 	type TopicLabel,
 	type Viewer,
@@ -158,6 +161,7 @@ export const boardConfig: BoardConfig = {
 	baseUrl: 'http://forum.test',
 	indentSpaces: 4,
 	reputationEnabled: false,
+	usersOnline: true,
 };
 
 export const forumCategories: ForumCategory[] = [
@@ -180,6 +184,9 @@ export interface FakeData {
 	censoredWords?: CensoredWord[];
 	/** Balises PV posées, par sujet. */
 	topicLabels?: Map<number, TopicLabel[]>;
+	indexCategories?: IndexCategory[];
+	recentTopics?: RecentTopic[];
+	online?: OnlineVisitor[];
 }
 
 export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppDeps {
@@ -200,9 +207,12 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 				return hit === undefined ? null : { topicId: hit.topicId, position: hit.position };
 			},
 			findLastPostId: async (topicId) => data.posts.get(topicId)?.at(-1)?.id ?? null,
+			listUpdatedSince: async (_groupId, since) => (data.recentTopics ?? []).filter((t) => t.lastPost > since),
 		},
 		posts: { listPage: async (topicId, offset, limit) => (data.posts.get(topicId) ?? []).slice(offset, offset + limit) },
-		forums: { listReadable: async () => forumCategories },
+		forums: { listReadable: async () => forumCategories, listIndex: async () => data.indexCategories ?? [] },
+		stats: { countTopicsAndPosts: async () => ({ topics: 1234, posts: 56789 }), listOnline: async () => data.online ?? [] },
+		usersInfo: { load: async () => ({ totalUsers: 5, newestUser: { id: 6, username: 'valdefsx' } }) },
 		reports: { hasPending: async () => data.pendingReports ?? false },
 		privateMessages: { countUnread: async (userId) => data.unreadPrivateMessages?.get(userId) ?? 0 },
 		avatars: { urlFor: async () => null },

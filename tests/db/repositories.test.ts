@@ -17,9 +17,11 @@ import { ForumRepository } from '../../src/repositories/ForumRepository.ts';
 import { PostRepository } from '../../src/repositories/PostRepository.ts';
 import { PrivateMessageRepository } from '../../src/repositories/PrivateMessageRepository.ts';
 import { ReportRepository } from '../../src/repositories/ReportRepository.ts';
+import { StatsRepository } from '../../src/repositories/StatsRepository.ts';
 import { TopicLabelRepository } from '../../src/repositories/TopicLabelRepository.ts';
 import { TopicRepository } from '../../src/repositories/TopicRepository.ts';
 import { UserRepository } from '../../src/repositories/UserRepository.ts';
+import { UsersInfoLoader } from '../../src/repositories/UsersInfoLoader.ts';
 import { forumHmac } from '../../src/services/legacySession.ts';
 import { testDbConfig } from './testDatabase.ts';
 
@@ -108,6 +110,37 @@ describe('ForumRepository', () => {
 	});
 });
 
+describe('index : forums, sujets récents, statistiques', () => {
+	it('liste les forums lisibles avec compteurs, description et dernier message', async () => {
+		const categories = await new ForumRepository(db).listIndex(GroupId.Guest);
+		expect(categories.map((c) => c.forums.map((f) => f.id))).toEqual([[2], [1, 4]]);
+		expect(categories[0]?.forums[0]).toMatchObject({
+			descriptionHtml: '<em>Vos plus beaux vols</em>',
+			numTopics: 1,
+			numPosts: 3,
+			lastPost: { postedAt: 1_782_800_200, postId: 102, poster: 'admin' },
+		});
+		expect(categories[1]?.forums[1]).toMatchObject({ redirectUrl: 'https://example.test', lastPost: null });
+	});
+
+	it('liste les sujets mis à jour depuis une date, hors déplacés et forums interdits', async () => {
+		const topics = new TopicRepository(db);
+		expect((await topics.listUpdatedSince(GroupId.Member, 1_782_700_000)).map((t) => t.topicId).sort()).toEqual([10, 11]);
+		expect((await topics.listUpdatedSince(GroupId.Guest, 1_782_700_000)).map((t) => t.topicId)).toEqual([10]);
+		expect(await topics.listUpdatedSince(GroupId.Member, 1_782_800_200)).toEqual([]);
+	});
+
+	it('calcule totaux, membres, dernier inscrit et présents', async () => {
+		const stats = new StatsRepository(db);
+		expect(await stats.countTopicsAndPosts()).toEqual({ topics: 2, posts: 4 });
+		expect(await stats.loadUsersInfo()).toEqual({ totalUsers: 3, newestUser: { id: 5, username: 'MaxDUO' } });
+		expect(await stats.listOnline()).toEqual([
+			{ userId: 1, ident: '192.0.2.9' },
+			{ userId: 3, ident: 'Tessy' },
+		]);
+	});
+});
+
 describe('ReportRepository et PrivateMessageRepository', () => {
 	it('détecte les signalements non traités', async () => {
 		expect(await new ReportRepository(db).hasPending()).toBe(true);
@@ -185,6 +218,8 @@ describe('viewtopic de bout en bout', () => {
 			bans: new BanRepository(db),
 			censorship: new CensorRepository(db),
 			topicLabels: new TopicLabelRepository(db),
+			stats: new StatsRepository(db),
+			usersInfo: new UsersInfoLoader(new StatsRepository(db), null, () => NOW),
 			avatars: { urlFor: async () => null },
 			page: { lang: fr, dateWords: frDateWords, clock: () => NOW },
 			legacyCookie: { name: 'punbb_cookie', seed },

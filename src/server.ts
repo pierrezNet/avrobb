@@ -17,15 +17,19 @@ import { PhpCacheFiles } from './repositories/PhpCacheFiles.ts';
 import { PostRepository } from './repositories/PostRepository.ts';
 import { PrivateMessageRepository } from './repositories/PrivateMessageRepository.ts';
 import { ReportRepository } from './repositories/ReportRepository.ts';
+import { StatsRepository } from './repositories/StatsRepository.ts';
 import { TopicLabelRepository } from './repositories/TopicLabelRepository.ts';
 import { TopicRepository } from './repositories/TopicRepository.ts';
 import { UserRepository } from './repositories/UserRepository.ts';
+import { UsersInfoLoader } from './repositories/UsersInfoLoader.ts';
 import { FileAvatarLocator } from './services/avatars.ts';
 
 const config = loadConfig();
 const db = createDatabase(config.db);
 const clock = (): number => Math.floor(Date.now() / 1000);
 const phpCache = config.legacyRoot !== '' ? new PhpCacheFiles(path.join(config.legacyRoot, 'cache')) : null;
+
+const stats = new StatsRepository(db);
 
 const app = await buildApp({
 	config: new ConfigLoader(new ConfigRepository(db), phpCache, clock),
@@ -38,6 +42,8 @@ const app = await buildApp({
 	bans: new BanRepository(db),
 	censorship: new CensorRepository(db),
 	topicLabels: new TopicLabelRepository(db),
+	stats,
+	usersInfo: new UsersInfoLoader(stats, phpCache, clock),
 	avatars: new FileAvatarLocator(config.legacyRoot, config.legacyBaseUrl),
 	page: { lang: fr, dateWords: frDateWords, clock },
 	legacyCookie: config.legacyCookie,

@@ -4,7 +4,7 @@
 
 import { sql } from 'kysely';
 import type { Db } from '../db/database.ts';
-import type { Topic } from '../domain/models.ts';
+import type { RecentTopic, Topic } from '../domain/models.ts';
 import { parseModerators } from '../services/phpSerialize.ts';
 
 export interface PostLocation {
@@ -18,6 +18,8 @@ export interface TopicReader {
 	findReadable(topicId: number, groupId: number): Promise<Topic | null>;
 	locatePost(postId: number): Promise<PostLocation | null>;
 	findLastPostId(topicId: number): Promise<number | null>;
+	/** Sujets lisibles par le groupe dont le dernier message est postérieur à `since` (index.php). */
+	listUpdatedSince(groupId: number, since: number): Promise<RecentTopic[]>;
 }
 
 export class TopicRepository implements TopicReader {
@@ -86,5 +88,19 @@ export class TopicRepository implements TopicReader {
 			.executeTakeFirst();
 
 		return row?.last_id ?? null;
+	}
+
+	async listUpdatedSince(groupId: number, since: number): Promise<RecentTopic[]> {
+		const rows = await this.db
+			.selectFrom('topics as t')
+			.innerJoin('forums as f', 'f.id', 't.forum_id')
+			.leftJoin('forum_perms as fp', (join) => join.onRef('fp.forum_id', '=', 'f.id').on('fp.group_id', '=', groupId))
+			.select(['t.forum_id', 't.id', 't.last_post'])
+			.where((eb) => eb.or([eb('fp.read_forum', 'is', null), eb('fp.read_forum', '=', 1)]))
+			.where('t.last_post', '>', since)
+			.where('t.moved_to', 'is', null)
+			.execute();
+
+		return rows.map((row) => ({ forumId: row.forum_id, topicId: row.id, lastPost: row.last_post }));
 	}
 }

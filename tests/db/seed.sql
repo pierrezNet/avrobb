@@ -34,11 +34,11 @@ INSERT INTO fo_categories (id, cat_name, disp_position) VALUES
 	(2, 'Ateliers & Médias', 1);
 
 -- Forum 3 : interdit en lecture aux invités. Forum 4 : redirection.
-INSERT INTO fo_forums (id, forum_name, cat_id, disp_position, moderators, redirect_url) VALUES
-	(1, 'Technique', 1, 1, NULL, NULL),
-	(2, 'Captures d''écran & Vidéos', 2, 1, 'a:1:{s:6:"MaxDUO";i:5;}', NULL),
-	(3, 'Équipe', 1, 2, NULL, NULL),
-	(4, 'Site officiel', 1, 3, NULL, 'https://example.test');
+INSERT INTO fo_forums (id, forum_name, forum_desc, cat_id, disp_position, moderators, redirect_url, num_topics, num_posts, last_post, last_post_id, last_poster) VALUES
+	(1, 'Technique', NULL, 1, 1, NULL, NULL, 0, 0, NULL, NULL, NULL),
+	(2, 'Captures d''écran & Vidéos', '<em>Vos plus beaux vols</em>', 2, 1, 'a:1:{s:6:"MaxDUO";i:5;}', NULL, 1, 3, 1782800200, 102, 'admin'),
+	(3, 'Équipe', NULL, 1, 2, NULL, NULL, 1, 1, 1782800000, 110, 'admin'),
+	(4, 'Site officiel', NULL, 1, 3, NULL, 'https://example.test', 0, 0, NULL, NULL, NULL);
 
 INSERT INTO fo_forum_perms (group_id, forum_id, read_forum, post_replies, post_topics) VALUES
 	(3, 3, 0, 0, 0),

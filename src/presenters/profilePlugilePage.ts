@@ -128,51 +128,112 @@ export interface StoredUpload {
 	href: string;
 }
 
-export function buildUploadsPage(
-	input: CommonInput & { files: readonly StoredUpload[] | null; limits: UploadLimits; usedBytes: number },
-): UploadsPageView {
-	const { viewer, config, lang, limits } = input;
-	const t = lang.profile;
+/** Extensions affichées et insérées comme image ([img]) ; les autres fichiers le sont comme lien. */
+const IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp']);
+
+/**
+ * Fichiers listés (ni cachés, ni miniatures), les plus récents d'abord (krsort() du PHP). Aperçu :
+ * la miniature « mini_ » si elle existe, sinon l'image elle-même réduite (Node ne crée pas de
+ * miniature).
+ */
+function uploadFiles(files: readonly StoredUpload[] | null, config: BoardConfig): UploadFileView[] | null {
+	if (files === null) return null;
 	const settings = config.uploads;
-	const extensions = settings.extensions.join(', ');
-	const byName = new Map((input.files ?? []).map((file) => [file.name, file]));
+	const byName = new Map(files.map((file) => [file.name, file]));
+	return files
+		.filter((file) => isListedUpload(file.name, settings))
+		.toSorted((a, b) => b.modified - a.modified || (a.name < b.name ? 1 : -1))
+		.map((file) => {
+			const dot = file.name.lastIndexOf('.');
+			const thumbnail = settings.thumbnails ? byName.get(`mini_${file.name}`) : undefined;
+			return {
+				value: file.name,
+				name: file.name.slice(0, dot),
+				extension: file.name.slice(dot + 1),
+				size: fileSize(file.size),
+				href: file.href,
+				thumbnailUrl: thumbnail?.href ?? (IMAGE_EXTENSIONS.has(file.name.slice(dot + 1).toLowerCase()) ? file.href : null),
+			};
+		});
+}
 
-	const files =
-		input.files === null
-			? null
-			: input.files
-					.filter((file) => isListedUpload(file.name, settings))
-					// krsort() sur « date de modification + nom » : les plus récents d'abord.
-					.toSorted((a, b) => b.modified - a.modified || (a.name < b.name ? 1 : -1))
-					.map((file) => {
-						const dot = file.name.lastIndexOf('.');
-						const thumbnail = settings.thumbnails ? byName.get(`mini_${file.name}`) : undefined;
-						return {
-							value: file.name,
-							name: file.name.slice(0, dot),
-							extension: file.name.slice(dot + 1),
-							size: fileSize(file.size),
-							href: file.href,
-							thumbnailUrl: thumbnail?.href ?? null,
-						};
-					});
-
+/** Limites d'envoi et jauge d'espace, communes au plugile et au gestionnaire. */
+function uploadSummary(config: BoardConfig, lang: Lang, limits: UploadLimits, usedBytes: number) {
+	const t = lang.profile;
+	const extensions = config.uploads.extensions.join(', ');
 	return {
-		menu: buildProfileMenu(viewer, config, input.userId, 'uploads', lang),
-		heading: t.uploadsPlugile,
-		formAction: `profile.php?plugin=UPP_Mes_uploads.php&id=${input.userId}`,
-		errors: input.errors,
-		notice: input.notice,
 		limits:
-			settings.extensions.length === 0
+			config.uploads.extensions.length === 0
 				? null
 				: limits.unlimited
 					? t.uploadLimitsAdmin(extensions)
 					: t.uploadLimits(fileSize(limits.maxFileSize), extensions),
 		usage: limits.unlimited
 			? null
-			: { percent: usedPercent(input.usedBytes, limits.quota), text: t.usedSpaceOf(fileSize(input.usedBytes), fileSize(limits.quota)) },
+			: { percent: usedPercent(usedBytes, limits.quota), text: t.usedSpaceOf(fileSize(usedBytes), fileSize(limits.quota)) },
+	};
+}
+
+export function buildUploadsPage(
+	input: CommonInput & { files: readonly StoredUpload[] | null; limits: UploadLimits; usedBytes: number },
+): UploadsPageView {
+	const { viewer, config, lang } = input;
+	return {
+		menu: buildProfileMenu(viewer, config, input.userId, 'uploads', lang),
+		heading: lang.profile.uploadsPlugile,
+		formAction: `profile.php?plugin=UPP_Mes_uploads.php&id=${input.userId}`,
+		errors: input.errors,
+		notice: input.notice,
+		...uploadSummary(config, lang, input.limits, input.usedBytes),
 		folder: `img/members/${input.userId}`,
-		files,
+		files: uploadFiles(input.files, config),
+	};
+}
+
+// ——— Gestionnaire de fichiers (gestionnaire.php) ———
+
+export interface ManagedFileView extends UploadFileView {
+	/** Adresse permanente du fichier (o_base_url), à copier ou insérer dans un message. */
+	publicUrl: string;
+	/** BBCode inséré dans le message en cours de rédaction. */
+	insertCode: string;
+}
+
+export interface FileManagerView {
+	formAction: string;
+	errors: string[];
+	notice: string | null;
+	limits: string | null;
+	usage: { percent: number; text: string } | null;
+	files: ManagedFileView[] | null;
+}
+
+export function buildFileManager(input: {
+	viewer: Viewer;
+	config: BoardConfig;
+	lang: Lang;
+	files: readonly StoredUpload[] | null;
+	limits: UploadLimits;
+	usedBytes: number;
+	errors: string[];
+	notice: string | null;
+}): FileManagerView {
+	const { viewer, config, lang } = input;
+	return {
+		formAction: 'gestionnaire.php',
+		errors: input.errors,
+		notice: input.notice,
+		...uploadSummary(config, lang, input.limits, input.usedBytes),
+		files:
+			uploadFiles(input.files, config)?.map((file) => {
+				const publicUrl = `${config.baseUrl}/img/members/${viewer.id}/${encodeURIComponent(file.value)}`;
+				return {
+					...file,
+					publicUrl,
+					insertCode: IMAGE_EXTENSIONS.has(file.extension.toLowerCase())
+						? `[img]${publicUrl}[/img]`
+						: `[url=${publicUrl}]${file.name}[/url]`,
+				};
+			}) ?? null,
 	};
 }

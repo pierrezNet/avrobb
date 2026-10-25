@@ -85,7 +85,7 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
 
 - [x] Messagerie privée : boîte de réception, lecture, envoi, contacts, listes d'envoi (`messages`, `contacts`, `sending_lists`) **(PV)** — alertes par e-mail (`new_pm*.tpl`) comprises ; vérifiée dans les deux sens avec le PHP
 - [x] Réputation : vote, historique, page `reputation.php` **(PV)** — suppression de votes par les administrateurs et modérateurs
-- [ ] Uploads et gestionnaire de fichiers (`gestionnaire.php`, Uploadile) **(PV)**
+- [x] Uploads et gestionnaire de fichiers (`gestionnaire.php`, Uploadile) **(PV)** — envoi, suppression et insertion dans le message ; pas de création de miniatures (le PHP utilisait GD)
 - [ ] Galerie : ajout et gestion **(PV)**
   - [ ] Tuiles : image collée en haut de la tuile (sans marge au-dessus)
   - [ ] Filtre « Mes images » pour ne voir que les siennes

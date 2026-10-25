@@ -96,7 +96,10 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   PHP ne contrôlait rien : n'importe qui pouvait désabonner un membre ou supprimer ses fichiers).
 - Uploadile : nom de fichier réduit à lettres, chiffres et tirets ; extensions exécutables ou
   interprétées par le navigateur (php, html, svg, js…) toujours refusées ; pas de miniature créée
-  (celles qui existent restent affichées) ; formulaires limités à 16 Mio.
+  (celles qui existent restent affichées ; sinon l'image elle-même sert d'aperçu) ; formulaires
+  limités à 16 Mio. Gestionnaire (`gestionnaire.php`) dans la mise en page commune ; « Insérer »
+  ajoute une image en `[img]` et un autre fichier en lien, à la position du curseur du message
+  (le PHP insérait un lien « Votre texte ici » pour une image sans miniature).
 - Renommage : les destinataires des MP sont remplacés élément par élément (le `REPLACE()` du PHP
   renommait aussi « MaxDUO » en renommant « Max ») ; le renommage et les autres champs sont
   enregistrés dans une même transaction.

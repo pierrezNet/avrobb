@@ -286,4 +286,15 @@ export const profile = {
 	deleteSuccess: 'Fichier(s) supprimé(s) avec succès\u00a0!',
 	deleteFailed: 'Erreur lors de la suppression du ou des fichiers, réessayez.',
 	noFilesSelected: "Vous n'avez sélectionné aucun fichier.",
+
+	// Gestionnaire de fichiers (gestionnaire.php)
+	fileManager: 'Gestionnaire de fichiers',
+	fileManagerInfo:
+		'Cliquez sur « Insérer » pour ajouter un fichier au message en cours de rédaction, ou copiez son adresse. Le gestionnaire complet est aussi dans votre profil.',
+	myUploads: 'Mes uploads',
+	fileAddress: (name: string) => `Adresse de ${name}`,
+	insert: 'Insérer',
+	insertInto: (name: string) => `Insérer ${name} dans le message`,
+	inserted: 'Inséré dans le message.',
+	closeWindow: 'Fermer cette fenêtre',
 };

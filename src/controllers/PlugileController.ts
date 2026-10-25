@@ -20,9 +20,10 @@ import type { TopicLabelReader } from '../repositories/TopicLabelRepository.ts';
 import { buildCensor, type Censor } from '../services/censor.ts';
 import { canEditProfile, canUsePrivatePlugiles } from '../services/permissions.ts';
 import { readBiography } from '../services/profileForms.ts';
-import { checkUpload, datedFileName, isListedUpload, uploadLimits } from '../services/uploads.ts';
+import { uploadLimits } from '../services/uploads.ts';
 import { positiveInt } from './params.ts';
 import { isProfile, loadEditableProfile, type ProfileAccessDeps, type ProfileQuery } from './profileAccess.ts';
+import { UploadActions } from './uploadActions.ts';
 
 export interface PlugileControllerDeps extends LayoutDeps, ProfileAccessDeps {
 	censorship: CensorReader;
@@ -42,7 +43,11 @@ function values(body: FormBody | undefined, name: string): string[] {
 }
 
 export class PlugileController {
-	constructor(private readonly deps: PlugileControllerDeps) {}
+	readonly #uploadActions: UploadActions;
+
+	constructor(private readonly deps: PlugileControllerDeps) {
+		this.#uploadActions = new UploadActions(deps);
+	}
 
 	// ——— Ma biographie ———
 
@@ -109,56 +114,14 @@ export class PlugileController {
 		return this.renderUploads(request, reply, profile, profile.uploadedBytes, []);
 	};
 
-	/** Formulaire d'envoi (champ fichier « fichier ») ou de suppression (bouton « supprimer »). */
+	/** Formulaire d'envoi ou de suppression (controllers/uploadActions.ts). */
 	updateUploads = async (request: PlugileRequest, reply: FastifyReply): Promise<FastifyReply> => {
 		const profile = await this.privateProfile(request, reply);
 		if (!isProfile(profile)) return profile;
-		return field(request.body, 'supprimer') !== '' ? this.deleteUploads(request, reply, profile) : this.addUpload(request, reply, profile);
+		const outcome = await this.#uploadActions.handle(request, profile);
+		if ('error' in outcome) return this.renderUploads(request, reply, profile, profile.uploadedBytes, [outcome.error]);
+		return reply.redirect(`profile.php?plugin=UPP_Mes_uploads.php&id=${profile.id}&updated=${outcome.notice}`, 303);
 	};
-
-	private async addUpload(request: PlugileRequest, reply: FastifyReply, profile: EditableProfile): Promise<FastifyReply> {
-		const { lang } = this.deps.page;
-		const settings = request.board.uploads;
-		const file = request.uploads.get('fichier');
-		const checked = checkUpload(
-			{ name: file?.name ?? '', size: file?.data.length ?? 0 },
-			profile.uploadedBytes,
-			uploadLimits(profile.groupId, settings),
-			settings,
-		);
-		if ('error' in checked || file === undefined)
-			return this.renderUploads(request, reply, profile, profile.uploadedBytes, [
-				lang.profile.uploadError('error' in checked ? checked.error : 'noFile'),
-			]);
-
-		const fileName = (await this.deps.uploads.exists(profile.id, checked.fileName))
-			? datedFileName(checked.fileName, this.deps.page.clock())
-			: checked.fileName;
-		await this.deps.uploads.save(profile.id, fileName, file.data);
-		await this.deps.profileStore.setUploadedBytes(profile.id, profile.uploadedBytes + file.data.length);
-		return reply.redirect(`profile.php?plugin=UPP_Mes_uploads.php&id=${profile.id}&updated=uploaded`, 303);
-	}
-
-	private async deleteUploads(request: PlugileRequest, reply: FastifyReply, profile: EditableProfile): Promise<FastifyReply> {
-		const settings = request.board.uploads;
-		const selected = values(request.body, 'delete');
-		if (selected.length === 0)
-			return this.renderUploads(request, reply, profile, profile.uploadedBytes, [this.deps.page.lang.profile.noFilesSelected]);
-
-		let failures = 0;
-		for (const name of selected) {
-			// Seuls les fichiers listés se suppriment (ni fichier caché, ni sous-dossier, ni miniature seule).
-			if (!isListedUpload(name, settings) || !(await this.deps.uploads.remove(profile.id, name))) failures += 1;
-			else if (settings.thumbnails) await this.deps.uploads.remove(profile.id, `mini_${name}`);
-		}
-
-		// Espace occupé recalculé d'après le dossier, comme le PHP.
-		const files = (await this.deps.uploads.list(profile.id)) ?? [];
-		const used = files.filter((file) => isListedUpload(file.name, settings)).reduce((total, file) => total + file.size, 0);
-		await this.deps.profileStore.setUploadedBytes(profile.id, used);
-		const notice: Notice = failures === 0 ? 'deleted' : 'deleteFailed';
-		return reply.redirect(`profile.php?plugin=UPP_Mes_uploads.php&id=${profile.id}&updated=${notice}`, 303);
-	}
 
 	/** Profil modifiable, et plugile privé accessible au lecteur. */
 	private privateProfile(request: PlugileRequest, reply: FastifyReply): Promise<EditableProfile | FastifyReply> {

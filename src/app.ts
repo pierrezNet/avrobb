@@ -15,6 +15,7 @@ import { DeleteController, type DeleteQuery } from './controllers/DeleteControll
 import { DraftController, type DraftQuery } from './controllers/DraftController.ts';
 import { EditController, type EditQuery } from './controllers/EditController.ts';
 import { ExternController, type ExternQuery } from './controllers/ExternController.ts';
+import { FileManagerController, type FileManagerQuery } from './controllers/FileManagerController.ts';
 import { ForumController, type ForumQuery } from './controllers/ForumController.ts';
 import { GalleryController, type GalleryQuery } from './controllers/GalleryController.ts';
 import { HelpController } from './controllers/HelpController.ts';
@@ -130,6 +131,7 @@ const PORTED_PAGES = new Set([
 	'edit.php',
 	'extern.php',
 	'gallery.php',
+	'gestionnaire.php',
 	'help.php',
 	'index.php',
 	'login.php',
@@ -284,6 +286,14 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 	const profiles = new ProfileController(deps);
 	app.get<{ Querystring: ProfileQuery }>('/profile.php', { preHandler: authenticate }, profiles.show);
 	app.post<{ Querystring: ProfileQuery; Body: FormBody }>('/profile.php', { preHandler: [authenticate, verifyCsrf] }, profiles.submit);
+
+	const fileManager = new FileManagerController(deps);
+	app.get<{ Querystring: FileManagerQuery }>('/gestionnaire.php', { preHandler: authenticate }, fileManager.show);
+	app.post<{ Querystring: FileManagerQuery; Body: FormBody }>(
+		'/gestionnaire.php',
+		{ preHandler: [authenticate, verifyCsrf] },
+		fileManager.submit,
+	);
 
 	const reputation = new ReputationController(deps);
 	app.get<{ Querystring: ReputationQuery }>('/reputation.php', { preHandler: authenticate }, reputation.show);

@@ -1485,6 +1485,13 @@ a.site-status__alert {
 	overflow-wrap: anywhere;
 }
 
+.upload-list__url {
+	display: block;
+	width: 100%;
+	margin-top: 0.25rem;
+	font-size: 0.875rem;
+}
+
 /* ---------- Messagerie privée ---------- */
 
 .pm-row__receivers {

@@ -25,6 +25,7 @@ import { PhpCacheFiles } from './repositories/PhpCacheFiles.ts';
 import { PostEditRepository } from './repositories/PostEditRepository.ts';
 import { PostingRepository } from './repositories/PostingRepository.ts';
 import { PostRepository } from './repositories/PostRepository.ts';
+import { PrivateContactRepository } from './repositories/PrivateContactRepository.ts';
 import { PrivateMessageRepository } from './repositories/PrivateMessageRepository.ts';
 import { ProfileRepository } from './repositories/ProfileRepository.ts';
 import { RegistrationRepository } from './repositories/RegistrationRepository.ts';
@@ -51,6 +52,8 @@ const topics = new TopicRepository(db);
 const reports = new ReportRepository(db);
 const search = new SearchRepository(db);
 const avatars = new FileAvatarLocator(config.legacyRoot, config.legacyBaseUrl);
+const privateMessages = new PrivateMessageRepository(db);
+const privateContacts = new PrivateContactRepository(db);
 
 const app = await buildApp({
 	config: new ConfigLoader(new ConfigRepository(db), phpCache, clock),
@@ -75,7 +78,10 @@ const app = await buildApp({
 	toolbar: new ToolbarRepository(db),
 	forums: new ForumRepository(db),
 	reports,
-	privateMessages: new PrivateMessageRepository(db),
+	privateMessages,
+	privateMessageStore: privateMessages,
+	privateContacts,
+	sendingLists: privateContacts,
 	bans: new BanRepository(db),
 	online: new OnlineRepository(db),
 	phpCache,

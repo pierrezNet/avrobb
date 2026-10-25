@@ -89,6 +89,8 @@ export function toBoardConfig(values: ReadonlyMap<string, string>): BoardConfig 
 		signatureAllCaps: flag('p_sig_all_caps'),
 		plugileMenuName: flag('o_plugile_menu') ? text('o_plugile_menu_name') : null,
 		privateMessageNotification: flag('o_pms_notification'),
+		privateMessageMaxReceivers: int('o_pms_max_receiver', 5),
+		privateMessagesPerPage: Math.max(1, int('o_pms_mess_per_page', 15)),
 		uploads: {
 			extensions: text('o_uploadile_laws')
 				.split(',')

@@ -180,42 +180,48 @@ function parserOptions(input: TopicPageInput): { message: (post: Post) => Bbcode
 	};
 }
 
-/** Liens e-mail, MP (mod APMS) et site web, dans l'ordre de viewtopic.php. */
-function contactLinks(post: Post, input: TopicPageInput): ContactLink[] {
-	const { viewer, config, lang, censor } = input;
-	const author = post.author;
+const contactLink = (kind: ContactLink['kind'], href: string, label: string): ContactLink => ({
+	kind,
+	href,
+	label,
+	abbrTitle: null,
+	external: false,
+});
+
+/** Liens e-mail, MP (mod APMS) et site web d'un auteur inscrit, dans l'ordre de viewtopic.php. */
+export function authorContactLinks(
+	author: PostAuthor,
+	context: { viewer: Viewer; config: BoardConfig; lang: Lang; censor: Censor | null },
+): ContactLink[] {
+	const { viewer, config, lang, censor } = context;
 	const links: ContactLink[] = [];
-	const link = (kind: ContactLink['kind'], href: string, label: string): ContactLink => ({
-		kind,
-		href,
-		label,
-		abbrTitle: null,
-		external: false,
-	});
-
-	if (!config.showUserInfo) return links;
-
-	if (author === null) {
-		if (post.posterEmail !== '' && !viewer.isGuest && viewer.group.canSendEmail)
-			links.push(link('email', `mailto:${post.posterEmail}`, lang.topic.email));
-		return links;
-	}
 
 	if (viewer.group.canSendEmail) {
 		if ((author.emailSetting === 0 && !viewer.isGuest) || isAnyModerator(viewer))
-			links.push(link('email', `mailto:${author.email}`, lang.topic.email));
-		else if (author.emailSetting === 1 && !viewer.isGuest) links.push(link('email', `misc.php?email=${author.id}`, lang.topic.email));
+			links.push(contactLink('email', `mailto:${author.email}`, lang.topic.email));
+		else if (author.emailSetting === 1 && !viewer.isGuest)
+			links.push(contactLink('email', `misc.php?email=${author.id}`, lang.topic.email));
 	}
 
 	if (canUsePrivateMessages(viewer, config) && author.acceptsPrivateMessages)
-		links.push({ ...link('pm', `pms_send.php?uid=${author.id}`, lang.pms.pmAbbr), abbrTitle: lang.pms.pmTitle });
+		links.push({ ...contactLink('pm', `pms_send.php?uid=${author.id}`, lang.pms.pmAbbr), abbrTitle: lang.pms.pmTitle });
 
 	if (author.url !== '') {
 		const url = censor !== null ? censor(author.url) : author.url;
-		links.push({ ...link('website', safeExternalUrl(url), lang.topic.website), external: true });
+		links.push({ ...contactLink('website', safeExternalUrl(url), lang.topic.website), external: true });
 	}
 
 	return links;
+}
+
+/** Liens de contact sous un message : ceux de l'auteur, ou l'e-mail laissé par un invité. */
+function contactLinks(post: Post, input: TopicPageInput): ContactLink[] {
+	const { viewer, config, lang } = input;
+	if (!config.showUserInfo) return [];
+	if (post.author !== null) return authorContactLinks(post.author, input);
+	return post.posterEmail !== '' && !viewer.isGuest && viewer.group.canSendEmail
+		? [contactLink('email', `mailto:${post.posterEmail}`, lang.topic.email)]
+		: [];
 }
 
 function reputation(post: Post, author: PostAuthor, input: TopicPageInput): ReputationView | null {

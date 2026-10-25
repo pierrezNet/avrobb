@@ -1,14 +1,14 @@
 {#- Plugile « Suivile » (profile.php?plugin=UPP_Suivile.php). Données : `view` (presenters/profilePlugilePage.ts). -#}
 {% extends "layout.njk" %}
 {% import "partials/forms.njk" as forms %}
-{% import "partials/profileMenu.njk" as profileMenu %}
+{% import "partials/sideMenu.njk" as sideMenu %}
 
 {% block main %}
 <h1 class="page-title">{{ view.heading }}</h1>
-<div class="profile-edit">
-{{ profileMenu.menu(view.menu, lang) }}
-<div class="profile-edit__content">
-{{ profileMenu.notice(view.notice) }}
+<div class="side-layout">
+{{ sideMenu.menu(view.menu, lang) }}
+<div class="side-layout__content">
+{{ sideMenu.notice(view.notice) }}
 {{ forms.errors(lang.profile.formErrors, lang.profile.formErrorsInfo, view.errors) }}
 <p class="page-intro">{{ lang.profile.subscriptionsInfo }}</p>
 <form id="subscriptions" method="post" action="{{ url(view.formAction) }}">

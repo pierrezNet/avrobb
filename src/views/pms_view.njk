@@ -1,0 +1,45 @@
+{#- Conversation privée (pms_view.php). Données : `view` (presenters/privateMessagesPage.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/forms.njk" as forms %}
+{% import "partials/navigation.njk" as navigation %}
+{% import "partials/post.njk" as postView %}
+{% import "partials/postFields.njk" as postFields %}
+{% import "partials/sideMenu.njk" as sideMenu %}
+
+{% macro bar(view, lang) %}
+<div class="page-bar">
+	{{ navigation.pagination(view.pagination, lang) }}
+	<p class="page-bar__actions"><a class="button button--primary" href="{{ url(view.replyUrl) }}">{{ lang.pms.reply }}</a></p>
+</div>
+{% endmacro %}
+
+{% block main %}
+<h1 class="page-title">{{ view.heading }}</h1>
+<div class="side-layout">
+{{ sideMenu.sideMenu(lang.pms.pmMenu, view.menu) }}
+<div class="side-layout__content">
+{{ sideMenu.notice(view.notice) }}
+{{ bar(view, lang) }}
+<div class="post-list">
+{% for post in view.posts %}{{ postView.article(post, view.subject, lang) }}{% endfor %}
+</div>
+{{ bar(view, lang) }}
+
+{% if view.quickPost %}
+<form id="quickpostform" class="form-box form post-form" method="post" action="{{ url(view.quickPost.formAction) }}" aria-labelledby="quickpost-title">
+	<h2 id="quickpost-title" class="form-box__title">{{ lang.pms.quickPost }}</h2>
+	{{ forms.csrf(layout) }}
+	<div class="form__field">
+		<label for="req_message">{{ lang.post.message }} <span class="form__required">{{ lang.post.required }}</span></label>
+		<textarea id="req_message" name="req_message" rows="7" required></textarea>
+	</div>
+	{{ postFields.bbcodeStatus(view.quickPost.bbcodeStatus, lang) }}
+	<p class="form__buttons">
+		<button type="submit" class="button button--primary" name="submit" value="1" accesskey="s">{{ lang.post.submit }}</button>
+		<button type="submit" class="button" name="preview" value="1" accesskey="p">{{ lang.post.preview }}</button>
+	</p>
+</form>
+{% endif %}
+</div>
+</div>
+{% endblock %}

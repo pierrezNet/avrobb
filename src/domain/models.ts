@@ -254,6 +254,10 @@ export interface BoardConfig {
 	plugileMenuName: string | null;
 	/** Alerte par e-mail des nouveaux MP proposée aux membres (o_pms_notification). */
 	privateMessageNotification: boolean;
+	/** Participants au plus d'une conversation, expéditeur compris (o_pms_max_receiver). */
+	privateMessageMaxReceivers: number;
+	/** Conversations par page de la boîte de réception (o_pms_mess_per_page). */
+	privateMessagesPerPage: number;
 	/** Fichiers des membres (plugin Uploadile de PV). */
 	uploads: UploadSettings;
 	/** o_base_url, sans « / » final. */
@@ -588,4 +592,79 @@ export interface Draft {
 	posted: number;
 	topicId: number | null;
 	forum: { id: number; name: string };
+}
+
+/** Participant d'une conversation privée, tel qu'inscrit dans messages.receiver / receiver_id. */
+export interface PrivateParticipant {
+	id: number;
+	username: string;
+	/** Le participant a supprimé la conversation (« pseudo Deleted » dans la liste). */
+	deleted: boolean;
+}
+
+/** Conversation dans la boîte de réception (ligne show_message = 1 du membre). */
+export interface PrivateConversation {
+	sharedId: number;
+	/** Identifiant de la ligne de tête, qui sert de lien (pms_view.php?mid=…). */
+	messageId: number;
+	subject: string;
+	sender: string;
+	senderId: number;
+	participants: PrivateParticipant[];
+	lastPost: LastPost | null;
+	unread: boolean;
+}
+
+/** Exemplaire d'un message privé détenu par un membre. */
+export interface PrivateMessage {
+	id: number;
+	sharedId: number;
+	ownerId: number;
+	/** Première ligne de la conversation (show_message = 1). */
+	isHead: boolean;
+	subject: string;
+	message: string;
+	hideSmilies: boolean;
+	posted: number;
+	senderId: number;
+	sender: string;
+	senderIp: string;
+}
+
+/** Message d'une conversation affiché avec son auteur (pms_view.php). */
+export interface PrivateMessageWithAuthor extends PrivateMessage {
+	/** Auteur, ou null si son compte a été supprimé. */
+	author: PostAuthor | null;
+}
+
+/** Destinataire possible d'un MP, avec ce qu'il faut pour les contrôles de pms_send.php. */
+export interface PrivateRecipient {
+	id: number;
+	username: string;
+	email: string;
+	groupId: number;
+	usesPrivateMessages: boolean;
+	groupCanUsePrivateMessages: boolean;
+	/** g_pm_limit (0 = illimité) et nombre de conversations détenues (users.num_pms). */
+	privateMessageLimit: number;
+	privateMessageCount: number;
+	notifyPrivateMessages: boolean;
+	notifyPrivateMessagesFull: boolean;
+	/** Le destinataire a bloqué l'expéditeur dans ses contacts (allow_msg = 0). */
+	blocksSender: boolean;
+}
+
+/** Contact du carnet d'adresses de la messagerie. */
+export interface PrivateContact {
+	id: number;
+	contactId: number;
+	name: string;
+	allowMessages: boolean;
+}
+
+/** Liste d'envoi : un nom et des destinataires. */
+export interface SendingList {
+	id: number;
+	name: string;
+	members: { id: number; username: string }[];
 }

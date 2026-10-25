@@ -1,0 +1,31 @@
+{#- Suppression d'un message privé (pms_view.php?action=delete). Données : `view` (presenters/privateMessagesPage.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/forms.njk" as forms %}
+{% import "partials/sideMenu.njk" as sideMenu %}
+
+{% block main %}
+<h1 class="page-title">{{ lang.pms.deleteMessage }}</h1>
+<div class="side-layout">
+{{ sideMenu.sideMenu(lang.pms.pmMenu, view.menu) }}
+<div class="side-layout__content">
+<form class="form-box form" method="post" action="{{ url(view.action) }}">
+	{{ forms.csrf(layout) }}
+	<input type="hidden" name="delete_comply" value="1">
+	<h2 class="form-box__title">{{ view.heading }}</h2>
+	{% if view.isHead %}
+	<p><strong>{{ lang.pms.topicWarning }}</strong><br>{{ lang.pms.topicWarningInfo }}</p>
+	{% else %}
+	<p><strong>{{ lang.pms.deleteWarning }}</strong></p>
+	{% endif %}
+	<p>{{ lang.pms.deleteInfo }}</p>
+	{% if view.canDeleteForEverybody %}<p class="form__check"><label><input type="checkbox" name="delete_all" value="1"> {{ lang.pms.deleteForEverybody }}</label></p>{% endif %}
+	<p class="form__buttons"><button type="submit" class="button button--primary" name="delete" value="1">{{ lang.pms.delete }}</button> <a href="{{ url(view.backUrl) }}">{{ lang.common.goBack }}</a></p>
+</form>
+<article class="post post--review" aria-label="{{ view.heading }}">
+	<div class="post__author"><p class="post__username">{{ view.sender }}</p><p>{{ view.postedAt }}</p></div>
+	{#- HTML produit par parseMessage() : échappé par construction (services/bbcode.ts). #}
+	<div class="post__content"><div class="post__message bbcode">{{ view.messageHtml | safe }}</div></div>
+</article>
+</div>
+</div>
+{% endblock %}

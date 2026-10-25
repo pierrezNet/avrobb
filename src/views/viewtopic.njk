@@ -2,6 +2,7 @@
 {% extends "layout.njk" %}
 {% import "partials/navigation.njk" as navigation %}
 {% import "partials/forms.njk" as forms %}
+{% import "partials/post.njk" as postView %}
 {% import "partials/postFields.njk" as postFields %}
 {% import "partials/actions.njk" as actions %}
 
@@ -26,60 +27,7 @@
 
 <div class="post-list">
 {% for post in view.posts %}
-<article id="p{{ post.id }}" class="post{% if post.isFirstPost %} post--first{% endif %}" aria-labelledby="p{{ post.id }}-title">
-	<h2 class="post__meta" id="p{{ post.id }}-title">
-		<a class="post__date" href="{{ post.permalink }}">{{ post.postedAt }}</a>
-		<span class="post__number">#{{ post.number }}</span>
-	</h2>
-
-	<div class="post__author">
-		{% if post.avatarUrl %}<img class="post__avatar" src="{{ post.avatarUrl }}" alt="" loading="lazy">{% endif %}
-		<div class="post__identity">
-			<p class="post__username">{% if post.profileUrl %}<a href="{{ url(post.profileUrl) }}">{{ post.username }}</a>{% else %}{{ post.username }}{% endif %}</p>
-			<p class="post__usertitle">{{ post.userTitle }}</p>
-		</div>
-		<dl class="post__details">
-			{% if post.location %}<div><dt>{{ lang.topic.from }}</dt> <dd>{{ post.location }}</dd></div>{% endif %}
-			{% if post.registeredAt %}<div><dt>{{ lang.topic.registered }}</dt> <dd>{{ post.registeredAt }}</dd></div>{% endif %}
-			{% if post.numPosts !== null %}<div><dt>{{ lang.topic.posts }}</dt> <dd>{{ post.numPosts }}</dd></div>{% endif %}
-			{% if post.adminNote %}<div><dt>{{ lang.topic.note }}</dt> <dd><strong>{{ post.adminNote }}</strong></dd></div>{% endif %}
-		</dl>
-		{% if post.reputation %}
-		<p class="post__reputation">
-			<a href="{{ url(post.reputation.href) }}">{{ lang.topic.reputation }}</a>&#160;:
-			{% if post.reputation.vote %}<a class="post__vote" href="{{ url(post.reputation.vote.plusUrl) }}" title="{{ lang.topic.reputationPlus }}" aria-label="{{ lang.topic.reputationPlus }}">+</a>{% endif %}
-			<strong>{{ post.reputation.score }}</strong>
-			{% if post.reputation.vote %}<a class="post__vote" href="{{ url(post.reputation.vote.minusUrl) }}" title="{{ lang.topic.reputationMinus }}" aria-label="{{ lang.topic.reputationMinus }}">−</a>{% endif %}
-		</p>
-		{% endif %}
-		{% if post.ip or post.contacts.length %}
-		<ul class="post__contacts">
-			{% if post.ip %}<li><a href="{{ url(post.ip.href) }}" title="{{ post.ip.address }}">{{ lang.topic.ipAddressLogged }}</a></li>{% endif %}
-			{% for contact in post.contacts %}
-			<li class="{{ contact.kind }}"><a href="{{ contact.href if contact.external else url(contact.href) }}"{% if contact.external %} rel="nofollow ugc"{% endif %}>{% if contact.abbrTitle %}<abbr title="{{ contact.abbrTitle }}">{{ contact.label }}</abbr>{% else %}{{ contact.label }}{% endif %}</a></li>
-			{% endfor %}
-		</ul>
-		{% endif %}
-	</div>
-
-	<div class="post__content">
-		<p class="post__subject">{% if not post.isFirstPost %}{{ lang.topic.re }} {% endif %}{{ view.topic.subject }}</p>
-		{#- HTML produit par parseBbcode() : texte échappé avant de reconnaître les balises (services/bbcode.ts). #}
-		<div class="post__message bbcode">{{ post.messageHtml | safe }}</div>
-		{% if post.edited %}<p class="post__edited"><em>{{ lang.topic.lastEdit }} {{ post.edited.by }} ({{ post.edited.at }})</em></p>{% endif %}
-		{#- Même origine que messageHtml : parseBbcode(). #}
-		{% if post.signatureHtml %}<div class="post__signature bbcode">{{ post.signatureHtml | safe }}</div>{% endif %}
-	</div>
-
-	<footer class="post__footer">
-		{% if post.isOnline !== null %}<p class="post__presence{% if post.isOnline %} post__presence--online{% endif %}">{% if post.isOnline %}{{ lang.topic.online }}{% else %}{{ lang.topic.offline }}{% endif %}</p>{% endif %}
-		{% if post.actions.length %}
-		<ul class="post__actions">
-			{% for action in post.actions %}<li class="{{ action.kind }}"><a href="{{ url(action.href) }}">{{ action.label }}</a></li>{% endfor %}
-		</ul>
-		{% endif %}
-	</footer>
-</article>
+{{ postView.article(post, view.topic.subject, lang) }}
 {% endfor %}
 </div>
 

@@ -1,0 +1,27 @@
+{#- Menu latéral (profil : generate_profile_menu() ; messagerie : « Messagerie privée ») et avis. -#}
+
+{% macro menuList(items) %}
+<ul class="side-menu__list">
+	{% for item in items %}<li><a href="{{ url(item.href) }}"{% if item.active %} aria-current="page"{% endif %}>{{ item.label }}</a></li>{% endfor %}
+</ul>
+{% endmacro %}
+
+{#- Menu simple : un titre et des entrées { href, label, active }. -#}
+{% macro sideMenu(title, items) %}
+<nav class="side-menu" aria-labelledby="side-menu-title">
+	<h2 class="side-menu__title" id="side-menu-title">{{ title }}</h2>
+	{{ menuList(items) }}
+</nav>
+{% endmacro %}
+
+{% macro menu(menu, lang) %}
+<nav class="side-menu" aria-labelledby="side-menu-title">
+	<h2 class="side-menu__title" id="side-menu-title">{{ lang.profile.profileMenu }}</h2>
+	{{ menuList(menu.sections) }}
+	{% if menu.plugilesTitle %}<h2 class="side-menu__title">{{ menu.plugilesTitle }}</h2>{% endif %}
+	{{ menuList(menu.plugiles) }}
+</nav>
+{% endmacro %}
+
+{#- Avis après un enregistrement (le PHP affichait une page « Redirection… »). -#}
+{% macro notice(text) %}{% if text %}<p class="form-notice" role="status">{{ text }}</p>{% endif %}{% endmacro %}

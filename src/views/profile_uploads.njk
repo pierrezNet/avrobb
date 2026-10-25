@@ -1,14 +1,14 @@
 {#- Plugile « Mes uploads » (profile.php?plugin=UPP_Mes_uploads.php). Données : `view` (presenters/profilePlugilePage.ts). -#}
 {% extends "layout.njk" %}
 {% import "partials/forms.njk" as forms %}
-{% import "partials/profileMenu.njk" as profileMenu %}
+{% import "partials/sideMenu.njk" as sideMenu %}
 
 {% block main %}
 <h1 class="page-title">{{ view.heading }}</h1>
-<div class="profile-edit">
-{{ profileMenu.menu(view.menu, lang) }}
-<div class="profile-edit__content">
-{{ profileMenu.notice(view.notice) }}
+<div class="side-layout">
+{{ sideMenu.menu(view.menu, lang) }}
+<div class="side-layout__content">
+{{ sideMenu.notice(view.notice) }}
 {{ forms.errors(lang.profile.formErrors, lang.profile.formErrorsInfo, view.errors) }}
 <section class="form-box" aria-labelledby="uploads-info">
 	<h2 class="form-box__title" id="uploads-info">{{ lang.profile.uploadsInformation }}</h2>

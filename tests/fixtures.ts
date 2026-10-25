@@ -44,6 +44,7 @@ import type { ViewerRecord } from '../src/repositories/UserRepository.ts';
 import type { Ban } from '../src/services/bans.ts';
 import type { CensoredWord } from '../src/services/censor.ts';
 import type { MailMessage } from '../src/services/mail.ts';
+import { fakePrivateContacts, fakePrivateMessageStore, type PmData, pmData } from './fakePrivateMessages.ts';
 
 export const NOW = 1_782_900_000;
 
@@ -245,6 +246,8 @@ export const boardConfig: BoardConfig = {
 	signatureAllCaps: false,
 	plugileMenuName: null,
 	privateMessageNotification: false,
+	privateMessageMaxReceivers: 3,
+	privateMessagesPerPage: 15,
 	uploads: {
 		extensions: ['jpg', 'png', 'zip'],
 		memberQuota: 1_000_000,
@@ -337,6 +340,8 @@ export interface FakeData {
 	/** Fichiers Uploadile par membre, et avatars enregistrés ou effacés. */
 	memberFiles?: Map<number, (StoredFile & { data?: Buffer })[]>;
 	avatarLog?: string[];
+	/** Messagerie privée en mémoire (créée vide au besoin). */
+	pm?: PmData;
 }
 
 /** Profil modifiable tiré d'un UserProfile de test, avec des préférences par défaut. */
@@ -579,6 +584,8 @@ function fakePosting(data: FakeData): PostingStore {
 }
 
 export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppDeps {
+	data.pm ??= pmData();
+	const contactsAndLists = fakePrivateContacts(data.pm);
 	const allPosts = (): { topicId: number; post: Post; position: number }[] =>
 		[...data.posts].flatMap(([topicId, posts]) => posts.map((post, i) => ({ topicId, post, position: i + 1 })));
 
@@ -638,6 +645,9 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 		},
 		profiles: { findProfile: async (id) => data.profiles?.find((p) => p.id === id) ?? null },
 		profileStore: fakeProfileStore(data),
+		privateMessageStore: fakePrivateMessageStore(data.pm),
+		privateContacts: contactsAndLists,
+		sendingLists: contactsAndLists,
 		uploads: fakeUploads(data),
 		avatarStore: {
 			save: async (userId, _dir, type) => {

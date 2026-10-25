@@ -22,6 +22,7 @@ import { OnlineRepository } from '../../src/repositories/OnlineRepository.ts';
 import { PostEditRepository } from '../../src/repositories/PostEditRepository.ts';
 import { PostingRepository } from '../../src/repositories/PostingRepository.ts';
 import { PostRepository } from '../../src/repositories/PostRepository.ts';
+import { PrivateContactRepository } from '../../src/repositories/PrivateContactRepository.ts';
 import { PrivateMessageRepository } from '../../src/repositories/PrivateMessageRepository.ts';
 import { ProfileRepository } from '../../src/repositories/ProfileRepository.ts';
 import { RegistrationRepository } from '../../src/repositories/RegistrationRepository.ts';
@@ -483,6 +484,9 @@ describe('viewtopic de bout en bout', () => {
 			forums: new ForumRepository(db),
 			reports: new ReportRepository(db),
 			privateMessages: new PrivateMessageRepository(db),
+			privateMessageStore: new PrivateMessageRepository(db),
+			privateContacts: new PrivateContactRepository(db),
+			sendingLists: new PrivateContactRepository(db),
 			bans: new BanRepository(db),
 			censorship: new CensorRepository(db),
 			topicLabels: new TopicLabelRepository(db),

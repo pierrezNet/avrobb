@@ -23,6 +23,9 @@ import { LoginController, type LoginQuery } from './controllers/LoginController.
 import { MiscController, type MiscQuery } from './controllers/MiscController.ts';
 import { PasswordResetController } from './controllers/PasswordResetController.ts';
 import { PostController, type PostQuery } from './controllers/PostController.ts';
+import { PrivateContactController, type PrivateContactQuery } from './controllers/PrivateContactController.ts';
+import { PrivateMessageController, type PrivateMessageQuery } from './controllers/PrivateMessageController.ts';
+import { PrivateMessageSendController, type PrivateMessageSendQuery } from './controllers/PrivateMessageSendController.ts';
 import { ProfileController, type ProfileQuery } from './controllers/ProfileController.ts';
 import { RegisterController, type RegisterQuery } from './controllers/RegisterController.ts';
 import { SearchController, type SearchQuery } from './controllers/SearchController.ts';
@@ -45,6 +48,8 @@ import type { UploadStore } from './repositories/MemberUploadFiles.ts';
 import type { PostEditStore } from './repositories/PostEditRepository.ts';
 import type { PostingStore } from './repositories/PostingRepository.ts';
 import type { PostReader } from './repositories/PostRepository.ts';
+import type { PrivateContactStore, SendingListStore } from './repositories/PrivateContactRepository.ts';
+import type { PrivateMessageStore } from './repositories/PrivateMessageRepository.ts';
 import type { ProfileStore } from './repositories/ProfileRepository.ts';
 import type { RegistrationStore } from './repositories/RegistrationRepository.ts';
 import type { ReportWriter } from './repositories/ReportRepository.ts';
@@ -86,6 +91,10 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	posting: PostingStore;
 	postEdits: PostEditStore;
 	drafts: DraftStore;
+	/** Messagerie privée (mod APMS) : conversations, contacts, listes d'envoi. */
+	privateMessageStore: PrivateMessageStore;
+	privateContacts: PrivateContactStore;
+	sendingLists: SendingListStore;
 	subscriptions: SubscriptionStore;
 	contacts: ContactStore;
 	reportWriter: ReportWriter;
@@ -122,6 +131,11 @@ const PORTED_PAGES = new Set([
 	'index.php',
 	'login.php',
 	'misc.php',
+	'pms_contacts.php',
+	'pms_inbox.php',
+	'pms_send.php',
+	'pms_sending_lists.php',
+	'pms_view.php',
 	'post.php',
 	'profile.php',
 	'register.php',
@@ -266,6 +280,44 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 	const profiles = new ProfileController(deps);
 	app.get<{ Querystring: ProfileQuery }>('/profile.php', { preHandler: authenticate }, profiles.show);
 	app.post<{ Querystring: ProfileQuery; Body: FormBody }>('/profile.php', { preHandler: [authenticate, verifyCsrf] }, profiles.submit);
+
+	const pms = new PrivateMessageController(deps);
+	app.get<{ Querystring: PrivateMessageQuery }>('/pms_inbox.php', { preHandler: authenticate }, (request, reply) =>
+		pms.inbox(request, reply),
+	);
+	app.post<{ Querystring: PrivateMessageQuery; Body: FormBody }>(
+		'/pms_inbox.php',
+		{ preHandler: [authenticate, verifyCsrf] },
+		pms.inboxAction,
+	);
+	app.get<{ Querystring: PrivateMessageQuery }>('/pms_view.php', { preHandler: authenticate }, pms.view);
+	app.post<{ Querystring: PrivateMessageQuery; Body: FormBody }>('/pms_view.php', { preHandler: [authenticate, verifyCsrf] }, pms.delete);
+
+	const pmSend = new PrivateMessageSendController(deps);
+	app.get<{ Querystring: PrivateMessageSendQuery }>('/pms_send.php', { preHandler: authenticate }, pmSend.form);
+	app.post<{ Querystring: PrivateMessageSendQuery; Body: FormBody }>(
+		'/pms_send.php',
+		{ preHandler: [authenticate, verifyCsrf] },
+		pmSend.send,
+	);
+
+	const pmContacts = new PrivateContactController(deps);
+	app.get<{ Querystring: PrivateContactQuery }>('/pms_contacts.php', { preHandler: authenticate }, (request, reply) =>
+		pmContacts.contacts(request, reply),
+	);
+	app.post<{ Querystring: PrivateContactQuery; Body: FormBody }>(
+		'/pms_contacts.php',
+		{ preHandler: [authenticate, verifyCsrf] },
+		pmContacts.updateContacts,
+	);
+	app.get<{ Querystring: PrivateContactQuery }>('/pms_sending_lists.php', { preHandler: authenticate }, (request, reply) =>
+		pmContacts.sendingLists(request, reply),
+	);
+	app.post<{ Querystring: PrivateContactQuery; Body: FormBody }>(
+		'/pms_sending_lists.php',
+		{ preHandler: [authenticate, verifyCsrf] },
+		pmContacts.updateSendingLists,
+	);
 
 	const post = new PostController({ ...deps, trackCookieName });
 	app.get<{ Querystring: PostQuery }>('/post.php', { preHandler: authenticate }, post.show);

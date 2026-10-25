@@ -95,6 +95,18 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
 - Renommage : les destinataires des MP sont remplacés élément par élément (le `REPLACE()` du PHP
   renommait aussi « MaxDUO » en renommant « Max ») ; le renommage et les autres champs sont
   enregistrés dans une même transaction.
+- Messagerie privée (APMS) : tables `messages`, `contacts`, `sending_lists` absentes de la base
+  locale, reconstituées d'après le code PHP (`tests/db/schema.sql`). Toutes les actions écrivent en
+  POST avec jeton CSRF ; les anciens liens GET (« Ajouter aux contacts » du profil, suppression ou
+  changement de droits d'un contact, suppression d'une liste) mènent à une confirmation. Une
+  réponse va aux participants qui détiennent encore la conversation (lus en base, pas dans un champ
+  caché) ; on ne répond, ne cite, ne modifie et ne supprime que dans sa propre boîte ; « supprimer
+  pour tous » (modérateurs) vise les copies du message, plus le texte identique dans toute la base ;
+  quitter une conversation en retire tous les messages et marque « (supprimé) » chez les autres ;
+  sujet ou message tout en capitales ramené en minuscules pour un simple membre (condition inversée
+  dans le PHP) ; anti-flood sur `users.last_post` au lieu d'une session PHP ; une liste d'envoi aux
+  destinataires invalides est refusée (le PHP l'enregistrait) ; après une réponse, on revient au
+  message dans la conversation.
 - Recherche : résultats mémorisés dans `search_cache` (lisibles par le PHP) et anti-flood
   `g_search_flood`, comme le PHP ; le formulaire reste en GET et écrit donc `last_search` et le cache.
   Pas de recherche « CJK » par LIKE (inutile sur un forum francophone). Refus pour flood en 429.

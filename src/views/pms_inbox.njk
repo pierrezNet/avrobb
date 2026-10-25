@@ -1,0 +1,64 @@
+{#- Boîte de réception de la messagerie privée (pms_inbox.php). Données : `view` (presenters/privateMessagesPage.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/forms.njk" as forms %}
+{% import "partials/navigation.njk" as navigation %}
+{% import "partials/people.njk" as people %}
+{% import "partials/sideMenu.njk" as sideMenu %}
+
+{% block main %}
+<h1 class="page-title">{{ lang.pms.inbox }}</h1>
+<div class="side-layout">
+{{ sideMenu.sideMenu(lang.pms.pmMenu, view.menu) }}
+<div class="side-layout__content">
+{{ sideMenu.notice(view.notice) }}
+{{ forms.errors(lang.pms.formErrorsTitle, lang.pms.formErrorsInfo, view.errors) }}
+<div class="page-bar">
+	{{ navigation.pagination(view.pagination, lang) }}
+	<p class="page-bar__actions"><a class="button button--primary" href="{{ url('pms_send.php') }}">{{ lang.pms.writeMessage }}</a></p>
+</div>
+<form id="inbox" method="post" action="{{ url('pms_inbox.php') }}">
+	{{ forms.csrf(layout) }}
+	<section class="category" aria-labelledby="inbox-title">
+		<h2 class="category__title" id="inbox-title">{{ lang.pms.inbox }}</h2>
+		{% if view.conversations.length %}
+		<ul class="forum-list">
+		{% for c in view.conversations %}
+			<li class="forum-row topic-row pm-row{% if c.unread %} forum-row--new{% endif %}">
+				<div class="forum-row__main">
+					<h3 class="forum-row__name topic-row__subject">
+						{% if c.unread %}<span class="badge badge--new">{{ lang.pms.unread }}</span> {% endif %}
+						<a href="{{ url(c.href) }}">{% if c.unread %}<strong>{{ c.subject }}</strong>{% else %}{{ c.subject }}{% endif %}</a>
+						<span class="forum-row__by"> {{ people.person(c.sender) }}</span>
+					</h3>
+					<p class="pm-row__receivers"><span>{{ lang.pms.receivers }}&#160;:</span> {% for r in c.receivers %}{{ people.person(r) }}{% if not loop.last %}, {% endif %}{% endfor %}</p>
+				</div>
+				<dl class="forum-row__stats">
+					<div class="forum-row__last">
+						<dt>{{ lang.pms.lastPost }}</dt>
+						<dd>{% if c.lastPost %}<a href="{{ url(c.lastPost.href) }}">{{ c.lastPost.at }}</a> <span class="forum-row__by">{{ lang.pms.by(c.lastPost.by) }}</span>{% else %}- - -{% endif %}</dd>
+					</div>
+				</dl>
+				<p class="topic-row__select"><label><input type="checkbox" name="selected" value="{{ c.sharedId }}"> <span class="visually-hidden">{{ c.selectLabel }}</span><span aria-hidden="true">{{ lang.pms.select }}</span></label></p>
+			</li>
+		{% endfor %}
+		</ul>
+		{% else %}
+		<p class="forum-row">{{ lang.pms.noMessages }}</p>
+		{% endif %}
+	</section>
+	{% if view.conversations.length %}
+	<p class="bulk-actions">
+		<label for="inbox-action">{{ lang.pms.forSelect }}</label>
+		<select id="inbox-action" name="action">
+			<option value="markread">{{ lang.pms.markRead }}</option>
+			<option value="markunread">{{ lang.pms.markUnread }}</option>
+			<option value="delete_multiple">{{ lang.pms.delete }}</option>
+		</select>
+		<button type="submit" class="button">{{ lang.pms.ok }}</button>
+	</p>
+	{% endif %}
+</form>
+<div class="page-bar">{{ navigation.pagination(view.pagination, lang) }}</div>
+</div>
+</div>
+{% endblock %}

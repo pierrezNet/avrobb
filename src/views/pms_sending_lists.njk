@@ -1,0 +1,64 @@
+{#- Listes d'envoi de la messagerie privée (pms_sending_lists.php). Données : `view` (presenters/privateMessagesPage.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/forms.njk" as forms %}
+{% import "partials/people.njk" as people %}
+{% import "partials/sideMenu.njk" as sideMenu %}
+
+{% block main %}
+<h1 class="page-title">{{ lang.pms.sendingLists }}</h1>
+<div class="side-layout">
+{{ sideMenu.sideMenu(lang.pms.pmMenu, view.menu) }}
+<div class="side-layout__content">
+{{ sideMenu.notice(view.notice) }}
+{{ forms.errors(lang.pms.listErrors, lang.pms.formErrorsInfo, view.errors) }}
+<form class="form-box form" method="post" action="{{ url('pms_sending_lists.php') }}">
+	{{ forms.csrf(layout) }}
+	<input type="hidden" name="form_sent" value="1">
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ lang.pms.addAList }}</legend>
+		<p class="form__field">
+			<label for="list_name">{{ lang.pms.listName }}</label>
+			<input type="text" id="list_name" name="list_name" value="{{ view.form.name }}" maxlength="255" required>
+		</p>
+		<p class="form__field">
+			<label for="list_usernames">{{ lang.pms.listUsernamesComma }}</label>
+			<input type="text" id="list_usernames" name="req_username" value="{{ view.form.usernames }}" required autocomplete="off">
+		</p>
+	</fieldset>
+	<p class="form__buttons"><button type="submit" class="button button--primary" name="add" value="1">{{ lang.pms.add }}</button></p>
+</form>
+
+<form id="lists" method="post" action="{{ url('pms_sending_lists.php') }}">
+	{{ forms.csrf(layout) }}
+	<section class="category" aria-labelledby="lists-title">
+		<h2 class="category__title" id="lists-title">{{ lang.pms.sendingLists }}</h2>
+		{% if view.lists.length %}
+		<ul class="forum-list">
+		{% for list in view.lists %}
+			<li class="forum-row contact-row">
+				<div class="forum-row__main">
+					<h3 class="forum-row__name">{{ list.name }}</h3>
+					<p><span class="visually-hidden">{{ lang.pms.listUsernames }}&#160;: </span>{% for member in list.members %}{{ people.person(member) }}{% if not loop.last %}, {% endif %}{% endfor %}</p>
+				</div>
+				<p class="contact-row__actions">
+					<a href="{{ url(list.messageUrl) }}">{{ lang.pms.quickMessage }}</a>
+					<button type="submit" class="link-button" name="delete" value="{{ list.id }}">{{ lang.pms.deleteThisList }}</button>
+				</p>
+				<p class="topic-row__select"><label><input type="checkbox" name="selected" value="{{ list.id }}"> <span class="visually-hidden">{{ list.selectLabel }}</span><span aria-hidden="true">{{ lang.pms.select }}</span></label></p>
+			</li>
+		{% endfor %}
+		</ul>
+		{% else %}
+		<p class="forum-row">{{ lang.pms.noSendingLists }}</p>
+		{% endif %}
+	</section>
+	{% if view.lists.length %}
+	<p class="bulk-actions">
+		<input type="hidden" name="action" value="delete_multiple">
+		<button type="submit" class="button">{{ lang.pms.delete }}</button>
+	</p>
+	{% endif %}
+</form>
+</div>
+</div>
+{% endblock %}

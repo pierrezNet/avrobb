@@ -25,12 +25,19 @@ export function isValidEmail(email: string): boolean {
 	);
 }
 
-/** Modèle .tpl : première ligne « Subject: … », puis le corps (comme login.php). */
+/**
+ * Modèle .tpl : première ligne « Subject: … », puis le corps (comme login.php). Les modèles de la
+ * messagerie (new_pm*.tpl) commencent par « Sujet : » : le PHP retire les 8 premiers caractères,
+ * on retire l'un ou l'autre intitulé.
+ */
 export function parseMailTemplate(raw: string): MailTemplate {
 	const text = raw.replaceAll('\r\n', '\n').trim();
 	const firstBreak = text.indexOf('\n');
 	const subjectLine = firstBreak === -1 ? text : text.slice(0, firstBreak);
-	return { subject: subjectLine.replace(/^Subject:/, '').trim(), body: firstBreak === -1 ? '' : text.slice(firstBreak).trim() };
+	return {
+		subject: subjectLine.replace(/^(?:Subject|Sujet)\s?:/, '').trim(),
+		body: firstBreak === -1 ? '' : text.slice(firstBreak).trim(),
+	};
 }
 
 /** Remplace les balises <nom> du modèle. */

@@ -17,6 +17,7 @@ import { ContactRepository } from './repositories/ContactRepository.ts';
 import { DraftRepository } from './repositories/DraftRepository.ts';
 import { FeedRepository } from './repositories/FeedRepository.ts';
 import { ForumRepository } from './repositories/ForumRepository.ts';
+import { GalleryFiles } from './repositories/GalleryFiles.ts';
 import { GalleryRepository } from './repositories/GalleryRepository.ts';
 import { MailTemplateFiles } from './repositories/MailTemplateFiles.ts';
 import { MemberUploadFiles } from './repositories/MemberUploadFiles.ts';
@@ -94,6 +95,7 @@ const app = await buildApp({
 	searchWriter: search,
 	feeds: new FeedRepository(db),
 	gallery: new GalleryRepository(db),
+	galleryFiles: new GalleryFiles(config.legacyRoot),
 	stopwords: new StopwordsLoader(config.legacyRoot),
 	usersInfo: new UsersInfoLoader(stats, phpCache, clock),
 	avatars,

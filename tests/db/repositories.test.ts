@@ -496,6 +496,7 @@ describe('viewtopic de bout en bout', () => {
 			search: new SearchRepository(db),
 			feeds: new FeedRepository(db),
 			gallery: new GalleryRepository(db),
+			galleryFiles: { save: async (addedAt) => addedAt, delete: async () => undefined },
 			stopwords: { load: async () => new Set<string>() },
 			usersInfo: new UsersInfoLoader(new StatsRepository(db), null, () => NOW),
 			avatars: { urlFor: async () => null },

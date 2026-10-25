@@ -20,6 +20,7 @@
 	{% for item in items %}<li><a href="{{ url(item.href) }}" target="_blank">{{ item.label }}</a> {% if item.on %}{{ lang.post.on }}{% else %}{{ lang.post.off }}{% endif %}</li>{% endfor %}
 	{#- rel="opener" (sinon implicite « noopener » des navigateurs) : le gestionnaire, page du forum, insère les fichiers dans ce formulaire par window.opener. #}
 	<li><a href="{{ url('gestionnaire.php') }}" target="_blank" rel="opener">{{ lang.post.fileManager }}</a></li>
+	<li><a href="{{ url('gallery.php?info=pick') }}" target="_blank" rel="opener">{{ lang.post.galleryPicker }}</a></li>
 </ul>
 {% endmacro %}
 

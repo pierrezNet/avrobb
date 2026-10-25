@@ -1,7 +1,8 @@
 /**
- * gestionnaire.php : bouton « Insérer » qui ajoute le BBCode d'un fichier au message en cours de
- * rédaction dans la fenêtre qui a ouvert le gestionnaire (champ req_message), à la position du
- * curseur. Sans fenêtre d'origine ni JavaScript, les boutons restent masqués : l'adresse se copie.
+ * Gestionnaire de fichiers (gestionnaire.php) et sélecteur d'images de la galerie
+ * (gallery.php?info=pick) : bouton « Insérer » qui ajoute un BBCode au message en cours de
+ * rédaction dans la fenêtre d'origine (champ req_message), à la position du curseur. Sans fenêtre
+ * d'origine ni JavaScript, les boutons restent masqués : le texte se copie.
  */
 (() => {
 	const opener = window.opener;

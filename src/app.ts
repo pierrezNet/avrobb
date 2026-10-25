@@ -44,7 +44,8 @@ import type { ConfigReader } from './repositories/ConfigLoader.ts';
 import type { ContactStore } from './repositories/ContactRepository.ts';
 import type { DraftStore } from './repositories/DraftRepository.ts';
 import type { FeedReader } from './repositories/FeedRepository.ts';
-import type { GalleryReader } from './repositories/GalleryRepository.ts';
+import type { GalleryFileStore } from './repositories/GalleryFiles.ts';
+import type { GalleryStore } from './repositories/GalleryRepository.ts';
 import type { MailTemplateReader } from './repositories/MailTemplateFiles.ts';
 import type { UploadStore } from './repositories/MemberUploadFiles.ts';
 import type { PostEditStore } from './repositories/PostEditRepository.ts';
@@ -113,7 +114,9 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	search: SearchReader;
 	searchWriter: SearchWriter;
 	feeds: FeedReader;
-	gallery: GalleryReader;
+	gallery: GalleryStore;
+	/** Fichiers de la galerie (img/gallery/ de l'installation PHP). */
+	galleryFiles: GalleryFileStore;
 	stopwords: StopwordsReader;
 	usersInfo: UsersInfoReader;
 	/** URL de l'installation PHP : les liens vers les pages non portées y renvoient. */
@@ -240,6 +243,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 
 	const gallery = new GalleryController(deps);
 	app.get<{ Querystring: GalleryQuery }>('/gallery.php', { preHandler: authenticate }, gallery.show);
+	app.post<{ Querystring: GalleryQuery; Body: FormBody }>('/gallery.php', { preHandler: [authenticate, verifyCsrf] }, gallery.submit);
 
 	// login.php : visite discrète dès qu'une action est demandée (PUN_QUIET_VISIT), et accessible en
 	// maintenance pour qu'un administrateur puisse se connecter (le PHP le bloquait aussi).

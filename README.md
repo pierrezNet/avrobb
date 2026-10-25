@@ -119,7 +119,14 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   `g_search_flood`, comme le PHP ; le formulaire reste en GET et écrit donc `last_search` et le cache.
   Pas de recherche « CJK » par LIKE (inutile sur un forum francophone). Refus pour flood en 429.
 - Galerie : informations visibles sous chaque vignette (le PHP les montrait au survol, inaccessible
-  au clavier et au toucher) ; envoi et modération restent en PHP.
+  au clavier et au toucher), vignette collée en haut de la tuile ; filtre « Mes images » (`?mine=1`).
+  Envoi : PNG accepté en plus du JPEG et du GIF, type lu dans le contenu ; vignette (150 px, JPEG)
+  calculée par le navigateur dans un canvas et vérifiée par le serveur, qui n'a pas de bibliothèque
+  d'images (le PHP utilisait GD) ; sans JavaScript, l'image sert de vignette. Suppression en POST
+  après confirmation, par l'auteur, un administrateur ou le groupe des modérateurs (le PHP la
+  réservait à ce groupe, par un lien GET). Sélecteur `gallery.php?info=pick`, ouvert depuis les
+  formulaires de rédaction : choisir une de ses images ou en envoyer une nouvelle (elle rejoint la
+  galerie) et l'insérer avec son titre et sa description.
 - extern.php : pas d'authentification HTTP Basic ni de cache des flux (`o_feed_ttl`).
 - Connexion : jeton CSRF, adresse de retour limitée aux pages du forum (le PHP permettait une
   redirection ouverte), redirection immédiate sans page « Redirection… », page accessible en

@@ -305,6 +305,8 @@ export interface FakeData {
 	viewedTopics?: number[];
 	profiles?: UserProfile[];
 	galleryImages?: GalleryImage[];
+	/** Fichiers de la galerie enregistrés ou effacés. */
+	galleryFileLog?: string[];
 	recentTopics?: RecentTopic[];
 	online?: OnlineVisitor[];
 	bans?: Ban[];
@@ -794,8 +796,27 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 		},
 		stopwords: { load: async () => new Set(['les', 'pour']) },
 		gallery: {
-			countImages: async () => (data.galleryImages ?? []).length,
-			listImages: async (offset, limit) => (data.galleryImages ?? []).slice(offset, offset + limit),
+			countImages: async (owner) => (data.galleryImages ?? []).filter((i) => (owner ?? null) === null || i.userId === owner).length,
+			listImages: async (offset, limit, owner) =>
+				(data.galleryImages ?? []).filter((i) => (owner ?? null) === null || i.userId === owner).slice(offset, offset + limit),
+			findImage: async (id) => data.galleryImages?.find((i) => i.id === id) ?? null,
+			createImage: async (image) => {
+				const id = 300 + (data.galleryImages?.length ?? 0);
+				data.galleryImages = [{ id, ...image, username: 'membre' }, ...(data.galleryImages ?? [])];
+				return id;
+			},
+			deleteImage: async (id) => {
+				data.galleryImages = (data.galleryImages ?? []).filter((i) => i.id !== id);
+			},
+		},
+		galleryFiles: {
+			save: async (addedAt, extension, _image, thumbnail) => {
+				data.galleryFileLog = [...(data.galleryFileLog ?? []), `save ${addedAt}${extension}${thumbnail !== null ? ' +mini' : ''}`];
+				return addedAt;
+			},
+			delete: async (addedAt, extension) => {
+				data.galleryFileLog = [...(data.galleryFileLog ?? []), `delete ${addedAt}${extension}`];
+			},
 		},
 		feeds: {
 			findTopic: async () => null,

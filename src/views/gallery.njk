@@ -1,10 +1,17 @@
 {#- Galerie de PV (gallery.php, consultation). Données : `view` (presenters/galleryPage.ts). -#}
 {% extends "layout.njk" %}
 {% import "partials/navigation.njk" as navigation %}
+{% import "partials/sideMenu.njk" as sideMenu %}
 
 {% block main %}
-<h1 class="page-title">{{ lang.gallery.pageTitle }}</h1>
-<p class="page-intro">{{ lang.gallery.pageDesc }}</p>
+<h1 class="page-title">{{ view.heading }}</h1>
+<p class="page-intro">{{ view.intro }}</p>
+{{ sideMenu.notice(view.notice) }}
+{% if view.filters.length %}
+<nav class="gallery-filters" aria-label="{{ lang.gallery.pageTitle }}">
+	{% for filter in view.filters %}<a href="{{ url(filter.href) }}"{% if filter.active %} aria-current="page"{% endif %}>{{ filter.label }}</a>{% endfor %}
+</nav>
+{% endif %}
 {% if view.addUrl or view.moderationUrl %}
 <p class="page-bar__actions">
 	{% if view.addUrl %}<a class="button button--primary" href="{{ url(view.addUrl) }}">{{ lang.gallery.addPicture }}</a>{% endif %}
@@ -30,6 +37,7 @@
 					{#- HTML de parseMessage() : échappé par construction (services/bbcode.ts). #}
 					<div class="bbcode">{{ image.descriptionHtml | safe }}</div>
 				</details>
+				{% if image.deleteUrl %}<a class="gallery__delete" href="{{ url(image.deleteUrl) }}" aria-label="{{ lang.gallery.deleteImageNamed(image.title) }}">{{ lang.gallery.deleteImage }}</a>{% endif %}
 			</figcaption>
 		</figure>
 	</li>

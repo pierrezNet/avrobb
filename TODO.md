@@ -86,12 +86,12 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
 - [x] Messagerie privée : boîte de réception, lecture, envoi, contacts, listes d'envoi (`messages`, `contacts`, `sending_lists`) **(PV)** — alertes par e-mail (`new_pm*.tpl`) comprises ; vérifiée dans les deux sens avec le PHP
 - [x] Réputation : vote, historique, page `reputation.php` **(PV)** — suppression de votes par les administrateurs et modérateurs
 - [x] Uploads et gestionnaire de fichiers (`gestionnaire.php`, Uploadile) **(PV)** — envoi, suppression et insertion dans le message ; pas de création de miniatures (le PHP utilisait GD)
-- [ ] Galerie : ajout et gestion **(PV)**
-  - [ ] Tuiles : image collée en haut de la tuile (sans marge au-dessus)
-  - [ ] Filtre « Mes images » pour ne voir que les siennes
-  - [ ] Insertion d'image dans un message : en plus de l'URL, choisir parmi ses images de la galerie, ou
-    téléverser une image depuis l'édition du message (elle rejoint alors la galerie)
-  - [ ] Image insérée avec son titre et sa description (la description, obligatoire dans la galerie, est
+- [x] Galerie : ajout et gestion **(PV)** — vignette calculée par le navigateur (canvas), suppression par l'auteur et l'équipe
+  - [x] Tuiles : image collée en haut de la tuile (sans marge au-dessus)
+  - [x] Filtre « Mes images » pour ne voir que les siennes
+  - [x] Insertion d'image dans un message : en plus de l'URL, choisir parmi ses images de la galerie, ou
+    téléverser une image depuis l'édition du message (elle rejoint alors la galerie) — `gallery.php?info=pick`
+  - [x] Image insérée avec son titre et sa description (la description, obligatoire dans la galerie, est
     aujourd'hui perdue à l'insertion)
 - [ ] Premium (`premium`, `premium.php`) **(PV)**
 

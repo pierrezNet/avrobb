@@ -1,53 +1,96 @@
 /**
- * Contrôleur de gallery.php, pour la consultation. L'envoi (?info=new) et la modération
- * (?info=modo) écrivent des fichiers et en base : ils restent servis par le PHP (lot 5).
+ * Contrôleur de gallery.php : consultation (toutes les images ou « Mes images », ?mine=1), envoi
+ * d'une image (?info=new), suppression (?info=modo&option=del&id=…) et sélecteur d'images à
+ * insérer dans un message (?info=pick, ouvert depuis les formulaires de rédaction).
+ *
+ * Écarts assumés : suppression en POST après confirmation (le PHP supprimait sur un lien GET) ;
+ * l'auteur et les administrateurs peuvent aussi supprimer (le PHP ne le permettait qu'au groupe des
+ * modérateurs) ; les erreurs réaffichent le formulaire.
  */
 
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
-import { buildGalleryPage, galleryUrl } from '../presenters/galleryPage.ts';
+import { buildGalleryPage, buildGalleryPicker, galleryUrl } from '../presenters/galleryPage.ts';
 import type { CensorReader } from '../repositories/CensorRepository.ts';
-import type { GalleryReader } from '../repositories/GalleryRepository.ts';
+import type { GalleryFileStore } from '../repositories/GalleryFiles.ts';
+import type { GalleryStore } from '../repositories/GalleryRepository.ts';
 import { buildCensor } from '../services/censor.ts';
+import { canDeleteGalleryImage, validateGalleryUpload } from '../services/gallery.ts';
 import { clampPage, pageCount } from '../services/pagination.ts';
+import { positiveInt } from './params.ts';
 
 export interface GalleryControllerDeps extends LayoutDeps {
-	gallery: GalleryReader;
+	gallery: GalleryStore;
+	galleryFiles: GalleryFileStore;
 	censorship: CensorReader;
-	legacyBaseUrl: string;
 }
 
 export interface GalleryQuery {
 	info?: string;
 	option?: string;
+	id?: string;
 	p?: string;
+	mine?: string;
+	from?: string;
+	done?: string;
 }
+
+type GalleryRequest = FastifyRequest<{ Querystring: GalleryQuery; Body?: FormBody }>;
 
 /** 5 lignes de 4 images, comme gallery.php. */
 const PER_PAGE = 20;
+/** Images proposées par le sélecteur : les plus récentes du membre. */
+const PICKER_LIMIT = 60;
+
+interface FormState {
+	title: string;
+	description: string;
+	errors: string[];
+}
+
+const EMPTY_FORM: FormState = { title: '', description: '', errors: [] };
 
 export class GalleryController {
 	constructor(private readonly deps: GalleryControllerDeps) {}
 
-	show = async (request: FastifyRequest<{ Querystring: GalleryQuery }>, reply: FastifyReply): Promise<FastifyReply> => {
-		const { viewer, board: config } = request;
+	show = async (request: GalleryRequest, reply: FastifyReply): Promise<FastifyReply> => {
+		const { viewer } = request;
 		const { lang } = this.deps.page;
 		const { query } = request;
-
 		if (!viewer.group.canReadBoard) return renderMessage(request, reply, this.deps, 403, lang.common.noView);
 
-		const consulting = (query.info === undefined || query.info === 'none') && (query.option === undefined || query.option === 'none');
-		if (!consulting && this.deps.legacyBaseUrl !== '') {
-			const search = request.url.includes('?') ? request.url.slice(request.url.indexOf('?')) : '';
-			return reply.redirect(`${this.deps.legacyBaseUrl}/gallery.php${search}`);
+		if (query.option === 'del') return this.confirmDelete(request, reply);
+		if (query.info === 'new' || query.info === 'pick') {
+			if (viewer.isGuest) return renderMessage(request, reply, this.deps, 403, lang.gallery.guestsCannotAdd);
+			return query.info === 'new' ? this.renderForm(request, reply, EMPTY_FORM) : this.renderPicker(request, reply, EMPTY_FORM);
 		}
+		return this.list(request, reply);
+	};
 
-		const numPages = pageCount(await this.deps.gallery.countImages(), PER_PAGE);
+	submit = async (request: FastifyRequest<{ Querystring: GalleryQuery; Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> => {
+		const { viewer } = request;
+		const { lang } = this.deps.page;
+		if (!viewer.group.canReadBoard) return renderMessage(request, reply, this.deps, 403, lang.common.noView);
+		if (request.query.option === 'del') return this.delete(request, reply);
+		if (request.query.info !== 'new') return renderMessage(request, reply, this.deps, 400, lang.common.badRequest);
+		if (viewer.isGuest) return renderMessage(request, reply, this.deps, 403, lang.gallery.guestsCannotAdd);
+		return this.upload(request, reply);
+	};
+
+	private async list(request: GalleryRequest, reply: FastifyReply): Promise<FastifyReply> {
+		const { viewer, board: config, query } = request;
+		const { lang } = this.deps.page;
+		const mine = query.mine !== undefined && !viewer.isGuest;
+		const owner = mine ? viewer.id : null;
+
+		const numPages = pageCount(await this.deps.gallery.countImages(owner), PER_PAGE);
 		const page = clampPage(query.p, numPages);
 		const [images, censoredWords] = await Promise.all([
-			this.deps.gallery.listImages((page - 1) * PER_PAGE, PER_PAGE),
+			this.deps.gallery.listImages((page - 1) * PER_PAGE, PER_PAGE, owner),
 			config.censoring ? this.deps.censorship.listWords() : [],
 		]);
+		const notices: Record<string, string> = { added: lang.gallery.added, deleted: lang.gallery.deleted };
 
 		const view = buildGalleryPage({
 			viewer,
@@ -55,12 +98,13 @@ export class GalleryController {
 			images,
 			page,
 			numPages,
+			mine,
 			censor: config.censoring ? buildCensor(censoredWords) : null,
 			lang,
 			dateWords: this.deps.page.dateWords,
 			now: this.deps.page.clock(),
+			notice: notices[query.done ?? ''] ?? null,
 		});
-
 		return renderPage(
 			request,
 			reply,
@@ -68,12 +112,112 @@ export class GalleryController {
 			'gallery.njk',
 			{
 				pageId: 'gallery',
-				titleParts: [config.boardTitle, lang.gallery.pageTitle],
+				titleParts: [config.boardTitle, view.heading],
+				pageNumber: page > 1 ? page : null,
 				activeNav: 'gallery',
-				allowIndex: true,
-				canonicalUrl: galleryUrl(page),
+				allowIndex: !mine,
+				canonicalUrl: mine ? null : galleryUrl(page),
 			},
 			view,
 		);
-	};
+	}
+
+	private async upload(request: FastifyRequest<{ Querystring: GalleryQuery; Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> {
+		const { viewer, body } = request;
+		const { lang } = this.deps.page;
+		const fromPicker = request.query.from === 'pick';
+		const result = validateGalleryUpload({
+			title: field(body, 'titre'),
+			description: field(body, 'description'),
+			image: request.uploads.get('req_file')?.data ?? null,
+			thumbnail: request.uploads.get('thumbnail')?.data ?? null,
+		});
+		const image = request.uploads.get('req_file')?.data;
+		if (result.errors.length > 0 || result.extension === null || image === undefined) {
+			const form = {
+				title: field(body, 'titre'),
+				description: field(body, 'description'),
+				errors: result.errors.map((e) => lang.gallery.uploadError(e)),
+			};
+			return fromPicker ? this.renderPicker(request, reply, form) : this.renderForm(request, reply, form);
+		}
+
+		const addedAt = await this.deps.galleryFiles.save(this.deps.page.clock(), result.extension, image, result.thumbnail);
+		await this.deps.gallery.createImage({
+			title: result.title,
+			description: result.description,
+			userId: viewer.id,
+			addedAt,
+			extension: result.extension,
+		});
+		return reply.redirect(fromPicker ? 'gallery.php?info=pick&done=added' : 'gallery.php?done=added', 303);
+	}
+
+	/** Image désignée par ?id=, si le lecteur peut la supprimer ; sinon la réponse d'erreur. */
+	private async deletable(request: GalleryRequest, reply: FastifyReply) {
+		const { lang } = this.deps.page;
+		const image = await this.deps.gallery.findImage(positiveInt(request.query.id));
+		if (image === null) return renderMessage(request, reply, this.deps, 404, lang.common.badRequest);
+		if (!canDeleteGalleryImage(request.viewer, image)) return renderMessage(request, reply, this.deps, 403, lang.common.noPermission);
+		return image;
+	}
+
+	private async confirmDelete(request: GalleryRequest, reply: FastifyReply): Promise<FastifyReply> {
+		const image = await this.deletable(request, reply);
+		if (!('extension' in image)) return image;
+		const { lang } = this.deps.page;
+		return renderPage(
+			request,
+			reply,
+			this.deps,
+			'confirm.njk',
+			{ pageId: 'gallery', titleParts: [request.board.boardTitle, lang.gallery.pageTitle, lang.gallery.deleteImage], activeNav: 'gallery' },
+			{
+				title: lang.gallery.deleteImage,
+				text: lang.gallery.confirmDelete(image.title),
+				action: `gallery.php?info=modo&option=del&id=${image.id}`,
+				button: lang.gallery.deleteImage,
+			},
+		);
+	}
+
+	private async delete(request: GalleryRequest, reply: FastifyReply): Promise<FastifyReply> {
+		const image = await this.deletable(request, reply);
+		if (!('extension' in image)) return image;
+		await this.deps.gallery.deleteImage(image.id);
+		await this.deps.galleryFiles.delete(image.addedAt, image.extension);
+		return reply.redirect('gallery.php?done=deleted', 303);
+	}
+
+	private renderForm(request: GalleryRequest, reply: FastifyReply, form: FormState): Promise<FastifyReply> {
+		const { lang } = this.deps.page;
+		return renderPage(
+			request,
+			reply,
+			this.deps,
+			'gallery_new.njk',
+			{ pageId: 'gallery', titleParts: [request.board.boardTitle, lang.gallery.pageTitle, lang.gallery.postTitle], activeNav: 'gallery' },
+			{ formAction: 'gallery.php?info=new', ...form },
+		);
+	}
+
+	private async renderPicker(request: GalleryRequest, reply: FastifyReply, form: FormState): Promise<FastifyReply> {
+		const { viewer, board: config } = request;
+		const { lang } = this.deps.page;
+		const view = buildGalleryPicker({
+			config,
+			images: await this.deps.gallery.listImages(0, PICKER_LIMIT, viewer.id),
+			form,
+			lang,
+			notice: request.query.done === 'added' ? lang.gallery.added : null,
+		});
+		return renderPage(
+			request,
+			reply,
+			this.deps,
+			'gallery_pick.njk',
+			{ pageId: 'gallery', titleParts: [config.boardTitle, lang.gallery.pickerTitle], allowIndex: false },
+			view,
+		);
+	}
 }

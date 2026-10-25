@@ -78,7 +78,7 @@ describe('gestionnaire.php', () => {
 		expect(res.body).toContain('value="http://forum.test/img/members/3/vol%20de%20nuit.png" readonly');
 		expect(res.body).toContain('data-insert="[img]http://forum.test/img/members/3/vol%20de%20nuit.png[/img]"');
 		expect(res.body).toContain('data-insert="[url=http://forum.test/img/members/3/plan.zip]plan[/url]"');
-		expect(res.body).toContain('js/gestionnaire.');
+		expect(res.body).toContain('js/insert-into-message.');
 	});
 
 	it('envoie et supprime dans son propre dossier', async () => {

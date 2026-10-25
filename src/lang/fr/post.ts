@@ -120,6 +120,7 @@ export const post = {
 	off: 'désactivé',
 	/** Gestionnaire d'envois de PV (mod Uploadile, lang/French/uploadile.php). */
 	fileManager: 'Gestion de mes uploads',
+	galleryPicker: 'Images de la galerie',
 
 	// Modification
 	editPostLegend: 'Modifier le message et valider les modifications',

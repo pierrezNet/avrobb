@@ -1,0 +1,17 @@
+{#- Envoi d'une image dans la galerie (gallery.php?info=new). Données : `view` { formAction, title, description, errors }. -#}
+{% extends "layout.njk" %}
+{% import "partials/forms.njk" as forms %}
+{% import "partials/galleryForm.njk" as galleryForm %}
+
+{% block head %}<script src="{{ asset('js/gallery-thumbnail.js') }}" defer></script>{% endblock %}
+
+{% block main %}
+<h1 class="page-title">{{ lang.gallery.postTitle }}</h1>
+<div class="form-box">
+	<p>{{ lang.gallery.imageUse }}</p>
+	<p><strong>{{ lang.gallery.imageRule }}</strong></p>
+</div>
+{{ forms.errors(lang.gallery.errorsTitle, lang.gallery.errorsInfo, view.errors) }}
+{{ galleryForm.uploadForm(view, layout, lang) }}
+<p><a href="{{ url('gallery.php') }}">{{ lang.gallery.pageTitle }}</a></p>
+{% endblock %}

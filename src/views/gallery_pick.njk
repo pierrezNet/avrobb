@@ -1,0 +1,40 @@
+{#- Sélecteur d'images de la galerie à insérer dans un message (gallery.php?info=pick). Données : `view` (presenters/galleryPage.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/forms.njk" as forms %}
+{% import "partials/galleryForm.njk" as galleryForm %}
+{% import "partials/sideMenu.njk" as sideMenu %}
+
+{% block head %}<script src="{{ asset('js/insert-into-message.js') }}" defer></script><script src="{{ asset('js/gallery-thumbnail.js') }}" defer></script>{% endblock %}
+
+{% block main %}
+<h1 class="page-title">{{ lang.gallery.pickerTitle }}</h1>
+<p class="page-intro">{{ lang.gallery.pickerInfo }} <button type="button" class="link-button" data-close-window hidden>{{ lang.gallery.closeWindow }}</button></p>
+{{ sideMenu.notice(view.notice) }}
+<p class="visually-hidden" role="status" data-insert-status data-message="{{ lang.gallery.inserted }}"></p>
+
+{% if view.images.length %}
+<ul class="gallery gallery--picker">
+{% for image in view.images %}
+	<li class="gallery__item">
+		<figure class="gallery__figure">
+			<a class="gallery__link" href="{{ url(image.fullUrl) }}" target="_blank" rel="noopener">
+				<img class="gallery__thumb" src="{{ url(image.thumbUrl) }}" alt="" loading="lazy">
+			</a>
+			<figcaption class="gallery__caption">
+				<strong class="gallery__title">{{ image.title }}</strong>
+				<button type="button" class="button button--small" data-insert="{{ image.insertCode }}" aria-label="{{ image.insertLabel }}" hidden>{{ lang.gallery.insert }}</button>
+				<label class="visually-hidden" for="code-{{ image.id }}">{{ image.codeLabel }}</label>
+				<textarea id="code-{{ image.id }}" class="gallery__code" rows="3" readonly>{{ image.insertCode }}</textarea>
+			</figcaption>
+		</figure>
+	</li>
+{% endfor %}
+</ul>
+{% else %}
+<p class="message-box">{{ lang.gallery.noOwnImages }}</p>
+{% endif %}
+
+<h2 class="form-box__title">{{ lang.gallery.addPicture }}</h2>
+{{ forms.errors(lang.gallery.errorsTitle, lang.gallery.errorsInfo, view.form.errors) }}
+{{ galleryForm.uploadForm(view.form, layout, lang) }}
+{% endblock %}

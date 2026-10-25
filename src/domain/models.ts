@@ -537,16 +537,20 @@ export interface SearchPost {
 	forumName: string;
 }
 
+export type GalleryExtension = '.jpg' | '.gif' | '.png';
+
 /** Image de la galerie de PV. */
 export interface GalleryImage {
 	id: number;
 	title: string;
+	/** Auteur de l'envoi (filtre « Mes images », droit de suppression). */
+	userId: number;
 	username: string;
 	description: string;
 	/** Horodatage d'envoi, qui sert aussi de nom de fichier. */
 	addedAt: number;
-	/** Extension du fichier, « .jpg » ou « .gif ». */
-	extension: '.jpg' | '.gif';
+	/** Extension du fichier : « .jpg » ou « .gif » comme le PHP, « .png » depuis Node. */
+	extension: GalleryExtension;
 }
 
 /** Où l'on écrit (post.php) : forum, permissions du groupe, et sujet s'il s'agit d'une réponse. */

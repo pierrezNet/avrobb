@@ -116,6 +116,10 @@ export interface GroupsTable {
 	g_moderator: number;
 	g_mod_promote_users: number;
 	g_mod_edit_users: number;
+	g_mod_rename_users: number;
+	g_mod_change_passwords: number;
+	g_mod_ban_users: number;
+	g_set_title: number;
 	g_read_board: number;
 	g_view_users: number;
 	g_post_replies: number;
@@ -136,12 +140,51 @@ export interface GroupsTable {
 	g_rep_enable: number;
 }
 
-/** Messagerie privée (mod APMS) : une ligne par exemplaire d'un message, `owner` étant son détenteur. */
+/**
+ * Messagerie privée (mod APMS) : une ligne par exemplaire d'un message, `owner` étant son détenteur.
+ * Une conversation partage `shared_id` (id de son premier message) ; sa première ligne
+ * (show_message = 1) porte les informations de la liste (last_post*, showed).
+ */
 export interface MessagesTable {
 	id: Generated<number>;
+	shared_id: number;
+	last_shared_id: Generated<number>;
+	last_post_id: Generated<number>;
 	owner: number;
+	subject: string;
+	message: string | null;
+	sender: string;
+	/** Pseudos des destinataires, séparés par des virgules. */
+	receiver: string;
+	sender_id: number;
+	/** Identifiants des destinataires, séparés par des virgules. */
+	receiver_id: string;
+	sender_ip: string;
+	hide_smilies: number;
+	posted: number;
+	last_post: Generated<number>;
+	last_poster: Generated<string>;
 	showed: number;
 	show_message: number;
+}
+
+/** Carnet d'adresses de la messagerie (mod APMS). */
+export interface ContactsTable {
+	id: Generated<number>;
+	user_id: number;
+	contact_id: number;
+	contact_name: string;
+	/** 1 = le contact peut écrire au membre, 0 = bloqué. */
+	allow_msg: number;
+}
+
+/** Listes de diffusion de la messagerie (mod APMS) : pseudos et identifiants sérialisés (serialize()). */
+export interface SendingListsTable {
+	id: Generated<number>;
+	user_id: number;
+	name: string;
+	receivers: string;
+	array_id: string;
 }
 
 export interface OnlineTable {
@@ -263,6 +306,9 @@ export interface UsersTable {
 	disp_posts: number | null;
 	email_setting: number;
 	notify_with_post: Generated<number>;
+	/** Messagerie privée (mod APMS) : alerte par e-mail d'un nouveau MP, avec ou sans son texte. */
+	notify_pm: Generated<number>;
+	notify_pm_full: Generated<number>;
 	auto_notify: Generated<number>;
 	show_avatars: Generated<number>;
 	show_sig: Generated<number>;
@@ -288,6 +334,8 @@ export interface UsersTable {
 	rep_plus: Generated<number>;
 	rep_minus: Generated<number>;
 	reputation_enable: Generated<number>;
+	/** Octets occupés par les fichiers du membre dans img/members/<id>/ (Uploadile, propre à PV). */
+	upload: Generated<number>;
 }
 
 export interface Database {
@@ -298,6 +346,7 @@ export interface Database {
 	categories: CategoriesTable;
 	censoring: CensoringTable;
 	config: ConfigTable;
+	contacts: ContactsTable;
 	forums: ForumsTable;
 	forum_perms: ForumPermsTable;
 	forum_subscriptions: ForumSubscriptionsTable;
@@ -310,6 +359,7 @@ export interface Database {
 	search_cache: SearchCacheTable;
 	search_matches: SearchMatchesTable;
 	search_words: SearchWordsTable;
+	sending_lists: SendingListsTable;
 	toolbar_conf: ToolbarConfTable;
 	toolbar_tags: ToolbarTagsTable;
 	topic_subscriptions: TopicSubscriptionsTable;
@@ -325,6 +375,7 @@ export const TABLE_NAMES: readonly (keyof Database)[] = [
 	'categories',
 	'censoring',
 	'config',
+	'contacts',
 	'forums',
 	'forum_perms',
 	'forum_subscriptions',
@@ -337,6 +388,7 @@ export const TABLE_NAMES: readonly (keyof Database)[] = [
 	'search_cache',
 	'search_matches',
 	'search_words',
+	'sending_lists',
 	'toolbar_conf',
 	'toolbar_tags',
 	'topic_subscriptions',

@@ -158,3 +158,41 @@ export function canEditProfile(viewer: Viewer, target: { id: number; groupId: nu
 	if (isAdmin(viewer)) return true;
 	return viewer.group.canModEditUsers && target.groupId !== GroupId.Admin && !target.groupIsModerator;
 }
+
+/** Membre visé par une action de profile.php. */
+export interface ProfileTarget {
+	id: number;
+	groupId: number;
+	groupIsModerator: boolean;
+}
+
+/** Un modérateur de groupe peut-il agir sur ce membre ? Ni administrateur, ni autre modérateur. */
+const moderatesMember = (viewer: Viewer, target: ProfileTarget): boolean =>
+	viewer.group.isModerator && viewer.group.canModEditUsers && target.groupId !== GroupId.Admin && !target.groupIsModerator;
+
+/** profile.php?action=change_email : soi-même, un administrateur, ou un modérateur autorisé. */
+export function canChangeEmail(viewer: Viewer, target: ProfileTarget): boolean {
+	if (!viewer.isGuest && viewer.id === target.id) return true;
+	return isAdmin(viewer) || moderatesMember(viewer, target);
+}
+
+/** profile.php?action=change_pass : comme l'adresse, avec g_mod_change_passwords pour un modérateur. */
+export function canChangePassword(viewer: Viewer, target: ProfileTarget): boolean {
+	if (!viewer.isGuest && viewer.id === target.id) return true;
+	return isAdmin(viewer) || (moderatesMember(viewer, target) && viewer.group.canModChangePasswords);
+}
+
+/** Renommer un membre (champ « Nom d'utilisateur » de la section Principal). */
+export function canRenameUsers(viewer: Viewer): boolean {
+	return isAdmin(viewer) || (viewer.group.isModerator && viewer.group.canModRenameUsers);
+}
+
+/** Lien « Administration » du menu du profil (generate_profile_menu()). */
+export function canSeeProfileAdmin(viewer: Viewer): boolean {
+	return isAdmin(viewer) || (viewer.group.isModerator && viewer.group.canModBanUsers);
+}
+
+/** Plugiles privés (UPP_*) : « visibles par le membre et les administrateurs ». */
+export function canUsePrivatePlugiles(viewer: Viewer, targetId: number): boolean {
+	return (!viewer.isGuest && viewer.id === targetId) || isAdmin(viewer);
+}

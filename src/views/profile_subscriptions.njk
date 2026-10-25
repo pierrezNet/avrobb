@@ -1,0 +1,61 @@
+{#- Plugile « Suivile » (profile.php?plugin=UPP_Suivile.php). Données : `view` (presenters/profilePlugilePage.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/forms.njk" as forms %}
+{% import "partials/profileMenu.njk" as profileMenu %}
+
+{% block main %}
+<h1 class="page-title">{{ view.heading }}</h1>
+<div class="profile-edit">
+{{ profileMenu.menu(view.menu, lang) }}
+<div class="profile-edit__content">
+{{ profileMenu.notice(view.notice) }}
+{{ forms.errors(lang.profile.formErrors, lang.profile.formErrorsInfo, view.errors) }}
+<p class="page-intro">{{ lang.profile.subscriptionsInfo }}</p>
+<form id="subscriptions" method="post" action="{{ url(view.formAction) }}">
+	{{ forms.csrf(layout) }}
+	<section class="category" aria-labelledby="subscriptions-title">
+		<h2 class="category__title" id="subscriptions-title">{{ lang.profile.subscriptionsTitle }}</h2>
+		{% if view.topics.length %}
+		<ul class="forum-list">
+		{% for topic in view.topics %}
+			<li class="forum-row topic-row topic-row--selectable{% if topic.sticky %} topic-row--sticky{% endif %}{% if topic.newPostsUrl %} forum-row--new{% endif %}{% if topic.closed %} topic-row--closed{% endif %}">
+				<div class="forum-row__main">
+					<h3 class="forum-row__name topic-row__subject">
+						{%- if topic.sticky %}<span class="badge">{{ lang.profile.sticky }}</span> {% endif -%}
+						{%- if topic.moved %}<span class="badge">{{ lang.profile.moved }}</span> {% endif -%}
+						{%- if topic.closed %}<span class="badge">{{ lang.forum.closed }}</span> {% endif -%}
+						<a href="{{ url(topic.href) }}">
+							{%- if topic.newPostsUrl %}<strong>{% endif -%}
+							{%- for part in topic.subject %}{% if part.css %}<span style="{{ part.css }}">{{ part.text }}</span>{% else %}{{ part.text }}{% endif %}{% endfor -%}
+							{%- if topic.newPostsUrl %}</strong>{% endif -%}
+						</a>
+						<span class="forum-row__by"> {{ lang.profile.by(topic.poster) }}</span>
+						{% if topic.newPostsUrl %} <a class="badge badge--new" href="{{ url(topic.newPostsUrl) }}">{{ lang.profile.newPosts }}</a>{% endif %}
+					</h3>
+					{% if topic.pages.length %}
+					<nav class="topic-row__pages" aria-label="{{ lang.forum.topicPages }}">
+						{% for link in topic.pages %}{% if link.kind == 'page' %}<a href="{{ url(link.href) }}">{{ link.page }}</a>{% elif link.kind == 'gap' %}<span>{{ lang.common.spacer }}</span>{% endif %}{% endfor %}
+					</nav>
+					{% endif %}
+				</div>
+				<dl class="forum-row__stats">
+					<div class="forum-row__count"><dt>{{ lang.profile.replies }}</dt> <dd>{{ topic.replies }}</dd></div>
+					<div class="forum-row__count"><dt>{{ lang.profile.views }}</dt> <dd>{{ topic.views }}</dd></div>
+					<div class="forum-row__last">
+						<dt>{{ lang.profile.lastPost }}</dt>
+						<dd>{% if topic.lastPost %}<a href="{{ url(topic.lastPost.href) }}">{{ topic.lastPost.at }}</a> <span class="forum-row__by">{{ lang.profile.by(topic.lastPost.by) }}</span>{% else %}- - -{% endif %}</dd>
+					</div>
+				</dl>
+				<p class="topic-row__select"><label><input type="checkbox" name="topics" value="{{ topic.id }}"> <span class="visually-hidden">{{ topic.selectLabel }}</span><span aria-hidden="true">{{ lang.profile.select }}</span></label></p>
+			</li>
+		{% endfor %}
+		</ul>
+		{% else %}
+		<p class="forum-row">{{ lang.profile.noSubscriptions }}</p>
+		{% endif %}
+	</section>
+	{% if view.topics.length %}<p class="form__buttons"><button type="submit" class="button button--primary" name="unsubscribe" value="1">{{ lang.profile.unsubscribe }}</button></p>{% endif %}
+</form>
+</div>
+</div>
+{% endblock %}

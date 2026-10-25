@@ -1,0 +1,56 @@
+{#- Plugile « Mes uploads » (profile.php?plugin=UPP_Mes_uploads.php). Données : `view` (presenters/profilePlugilePage.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/forms.njk" as forms %}
+{% import "partials/profileMenu.njk" as profileMenu %}
+
+{% block main %}
+<h1 class="page-title">{{ view.heading }}</h1>
+<div class="profile-edit">
+{{ profileMenu.menu(view.menu, lang) }}
+<div class="profile-edit__content">
+{{ profileMenu.notice(view.notice) }}
+{{ forms.errors(lang.profile.formErrors, lang.profile.formErrorsInfo, view.errors) }}
+<section class="form-box" aria-labelledby="uploads-info">
+	<h2 class="form-box__title" id="uploads-info">{{ lang.profile.uploadsInformation }}</h2>
+	<p>{{ lang.profile.uploadsInfo }}</p>
+</section>
+
+<form id="upload" class="form-box form" method="post" enctype="multipart/form-data" action="{{ url(view.formAction) }}">
+	{{ forms.csrf(layout) }}
+	<h2 class="form-box__title">{{ lang.profile.uploadFileTitle }}</h2>
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ lang.profile.uploadFileLegend }}</legend>
+		<p class="form__field">
+			<label for="fichier">{{ lang.profile.chooseFile }}</label>
+			<input type="file" id="fichier" name="fichier" required>
+		</p>
+		<p class="form__help">{% if view.limits %}{{ view.limits }}{% else %}{{ lang.profile.noExtensionAllowed }}{% endif %}</p>
+	</fieldset>
+	<p class="form__buttons"><button type="submit" class="button button--primary" name="submit" value="1"{% if not view.limits %} disabled{% endif %}>{{ lang.profile.send }}</button></p>
+</form>
+
+<form id="uploads" class="form-box" method="post" action="{{ url(view.formAction) }}">
+	{{ forms.csrf(layout) }}
+	<h2 class="form-box__title">{{ lang.profile.currentUploads }}</h2>
+	{% if view.usage %}
+	<p class="upload-usage"><strong>{{ lang.profile.usedSpace }}</strong> <progress max="100" value="{{ view.usage.percent }}">{{ view.usage.percent }} %</progress> {{ view.usage.percent }} % - {{ view.usage.text }}</p>
+	{% endif %}
+	<p><strong>{{ lang.profile.storageFolder }}</strong> {{ view.folder }}</p>
+	{% if view.files and view.files.length %}
+	<ul class="upload-list">
+		{% for file in view.files %}
+		<li class="upload-list__item">
+			<a class="upload-list__preview" href="{{ file.href }}">{% if file.thumbnailUrl %}<img src="{{ file.thumbnailUrl }}" alt="" loading="lazy">{% else %}<span>{{ lang.profile.noPreview }}</span>{% endif %}</a>
+			<span class="upload-list__name"><a href="{{ file.href }}">{{ file.name }}</a> [{{ file.size }}] [{{ file.extension }}]</span>
+			<label class="upload-list__select"><input type="checkbox" name="delete" value="{{ file.value }}"> <span class="visually-hidden">{{ lang.profile.deleteFile(file.value) }}</span><span aria-hidden="true">{{ lang.profile.delete }}</span></label>
+		</li>
+		{% endfor %}
+	</ul>
+	<p class="form__buttons"><button type="submit" class="button" name="supprimer" value="1">{{ lang.profile.delete }}</button></p>
+	{% else %}
+	<p>{{ lang.profile.noUploads }}</p>
+	{% endif %}
+</form>
+</div>
+</div>
+{% endblock %}

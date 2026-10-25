@@ -41,9 +41,11 @@ import type { DraftStore } from './repositories/DraftRepository.ts';
 import type { FeedReader } from './repositories/FeedRepository.ts';
 import type { GalleryReader } from './repositories/GalleryRepository.ts';
 import type { MailTemplateReader } from './repositories/MailTemplateFiles.ts';
+import type { UploadStore } from './repositories/MemberUploadFiles.ts';
 import type { PostEditStore } from './repositories/PostEditRepository.ts';
 import type { PostingStore } from './repositories/PostingRepository.ts';
 import type { PostReader } from './repositories/PostRepository.ts';
+import type { ProfileStore } from './repositories/ProfileRepository.ts';
 import type { RegistrationStore } from './repositories/RegistrationRepository.ts';
 import type { ReportWriter } from './repositories/ReportRepository.ts';
 import type { SearchReader, SearchWriter } from './repositories/SearchRepository.ts';
@@ -55,7 +57,7 @@ import type { TopicLabelReader } from './repositories/TopicLabelRepository.ts';
 import type { TopicReader, TopicWriter } from './repositories/TopicRepository.ts';
 import type { CredentialsStore, MemberListReader, PasswordResetStore, ProfileReader } from './repositories/UserRepository.ts';
 import type { UsersInfoReader } from './repositories/UsersInfoLoader.ts';
-import type { AvatarLocator } from './services/avatars.ts';
+import type { AvatarLocator, AvatarStore } from './services/avatars.ts';
 
 declare module 'fastify' {
 	interface FastifyRequest {
@@ -77,6 +79,7 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	mailer: Mailer;
 	registrations: RegistrationStore;
 	profiles: ProfileReader;
+	profileStore: ProfileStore;
 	topics: TopicReader;
 	topicWriter: TopicWriter;
 	posts: PostReader;
@@ -88,6 +91,9 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	reportWriter: ReportWriter;
 	toolbar: ToolbarReader;
 	avatars: AvatarLocator;
+	avatarStore: AvatarStore;
+	/** Fichiers des membres (Uploadile) dans img/members/ de l'installation PHP. */
+	uploads: UploadStore;
 	censorship: CensorReader;
 	topicLabels: TopicLabelReader;
 	stats: StatsReader;
@@ -259,6 +265,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 
 	const profiles = new ProfileController(deps);
 	app.get<{ Querystring: ProfileQuery }>('/profile.php', { preHandler: authenticate }, profiles.show);
+	app.post<{ Querystring: ProfileQuery; Body: FormBody }>('/profile.php', { preHandler: [authenticate, verifyCsrf] }, profiles.submit);
 
 	const post = new PostController({ ...deps, trackCookieName });
 	app.get<{ Querystring: PostQuery }>('/post.php', { preHandler: authenticate }, post.show);

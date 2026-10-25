@@ -71,9 +71,30 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   menait qu'après un enregistrement) ; la case est proposée à tout membre (le PHP la cachait quand
   les abonnements aux sujets étaient désactivés).
 - Le menu mobile est un `<details>` sans JavaScript (PV : bouton burger en JS) ; pas d'icônes rapides.
-- `profile.php` : Node ne sert que la consultation ; tout cas de modification est redirigé vers
-  `LEGACY_BASE_URL`, qui doit donc désigner une adresse servie par le PHP (sinon boucle).
+- `profile.php` : Node sert la consultation, les sections de modification, le mot de passe,
+  l'adresse, l'avatar et les plugiles ; seule la section « Administration » (groupe, modération,
+  bannissement, suppression) est redirigée vers `LEGACY_BASE_URL` (lot Administration).
 - Biographie affichée directement sur le profil (le PHP la cache derrière `?plugin=UP_Ma_biographie.php`).
+- Modification du profil : seuls les champs affichés sont enregistrés (le PHP remettait `use_pm` ou
+  `reputation_enable` à 0 quand la messagerie ou la renommée étaient désactivées) ; les erreurs
+  réaffichent le formulaire, un enregistrement redirige avec un avis « Profil mis à jour » ;
+  longueurs vérifiées par le serveur ; pas de choix des formats de date et d'heure (PV les ignore)
+  ni de la langue ; les plugiles « UP_ » ne sont plus recopiés dans la section Principal ; un simple
+  membre qui change son adresse dans Principal (`o_regs_verify` désactivé) suit les règles
+  d'adresse bannie ou déjà utilisée.
+- Mot de passe : l'ancien est toujours demandé pour changer le sien, modérateur compris ;
+  6 caractères au moins. Une clé d'activation n'active que ce qu'elle annonce (hash ou adresse).
+  Les liens d'activation reçus par e-mail (mot de passe, adresse) écrivent en GET, comme le PHP.
+- Avatar : effacement confirmé en POST (le PHP effaçait sur un lien GET) ; mêmes droits que la
+  modification du profil ; type lu dans le contenu du fichier ; l'URL porte `?m=<date>`.
+- Plugiles privés (`UPP_Suivile`, `UPP_Mes_uploads`) réservés au membre et aux administrateurs (le
+  PHP ne contrôlait rien : n'importe qui pouvait désabonner un membre ou supprimer ses fichiers).
+- Uploadile : nom de fichier réduit à lettres, chiffres et tirets ; extensions exécutables ou
+  interprétées par le navigateur (php, html, svg, js…) toujours refusées ; pas de miniature créée
+  (celles qui existent restent affichées) ; formulaires limités à 16 Mio.
+- Renommage : les destinataires des MP sont remplacés élément par élément (le `REPLACE()` du PHP
+  renommait aussi « MaxDUO » en renommant « Max ») ; le renommage et les autres champs sont
+  enregistrés dans une même transaction.
 - Recherche : résultats mémorisés dans `search_cache` (lisibles par le PHP) et anti-flood
   `g_search_flood`, comme le PHP ; le formulaire reste en GET et écrit donc `last_search` et le cache.
   Pas de recherche « CJK » par LIKE (inutile sur un forum francophone). Refus pour flood en 429.

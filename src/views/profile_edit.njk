@@ -1,0 +1,213 @@
+{#- Modification d'un profil (profile.php?section=…). Données : `view` (presenters/profileEditPage.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/forms.njk" as forms %}
+{% import "partials/postFields.njk" as postFields %}
+{% import "partials/profileMenu.njk" as profileMenu %}
+
+{% block main %}
+<h1 class="page-title">{{ view.heading }}</h1>
+<div class="profile-edit">
+{{ profileMenu.menu(view.menu, lang) }}
+<div class="profile-edit__content">
+{{ profileMenu.notice(view.notice) }}
+{{ forms.errors(lang.profile.formErrors, lang.profile.formErrorsInfo, view.errors) }}
+{% set f = view.fields %}
+<form id="profile-{{ view.section }}" class="form-box form" method="post" action="{{ url(view.formAction) }}">
+	{{ forms.csrf(layout) }}
+	<input type="hidden" name="form_sent" value="1">
+
+{% if view.section == 'essentials' %}
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ lang.profile.usernameAndPassLegend }}</legend>
+		{% if f.usernameEditable %}
+		<p class="form__field">
+			<label for="req_username">{{ lang.profile.username }} <span class="form__required">{{ lang.profile.required }}</span></label>
+			<input type="text" id="req_username" name="req_username" value="{{ f.username }}" maxlength="25" required autocomplete="off" spellcheck="false">
+		</p>
+		{% else %}
+		<p>{{ lang.profile.usernameInfo(f.username) }}</p>
+		{% endif %}
+		{% if f.changePassUrl %}<p class="form__links"><a href="{{ url(f.changePassUrl) }}">{{ lang.profile.changePass }}</a></p>{% endif %}
+	</fieldset>
+
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ lang.profile.emailLegend }}</legend>
+		{% if f.emailEditable %}
+		<p class="form__field">
+			<label for="req_email">{{ lang.profile.email }} <span class="form__required">{{ lang.profile.required }}</span></label>
+			<input type="email" id="req_email" name="req_email" value="{{ f.email }}" maxlength="80" required autocomplete="email">
+		</p>
+		{% else %}
+		<p>{{ lang.profile.emailInfo(f.email) }}{% if f.changeEmailUrl %} - <a href="{{ url(f.changeEmailUrl) }}">{{ lang.profile.changeEmail }}</a>{% endif %}</p>
+		{% endif %}
+		{% if f.contactLinks.length %}<p class="form__links">{% for link in f.contactLinks %}<a href="{{ url(link.href) }}">{{ link.label }}</a>{% endfor %}</p>{% endif %}
+	</fieldset>
+
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ lang.profile.localisationLegend }}</legend>
+		<p class="form__help">{{ lang.profile.timeZoneInfo }}</p>
+		<p class="form__field">
+			<label for="timezone">{{ lang.profile.timeZone }}</label>
+			<select id="timezone" name="form[timezone]">
+				{% for zone in f.timezones %}<option value="{{ zone.value }}"{% if zone.selected %} selected{% endif %}>{{ zone.label }}</option>{% endfor %}
+			</select>
+		</p>
+		<p class="form__check"><label><input type="checkbox" name="form[dst]" value="1"{% if f.dst %} checked{% endif %}> {{ lang.profile.dst }}</label></p>
+	</fieldset>
+
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ lang.profile.userActivity }}</legend>
+		<p>{{ lang.profile.registeredInfo(f.registered) }}{% if f.registrationIp %} (<a href="{{ url(f.registrationIp.href) }}">{{ f.registrationIp.label }}</a>){% endif %}</p>
+		<p>{{ lang.profile.lastPostInfo(f.lastPost) }}</p>
+		<p>{{ lang.profile.lastVisitInfo(f.lastVisit) }}</p>
+		{% if f.numPostsInput !== null %}
+		<p class="form__field">
+			<label for="num_posts">{{ lang.profile.posts }}</label>
+			<input type="number" id="num_posts" name="num_posts" value="{{ f.numPostsInput }}" min="0" max="99999999" inputmode="numeric">
+		</p>
+		{% endif %}
+		{% if f.postsInfo %}<p>{{ f.postsInfo }}</p>{% endif %}
+		{% if f.searchLinks.length %}<p class="form__links">{% for link in f.searchLinks %}<a href="{{ url(link.href) }}">{{ link.label }}</a>{% endfor %}</p>{% endif %}
+		{% if f.adminNote !== null %}
+		<p class="form__field">
+			<label for="admin_note">{{ lang.profile.adminNote }}</label>
+			<input type="text" id="admin_note" name="admin_note" value="{{ f.adminNote }}" maxlength="30">
+		</p>
+		{% endif %}
+	</fieldset>
+
+{% elif view.section == 'personal' %}
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ lang.profile.personalDetailsLegend }}</legend>
+		<p class="form__field">
+			<label for="realname">{{ lang.profile.realname }}</label>
+			<input type="text" id="realname" name="form[realname]" value="{{ f.realname }}" maxlength="40" autocomplete="name">
+		</p>
+		{% if f.title !== null %}
+		<p class="form__field">
+			<label for="title">{{ lang.profile.title }} <span class="form__help">{{ lang.profile.titleLeaveBlank }}</span></label>
+			<input type="text" id="title" name="title" value="{{ f.title }}" maxlength="50">
+		</p>
+		{% endif %}
+		<p class="form__field">
+			<label for="location">{{ lang.profile.location }}</label>
+			<input type="text" id="location" name="form[location]" value="{{ f.location }}" maxlength="30">
+		</p>
+		{% if f.url !== null %}
+		<p class="form__field">
+			<label for="url">{{ lang.profile.website }}</label>
+			<input type="url" id="url" name="form[url]" value="{{ f.url }}" maxlength="80" autocomplete="url" inputmode="url">
+		</p>
+		{% endif %}
+	</fieldset>
+
+{% elif view.section == 'messaging' %}
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ lang.profile.contactDetailsLegend }}</legend>
+		<div class="form__grid form__grid--two">
+			<p class="form__field"><label for="jabber">{{ lang.profile.jabber }}</label><input type="text" id="jabber" name="form[jabber]" value="{{ f.jabber }}" maxlength="75"></p>
+			<p class="form__field"><label for="icq">{{ lang.profile.icq }}</label><input type="text" id="icq" name="form[icq]" value="{{ f.icq }}" maxlength="12" inputmode="numeric" pattern="[0-9]*"></p>
+			<p class="form__field"><label for="msn">{{ lang.profile.msn }}</label><input type="text" id="msn" name="form[msn]" value="{{ f.msn }}" maxlength="50"></p>
+			<p class="form__field"><label for="aim">{{ lang.profile.aim }}</label><input type="text" id="aim" name="form[aim]" value="{{ f.aim }}" maxlength="30"></p>
+			<p class="form__field"><label for="yahoo">{{ lang.profile.yahoo }}</label><input type="text" id="yahoo" name="form[yahoo]" value="{{ f.yahoo }}" maxlength="30"></p>
+		</div>
+	</fieldset>
+
+{% elif view.section == 'personality' %}
+	{% if f.avatar %}
+	<fieldset class="form__fieldset" id="profileavatar">
+		<legend class="form__legend">{{ lang.profile.avatarLegend }}</legend>
+		{% if f.avatar.imageUrl %}<p><img class="profile__avatar" src="{{ f.avatar.imageUrl }}" alt="{{ lang.profile.avatar }}"></p>{% endif %}
+		<p class="form__help">{{ lang.profile.avatarInfo }}</p>
+		<p class="form__links">{% for link in f.avatar.links %}<a href="{{ url(link.href) }}">{{ link.label }}</a>{% endfor %}</p>
+	</fieldset>
+	{% endif %}
+	{% if f.signature %}
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ lang.profile.signatureLegend }}</legend>
+		<p class="form__help">{{ lang.profile.signatureInfo }}</p>
+		<p class="form__field">
+			<label for="signature">{{ f.signature.maxSize }}</label>
+			<textarea id="signature" name="signature" rows="4">{{ f.signature.value }}</textarea>
+		</p>
+		{{ postFields.bbcodeStatus(f.signature.bbcodeStatus, lang) }}
+		{% if f.signature.previewHtml %}
+		<p>{{ lang.profile.sigPreview }}</p>
+		{#- HTML de parseSignature() : échappé par construction (services/bbcode.ts). #}
+		<div class="bbcode post__signature">{{ f.signature.previewHtml | safe }}</div>
+		{% else %}
+		<p>{{ lang.profile.noSig }}</p>
+		{% endif %}
+	</fieldset>
+	{% endif %}
+
+{% elif view.section == 'display' %}
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ lang.profile.styleLegend }}</legend>
+		<p class="form__field">
+			<label for="style">{{ lang.profile.styles }}</label>
+			<select id="style" name="form[style]">
+				{% for style in f.styles %}<option value="{{ style.value }}"{% if style.selected %} selected{% endif %}>{{ style.label }}</option>{% endfor %}
+			</select>
+		</p>
+	</fieldset>
+	{% if f.checkboxes.length %}
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ lang.profile.postDisplayLegend }}</legend>
+		<p class="form__help">{{ lang.profile.postDisplayInfo }}</p>
+		{% for box in f.checkboxes %}
+		<p class="form__check"><label><input type="checkbox" name="form[{{ box.name }}]" value="1"{% if box.checked %} checked{% endif %}> {{ box.label }}</label></p>
+		{% endfor %}
+	</fieldset>
+	{% endif %}
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ lang.profile.paginationLegend }}</legend>
+		<div class="form__grid form__grid--two">
+			<p class="form__field"><label for="disp_topics">{{ lang.profile.topicsPerPage }}</label><input type="number" id="disp_topics" name="form[disp_topics]" value="{{ f.topicsPerPage }}" min="3" max="75" inputmode="numeric"></p>
+			<p class="form__field"><label for="disp_posts">{{ lang.profile.postsPerPage }}</label><input type="number" id="disp_posts" name="form[disp_posts]" value="{{ f.postsPerPage }}" min="3" max="75" inputmode="numeric"></p>
+		</div>
+		<p class="form__help">{{ lang.profile.paginateInfo }} {{ lang.profile.leaveBlank }}</p>
+	</fieldset>
+	{% if f.reputation %}
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ lang.profile.manageReputation }}</legend>
+		<p class="form__help">{{ lang.profile.manageReputationInfo }}</p>
+		<p class="form__check"><label><input type="radio" name="reputation_enable" value="1"{% if f.reputation.enabled %} checked{% endif %}> {{ lang.profile.reputationOn }}</label></p>
+		<p class="form__check"><label><input type="radio" name="reputation_enable" value="0"{% if not f.reputation.enabled %} checked{% endif %}> {{ lang.profile.reputationOff }}</label></p>
+	</fieldset>
+	{% endif %}
+
+{% elif view.section == 'privacy' %}
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ lang.profile.privacyLegend }}</legend>
+		<p class="form__help">{{ lang.profile.emailSettingInfo }}</p>
+		{% for setting in f.emailSettings %}
+		<p class="form__check"><label><input type="radio" name="form[email_setting]" value="{{ setting.value }}"{% if setting.selected %} checked{% endif %}> {{ setting.label }}</label></p>
+		{% endfor %}
+	</fieldset>
+	{% if f.subscriptions.length %}
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ lang.profile.subscriptionLegend }}</legend>
+		{% for box in f.subscriptions %}
+		<p class="form__check"><label><input type="checkbox" name="form[{{ box.name }}]" value="1"{% if box.checked %} checked{% endif %}> {{ box.label }}</label></p>
+		{% endfor %}
+	</fieldset>
+	{% endif %}
+	{% if f.privateMessages %}
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ lang.profile.pmTitle }}</legend>
+		<p class="form__check"><label><input type="checkbox" name="form[use_pm]" value="1"{% if f.privateMessages.usePm %} checked{% endif %}> {{ lang.profile.usePm }}</label></p>
+		{% if f.privateMessages.notify %}
+		<p class="form__check"><label><input type="checkbox" name="form[notify_pm]" value="1"{% if f.privateMessages.notify.notifyPm %} checked{% endif %}> {{ lang.profile.notifyPm }}</label></p>
+		<p class="form__help">{{ lang.profile.notifyPmInfo }}</p>
+		<p class="form__check"><label><input type="checkbox" name="form[notify_pm_full]" value="1"{% if f.privateMessages.notify.notifyPmFull %} checked{% endif %}> {{ lang.profile.notifyPmFull }}</label></p>
+		{% endif %}
+	</fieldset>
+	{% endif %}
+{% endif %}
+
+	<p class="form__buttons"><button type="submit" class="button button--primary" name="update" value="1" accesskey="s">{{ lang.profile.submit }}</button> {{ lang.profile.instructions }}</p>
+</form>
+</div>
+</div>
+{% endblock %}

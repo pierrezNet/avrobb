@@ -6,6 +6,7 @@ import type { AppDeps } from '../src/app.ts';
 import {
 	type BoardConfig,
 	type Draft,
+	type EditableProfile,
 	type ForumCategory,
 	type ForumInfo,
 	type GalleryImage,
@@ -18,7 +19,9 @@ import {
 	type OnlineVisitor,
 	type Post,
 	type PostingTarget,
+	type ProfileChanges,
 	type RecentTopic,
+	type SubscribedTopic,
 	type Subscriber,
 	type Topic,
 	type TopicLabel,
@@ -29,9 +32,11 @@ import {
 import { fr, frDateWords } from '../src/lang/fr/index.ts';
 import type { Recipient, SenderLimits } from '../src/repositories/ContactRepository.ts';
 import type { DraftStore, NewDraft } from '../src/repositories/DraftRepository.ts';
+import type { StoredFile, UploadStore } from '../src/repositories/MemberUploadFiles.ts';
 import type { OnlineWriter } from '../src/repositories/OnlineRepository.ts';
 import type { PostEditStore, PostUpdate } from '../src/repositories/PostEditRepository.ts';
 import type { NewReply, NewTopic, PostingStore } from '../src/repositories/PostingRepository.ts';
+import type { ProfileStore } from '../src/repositories/ProfileRepository.ts';
 import type { NewUser } from '../src/repositories/RegistrationRepository.ts';
 import type { ReportTarget } from '../src/repositories/ReportRepository.ts';
 import type { PostLocation } from '../src/repositories/TopicRepository.ts';
@@ -50,6 +55,10 @@ export function group(overrides: Partial<Group> = {}): Group {
 		isModerator: false,
 		canModPromoteUsers: false,
 		canModEditUsers: false,
+		canModRenameUsers: false,
+		canModChangePasswords: false,
+		canModBanUsers: false,
+		canSetTitle: false,
 		canReadBoard: true,
 		canViewUsers: true,
 		canPostReplies: true,
@@ -182,6 +191,9 @@ export const boardConfig: BoardConfig = {
 	signatures: true,
 	avatars: false,
 	avatarsDir: 'img/avatars',
+	avatarMaxWidth: 60,
+	avatarMaxHeight: 60,
+	avatarMaxBytes: 10240,
 	bbcode: true,
 	imgTag: true,
 	defaultStyle: 'Air',
@@ -228,6 +240,19 @@ export const boardConfig: BoardConfig = {
 	censoring: false,
 	signatureBbcode: true,
 	signatureImgTag: false,
+	signatureMaxLength: 400,
+	signatureMaxLines: 4,
+	signatureAllCaps: false,
+	plugileMenuName: null,
+	privateMessageNotification: false,
+	uploads: {
+		extensions: ['jpg', 'png', 'zip'],
+		memberQuota: 1_000_000,
+		moderatorQuota: 5_000_000,
+		memberMaxFileSize: 200_000,
+		moderatorMaxFileSize: 1_000_000,
+		thumbnails: false,
+	},
 	baseUrl: 'http://forum.test',
 	indentSpaces: 4,
 	reputationEnabled: false,
@@ -298,6 +323,118 @@ export interface FakeData {
 	/** search_cache en mémoire : identifiant → { propriétaire, données sérialisées }. */
 	searchCache?: Map<number, { ident: string; data: string }>;
 	searchLog?: string[];
+	/** Champs de modification des profils, en plus de `profiles` (valeurs par défaut sinon). */
+	profileDetails?: Map<number, Partial<EditableProfile>>;
+	/** Écritures de profile.php et de ses plugiles. */
+	profileUpdates?: { id: number; changes: ProfileChanges }[];
+	renames?: { id: number; from: string; to: string }[];
+	passwordHashes?: Map<number, string>;
+	pendingActivations?: Map<number, { value: string; key: string }>;
+	activationLog?: string[];
+	subscribedTopicList?: SubscribedTopic[];
+	unsubscribed?: { userId: number; topicIds: number[] }[];
+	uploadedBytes?: Map<number, number>;
+	/** Fichiers Uploadile par membre, et avatars enregistrés ou effacés. */
+	memberFiles?: Map<number, (StoredFile & { data?: Buffer })[]>;
+	avatarLog?: string[];
+}
+
+/** Profil modifiable tiré d'un UserProfile de test, avec des préférences par défaut. */
+export function editableProfile(profile: UserProfile, details: Partial<EditableProfile> = {}): EditableProfile {
+	return {
+		...profile,
+		topicsPerPage: null,
+		postsPerPage: null,
+		timezone: 1,
+		dst: false,
+		style: 'Air',
+		notifyWithPost: false,
+		autoNotify: false,
+		usesPrivateMessages: true,
+		notifyPrivateMessages: false,
+		notifyPrivateMessagesFull: false,
+		showSmilies: true,
+		showImages: true,
+		showSignatureImages: true,
+		showAvatars: true,
+		showSignatures: true,
+		reputationEnabled: true,
+		registrationIp: '192.0.2.7',
+		adminNote: '',
+		lastVisit: NOW - 3600,
+		uploadedBytes: 0,
+		...details,
+	};
+}
+
+/** Modification des profils en mémoire : chaque écriture est consignée dans `data`. */
+function fakeProfileStore(data: FakeData): ProfileStore {
+	const details = (id: number): Partial<EditableProfile> => data.profileDetails?.get(id) ?? {};
+	const merge = (id: number, changes: Partial<EditableProfile>): void => {
+		data.profileDetails = new Map([...(data.profileDetails ?? []), [id, { ...details(id), ...changes }]]);
+	};
+	return {
+		findEditableProfile: async (id) => {
+			const found = data.profiles?.find((p) => p.id === id);
+			return found === undefined ? null : editableProfile(found, details(id));
+		},
+		updateProfile: async (id, changes) => {
+			data.profileUpdates = [...(data.profileUpdates ?? []), { id, changes }];
+			merge(id, changes);
+		},
+		renameUser: async (id, from, to, changes) => {
+			data.renames = [...(data.renames ?? []), { id, from, to }];
+			data.profileUpdates = [...(data.profileUpdates ?? []), { id, changes }];
+			merge(id, { ...changes, username: to });
+			return { bansUpdated: (data.bans ?? []).some((ban) => ban.username === from) };
+		},
+		findSimilarUsername: async (username, _skeleton, excludeId) =>
+			data.profiles?.find((p) => p.id !== excludeId && p.username.toLowerCase() === username.toLowerCase())?.username ?? null,
+		listUsernamesByEmail: async (email, excludeId) =>
+			(data.profiles ?? []).filter((p) => p.id !== excludeId && p.email === email).map((p) => p.username),
+		findPasswordHash: async (id) => data.passwordHashes?.get(id) ?? data.users.find((u) => u.viewer.id === id)?.passwordHash ?? null,
+		setPassword: async (id, hash) => {
+			data.passwordHashes = new Map([...(data.passwordHashes ?? []), [id, hash]]);
+		},
+		findPendingActivation: async (id) => data.pendingActivations?.get(id) ?? null,
+		activatePassword: async (id) => {
+			data.activationLog = [...(data.activationLog ?? []), `password ${id}`];
+		},
+		activateEmail: async (id) => {
+			data.activationLog = [...(data.activationLog ?? []), `email ${id}`];
+		},
+		setPendingEmail: async (id, email, key) => {
+			data.pendingActivations = new Map([...(data.pendingActivations ?? []), [id, { value: email, key }]]);
+		},
+		setUploadedBytes: async (id, bytes) => {
+			data.uploadedBytes = new Map([...(data.uploadedBytes ?? []), [id, bytes]]);
+			merge(id, { uploadedBytes: bytes });
+		},
+		listSubscribedTopics: async () => data.subscribedTopicList ?? [],
+		unsubscribeTopics: async (userId, topicIds) => {
+			data.unsubscribed = [...(data.unsubscribed ?? []), { userId, topicIds: [...topicIds] }];
+		},
+	};
+}
+
+/** Fichiers Uploadile en mémoire. */
+function fakeUploads(data: FakeData): UploadStore {
+	const files = (userId: number) => data.memberFiles?.get(userId);
+	return {
+		list: async (userId) => files(userId)?.map(({ name, size, modified }) => ({ name, size, modified })) ?? null,
+		exists: async (userId, name) => (files(userId) ?? []).some((f) => f.name === name),
+		save: async (userId, name, content) => {
+			const list = [...(files(userId) ?? []), { name, size: content.length, modified: NOW, data: content }];
+			data.memberFiles = new Map([...(data.memberFiles ?? []), [userId, list]]);
+		},
+		remove: async (userId, name) => {
+			const list = files(userId) ?? [];
+			if (!list.some((f) => f.name === name)) return false;
+			data.memberFiles = new Map([...(data.memberFiles ?? []), [userId, list.filter((f) => f.name !== name)]]);
+			return true;
+		},
+		urlFor: (userId, name) => `http://php.test/img/members/${userId}/${encodeURIComponent(name)}`,
+	};
 }
 
 /** Liste des présents en mémoire : chaque écriture est consignée dans `log` pour les tests. */
@@ -500,6 +637,16 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			},
 		},
 		profiles: { findProfile: async (id) => data.profiles?.find((p) => p.id === id) ?? null },
+		profileStore: fakeProfileStore(data),
+		uploads: fakeUploads(data),
+		avatarStore: {
+			save: async (userId, _dir, type) => {
+				data.avatarLog = [...(data.avatarLog ?? []), `save ${userId}.${type}`];
+			},
+			delete: async (userId) => {
+				data.avatarLog = [...(data.avatarLog ?? []), `delete ${userId}`];
+			},
+		},
 		members: {
 			countMembers: async (filter) => (data.members ?? []).filter((m) => matchMember(m, filter)).length,
 			listMembers: async (filter, sort, direction, offset, limit) =>

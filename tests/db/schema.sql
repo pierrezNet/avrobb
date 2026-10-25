@@ -280,22 +280,50 @@ CREATE TABLE `fo_users` (
 
 
 
--- Messagerie privée du mod APMS : absente de la base locale, reconstituée d'après les requêtes de
--- plugins/apms/*.php et pms_*.php (colonnes utilisées seulement).
+-- Messagerie privée du mod APMS (messages, contacts, listes d'envoi) : absente de la base locale,
+-- reconstituée d'après les requêtes de plugins/apms/*.php et pms_*.php.
 CREATE TABLE `fo_messages` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `shared_id` int(10) unsigned NOT NULL DEFAULT 0,
+  `last_shared_id` int(10) unsigned NOT NULL DEFAULT 0,
+  `last_post_id` int(10) unsigned NOT NULL DEFAULT 0,
   `owner` int(10) unsigned NOT NULL DEFAULT 0,
   `subject` varchar(255) NOT NULL DEFAULT '',
   `message` text DEFAULT NULL,
   `sender` varchar(200) NOT NULL DEFAULT '',
+  `receiver` text NOT NULL DEFAULT '',
   `sender_id` int(10) unsigned NOT NULL DEFAULT 0,
+  `receiver_id` text NOT NULL DEFAULT '',
+  `sender_ip` varchar(39) NOT NULL DEFAULT '',
+  `hide_smilies` tinyint(1) NOT NULL DEFAULT 0,
   `posted` int(10) unsigned NOT NULL DEFAULT 0,
   `last_post` int(10) unsigned NOT NULL DEFAULT 0,
+  `last_poster` varchar(200) NOT NULL DEFAULT '',
   `showed` tinyint(1) NOT NULL DEFAULT 0,
   `show_message` tinyint(1) NOT NULL DEFAULT 1,
   PRIMARY KEY (`id`),
-  KEY `fo_messages_owner_idx` (`owner`)
+  KEY `fo_messages_owner_idx` (`owner`),
+  KEY `fo_messages_shared_id_idx` (`shared_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `fo_contacts` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int(10) unsigned NOT NULL DEFAULT 0,
+  `contact_id` int(10) unsigned NOT NULL DEFAULT 0,
+  `contact_name` varchar(200) NOT NULL DEFAULT '',
+  `allow_msg` tinyint(1) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id`),
+  KEY `fo_contacts_user_id_idx` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `fo_sending_lists` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int(10) unsigned NOT NULL DEFAULT 0,
+  `name` varchar(255) NOT NULL DEFAULT '',
+  `receivers` text NOT NULL,
+  `array_id` text NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `fo_sending_lists_user_id_idx` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Galerie de PV : absente de la base locale, reconstituée d'après les requêtes de gallery.php.

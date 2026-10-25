@@ -23,6 +23,7 @@ import { PostEditRepository } from '../../src/repositories/PostEditRepository.ts
 import { PostingRepository } from '../../src/repositories/PostingRepository.ts';
 import { PostRepository } from '../../src/repositories/PostRepository.ts';
 import { PrivateMessageRepository } from '../../src/repositories/PrivateMessageRepository.ts';
+import { ProfileRepository } from '../../src/repositories/ProfileRepository.ts';
 import { RegistrationRepository } from '../../src/repositories/RegistrationRepository.ts';
 import { ReportRepository } from '../../src/repositories/ReportRepository.ts';
 import { SearchRepository } from '../../src/repositories/SearchRepository.ts';
@@ -467,6 +468,7 @@ describe('viewtopic de bout en bout', () => {
 			mailTemplates: { load: async () => ({ subject: '', body: '' }) },
 			mailer: { send: async () => undefined },
 			profiles: new UserRepository(db),
+			profileStore: new ProfileRepository(db),
 			topics: new TopicRepository(db),
 			topicWriter: new TopicRepository(db),
 			posts: new PostRepository(db),
@@ -491,6 +493,14 @@ describe('viewtopic de bout en bout', () => {
 			stopwords: { load: async () => new Set<string>() },
 			usersInfo: new UsersInfoLoader(new StatsRepository(db), null, () => NOW),
 			avatars: { urlFor: async () => null },
+			avatarStore: { save: async () => undefined, delete: async () => undefined },
+			uploads: {
+				list: async () => null,
+				exists: async () => false,
+				save: async () => undefined,
+				remove: async () => false,
+				urlFor: () => '',
+			},
 			page: { lang: fr, dateWords: frDateWords, clock: () => NOW },
 			legacyCookie: { name: 'punbb_cookie', seed, path: '/', domain: '', secure: false },
 			online: new OnlineRepository(db),

@@ -19,12 +19,14 @@ import { FeedRepository } from './repositories/FeedRepository.ts';
 import { ForumRepository } from './repositories/ForumRepository.ts';
 import { GalleryRepository } from './repositories/GalleryRepository.ts';
 import { MailTemplateFiles } from './repositories/MailTemplateFiles.ts';
+import { MemberUploadFiles } from './repositories/MemberUploadFiles.ts';
 import { OnlineRepository } from './repositories/OnlineRepository.ts';
 import { PhpCacheFiles } from './repositories/PhpCacheFiles.ts';
 import { PostEditRepository } from './repositories/PostEditRepository.ts';
 import { PostingRepository } from './repositories/PostingRepository.ts';
 import { PostRepository } from './repositories/PostRepository.ts';
 import { PrivateMessageRepository } from './repositories/PrivateMessageRepository.ts';
+import { ProfileRepository } from './repositories/ProfileRepository.ts';
 import { RegistrationRepository } from './repositories/RegistrationRepository.ts';
 import { ReportRepository } from './repositories/ReportRepository.ts';
 import { SearchRepository } from './repositories/SearchRepository.ts';
@@ -48,6 +50,7 @@ const users = new UserRepository(db);
 const topics = new TopicRepository(db);
 const reports = new ReportRepository(db);
 const search = new SearchRepository(db);
+const avatars = new FileAvatarLocator(config.legacyRoot, config.legacyBaseUrl);
 
 const app = await buildApp({
 	config: new ConfigLoader(new ConfigRepository(db), phpCache, clock),
@@ -59,6 +62,7 @@ const app = await buildApp({
 	mailer: new NodeMailer(config.mailOutbox),
 	registrations: new RegistrationRepository(db),
 	profiles: users,
+	profileStore: new ProfileRepository(db),
 	topics,
 	topicWriter: topics,
 	posts: new PostRepository(db),
@@ -84,7 +88,9 @@ const app = await buildApp({
 	gallery: new GalleryRepository(db),
 	stopwords: new StopwordsLoader(config.legacyRoot),
 	usersInfo: new UsersInfoLoader(stats, phpCache, clock),
-	avatars: new FileAvatarLocator(config.legacyRoot, config.legacyBaseUrl),
+	avatars,
+	avatarStore: avatars,
+	uploads: new MemberUploadFiles(config.legacyRoot, config.legacyBaseUrl),
 	page: { lang: fr, dateWords: frDateWords, clock },
 	legacyCookie: config.legacyCookie,
 	legacyBaseUrl: config.legacyBaseUrl,

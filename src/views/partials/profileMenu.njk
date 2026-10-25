@@ -1,0 +1,19 @@
+{#- Menu du profil (generate_profile_menu()) et cadre commun des pages de modification. -#}
+
+{% macro menuList(items) %}
+<ul class="profile-menu__list">
+	{% for item in items %}<li><a href="{{ url(item.href) }}"{% if item.active %} aria-current="page"{% endif %}>{{ item.label }}</a></li>{% endfor %}
+</ul>
+{% endmacro %}
+
+{% macro menu(menu, lang) %}
+<nav class="profile-menu" aria-labelledby="profile-menu-title">
+	<h2 class="profile-menu__title" id="profile-menu-title">{{ lang.profile.profileMenu }}</h2>
+	{{ menuList(menu.sections) }}
+	{% if menu.plugilesTitle %}<h2 class="profile-menu__title">{{ menu.plugilesTitle }}</h2>{% endif %}
+	{{ menuList(menu.plugiles) }}
+</nav>
+{% endmacro %}
+
+{#- Avis après un enregistrement (le PHP affichait une page « Redirection… »). -#}
+{% macro notice(text) %}{% if text %}<p class="form-notice" role="status">{{ text }}</p>{% endif %}{% endmacro %}

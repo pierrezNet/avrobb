@@ -51,7 +51,7 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
 
 - [x] Émission du cookie FluxBB par Node (`pun_setcookie()`), renouvellement et expiration (vérifié dans les deux sens avec le PHP)
 - [x] **login** / **logout**, « se souvenir de moi », redirection (limitée aux pages du forum), MD5 hérité mis à niveau
-- [x] Mot de passe oublié (e-mail, jeton d'activation) : service d'envoi d'e-mails (nodemailer) et modèles `mail_templates` ; activation finalisée par le PHP (`profile.php?action=change_pass`)
+- [x] Mot de passe oublié (e-mail, jeton d'activation) : service d'envoi d'e-mails (nodemailer) et modèles `mail_templates` ; activation par `profile.php?action=change_pass` (portée au lot 4)
 - [x] **register** : règles, validation, vérification par e-mail, `check_username()`, alertes à la liste d'administration
 - [x] Jeton CSRF commun à tous les formulaires (double soumission + Origin, `partials/forms.njk`)
 - [x] Bannissements (`bans` : pseudo, IP, expiration ; l'e-mail ne sert qu'à l'inscription) + mode maintenance
@@ -71,14 +71,15 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
 - [x] Abonnements aux sujets et forums + notifications par e-mail
 - [x] Signalement d'un message (`misc.php?report`) et e-mail à un membre (`misc.php?email`)
 - [x] ~~Création et vote dans les sondages~~ : sans objet, `AP_Sondage` est un reste sans table ni affichage (voir lot 1) **(PV)**
+- [ ] Préfixes du sujet (`[MSFS]`, `[FS-24]`… et `[Résolu]`, `[Réel]`, `[Video]`) : l'auteur peut toujours en ajouter ou en retirer sur sa discussion, **même après les 30 minutes** de modification du message (action dédiée qui ne touche qu'au sujet ; listes aujourd'hui en dur dans `post.php`/`edit.php` et `presenters/postPage.ts`) **(PV)**
 
 ## Lot 4 — Profil (édition)
 
-- [ ] Sections du profil : essentiel, personnel, messagerie, personnalité, affichage, confidentialité
-- [ ] Avatar : téléversement et contrôles
-- [ ] Signature (prévisualisation, limites)
-- [ ] Changement de mot de passe et d'e-mail
-- [ ] Plugiles : Ma biographie, Suivi des sujets (`UPP_Suivile`), Mes uploads (`UPP_Mes_uploads`) **(PV)**
+- [x] Sections du profil : essentiel, personnel, messagerie, personnalité, affichage, confidentialité (renommage et ses effets de bord compris ; la section « Administration » reste en PHP jusqu'au lot 7)
+- [x] Avatar : téléversement et contrôles (type lu dans le contenu, poids, dimensions), effacement confirmé en POST
+- [x] Signature (prévisualisation, limites)
+- [x] Changement de mot de passe et d'e-mail, liens d'activation (y compris celui du mot de passe oublié)
+- [x] Plugiles : Ma biographie, Suivi des sujets (`UPP_Suivile`), Mes uploads (`UPP_Mes_uploads`) **(PV)**
 
 ## Lot 5 — Fonctionnalités communautaires PV
 

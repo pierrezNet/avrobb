@@ -32,3 +32,18 @@ export function messageParserOptions(
 		makeLinks: config.posting.makeLinks,
 	};
 }
+
+/** Options d'une signature (parse_signature()) : réglages p_sig_* et o_smilies_sig. */
+export function signatureParserOptions(config: BoardConfig, viewer: Viewer, lang: Lang, censor: Censor | null): BbcodeOptions {
+	return {
+		bbcode: config.signatureBbcode,
+		imgTag: config.signatureImgTag,
+		showImages: viewer.showSignatureImages,
+		smilies: config.signatureSmilies && viewer.showSmilies,
+		censor,
+		baseUrl: config.baseUrl,
+		indentSpaces: config.indentSpaces,
+		labels: bbcodeLabels(lang),
+		makeLinks: config.posting.makeLinks,
+	};
+}

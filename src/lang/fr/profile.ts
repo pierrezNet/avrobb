@@ -1,7 +1,80 @@
 /**
- * Textes de la consultation d'un profil. Source : lang/French/profile.php, pms.php et le plugile
- * UP_Ma_biographie (propre à PV).
+ * Textes du profil (consultation et modification). Source : lang/French/profile.php, prof_reg.php,
+ * pms.php, reputation.php, uploadile.php et les plugiles de PV (UP_Ma_biographie, UPP_Suivile,
+ * UPP_Mes_uploads). Les « Redirection… » du PHP disparaissent : Node redirige aussitôt.
  */
+
+import type { AvatarError } from '../../services/images.ts';
+import type { LimitedField, ProfileError } from '../../services/profileForms.ts';
+import type { UploadError } from '../../services/uploads.ts';
+import { preparseErrorText } from './post.ts';
+import { register } from './register.ts';
+
+const FIELD_LABELS: Record<LimitedField, string> = {
+	realname: 'Nom',
+	title: 'Titre',
+	location: 'Lieu',
+	url: 'Site Web',
+	jabber: 'Jabber',
+	icq: 'ICQ',
+	msn: 'Compte Microsoft',
+	aim: 'AOL IM',
+	yahoo: 'Yahoo! Messenger',
+	adminNote: "Note de l'administrateur",
+	email: 'E-mail',
+};
+
+function profileErrorText(error: ProfileError): string {
+	switch (error.kind) {
+		case 'tooLong':
+			return `Le champ « ${FIELD_LABELS[error.field]} » ne doit pas dépasser ${error.max} caractères.`;
+		case 'username':
+			return register.errors[error.error];
+		case 'usernameDupe':
+			return `Il existe déjà une personne inscrite avec ce nom d'utilisateur. ${error.existing}. Ce nom d'utilisateur est trop ressemblant. Il doit différer par au moins un caractère alpha-numérique (a-z ou 0-9). Veuillez essayer un autre nom d'utilisateur.`;
+		case 'invalidEmail':
+			return "L'adresse électronique que vous avez saisie est invalide.";
+		case 'bannedEmail':
+			return "L'adresse électronique saisie est bannie de ces forums. Veuillez en choisir une autre.";
+		case 'dupeEmail':
+			return 'Cette adresse électronique est déjà utilisée. Veuillez en choisir une autre.';
+		case 'invalidWebsite':
+			return "L'URL de site Web saisie est invalide.";
+		case 'websiteNotAllowed':
+			return "Vous n'êtes pas autorisé à ajouter un site à votre profil pour le moment";
+		case 'forbiddenTitle':
+			return 'Votre titre contient un mot interdit. Choisissez un autre titre.';
+		case 'badIcq':
+			return 'Vous avez saisi un UIN ICQ invalide. Merci de corriger.';
+		case 'signatureTooLong':
+			return `Les signatures ne peuvent pas contenir plus de ${error.max} caractères. Veuillez raccourcir votre signature de ${error.excess} caractères.`;
+		case 'signatureTooManyLines':
+			return `Les signatures ne peuvent pas comporter plus de ${error.max} lignes.`;
+		case 'bbcode':
+			return preparseErrorText(error.error);
+	}
+}
+
+function avatarErrorText(error: AvatarError, formatNumber: (n: number) => string): string {
+	switch (error.kind) {
+		case 'noFile':
+			return "Vous n'avez pas sélectionné de fichier à envoyer.";
+		case 'badType':
+			return "Ce type de fichier n'est pas autorisé. Voici les formats pris en charge\u00a0: *.gif, *.jpeg et *.png.";
+		case 'tooLarge':
+			return `La taille du fichier dépasse le maximum autorisé ${formatNumber(error.max)} octets.`;
+		case 'tooWideOrHigh':
+			return `L'image est plus large et/ou plus haute que le maximum autorisé ${error.width}x${error.height} pixels.`;
+	}
+}
+
+const UPLOAD_ERRORS: Record<UploadError, string> = {
+	noFile: 'Aucun fichier sélectionné.',
+	multipleDots: "Erreur : le nom de votre fichier ne doit contenir qu'un seul point (.), celui de son extension, réessayez.",
+	badExtension: "Erreur : cette extension n'est pas acceptée, réessayez.",
+	tooLarge: 'Erreur : Fichier trop volumineux, réessayez.',
+	quotaExceeded: "Erreur : vous dépassez l'espace qui vous est alloué. Supprimez des fichiers et réessayez.",
+};
 
 export const profile = {
 	usersProfile: (username: string) => `Profil de ${username}`,
@@ -37,4 +110,180 @@ export const profile = {
 	registered: "Date d'inscription",
 	biography: 'Biographie',
 	noBiography: "Ce membre n'a pas écrit sa biographie",
+
+	// ——— Modification (profile.php, branche « edit ») ———
+	profileMenu: 'Menu profil',
+	sectionEssentials: 'Principal',
+	sectionDisplay: 'Affichage',
+	sectionPrivacy: 'Vie privée',
+	sectionAdmin: 'Administration',
+	sectionHeading: (username: string, section: string) => `${username} - ${section}`,
+	profileError: profileErrorText,
+	formErrors: 'Erreurs dans le profil',
+	formErrorsInfo: 'Les erreurs suivantes doivent être corrigées pour que le profil soit enregistré\u00a0:',
+	updated: 'Profil mis à jour.',
+	instructions: 'Après avoir mis à jour le profil vous serez redirigé(e) vers cette page.',
+	submit: 'Valider',
+	required: '(obligatoire)',
+
+	usernameAndPassLegend: "Nom d'utilisateur et mot de passe",
+	usernameInfo: (username: string) => `Nom d'utilisateur\u00a0: ${username}`,
+	changePass: 'Changer de mot de passe',
+	emailLegend: 'Indiquez une adresse électronique valide',
+	emailInfo: (email: string) => `E-mail\u00a0: ${email}`,
+	changeEmail: "Changer l'adresse électronique",
+	localisationLegend: 'Définissez vos options géographiques',
+	timeZone: 'Fuseau horaire',
+	timeZoneInfo: "Afin que le forum affiche correctement l'heure, vous devez sélectionner votre fuseau horaire.",
+	dst: "Ajustement pour l'heure d'été\u00a0: cochez cette case si nécessaire pour que les forums affichent correctement l'heure.",
+	registeredInfo: (date: string) => `Inscription\u00a0: ${date}`,
+	lastPostInfo: (date: string) => `Dernier message\u00a0: ${date}`,
+	lastVisitInfo: (date: string) => `Dernière visite\u00a0: ${date}`,
+	postsInfo: (count: string) => `Messages\u00a0: ${count}`,
+	adminNote: "Note de l'administrateur",
+
+	personalDetailsLegend: 'Informations personnelles',
+	leaveBlank: 'Laisser vide pour utiliser la valeur par défaut du forum.',
+	titleLeaveBlank: '(laisser vide pour le titre par défaut)',
+
+	contactDetailsLegend: 'Informations sur les messageries instantanées',
+
+	avatarLegend: "Définissez vos options d'affichage d'avatar",
+	avatarInfo:
+		'Un avatar est une petite image qui sera affichée avec chacun de vos messages. Vous pouvez envoyer un avatar en cliquant sur le lien ci-dessous.',
+	changeAvatar: "Changer d'avatar",
+	deleteAvatar: "Effacer l'avatar",
+	uploadAvatar: 'Envoyer un avatar',
+	signatureLegend: 'Rédigez votre signature',
+	signatureInfo:
+		"Une signature est un petit texte ajouté à la suite de vos messages. Vous pouvez y inclure ce que vous voulez et y utiliser des balises BBCode, selon la configuration du forum. Les fonctionnalités actives apparaissent dans la marge lors de l'édition de votre signature.",
+	sigMaxSize: (length: string, lines: number) => `${length} caractères et ${lines} lignes autorisés`,
+	sigPreview: 'Aperçu de la signature actuelle\u00a0:',
+	noSig: 'Pas de signature dans le profil.',
+
+	styleLegend: 'Choisissez votre style favori',
+	styles: 'Styles',
+	postDisplayLegend: 'Définissez vos options de visualisation des messages',
+	postDisplayInfo:
+		"En désactivant toutes les options d'affichage des images et des signatures dans les messages, vous augmenterez la vitesse de chargement des pages.",
+	showSmilies: "Afficher les émoticônes sous forme d'icônes",
+	showSigs: 'Afficher les signatures.',
+	showAvatars: 'Afficher les avatars des utilisateurs.',
+	showImages: 'Afficher les images.',
+	showImagesSigs: 'Afficher les images dans les signatures des utilisateurs.',
+	paginationLegend: 'Définissez vos options de pagination',
+	topicsPerPage: 'Discussions par page',
+	postsPerPage: 'Messages par page',
+	paginateInfo: 'Nombres de discussions et de messages à afficher par page.',
+	manageReputation: 'Afficher la renommée',
+	manageReputationInfo:
+		'Vous pouvez désactiver le système de renommée, dans ce cas, personne ne pourra changer votre renommée. Si vous désactivez cette option, vous ne pourrez plus voir et changer celle des autres membres.',
+	reputationOn: 'Actif',
+	reputationOff: 'Inactif',
+
+	privacyLegend: 'Définissez vos options de vie privée',
+	emailSettingInfo:
+		"Indiquez si vous souhaitez que votre adresse électronique soit visible par les autres utilisateurs ou non et si vous voulez que les autres utilisateurs puissent vous envoyer des e-mails via ces forums (formulaire d'envoi d'e-mail) ou non.",
+	emailSettings: [
+		'Divulguer votre adresse électronique aux autres utilisateurs',
+		"Masquer votre adresse électronique mais autoriser l'envoi via le formulaire d'envoi d'e-mail.",
+		"Masquer votre adresse électronique et interdire l'utilisation du formulaire d'envoi d'e-mail.",
+	],
+	subscriptionLegend: 'Définit vos options de suivi de discussion',
+	notifyFull: 'Inclure le message dans les e-mails de notification de réponse.',
+	autoNotifyFull: 'Suivre automatiquement les sujets auxquels on a répondu.',
+	usePm: 'Activer la messagerie privée',
+	notifyPm: 'Notification des messages privés par courriel',
+	notifyPmInfo: 'En activant cette option, un courriel sera envoyé pour tout nouveau message privé.',
+	notifyPmFull: 'Inclure le contenu des messages privés',
+
+	// Mot de passe et adresse (actions change_pass, change_email)
+	changePassLegend: 'Saisissez et confirmez votre mot de passe',
+	oldPass: 'Ancien mot de passe',
+	newPass: 'Nouveau mot de passe',
+	confirmNewPass: 'Confirmez le nouveau mot de passe',
+	passInfo: 'Les mots de passe doivent comporter au moins 6 caractères. Ils sont sensibles à la casse.',
+	passTooShort: 'Les mots de passe doivent comporter au moins 6 caractères. Veuillez choisir un autre mot de passe.',
+	passNotMatch: 'Les mots de passe ne coïncident pas. Veuillez recommencer.',
+	wrongPass: 'Ancien mot de passe incorrect.',
+	wrongCurrentPass: 'Mot de passe incorrect.',
+	passUpdated: 'Votre mot de passe a été mis à jour. Vous pouvez à présent vous identifier avec votre nouveau mot de passe.',
+	passKeyBad:
+		"La clef d'activation du mot de passe est incorrecte ou a expiré. Veuillez demander un nouveau mot de passe. Si cela ne marche pas, contactez l'administrateur.",
+	newEmailLegend: 'Saisissez la nouvelle adresse électronique',
+	newEmail: 'Nouvelle adresse électronique',
+	password: 'Mot de passe',
+	emailInstructions:
+		"Indiquez la nouvelle adresse électronique. Un e-mail comportant un lien d'activation y sera envoyé. Vous devrez cliquer sur ce lien pour activer l'adresse.",
+	activateEmailSent:
+		"Un e-mail comportant les instructions pour activer la nouvelle adresse électronique a été envoyé. S'il n'arrive pas, contactez l'administrateur\u00a0:",
+	emailKeyBad:
+		"La clef d'activation d'adresse électronique est incorrecte ou a expiré. Veuillez demander à nouveau un changement d'adresse électronique. Si cela échoue, contactez l'administrateur",
+	emailUpdated: 'Votre adresse électronique a été mise à jour.',
+
+	// Avatar (actions upload_avatar, delete_avatar)
+	avatarsDisabled: 'La prise en charge des avatars est désactivée.',
+	uploadAvatarLegend: 'Sélectionnez un fichier avatar à envoyer',
+	file: 'Fichier',
+	upload: 'Envoyer',
+	avatarDesc: (width: number, height: number, bytes: string, size: string) =>
+		`Un avatar est une petite image qui sera affichée sous votre nom d'utilisateur dans vos messages. Il ne doit pas faire plus de ${width} x ${height} pixels et ${bytes} octets (${size}).`,
+	avatarError: avatarErrorText,
+	confirmDeleteAvatar: "Effacer l'avatar\u00a0?",
+	confirmDeleteAvatarInfo: 'Votre avatar actuel sera définitivement effacé.',
+
+	// Plugile « Ma biographie » (UP_Ma_biographie)
+	myBiography: 'Ma biographie',
+	biographyInfo:
+		"Parce que c'est toujours plus sympa de connaître un peu mieux les personnes avec qui on discute sur un forum, vous pouvez écrire votre biographie pour que les autres membres en sachent plus long sur vous ;)",
+	biographyLegend: 'Écrivez votre biographie',
+	currentBiography: 'Biographie actuelle',
+	biographyTooLong: 'La biographie ne doit pas dépasser 65\u00a0535 octets.',
+	send: 'Envoyer',
+
+	// Plugile « Suivile » (UPP_Suivile)
+	subscriptionsPlugile: 'Suivile',
+	subscriptionsManager: 'Gestion des abonnements',
+	subscriptionsTitle: 'Abonnements',
+	subscriptionsInfo: "Ce plugile est un gestionnaire d'abonnements",
+	noSubscriptions: "Vous n'êtes abonné à aucune discussion.",
+	noTopicsSelected: 'Vous devez choisir au moins une discussion de laquelle se désabonner.',
+	topic: 'Discussion',
+	replies: 'Réponses',
+	views: 'Vues',
+	select: 'Sélectionner',
+	selectTopic: (subject: string) => `Sélectionner « ${subject} »`,
+	unsubscribe: 'Se désabonner',
+	moved: 'Déplacé',
+	sticky: 'À lire',
+	by: (author: string) => `par ${author}`,
+	newPosts: 'Nouveaux messages',
+
+	// Plugile « Mes uploads » (UPP_Mes_uploads)
+	uploadsPlugile: 'Mes uploads',
+	uploadsInformation: 'Information',
+	uploadsInfo:
+		'Vous pouvez uploader facilement des fichiers sur le serveur du site. Voilà qui pourra vous être utile pour partager des informations autrement que par les mots ;)',
+	uploadFileTitle: 'Uploader un fichier',
+	uploadFileLegend: 'Sélectionnez et envoyez votre fichier',
+	chooseFile: 'Sélectionner un fichier',
+	uploadLimits: (maxSize: string, extensions: string) =>
+		`Votre fichier ne doit pas dépasser les ${maxSize} et doit être de type\u00a0: ${extensions}.`,
+	uploadLimitsAdmin: (extensions: string) => `Votre fichier doit être de type\u00a0: ${extensions}.`,
+	noExtensionAllowed: "Aucun type de fichier n'est autorisé pour le moment.",
+	currentUploads: 'Mes uploads actuelles',
+	usedSpace: 'Espace utilisé\u00a0:',
+	usedSpaceOf: (used: string, quota: string) => `${used} sur ${quota}.`,
+	storageFolder: 'Dossier de stockage\u00a0:',
+	fileName: 'Nom du fichier',
+	preview: 'Prévisualisation',
+	noPreview: 'Pas de miniature',
+	deleteFile: (name: string) => `Supprimer ${name}`,
+	delete: 'Supprimer',
+	noUploads: 'Aucun fichier uploadé actuellement.',
+	uploadError: (error: UploadError) => UPLOAD_ERRORS[error],
+	uploadSuccess: 'Fichier uploadé avec succès\u00a0!',
+	deleteSuccess: 'Fichier(s) supprimé(s) avec succès\u00a0!',
+	deleteFailed: 'Erreur lors de la suppression du ou des fichiers, réessayez.',
+	noFilesSelected: "Vous n'avez sélectionné aucun fichier.",
 };

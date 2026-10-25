@@ -12,6 +12,10 @@ export function toBoardConfig(values: ReadonlyMap<string, string>): BoardConfig 
 	const text = (name: string, fallback = ''): string => values.get(name) ?? fallback;
 	const flag = (name: string): boolean => values.get(name) === '1';
 	const reportMethod = text('o_report_method', '0');
+	const int = (name: string, fallback: number): number => {
+		const raw = values.get(name);
+		return raw !== undefined && raw !== '' && Number.isFinite(Number(raw)) ? Number(raw) : fallback;
+	};
 
 	return {
 		boardTitle: text('o_board_title'),
@@ -31,6 +35,9 @@ export function toBoardConfig(values: ReadonlyMap<string, string>): BoardConfig 
 		signatures: flag('o_signatures'),
 		avatars: flag('o_avatars'),
 		avatarsDir: text('o_avatars_dir', 'img/avatars'),
+		avatarMaxWidth: int('o_avatars_width', 60),
+		avatarMaxHeight: int('o_avatars_height', 60),
+		avatarMaxBytes: int('o_avatars_size', 10240),
 		bbcode: flag('p_message_bbcode'),
 		imgTag: flag('p_message_img_tag'),
 		rules: flag('o_rules'),
@@ -77,6 +84,22 @@ export function toBoardConfig(values: ReadonlyMap<string, string>): BoardConfig 
 		censoring: flag('o_censoring'),
 		signatureBbcode: flag('p_sig_bbcode'),
 		signatureImgTag: flag('p_sig_img_tag'),
+		signatureMaxLength: int('p_sig_length', 400),
+		signatureMaxLines: int('p_sig_lines', 4),
+		signatureAllCaps: flag('p_sig_all_caps'),
+		plugileMenuName: flag('o_plugile_menu') ? text('o_plugile_menu_name') : null,
+		privateMessageNotification: flag('o_pms_notification'),
+		uploads: {
+			extensions: text('o_uploadile_laws')
+				.split(',')
+				.map((ext) => ext.trim().toLowerCase())
+				.filter((ext) => ext !== ''),
+			memberQuota: int('o_uploadile_limit_member', 0),
+			moderatorQuota: int('o_uploadile_limit_modo', 0),
+			memberMaxFileSize: int('o_uploadile_maxsize_member', 0),
+			moderatorMaxFileSize: int('o_uploadile_maxsize_modo', 0),
+			thumbnails: flag('o_uploadile_thumb'),
+		},
 		baseUrl: text('o_base_url').replace(/\/$/, ''),
 		indentSpaces: Number(text('o_indent_num_spaces', '4')) || 0,
 		reputationEnabled: flag('o_reputation_enabled'),

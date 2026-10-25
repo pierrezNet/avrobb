@@ -21,3 +21,17 @@ export function niceNumber(n: number): string {
 		.toString()
 		.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
+
+const SIZE_UNITS = ['O', 'Kio', 'Mio', 'Gio', 'Tio', 'Pio', 'Eio'] as const;
+
+/** file_size() : taille lisible en unités binaires, arrondie à deux décimales (« 9.77 Kio »). */
+export function fileSize(bytes: number): string {
+	let size = bytes;
+	let unit = 0;
+	while (size > 1024 && unit < SIZE_UNITS.length - 1) {
+		size /= 1024;
+		unit += 1;
+	}
+	// sprintf('%s') d'un flottant PHP : point décimal, sans zéros inutiles.
+	return `${String(Math.round(size * 100) / 100)} ${SIZE_UNITS[unit]}`;
+}

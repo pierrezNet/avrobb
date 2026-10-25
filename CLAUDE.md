@@ -60,7 +60,7 @@ Principes :
 - **Caches PHP** (`cache/cache_*.php`) : si Node modifie `config`, `bans`, `censoring`, `forums`, `smilies` ou `users_info`, il doit **supprimer le fichier de cache PHP correspondant** via `PhpCacheStore.invalidate()` (le PHP le régénère). Ces fichiers se lisent avec `parsePhpCacheVariable()` (sous-ensemble de `var_export`, jamais d'évaluation).
 - **Session** : le cookie FluxBB (`services/legacySession.ts`) est la source de vérité. Une connexion faite par Node doit émettre exactement le même format de cookie que `pun_setcookie()`.
 - **Liens** : utiliser `url('page.php?…')` dans les vues ; ajouter la page à `PORTED_PAGES` (`src/app.ts`) quand elle est portée. On conserve les **mêmes URL** (`viewtopic.php?id=…`) pour ne casser ni les liens externes ni le référencement.
-- **Page portée en partie** (`profile.php`, `gallery.php`) : Node sert la consultation et **redirige vers `LEGACY_BASE_URL`** les cas qui écrivent (paramètres `section`, `action`, `info`…), jusqu'au lot qui les porte.
+- **Page portée en partie** (`profile.php` pour sa section `admin`, `gallery.php`) : Node **redirige vers `LEGACY_BASE_URL`** les cas pas encore portés (paramètres `section=admin`, `action`, `info`…), jusqu'au lot qui les porte.
 - **Pages qui écrivent en PHP mais pas encore en Node** : on lit sans écrire et on le note dans le README.
 - **Parseur BBCode** : tout changement de `services/bbcode.ts` se vérifie contre le vrai parseur PHP (`npm run bbcode:reference` puis `tests/bbcode/`). PV a aussi réécrit `paginate()` (pages voisines ±1).
 - **Mots de passe** : FluxBB stocke du SHA-1. Il faut rester compatible tant que le PHP tourne (évolution vers argon2 possible uniquement après la bascule, voir TODO).
@@ -73,7 +73,7 @@ Principes :
 - **Jeton CSRF** sur tout formulaire en POST (`{{ forms.csrf(layout) }}` et `preHandler: [session, verifyCsrf]`) ; aucune écriture en GET (exceptions documentées : présence, cookie de suivi et compteur de vues à l'affichage, lien de déconnexion du PHP protégé par son jeton, recherche qui note `last_search` et remplit `search_cache` comme le PHP).
 - Valider et typer toutes les entrées (paramètres de requête, corps de formulaire) dès le contrôleur, avec des schémas Fastify ou de petites fonctions dédiées (`positiveInt`…).
 - Vérifier les droits côté serveur dans le contrôleur, même quand la vue masque déjà le lien.
-- Fichiers téléversés (avatars, uploads, galerie) : contrôler type, taille et chemin (pas de traversée de répertoire).
+- Fichiers téléversés (avatars, uploads, galerie) : contrôler type, taille et chemin (pas de traversée de répertoire). Les formulaires `multipart/form-data` sont lus par `http/forms.ts` (`request.uploads`) ; le type d'une image se lit dans son contenu (`services/images.ts`).
 
 ## Style de code
 

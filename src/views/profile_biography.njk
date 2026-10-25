@@ -1,0 +1,34 @@
+{#- Plugile « Ma biographie » (profile.php?plugin=UP_Ma_biographie.php). Données : `view` (presenters/profilePlugilePage.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/forms.njk" as forms %}
+{% import "partials/postFields.njk" as postFields %}
+{% import "partials/profileMenu.njk" as profileMenu %}
+
+{% block main %}
+<h1 class="page-title">{{ view.heading }}</h1>
+<div class="profile-edit">
+{{ profileMenu.menu(view.menu, lang) }}
+<div class="profile-edit__content">
+{{ profileMenu.notice(view.notice) }}
+{{ forms.errors(lang.profile.formErrors, lang.profile.formErrorsInfo, view.errors) }}
+<form id="biography" class="form-box form" method="post" action="{{ url(view.formAction) }}">
+	{{ forms.csrf(layout) }}
+	<p class="form__intro">{{ lang.profile.biographyInfo }}</p>
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ lang.profile.biographyLegend }}</legend>
+		<p class="form__field">
+			<label for="req_message" class="visually-hidden">{{ lang.profile.biography }}</label>
+			<textarea id="req_message" name="req_message" rows="10">{{ view.biography }}</textarea>
+		</p>
+		{{ postFields.bbcodeStatus(view.bbcodeStatus, lang) }}
+	</fieldset>
+	<p class="form__buttons"><button type="submit" class="button button--primary" name="show_text" value="1">{{ lang.profile.send }}</button></p>
+</form>
+<section class="form-box" aria-labelledby="current-biography">
+	<h2 class="form-box__title" id="current-biography">{{ lang.profile.currentBiography }}</h2>
+	{#- HTML de parseMessage() : échappé par construction (services/bbcode.ts). #}
+	{% if view.currentHtml %}<div class="bbcode profile__biography">{{ view.currentHtml | safe }}</div>{% else %}<p>{{ lang.profile.noBiography }}</p>{% endif %}
+</section>
+</div>
+</div>
+{% endblock %}

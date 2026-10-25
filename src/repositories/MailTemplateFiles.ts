@@ -10,6 +10,8 @@ import { type MailTemplate, parseMailTemplate } from '../services/mail.ts';
 export type MailTemplateName =
 	| 'activate_password'
 	| 'activate_email'
+	| 'banned_email_change'
+	| 'dupe_email_change'
 	| 'welcome'
 	| 'new_user'
 	| 'banned_email_register'

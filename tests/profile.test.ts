@@ -1,6 +1,6 @@
 /**
- * Consultation d'un profil : sections affichées selon les droits, biographie, et renvoi vers le PHP
- * pour tout ce qui relève de la modification.
+ * Consultation d'un profil : sections affichées selon les droits, biographie, et aiguillage vers
+ * la modification (tests/profile-edit.test.ts) ou vers le PHP pour la section Administration.
  */
 
 import type { FastifyInstance } from 'fastify';
@@ -100,23 +100,22 @@ describe('GET /profile.php', () => {
 		expect(res.body).toContain('Ce membre n&#39;a pas écrit sa biographie');
 	});
 
-	it('renvoie vers le PHP : son propre profil, un modérateur autorisé, une section, une action, un autre plugile', async () => {
+	it('Node sert la modification ; seule la section Administration repart vers le PHP', async () => {
 		app = await buildApp(deps());
 		const own = await app.inject({ url: '/profile.php?id=3', headers: { cookie: cookie(3, 'hash-tessy') } });
-		expect(own.statusCode).toBe(302);
-		expect(own.headers.location).toBe('http://php.test/profile.php?id=3');
+		expect(own.statusCode).toBe(200);
+		expect(own.body).toContain('Tessy - Principal');
 
 		const asMod = await app.inject({ url: '/profile.php?id=6', headers: { cookie: cookie(5, 'hash-mod') } });
-		expect(asMod.headers.location).toBe('http://php.test/profile.php?id=6');
+		expect(asMod.body).toContain('valdefsx - Principal');
+		const admin = await app.inject({ url: '/profile.php?section=admin&id=6', headers: { cookie: cookie(5, 'hash-mod') } });
+		expect(admin.headers.location).toBe('http://php.test/profile.php?section=admin&id=6');
 
-		expect((await app.inject('/profile.php?section=personal&id=6')).headers.location).toBe(
-			'http://php.test/profile.php?section=personal&id=6',
-		);
-		expect((await app.inject('/profile.php?action=change_pass&id=6&key=x')).headers.location).toBe(
-			'http://php.test/profile.php?action=change_pass&id=6&key=x',
-		);
-		expect((await app.inject('/profile.php?plugin=UPP_Suivile.php&id=6')).statusCode).toBe(302);
+		// Un lecteur qui ne peut pas modifier consulte, quelle que soit la section ou le plugile.
+		expect((await app.inject('/profile.php?section=personal&id=6')).body).toContain('Profil de valdefsx');
+		expect((await app.inject('/profile.php?plugin=UPP_Suivile.php&id=6')).statusCode).toBe(200);
 		expect((await app.inject('/profile.php?plugin=UP_Ma_biographie.php&id=6')).statusCode).toBe(200);
+		expect((await app.inject('/profile.php?action=inconnue&id=6')).statusCode).toBe(404);
 	});
 
 	it('404 pour un identifiant invalide ou inconnu, 403 sans g_view_users', async () => {

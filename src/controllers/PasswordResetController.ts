@@ -1,6 +1,6 @@
 /**
  * Mot de passe oublié (login.php?action=forget) : envoi d'un nouveau mot de passe et d'un lien
- * d'activation (profile.php?action=change_pass, encore servi par le PHP, qui finalise le changement).
+ * d'activation (profile.php?action=change_pass, AccountController, qui finalise le changement).
  */
 
 import type { FastifyReply, FastifyRequest } from 'fastify';

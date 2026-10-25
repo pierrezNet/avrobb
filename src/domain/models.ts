@@ -20,6 +20,12 @@ export interface Group {
 	canModPromoteUsers: boolean;
 	/** Les modérateurs de ce groupe peuvent modifier les profils (g_mod_edit_users). */
 	canModEditUsers: boolean;
+	/** … renommer les membres (g_mod_rename_users), changer leur mot de passe (g_mod_change_passwords), les bannir (g_mod_ban_users). */
+	canModRenameUsers: boolean;
+	canModChangePasswords: boolean;
+	canModBanUsers: boolean;
+	/** Titre personnalisé autorisé (g_set_title). */
+	canSetTitle: boolean;
 	canReadBoard: boolean;
 	canViewUsers: boolean;
 	canPostReplies: boolean;
@@ -170,6 +176,10 @@ export interface BoardConfig {
 	signatures: boolean;
 	avatars: boolean;
 	avatarsDir: string;
+	/** Dimensions (pixels) et poids (octets) maximaux d'un avatar (o_avatars_width, _height, _size). */
+	avatarMaxWidth: number;
+	avatarMaxHeight: number;
+	avatarMaxBytes: number;
 	bbcode: boolean;
 	imgTag: boolean;
 	/** Lien « Règles » dans le menu (o_rules). */
@@ -236,6 +246,16 @@ export interface BoardConfig {
 	/** BBCode et balise [img] dans les signatures (p_sig_bbcode, p_sig_img_tag). */
 	signatureBbcode: boolean;
 	signatureImgTag: boolean;
+	/** Signature : caractères et lignes au plus (p_sig_length, p_sig_lines), tout en capitales permis (p_sig_all_caps). */
+	signatureMaxLength: number;
+	signatureMaxLines: number;
+	signatureAllCaps: boolean;
+	/** Plugiles du profil dans un bloc de menu à part, sous ce titre (o_plugile_menu_name) ; null sinon. */
+	plugileMenuName: string | null;
+	/** Alerte par e-mail des nouveaux MP proposée aux membres (o_pms_notification). */
+	privateMessageNotification: boolean;
+	/** Fichiers des membres (plugin Uploadile de PV). */
+	uploads: UploadSettings;
 	/** o_base_url, sans « / » final. */
 	baseUrl: string;
 	/** o_indent_num_spaces : espaces remplaçant une tabulation hors [code]. */
@@ -243,6 +263,18 @@ export interface BoardConfig {
 	reputationEnabled: boolean;
 	/** Liste des membres en ligne en bas de l'index (o_users_online). */
 	usersOnline: boolean;
+}
+
+/** Réglages d'Uploadile (o_uploadile_*) : extensions permises, espace et taille par fichier, en octets. */
+export interface UploadSettings {
+	/** o_uploadile_laws, en minuscules (le PHP accepte aussi leur forme tout en majuscules). */
+	extensions: readonly string[];
+	memberQuota: number;
+	moderatorQuota: number;
+	memberMaxFileSize: number;
+	moderatorMaxFileSize: number;
+	/** Miniatures « mini_<fichier> » affichées si elles existent (o_uploadile_thumb). */
+	thumbnails: boolean;
 }
 
 /** Balise de sujet de PV (« [Réglé] »…), posée par les modérateurs. */
@@ -401,6 +433,76 @@ export interface UserProfile {
 	groupUserTitle: string;
 	groupIsModerator: boolean;
 	acceptsPrivateMessages: boolean;
+}
+
+/** Profil lu par les formulaires de modification de profile.php (sections, actions, plugiles). */
+export interface EditableProfile extends UserProfile {
+	/** Préférences de pagination ; null = valeur par défaut du forum. */
+	topicsPerPage: number | null;
+	postsPerPage: number | null;
+	timezone: number;
+	dst: boolean;
+	style: string;
+	notifyWithPost: boolean;
+	autoNotify: boolean;
+	/** Messagerie privée (mod APMS) : activée par le membre, alerte par e-mail, avec le texte. */
+	usesPrivateMessages: boolean;
+	notifyPrivateMessages: boolean;
+	notifyPrivateMessagesFull: boolean;
+	showSmilies: boolean;
+	showImages: boolean;
+	showSignatureImages: boolean;
+	showAvatars: boolean;
+	showSignatures: boolean;
+	reputationEnabled: boolean;
+	registrationIp: string;
+	adminNote: string;
+	lastVisit: number;
+	/** Octets occupés dans img/members/<id>/ (users.upload, plugin Uploadile). */
+	uploadedBytes: number;
+}
+
+/**
+ * Changements d'un profil, colonne par colonne de users ; une chaîne vide est enregistrée NULL,
+ * comme le faisait profile.php.
+ */
+export interface ProfileChanges {
+	email?: string;
+	title?: string;
+	realname?: string;
+	url?: string;
+	location?: string;
+	jabber?: string;
+	icq?: string;
+	msn?: string;
+	aim?: string;
+	yahoo?: string;
+	signature?: string;
+	biography?: string;
+	adminNote?: string;
+	numPosts?: number;
+	topicsPerPage?: number | null;
+	postsPerPage?: number | null;
+	timezone?: number;
+	dst?: boolean;
+	style?: string;
+	emailSetting?: number;
+	notifyWithPost?: boolean;
+	autoNotify?: boolean;
+	usesPrivateMessages?: boolean;
+	notifyPrivateMessages?: boolean;
+	notifyPrivateMessagesFull?: boolean;
+	showSmilies?: boolean;
+	showImages?: boolean;
+	showSignatureImages?: boolean;
+	showAvatars?: boolean;
+	showSignatures?: boolean;
+	reputationEnabled?: boolean;
+}
+
+/** Sujet suivi, dans la liste du plugile Suivile (UPP_Suivile, propre à PV). */
+export interface SubscribedTopic extends TopicSummary {
+	forumId: number;
 }
 
 /** Sujet trouvé par une recherche (affichage « discussions »). */

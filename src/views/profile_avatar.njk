@@ -1,0 +1,27 @@
+{#- Envoi d'un avatar (profile.php?action=upload_avatar). Données : `view` (AvatarController). -#}
+{% extends "layout.njk" %}
+{% import "partials/forms.njk" as forms %}
+{% import "partials/profileMenu.njk" as profileMenu %}
+
+{% block main %}
+<h1 class="page-title">{{ view.heading }}</h1>
+<div class="profile-edit">
+{{ profileMenu.menu(view.menu, lang) }}
+<div class="profile-edit__content">
+{{ forms.errors(lang.profile.formErrors, lang.profile.formErrorsInfo, view.errors) }}
+<form id="upload_avatar" class="form-box form" method="post" enctype="multipart/form-data" action="{{ url(view.formAction) }}">
+	{{ forms.csrf(layout) }}
+	<input type="hidden" name="form_sent" value="1">
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ lang.profile.uploadAvatarLegend }}</legend>
+		<p class="form__field">
+			<label for="req_file">{{ lang.profile.file }} <span class="form__required">{{ lang.profile.required }}</span></label>
+			<input type="file" id="req_file" name="req_file" accept="image/gif,image/jpeg,image/png" required>
+		</p>
+		<p class="form__help">{{ view.description }}</p>
+	</fieldset>
+	<p class="form__buttons"><button type="submit" class="button button--primary" name="upload" value="1">{{ lang.profile.upload }}</button></p>
+</form>
+</div>
+</div>
+{% endblock %}

@@ -124,6 +124,17 @@ export function bbcodeStatus(config: BoardConfig, viewer: Viewer, lang: Lang): B
 	];
 }
 
+/** Ce qui est permis dans une signature (section « Personnalité » du profil : p_sig_*, o_smilies_sig). */
+export function signatureBbcodeStatus(config: BoardConfig, viewer: Viewer, lang: Lang): BbcodeStatus {
+	const t = lang.post;
+	return [
+		{ label: t.bbcode, href: 'help.php#bbcode', on: config.signatureBbcode },
+		{ label: t.urlTag, href: 'help.php#url', on: config.signatureBbcode && viewer.group.canPostLinks },
+		{ label: t.imgTag, href: 'help.php#img', on: config.signatureBbcode && config.signatureImgTag },
+		{ label: t.smilies, href: 'help.php#smilies', on: config.signatureSmilies },
+	];
+}
+
 export function buildPostPage(input: PostPageInput): PostPageView {
 	const { viewer, config, target, lang, censor } = input;
 	const t = lang.post;

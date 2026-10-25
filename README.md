@@ -49,6 +49,11 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
 - Menu : liens « Galerie » et « Brouillons » ajoutés après « Profil », comme le menu burger de PV
   (à retirer de `o_additional_navlinks` s'ils y figurent en production).
 - Renommée : la condition PHP sur `reputation_enable_adm` (colonne absente du schéma local) est ignorée.
+  Table `reputation` absente de la base locale, reconstituée d'après `reputation.php`. Le vote vise
+  un message par son numéro, lisible par le votant (le PHP recherchait aussi l'auteur par un pseudo
+  reçu d'un champ caché et inséré tel quel dans sa requête SQL) ; le seuil de messages porte sur le
+  sens du vote (le PHP exigeait les deux seuils) ; erreurs réaffichées dans le formulaire ; plus
+  d'e-mail codé en dur à la suppression de votes ; pagination sans page vide en trop.
 - Site web du profil : préfixé de `http://` s'il n'a pas de schéma (le PHP laissait passer `javascript:`).
 - Textes en français seulement.
 - Liens de modération du pied de page affichés : PV les masque visuellement (`sr-only`) sans autre accès.

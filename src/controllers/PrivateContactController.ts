@@ -16,8 +16,8 @@ import type { PrivateContactStore, SendingListStore } from '../repositories/Priv
 import type { PrivateMessageStore } from '../repositories/PrivateMessageRepository.ts';
 import { punTrim } from '../services/phpString.ts';
 import { parseUsernames } from '../services/privateMessages.ts';
-import { idList, privateMessagesDenied } from './PrivateMessageController.ts';
-import { positiveInt } from './params.ts';
+import { privateMessagesDenied } from './PrivateMessageController.ts';
+import { idList, positiveInt } from './params.ts';
 
 export interface PrivateContactControllerDeps extends LayoutDeps {
 	privateContacts: PrivateContactStore;

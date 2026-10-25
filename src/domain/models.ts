@@ -51,6 +51,9 @@ export interface Group {
 	privateMessageLimit: number;
 	/** Renommée (mod Reputation) accessible au groupe (g_rep_enable). */
 	canUseReputation: boolean;
+	/** Messages qu'il faut avoir écrits pour donner un vote positif ou négatif (g_rep_plus_min, g_rep_minus_min). */
+	reputationPlusMinPosts: number;
+	reputationMinusMinPosts: number;
 }
 
 /** Utilisateur qui consulte la page (invité ou membre connecté). */
@@ -265,6 +268,8 @@ export interface BoardConfig {
 	/** o_indent_num_spaces : espaces remplaçant une tabulation hors [code]. */
 	indentSpaces: number;
 	reputationEnabled: boolean;
+	/** Délai entre deux votes d'un membre pour un même autre membre, en minutes (o_reputation_timeout). */
+	reputationTimeout: number;
 	/** Liste des membres en ligne en bas de l'index (o_users_online). */
 	usersOnline: boolean;
 }
@@ -667,4 +672,26 @@ export interface SendingList {
 	id: number;
 	name: string;
 	members: { id: number; username: string }[];
+}
+
+/** Vote de renommée reçu par un membre (reputation.php?uid=…). */
+export interface ReputationVote {
+	id: number;
+	time: number;
+	reason: string;
+	/** Message pour lequel le vote a été donné, et sujet de sa discussion (null si elle n'existe plus). */
+	postId: number;
+	subject: string | null;
+	plus: boolean;
+	/** Votant, ou null si son compte a été supprimé. */
+	from: { id: number; username: string } | null;
+}
+
+/** Message pour lequel on vote, avec son auteur. */
+export interface ReputationTarget {
+	postId: number;
+	topicId: number;
+	authorId: number;
+	authorName: string;
+	authorReputationEnabled: boolean;
 }

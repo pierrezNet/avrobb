@@ -21,6 +21,8 @@ import {
 	type PostingTarget,
 	type ProfileChanges,
 	type RecentTopic,
+	type ReputationTarget,
+	type ReputationVote,
 	type SubscribedTopic,
 	type Subscriber,
 	type Topic,
@@ -39,6 +41,7 @@ import type { NewReply, NewTopic, PostingStore } from '../src/repositories/Posti
 import type { ProfileStore } from '../src/repositories/ProfileRepository.ts';
 import type { NewUser } from '../src/repositories/RegistrationRepository.ts';
 import type { ReportTarget } from '../src/repositories/ReportRepository.ts';
+import type { NewVote } from '../src/repositories/ReputationRepository.ts';
 import type { PostLocation } from '../src/repositories/TopicRepository.ts';
 import type { ViewerRecord } from '../src/repositories/UserRepository.ts';
 import type { Ban } from '../src/services/bans.ts';
@@ -78,6 +81,8 @@ export function group(overrides: Partial<Group> = {}): Group {
 		canUsePrivateMessages: true,
 		privateMessageLimit: 0,
 		canUseReputation: true,
+		reputationPlusMinPosts: 0,
+		reputationMinusMinPosts: 0,
 		...overrides,
 	};
 }
@@ -259,6 +264,7 @@ export const boardConfig: BoardConfig = {
 	baseUrl: 'http://forum.test',
 	indentSpaces: 4,
 	reputationEnabled: false,
+	reputationTimeout: 0,
 	usersOnline: true,
 };
 
@@ -340,6 +346,12 @@ export interface FakeData {
 	/** Fichiers Uploadile par membre, et avatars enregistrés ou effacés. */
 	memberFiles?: Map<number, (StoredFile & { data?: Buffer })[]>;
 	avatarLog?: string[];
+	/** Renommée : membres (totaux), votes reçus par membre, cibles par message, votes ajoutés. */
+	reputationMembers?: { id: number; username: string; plus: number; minus: number }[];
+	reputationVotes?: Map<number, ReputationVote[]>;
+	reputationTargets?: ReputationTarget[];
+	addedVotes?: NewVote[];
+	deletedVotes?: { userId: number; ids: number[] }[];
 	/** Messagerie privée en mémoire (créée vide au besoin). */
 	pm?: PmData;
 }
@@ -646,6 +658,22 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 		profiles: { findProfile: async (id) => data.profiles?.find((p) => p.id === id) ?? null },
 		profileStore: fakeProfileStore(data),
 		privateMessageStore: fakePrivateMessageStore(data.pm),
+		reputation: {
+			findMember: async (id) => data.reputationMembers?.find((m) => m.id === id) ?? null,
+			countVotes: async (id) => data.reputationVotes?.get(id)?.length ?? 0,
+			listVotes: async (id, offset, limit) => (data.reputationVotes?.get(id) ?? []).slice(offset, offset + limit),
+			findTarget: async (postId) => data.reputationTargets?.find((t) => t.postId === postId) ?? null,
+			lastVoteTime: async (from, to) =>
+				(data.addedVotes ?? [])
+					.filter((v) => v.fromUserId === from && v.userId === to)
+					.reduce<number | null>((last, v) => Math.max(last ?? 0, v.time), null),
+			addVote: async (vote) => {
+				data.addedVotes = [...(data.addedVotes ?? []), vote];
+			},
+			deleteVotes: async (userId, ids) => {
+				data.deletedVotes = [...(data.deletedVotes ?? []), { userId, ids: [...ids] }];
+			},
+		},
 		privateContacts: contactsAndLists,
 		sendingLists: contactsAndLists,
 		uploads: fakeUploads(data),

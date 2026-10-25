@@ -138,6 +138,8 @@ export interface GroupsTable {
 	g_pm: number;
 	g_pm_limit: number;
 	g_rep_enable: number;
+	g_rep_plus_min: number;
+	g_rep_minus_min: number;
 }
 
 /**
@@ -221,6 +223,19 @@ export interface ReportsTable {
 	message: string | null;
 	zapped: Generated<number | null>;
 	zapped_by: Generated<number | null>;
+}
+
+/** Votes de renommée (mod Reputation) : une ligne par vote, +1 dans rep_plus ou rep_minus. */
+export interface ReputationTable {
+	id: Generated<number>;
+	user_id: number;
+	from_user_id: number;
+	time: number;
+	post_id: number;
+	reason: string | null;
+	topics_id: number;
+	rep_plus: Generated<number>;
+	rep_minus: Generated<number>;
 }
 
 export interface SearchCacheTable {
@@ -356,6 +371,7 @@ export interface Database {
 	online: OnlineTable;
 	posts: PostsTable;
 	reports: ReportsTable;
+	reputation: ReputationTable;
 	search_cache: SearchCacheTable;
 	search_matches: SearchMatchesTable;
 	search_words: SearchWordsTable;
@@ -385,6 +401,7 @@ export const TABLE_NAMES: readonly (keyof Database)[] = [
 	'online',
 	'posts',
 	'reports',
+	'reputation',
 	'search_cache',
 	'search_matches',
 	'search_words',

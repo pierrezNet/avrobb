@@ -135,6 +135,8 @@ export class UserRepository implements UserReader, MemberListReader, ProfileRead
 				'g.g_pm',
 				'g.g_pm_limit',
 				'g.g_rep_enable',
+				'g.g_rep_plus_min',
+				'g.g_rep_minus_min',
 			])
 			.where('u.id', '=', userId)
 			.executeTakeFirst();
@@ -170,6 +172,8 @@ export class UserRepository implements UserReader, MemberListReader, ProfileRead
 			canUsePrivateMessages: row.g_pm === 1,
 			privateMessageLimit: row.g_pm_limit,
 			canUseReputation: row.g_rep_enable === 1,
+			reputationPlusMinPosts: row.g_rep_plus_min,
+			reputationMinusMinPosts: row.g_rep_minus_min,
 		};
 
 		return {

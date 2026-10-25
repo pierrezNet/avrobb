@@ -27,6 +27,7 @@ import { PrivateMessageRepository } from '../../src/repositories/PrivateMessageR
 import { ProfileRepository } from '../../src/repositories/ProfileRepository.ts';
 import { RegistrationRepository } from '../../src/repositories/RegistrationRepository.ts';
 import { ReportRepository } from '../../src/repositories/ReportRepository.ts';
+import { ReputationRepository } from '../../src/repositories/ReputationRepository.ts';
 import { SearchRepository } from '../../src/repositories/SearchRepository.ts';
 import { StatsRepository } from '../../src/repositories/StatsRepository.ts';
 import { SubscriptionRepository } from '../../src/repositories/SubscriptionRepository.ts';
@@ -477,6 +478,7 @@ describe('viewtopic de bout en bout', () => {
 			postEdits: new PostEditRepository(db),
 			drafts: new DraftRepository(db),
 			subscriptions: new SubscriptionRepository(db),
+			reputation: new ReputationRepository(db),
 			searchWriter: new SearchRepository(db),
 			contacts: new ContactRepository(db),
 			reportWriter: new ReportRepository(db),

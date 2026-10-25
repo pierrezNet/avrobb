@@ -1,0 +1,41 @@
+{#- Renommée d'un membre (reputation.php?uid=…). Données : `view` (presenters/reputationPage.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/forms.njk" as forms %}
+{% import "partials/navigation.njk" as navigation %}
+{% import "partials/sideMenu.njk" as sideMenu %}
+
+{% block main %}
+<h1 class="page-title">{{ view.heading }} <span class="reputation-totals">{{ view.totals }}</span></h1>
+{{ sideMenu.notice(view.notice) }}
+{{ forms.errors(lang.reputation.errorsTitle, lang.reputation.errorsInfo, view.errors) }}
+<div class="page-bar">{{ navigation.pagination(view.pagination, lang) }}</div>
+<form method="post" action="{{ url(view.deleteAction or 'reputation.php') }}">
+	{{ forms.csrf(layout) }}
+	<section class="category" aria-labelledby="reputation-title">
+		<h2 class="category__title" id="reputation-title">{{ lang.reputation.reputation }}</h2>
+		{% if view.votes.length %}
+		<ul class="forum-list">
+		{% for vote in view.votes %}
+			<li class="forum-row reputation-row">
+				<div class="forum-row__main">
+					<p class="forum-row__name">{% if vote.post %}<a href="{{ url(vote.post.href) }}">{{ vote.post.subject }}</a>{% else %}{{ lang.reputation.forTopic }}&#160;: {{ lang.reputation.removedOrDeleted }}{% endif %}</p>
+					{#- HTML produit par parseMessage() : échappé par construction (services/bbcode.ts). #}
+					<div class="bbcode">{{ vote.reasonHtml | safe }}</div>
+				</div>
+				<p class="reputation-row__meta">
+					<span class="reputation-row__vote reputation-row__vote--{% if vote.plus %}plus{% else %}minus{% endif %}" title="{% if vote.plus %}{{ lang.reputation.plusVote }}{% else %}{{ lang.reputation.minusVote }}{% endif %}"><span aria-hidden="true">{% if vote.plus %}+{% else %}−{% endif %}</span><span class="visually-hidden">{% if vote.plus %}{{ lang.reputation.plusVote }}{% else %}{{ lang.reputation.minusVote }}{% endif %}</span></span>
+					{% if vote.from %}<a href="{{ url(vote.from.href) }}">{{ vote.from.label }}</a>{% else %}{{ lang.reputation.profileDeleted }}{% endif %}
+					<br>{{ vote.at }}
+				</p>
+				{% if view.deleteAction %}<p class="topic-row__select"><label><input type="checkbox" name="delete_rep_id" value="{{ vote.id }}"> <span class="visually-hidden">{{ vote.selectLabel }}</span><span aria-hidden="true">{{ lang.pms.select }}</span></label></p>{% endif %}
+			</li>
+		{% endfor %}
+		</ul>
+		{% else %}
+		<p class="forum-row">{{ lang.reputation.noReputation }}</p>
+		{% endif %}
+	</section>
+	{% if view.deleteAction %}<p class="bulk-actions"><button type="submit" class="button" name="delete_rep" value="1">{{ lang.reputation.deleteSelected }}</button></p>{% endif %}
+</form>
+<div class="page-bar">{{ navigation.pagination(view.pagination, lang) }}</div>
+{% endblock %}

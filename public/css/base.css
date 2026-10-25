@@ -1511,6 +1511,34 @@ a.site-status__alert {
 	margin: 0 0 1rem;
 }
 
+/* ---------- Renommée ---------- */
+
+.reputation-totals {
+	font-size: 1rem;
+	white-space: nowrap;
+}
+
+.reputation-row__meta {
+	margin: 0.25rem 0 0;
+	color: var(--color-muted);
+	font-size: 0.875rem;
+}
+
+.reputation-row__vote {
+	display: inline-block;
+	min-width: 1.5rem;
+	font-weight: 700;
+	text-align: center;
+}
+
+.reputation-row__vote--plus {
+	color: var(--color-link);
+}
+
+.reputation-row__vote--minus {
+	color: var(--color-active);
+}
+
 /* ---------- Tablette ---------- */
 
 @media (min-width: 48em) {
@@ -1752,6 +1780,14 @@ a.site-status__alert {
 	}
 
 	.contact-row__actions {
+		margin: 0;
+	}
+
+	.reputation-row {
+		grid-template-columns: minmax(0, 1fr) 13rem 7rem;
+	}
+
+	.reputation-row__meta {
 		margin: 0;
 	}
 }

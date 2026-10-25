@@ -17,6 +17,7 @@ import { pms } from './pms.ts';
 import { post } from './post.ts';
 import { profile } from './profile.ts';
 import { register } from './register.ts';
+import { reputation } from './reputation.ts';
 import { search } from './search.ts';
 import { toolbar } from './toolbar.ts';
 import { topic } from './topic.ts';
@@ -40,6 +41,7 @@ export const fr = {
 	toolbar,
 	delete: deletePage,
 	drafts,
+	reputation,
 };
 
 export const frDateWords: DateWords = {

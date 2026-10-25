@@ -1,0 +1,24 @@
+{#- Vote de renommée (reputation.php?pid=…&method=…). Données : `view` (presenters/reputationPage.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/forms.njk" as forms %}
+
+{% block main %}
+<h1 class="page-title">{{ view.methodLabel }}</h1>
+{{ forms.errors(lang.reputation.errorsTitle, lang.reputation.errorsInfo, view.errors) }}
+<form class="form-box form" method="post" action="{{ url(view.formAction) }}">
+	{{ forms.csrf(layout) }}
+	<input type="hidden" name="form_sent" value="1">
+	<input type="hidden" name="pid" value="{{ view.postId }}">
+	<input type="hidden" name="method" value="{{ view.method }}">
+	<h2 class="form-box__title">{{ lang.reputation.formHeader }}</h2>
+	<p>{{ lang.reputation.formYourName }}&#160;: <strong>{{ view.voter }}</strong></p>
+	<p>{{ lang.reputation.formToName }}&#160;: <strong>{{ view.target }}</strong></p>
+	<p>{{ lang.reputation.formMethod }}&#160;: <strong>{{ view.methodLabel }}</strong></p>
+	<p class="form__field">
+		<label for="req_message">{{ lang.reputation.formReason }} <span class="form__required">{{ lang.post.required }}</span></label>
+		<textarea id="req_message" name="req_message" rows="6" maxlength="400" required>{{ view.reason }}</textarea>
+	</p>
+	<p class="form__help">{{ lang.reputation.reasonHelp }}</p>
+	<p class="form__buttons"><button type="submit" class="button button--primary" name="submit" value="1" accesskey="s">{{ lang.reputation.submit }}</button></p>
+</form>
+{% endblock %}

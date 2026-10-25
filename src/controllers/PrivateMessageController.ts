@@ -22,7 +22,7 @@ import { buildCensor } from '../services/censor.ts';
 import { pageCount } from '../services/pagination.ts';
 import { canUsePrivateMessages, isAnyModerator } from '../services/permissions.ts';
 import { canDeleteForEverybody } from '../services/privateMessages.ts';
-import { positiveInt } from './params.ts';
+import { idList, positiveInt } from './params.ts';
 
 export interface PrivateMessageControllerDeps extends LayoutDeps {
 	privateMessageStore: PrivateMessageStore;
@@ -41,13 +41,6 @@ export interface PrivateMessageQuery {
 }
 
 type PmRequest = FastifyRequest<{ Querystring: PrivateMessageQuery; Body?: FormBody }>;
-
-/** Identifiants entiers positifs d'un champ répété (cases à cocher) ou d'une liste « 1,2,3 ». */
-export function idList(body: FormBody | undefined, name: string): number[] {
-	const raw = body?.[name];
-	const values = raw === undefined ? [] : Array.isArray(raw) ? raw : raw.split(',');
-	return [...new Set(values.map((value) => positiveInt(value.trim())).filter((id) => id > 0))];
-}
 
 /** Accès à la messagerie : membre, messagerie activée pour le forum, son groupe et lui-même. */
 export function privateMessagesDenied(request: FastifyRequest, reply: FastifyReply, deps: LayoutDeps): Promise<FastifyReply> | null {

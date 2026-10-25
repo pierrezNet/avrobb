@@ -30,6 +30,7 @@ import { PrivateMessageRepository } from './repositories/PrivateMessageRepositor
 import { ProfileRepository } from './repositories/ProfileRepository.ts';
 import { RegistrationRepository } from './repositories/RegistrationRepository.ts';
 import { ReportRepository } from './repositories/ReportRepository.ts';
+import { ReputationRepository } from './repositories/ReputationRepository.ts';
 import { SearchRepository } from './repositories/SearchRepository.ts';
 import { StatsRepository } from './repositories/StatsRepository.ts';
 import { StopwordsLoader } from './repositories/StopwordsLoader.ts';
@@ -73,6 +74,7 @@ const app = await buildApp({
 	postEdits: new PostEditRepository(db),
 	drafts: new DraftRepository(db),
 	subscriptions: new SubscriptionRepository(db),
+	reputation: new ReputationRepository(db),
 	contacts: new ContactRepository(db),
 	reportWriter: reports,
 	toolbar: new ToolbarRepository(db),

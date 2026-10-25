@@ -350,3 +350,19 @@ CREATE TABLE `fo_brouillons` (
   PRIMARY KEY (`id`),
   KEY `fo_brouillons_poster_id_idx` (`poster_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Renommée (mod Reputation) : absente de la base locale, reconstituée d'après reputation.php.
+CREATE TABLE `fo_reputation` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int(10) unsigned NOT NULL DEFAULT 0,
+  `from_user_id` int(10) unsigned NOT NULL DEFAULT 0,
+  `time` int(10) unsigned NOT NULL DEFAULT 0,
+  `post_id` int(10) unsigned NOT NULL DEFAULT 0,
+  `reason` text DEFAULT NULL,
+  `topics_id` int(10) unsigned NOT NULL DEFAULT 0,
+  `rep_plus` tinyint(1) NOT NULL DEFAULT 0,
+  `rep_minus` tinyint(1) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `fo_reputation_user_id_idx` (`user_id`),
+  KEY `fo_reputation_from_user_id_idx` (`from_user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

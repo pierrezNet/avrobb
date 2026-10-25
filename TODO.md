@@ -84,7 +84,7 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
 ## Lot 5 — Fonctionnalités communautaires PV
 
 - [x] Messagerie privée : boîte de réception, lecture, envoi, contacts, listes d'envoi (`messages`, `contacts`, `sending_lists`) **(PV)** — alertes par e-mail (`new_pm*.tpl`) comprises ; vérifiée dans les deux sens avec le PHP
-- [ ] Réputation : vote, historique, page `reputation.php` **(PV)**
+- [x] Réputation : vote, historique, page `reputation.php` **(PV)** — suppression de votes par les administrateurs et modérateurs
 - [ ] Uploads et gestionnaire de fichiers (`gestionnaire.php`, Uploadile) **(PV)**
 - [ ] Galerie : ajout et gestion **(PV)**
   - [ ] Tuiles : image collée en haut de la tuile (sans marge au-dessus)

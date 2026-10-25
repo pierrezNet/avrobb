@@ -28,6 +28,7 @@ import { PrivateMessageController, type PrivateMessageQuery } from './controller
 import { PrivateMessageSendController, type PrivateMessageSendQuery } from './controllers/PrivateMessageSendController.ts';
 import { ProfileController, type ProfileQuery } from './controllers/ProfileController.ts';
 import { RegisterController, type RegisterQuery } from './controllers/RegisterController.ts';
+import { ReputationController, type ReputationQuery } from './controllers/ReputationController.ts';
 import { SearchController, type SearchQuery } from './controllers/SearchController.ts';
 import { TopicController, type TopicQuery } from './controllers/TopicController.ts';
 import { UserlistController, type UserlistParams } from './controllers/UserlistController.ts';
@@ -53,6 +54,7 @@ import type { PrivateMessageStore } from './repositories/PrivateMessageRepositor
 import type { ProfileStore } from './repositories/ProfileRepository.ts';
 import type { RegistrationStore } from './repositories/RegistrationRepository.ts';
 import type { ReportWriter } from './repositories/ReportRepository.ts';
+import type { ReputationStore } from './repositories/ReputationRepository.ts';
 import type { SearchReader, SearchWriter } from './repositories/SearchRepository.ts';
 import type { StatsReader } from './repositories/StatsRepository.ts';
 import type { StopwordsReader } from './repositories/StopwordsLoader.ts';
@@ -96,6 +98,7 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	privateContacts: PrivateContactStore;
 	sendingLists: SendingListStore;
 	subscriptions: SubscriptionStore;
+	reputation: ReputationStore;
 	contacts: ContactStore;
 	reportWriter: ReportWriter;
 	toolbar: ToolbarReader;
@@ -139,6 +142,7 @@ const PORTED_PAGES = new Set([
 	'post.php',
 	'profile.php',
 	'register.php',
+	'reputation.php',
 	'search.php',
 	'userlist.php',
 	'viewforum.php',
@@ -280,6 +284,14 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 	const profiles = new ProfileController(deps);
 	app.get<{ Querystring: ProfileQuery }>('/profile.php', { preHandler: authenticate }, profiles.show);
 	app.post<{ Querystring: ProfileQuery; Body: FormBody }>('/profile.php', { preHandler: [authenticate, verifyCsrf] }, profiles.submit);
+
+	const reputation = new ReputationController(deps);
+	app.get<{ Querystring: ReputationQuery }>('/reputation.php', { preHandler: authenticate }, reputation.show);
+	app.post<{ Querystring: ReputationQuery; Body: FormBody }>(
+		'/reputation.php',
+		{ preHandler: [authenticate, verifyCsrf] },
+		reputation.submit,
+	);
 
 	const pms = new PrivateMessageController(deps);
 	app.get<{ Querystring: PrivateMessageQuery }>('/pms_inbox.php', { preHandler: authenticate }, (request, reply) =>

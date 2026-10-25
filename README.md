@@ -118,6 +118,13 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
 - Recherche : résultats mémorisés dans `search_cache` (lisibles par le PHP) et anti-flood
   `g_search_flood`, comme le PHP ; le formulaire reste en GET et écrit donc `last_search` et le cache.
   Pas de recherche « CJK » par LIKE (inutile sur un forum francophone). Refus pour flood en 429.
+- Premium (`premium.php`) : page dans la mise en page du forum ; le membre est celui de la session
+  (le PHP lisait l'identifiant dans le cookie sans le vérifier et se connectait à la base avec des
+  identifiants écrits en dur) ; la ligne `apremium` n'est créée qu'à l'activation d'un code (le PHP
+  l'écrivait à chaque visite) ; activation en POST avec jeton CSRF, code refusé signalé ; un code
+  prolonge un compte encore actif à partir de son expiration (le PHP repartait du jour). Tables
+  `apremium`, `acodes15`, `acodes365` sans préfixe, reconstituées pour les tests. Boutique
+  Digiseller chargée par `public/js/premium-shop.js` (même script que le PHP, hors de la page).
 - Galerie : informations visibles sous chaque vignette (le PHP les montrait au survol, inaccessible
   au clavier et au toucher), vignette collée en haut de la tuile ; filtre « Mes images » (`?mine=1`).
   Envoi : PNG accepté en plus du JPEG et du GIF, type lu dans le contenu ; vignette (150 px, JPEG)

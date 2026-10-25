@@ -366,3 +366,24 @@ CREATE TABLE `fo_reputation` (
   KEY `fo_reputation_user_id_idx` (`user_id`),
   KEY `fo_reputation_from_user_id_idx` (`from_user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Premium de PV (premium.php) : tables sans préfixe, absentes de la base locale, reconstituées
+-- d'après les requêtes de premium.php.
+CREATE TABLE `apremium` (
+  `ID_User` int(10) unsigned NOT NULL,
+  `Expiration` date NOT NULL,
+  `Token` varchar(255) NOT NULL DEFAULT 'default',
+  PRIMARY KEY (`ID_User`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `acodes15` (
+  `Code` varchar(64) NOT NULL,
+  `Used` int(10) unsigned NOT NULL DEFAULT 0,
+  PRIMARY KEY (`Code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `acodes365` (
+  `Code` varchar(64) NOT NULL,
+  `Used` int(10) unsigned NOT NULL DEFAULT 0,
+  PRIMARY KEY (`Code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

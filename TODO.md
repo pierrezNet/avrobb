@@ -93,7 +93,7 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
     téléverser une image depuis l'édition du message (elle rejoint alors la galerie) — `gallery.php?info=pick`
   - [x] Image insérée avec son titre et sa description (la description, obligatoire dans la galerie, est
     aujourd'hui perdue à l'insertion)
-- [ ] Premium (`premium`, `premium.php`) **(PV)**
+- [x] Premium (`premium`, `premium.php`) **(PV)** — page du membre et codes d'activation ; le plugin d'administration `AP_Premium` (table `premium`) suit au lot 7
 
 ## Lot 6 — Modération
 

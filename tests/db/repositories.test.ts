@@ -22,6 +22,7 @@ import { OnlineRepository } from '../../src/repositories/OnlineRepository.ts';
 import { PostEditRepository } from '../../src/repositories/PostEditRepository.ts';
 import { PostingRepository } from '../../src/repositories/PostingRepository.ts';
 import { PostRepository } from '../../src/repositories/PostRepository.ts';
+import { PremiumRepository } from '../../src/repositories/PremiumRepository.ts';
 import { PrivateContactRepository } from '../../src/repositories/PrivateContactRepository.ts';
 import { PrivateMessageRepository } from '../../src/repositories/PrivateMessageRepository.ts';
 import { ProfileRepository } from '../../src/repositories/ProfileRepository.ts';
@@ -479,6 +480,7 @@ describe('viewtopic de bout en bout', () => {
 			drafts: new DraftRepository(db),
 			subscriptions: new SubscriptionRepository(db),
 			reputation: new ReputationRepository(db),
+			premium: new PremiumRepository(db),
 			searchWriter: new SearchRepository(db),
 			contacts: new ContactRepository(db),
 			reportWriter: new ReportRepository(db),

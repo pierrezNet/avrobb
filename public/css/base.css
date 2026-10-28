@@ -19,7 +19,7 @@ html {
 
 body {
 	margin: 0;
-	background: var(--color-bg);
+	background: var(--color-header-bg);
 	color: var(--color-text);
 	font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 	font-size: 1rem;
@@ -88,8 +88,11 @@ abbr[title] {
 }
 
 .page {
+	/* Panneau clair de la page sur le fond sombre du body (couleur de l'en-tête). */
+	min-height: 100vh;
 	max-width: 75rem;
 	margin: 0 auto;
+	background: var(--color-bg);
 }
 
 .site-main {
@@ -269,13 +272,9 @@ abbr[title] {
 }
 
 .site-status__searches a,
-.site-status__info a {
+ul.site-status__info li {
 	display: inline-block;
 	padding: 0.25rem 0;
-}
-
-.site-status__info a {
-	padding: 0;
 }
 
 .site-status__alert,
@@ -1711,11 +1710,16 @@ a.site-status__alert {
 
 @media (min-width: 48em) {
 	.site-main {
-		padding: 0 1rem;
+		padding: 0;
 	}
 
 	.site-header__bar {
 		padding: 0.75rem 1rem;
+	}
+
+	.page {
+		padding-top: 1rem;
+		border-radius: 1rem 1rem 0 0;
 	}
 
 	.site-header__logo img {
@@ -1968,7 +1972,7 @@ a.site-status__alert {
 	}
 
 	.page {
-		padding: 0 1rem;
+		padding: 1rem 1rem 0;
 	}
 
 	/*
@@ -1980,7 +1984,7 @@ a.site-status__alert {
 		flex-wrap: wrap;
 		gap: 0;
 		padding: 0;
-		border-radius: 1rem 1rem 0.5rem 0.5rem;
+		border-radius: 1rem 1rem 0 0;
 		overflow: hidden;
 	}
 

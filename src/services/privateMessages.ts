@@ -105,14 +105,14 @@ export interface ValidatedSend {
 	recipients: PrivateRecipient[];
 }
 
-/** Contrôles d'un destinataire (pms_send.php), dans l'ordre du PHP. */
-function recipientError(recipient: PrivateRecipient, context: SendContext): SendError | null {
+/** Contrôles d'un destinataire (pms_send.php), dans l'ordre du PHP ; aussi pour les mentions. */
+export function recipientError(recipient: PrivateRecipient, senderIsModerator: boolean): SendError | null {
 	const { username } = recipient;
 	if (!recipient.usesPrivateMessages || !recipient.groupCanUsePrivateMessages) return { kind: 'userDisabled', username };
 	// g_id > PUN_GUEST : les boîtes des administrateurs et modérateurs ne sont jamais pleines.
 	if (recipient.groupId > 3 && recipient.privateMessageLimit !== 0 && recipient.privateMessageCount >= recipient.privateMessageLimit)
 		return { kind: 'receiverFull', username };
-	if (!context.sender.isModerator && recipient.blocksSender) return { kind: 'userBlocked', username };
+	if (!senderIsModerator && recipient.blocksSender) return { kind: 'userBlocked', username };
 	return null;
 }
 
@@ -147,7 +147,7 @@ export function validateSend(input: SendInput, context: SendContext): ValidatedS
 			}
 			if (recipients.some((already) => already.id === recipient.id)) continue;
 			recipients.push(recipient);
-			const error = recipientError(recipient, context);
+			const error = recipientError(recipient, sender.isModerator);
 			if (error !== null) errors.push(error);
 		}
 	}

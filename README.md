@@ -139,7 +139,10 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   messagerie), « @ » suivi du début d'un nom propose des membres (`member_suggest.php`, réservé aux
   groupes qui voient la liste des membres) ; le choix insère `[url=<base>/profile.php?id=N]@Nom[/url]`,
   que le PHP affiche aussi comme un lien. Les champs de destinataires et de contacts de la messagerie
-  complètent les noms de la même façon. Pas de notification au membre mentionné.
+  complètent les noms de la même façon. À la publication d'un nouveau message, chaque membre
+  mentionné (5 au plus) reçoit un message privé avec le lien vers le message, s'il peut lire la
+  discussion et recevoir des messages privés (messagerie active, boîte non pleine, auteur non
+  bloqué) ; l'auteur n'en garde pas de copie. Rien n'est envoyé pour une modification ou un brouillon.
 - Balises en tête de sujet (`[MSFS]`, `[Résolu]`, `[BETA]`…, et les balises PunBalise des
   modérateurs) affichées en pastilles colorées sans crochets dans les listes de sujets, la recherche et
   le titre de viewtopic. Affichage seulement : le sujet enregistré garde ses crochets, que le PHP

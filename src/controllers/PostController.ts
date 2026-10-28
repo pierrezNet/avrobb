@@ -33,6 +33,7 @@ import { normalizeUsername, usernameSkeleton } from '../services/registration.ts
 import { indexWords } from '../services/searchIndex.ts';
 import { DEFAULT_TOOLBAR } from '../services/toolbar.ts';
 import { markRead, parseTrackedTopics, serializeTrackedTopics } from '../services/trackedTopics.ts';
+import { type MentionNotifierDeps, notifyMentions } from './mentionNotifier.ts';
 import { positiveInt } from './params.ts';
 
 export interface PostControllerDeps extends LayoutDeps {
@@ -48,6 +49,8 @@ export interface PostControllerDeps extends LayoutDeps {
 	legacyBaseUrl: string;
 	toolbar: ToolbarReader;
 	drafts: DraftStore;
+	privateMessageStore: MentionNotifierDeps['privateMessageStore'];
+	topics: MentionNotifierDeps['topics'];
 }
 
 export interface PostQuery {
@@ -203,6 +206,19 @@ export class PostController {
 		const { topicId, postId } = await this.save(request, target, post, now);
 		if (draftId !== null && !viewer.isGuest) await this.deps.drafts.delete(draftId, viewer.id);
 		await this.notify(request, target, post, censor, { topicId, postId });
+		if (!viewer.isGuest)
+			await notifyMentions(
+				this.deps,
+				{
+					config: request.board,
+					author: { id: viewer.id, username: viewer.username, ip: request.ip, isModerator: isAnyModerator(viewer) },
+					message: post.message,
+					topicId,
+					postId,
+					subject: target.topic !== null ? (censor !== null ? censor(target.topic.subject) : target.topic.subject) : post.censoredSubject,
+				},
+				request.log,
+			);
 
 		if (!viewer.isGuest) {
 			const tracked = markRead(parseTrackedTopics(request.cookies[this.deps.trackCookieName]), 'topics', topicId, now);

@@ -126,4 +126,8 @@ export const post = {
 	editPostLegend: 'Modifier le message et valider les modifications',
 	silentEdit: "Modification anonyme (la mention « Dernière modification par… » ne s'affichera pas)",
 	editPost: 'Modifier le message',
+
+	/** Message privé envoyé au membre mentionné (« @Nom ») dans un message. */
+	mentionSubject: (author: string) => `${author} vous a mentionné`,
+	mentionMessage: (author: string, link: string) => `[b]${author}[/b] vous a mentionné dans la discussion ${link}.`,
 };

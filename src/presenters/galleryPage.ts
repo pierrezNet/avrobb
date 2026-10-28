@@ -37,6 +37,9 @@ export interface GalleryPageView {
 	/** Modération : groupe Modérateurs, comme gallery.php (les administrateurs suppriment depuis la liste). */
 	moderationUrl: string | null;
 	notice: string | null;
+	/** Recherche (titre, description) dans la vue courante (toutes les images ou « Mes images »). */
+	search: { query: string; mine: boolean };
+	emptyMessage: string;
 }
 
 export interface GalleryPageInput {
@@ -47,6 +50,8 @@ export interface GalleryPageInput {
 	numPages: number;
 	/** Seulement les images du lecteur (?mine=1). */
 	mine: boolean;
+	/** Texte cherché (?q=…), vide sinon. */
+	search: string;
 	censor: Censor | null;
 	lang: Lang;
 	dateWords: DateWords;
@@ -54,14 +59,18 @@ export interface GalleryPageInput {
 	notice: string | null;
 }
 
-export function galleryUrl(page: number, mine = false): string {
-	const params = [...(mine ? ['mine=1'] : []), ...(page > 1 ? [`p=${page}`] : [])];
+export function galleryUrl(page: number, mine = false, search = ''): string {
+	const params = [
+		...(mine ? ['mine=1'] : []),
+		...(search !== '' ? [`q=${encodeURIComponent(search)}`] : []),
+		...(page > 1 ? [`p=${page}`] : []),
+	];
 	return params.length > 0 ? `gallery.php?${params.join('&')}` : 'gallery.php';
 }
 
 function imageView(
 	image: GalleryImage,
-	input: Omit<GalleryPageInput, 'images' | 'page' | 'numPages' | 'mine' | 'notice'>,
+	input: Omit<GalleryPageInput, 'images' | 'page' | 'numPages' | 'mine' | 'notice' | 'search'>,
 ): GalleryImageView {
 	const { viewer, config, lang } = input;
 	const files = galleryFiles(image);
@@ -85,16 +94,18 @@ export function buildGalleryPage(input: GalleryPageInput): GalleryPageView {
 		heading: input.mine ? t.myImages : t.pageTitle,
 		intro: input.mine ? t.myImagesDesc : t.pageDesc,
 		images: input.images.map((image) => imageView(image, input)),
-		pagination: paginationLinks(input.numPages, input.page, (page) => galleryUrl(page, input.mine)),
+		pagination: paginationLinks(input.numPages, input.page, (page) => galleryUrl(page, input.mine, input.search)),
 		addUrl: viewer.isGuest ? null : 'gallery.php?info=new',
 		filters: viewer.isGuest
 			? []
 			: [
-					{ href: galleryUrl(1), label: t.allImages, active: !input.mine },
-					{ href: galleryUrl(1, true), label: t.myImages, active: input.mine },
+					{ href: galleryUrl(1, false, input.search), label: t.allImages, active: !input.mine },
+					{ href: galleryUrl(1, true, input.search), label: t.myImages, active: input.mine },
 				],
 		moderationUrl: viewer.group.id === GroupId.Moderator ? 'gallery.php?info=modo' : null,
 		notice: input.notice,
+		search: { query: input.search, mine: input.mine },
+		emptyMessage: input.search !== '' ? t.noMatchingImages : t.empty,
 	};
 }
 

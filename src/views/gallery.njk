@@ -12,6 +12,14 @@
 	{% for filter in view.filters %}<a href="{{ url(filter.href) }}"{% if filter.active %} aria-current="page"{% endif %}>{{ filter.label }}</a>{% endfor %}
 </nav>
 {% endif %}
+<form class="picker-search" method="get" action="{{ url('gallery.php') }}" role="search" aria-label="{{ lang.gallery.pickerSearch }}">
+	{% if view.search.mine %}<input type="hidden" name="mine" value="1">{% endif %}
+	<p class="picker-search__field">
+		<label for="gallery-q">{{ lang.gallery.searchLabel }}</label>
+		<input id="gallery-q" type="search" name="q" value="{{ view.search.query }}" maxlength="80">
+	</p>
+	<p class="picker-search__submit"><button type="submit" class="button">{{ lang.gallery.searchButton }}</button></p>
+</form>
 {% if view.addUrl or view.moderationUrl %}
 <p class="page-bar__actions">
 	{% if view.addUrl %}<a class="button button--primary" href="{{ url(view.addUrl) }}">{{ lang.gallery.addPicture }}</a>{% endif %}
@@ -44,7 +52,7 @@
 {% endfor %}
 </ul>
 {% else %}
-<p class="message-box">{{ lang.gallery.empty }}</p>
+<p class="message-box">{{ view.emptyMessage }}</p>
 {% endif %}
 
 <div class="page-bar">{{ navigation.pagination(view.pagination, lang) }}</div>

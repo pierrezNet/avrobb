@@ -7,11 +7,11 @@ import type { Db } from '../db/database.ts';
 import type { GalleryExtension, GalleryImage } from '../domain/models.ts';
 
 export interface GalleryReader {
-	/** Nombre d'images, de tous ou d'un seul membre (filtre « Mes images »). */
-	countImages(ownerId?: number | null): Promise<number>;
+	/** Nombre d'images, de tous ou d'un seul membre (filtre « Mes images »), filtrées par `search`. */
+	countImages(ownerId?: number | null, search?: string): Promise<number>;
 	/**
 	 * Images les plus récentes d'abord, avec le pseudo de l'auteur ; `search` filtre sur le titre et
-	 * la description (sélecteur d'images des messages).
+	 * la description (recherche de la galerie et du sélecteur d'images).
 	 */
 	listImages(offset: number, limit: number, ownerId?: number | null, search?: string): Promise<GalleryImage[]>;
 }
@@ -48,8 +48,8 @@ export class GalleryRepository implements GalleryStore {
 		return query;
 	}
 
-	async countImages(ownerId: number | null = null): Promise<number> {
-		const row = await this.#images(ownerId)
+	async countImages(ownerId: number | null = null, search = ''): Promise<number> {
+		const row = await this.#images(ownerId, search)
 			.select((eb) => eb.fn.countAll<number>().as('total'))
 			.executeTakeFirstOrThrow();
 		return Number(row.total);

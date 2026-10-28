@@ -88,6 +88,20 @@ afterEach(async () => app?.close());
 const get = (server: FastifyInstance, userId: number, url: string) => server.inject({ url, headers: { cookie: cookies(userId) } });
 
 describe('GET /gallery.php', () => {
+	it('recherche dans le titre et la description, pagination et filtres la conservent', async () => {
+		app = await buildApp(fakeDeps(data()));
+		const res = await get(app, 6, '/gallery.php?q=image%201');
+		expect(res.body).toContain('role="search"');
+		expect(res.body).toContain('value="image 1"');
+		expect(res.body).toContain('Image 10');
+		expect(res.body).not.toContain('Image 2&lt;');
+		expect(res.body).toContain('href="gallery.php?mine=1&amp;q=image%201"');
+		expect(res.body).toContain('<meta name="robots" content="noindex');
+		const none = await get(app, 6, '/gallery.php?mine=1&q=zzz');
+		expect(none.body).toContain('Aucune image ne correspond à cette recherche.');
+		expect(none.body).toContain('<input type="hidden" name="mine" value="1">');
+	});
+
 	it('affiche 20 images par page, titres échappés, liens vers les fichiers du PHP', async () => {
 		app = await buildApp(fakeDeps(data()));
 		const res = await app.inject('/gallery.php');

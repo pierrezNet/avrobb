@@ -243,7 +243,7 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   prolonge un compte encore actif à partir de son expiration (le PHP repartait du jour). Tables
   `apremium`, `acodes15`, `acodes365` sans préfixe, reconstituées pour les tests. Boutique
   Digiseller chargée par `public/js/premium-shop.js` (même script que le PHP, hors de la page).
-- Galerie : informations visibles sous chaque vignette (le PHP les montrait au survol, inaccessible
+- Galerie : recherche dans le titre et la description (`?q=`, conservée par la pagination et le filtre « Mes images », page non indexée) ; informations visibles sous chaque vignette (le PHP les montrait au survol, inaccessible
   au clavier et au toucher), vignette collée en haut de la tuile ; filtre « Mes images » (`?mine=1`).
   Envoi : PNG accepté en plus du JPEG et du GIF, type lu dans le contenu ; vignette (150 px, JPEG)
   calculée par le navigateur dans un canvas et vérifiée par le serveur, qui n'a pas de bibliothèque

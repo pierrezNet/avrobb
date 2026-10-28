@@ -1153,7 +1153,10 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 		},
 		stopwords: { load: async () => new Set(['les', 'pour']) },
 		gallery: {
-			countImages: async (owner) => (data.galleryImages ?? []).filter((i) => (owner ?? null) === null || i.userId === owner).length,
+			countImages: async (owner, search = '') =>
+				(data.galleryImages ?? [])
+					.filter((i) => (owner ?? null) === null || i.userId === owner)
+					.filter((i) => `${i.title} ${i.description}`.toLowerCase().includes(search.toLowerCase())).length,
 			listImages: async (offset, limit, owner, search = '') =>
 				(data.galleryImages ?? [])
 					.filter((i) => (owner ?? null) === null || i.userId === owner)

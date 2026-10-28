@@ -50,8 +50,11 @@ type GalleryRequest = FastifyRequest<{ Querystring: GalleryQuery; Body?: FormBod
 const PER_PAGE = 20;
 /** Images proposées par le sélecteur : les plus récentes (du membre par défaut). */
 const PICKER_LIMIT = 60;
-/** Longueur maximale du texte cherché dans le sélecteur. */
-const PICKER_SEARCH_MAX = 80;
+/** Longueur maximale du texte cherché (galerie et sélecteur). */
+const SEARCH_MAX = 80;
+
+/** Texte cherché dans le titre et la description, nettoyé et borné. */
+const searchText = (q: string | undefined): string => [...punTrim(q ?? '')].slice(0, SEARCH_MAX).join('');
 
 interface FormState {
 	title: string;
@@ -93,11 +96,12 @@ export class GalleryController {
 		const { lang } = this.deps.page;
 		const mine = query.mine !== undefined && !viewer.isGuest;
 		const owner = mine ? viewer.id : null;
+		const search = searchText(query.q);
 
-		const numPages = pageCount(await this.deps.gallery.countImages(owner), PER_PAGE);
+		const numPages = pageCount(await this.deps.gallery.countImages(owner, search), PER_PAGE);
 		const page = clampPage(query.p, numPages);
 		const [images, censoredWords] = await Promise.all([
-			this.deps.gallery.listImages((page - 1) * PER_PAGE, PER_PAGE, owner),
+			this.deps.gallery.listImages((page - 1) * PER_PAGE, PER_PAGE, owner, search),
 			config.censoring ? this.deps.censorship.listWords() : [],
 		]);
 		const notices: Record<string, string> = { added: lang.gallery.added, deleted: lang.gallery.deleted };
@@ -109,6 +113,7 @@ export class GalleryController {
 			page,
 			numPages,
 			mine,
+			search,
 			censor: config.censoring ? buildCensor(censoredWords) : null,
 			lang,
 			dateWords: this.deps.page.dateWords,
@@ -125,8 +130,8 @@ export class GalleryController {
 				titleParts: [config.boardTitle, view.heading],
 				pageNumber: page > 1 ? page : null,
 				activeNav: 'gallery',
-				allowIndex: !mine,
-				canonicalUrl: mine ? null : galleryUrl(page),
+				allowIndex: !mine && search === '',
+				canonicalUrl: mine || search !== '' ? null : galleryUrl(page),
 			},
 			view,
 		);
@@ -231,7 +236,7 @@ export class GalleryController {
 	private async renderPicker(request: GalleryRequest, reply: FastifyReply, form: FormState): Promise<FastifyReply> {
 		const { viewer, board: config, query } = request;
 		const { lang } = this.deps.page;
-		const search = [...punTrim(query.q ?? '')].slice(0, PICKER_SEARCH_MAX).join('');
+		const search = searchText(query.q);
 		const allImages = query.scope === 'all';
 		const added = query.done === 'added';
 		const view = buildGalleryPicker({

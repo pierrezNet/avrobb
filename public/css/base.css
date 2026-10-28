@@ -477,8 +477,9 @@ a.site-status__alert {
 	overflow: hidden;
 }
 
+/* Message visé par le lien (#p…) : filet rouge à gauche, comme les forums à nouveaux messages de l'index. */
 .post:target {
-	outline: 3px solid var(--color-focus);
+	border-left: 4px solid var(--color-active);
 }
 
 .post__meta {

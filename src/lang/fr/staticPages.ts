@@ -110,7 +110,7 @@ export const staticPages = {
 				title: 'Durée de conservation',
 				paragraphs: [
 					'Votre compte et vos contributions sont conservés tant que votre compte existe. Les messages publics restent visibles pour préserver le fil des discussions, même anciennes.',
-					'Si vous demandez la suppression de votre compte, vos données personnelles sont effacées ; vos messages publics peuvent être conservés sous votre ancien nom d’utilisateur ou supprimés, selon votre choix.',
+					'Si vous demandez la suppression de votre compte, vos données personnelles sont effacées ; vos messages publics et images sont conservés pour garder la cohérence des sujets et nous pouvons selon votre choix anonymiser votre nom d’utilisateur.',
 				],
 			},
 			{

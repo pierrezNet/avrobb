@@ -102,7 +102,7 @@ export const common = {
 	/** Balises de PV du pied de viewtopic (footer.php). */
 	addLabel: (label: string) => `Ajouter ${label}`,
 	removeLabel: (label: string) => `Supprimer ${label}`,
-	poweredBy: 'Propulsé par',
+	poweredBy: 'Créé par',
 
 	// Flux (extern.php)
 	rssForumFeed: 'Flux RSS du forum',

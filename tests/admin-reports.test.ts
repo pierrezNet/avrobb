@@ -41,7 +41,7 @@ describe('menu de l’administration', () => {
 		const forAdmin = buildAdminMenu(admin, boardConfig, 'index', fr);
 		expect(forAdmin.moderator.map((i) => i.href)).toContain('admin_bans.php');
 		expect(forAdmin.admin).toHaveLength(7);
-		expect(forAdmin.plugins).toHaveLength(10);
+		expect(forAdmin.plugins).toHaveLength(8);
 		expect(pluginLabel('AP_Private_messaging.php')).toBe('Private messaging');
 	});
 });

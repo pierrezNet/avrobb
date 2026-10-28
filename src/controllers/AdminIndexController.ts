@@ -25,13 +25,7 @@ export class AdminIndexController {
 		const denied = adminDenied(request, reply, this.deps, false);
 		if (denied !== null) return denied;
 		const { lang } = this.deps.page;
-		return renderAdminPage(
-			request,
-			reply,
-			this.deps,
-			{ active: 'index', template: 'admin_index.njk', title: lang.admin.index },
-			{ version: request.board.version },
-		);
+		return renderAdminPage(request, reply, this.deps, { active: 'index', template: 'admin_index.njk', title: lang.admin.index }, {});
 	};
 
 	statistics = async (request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply> => {

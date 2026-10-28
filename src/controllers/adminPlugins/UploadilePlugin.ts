@@ -1,14 +1,14 @@
 /**
- * Plugin Uploadile (AP_Uploadile.php) : réglages, installation et fichiers des membres. Ni la
- * désinstallation (elle supprime users.upload, dont dépendent les pages) ni la régénération des
- * miniatures (pas de bibliothèque d'images côté serveur) ne sont reprises.
+ * Plugin Uploadile (AP_Uploadile.php) : réglages et fichiers des membres. L'installation et la
+ * désinstallation du mod (FluxBB) ne font pas partie d'AvroBB ; la régénération des miniatures non plus
+ * (pas de bibliothèque d'images côté serveur).
  */
 
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { type FormBody, field } from '../../http/forms.ts';
 import { renderMessage } from '../../http/layout.ts';
 import { buildUploadileFiles } from '../../presenters/adminPluginsPage.ts';
-import { readUploadileSettings, UPLOADILE_DEFAULTS } from '../../services/adminPlugins.ts';
+import { readUploadileSettings } from '../../services/adminPlugins.ts';
 import { isListedUpload } from '../../services/uploads.ts';
 import { type AdminLoaderControllerDeps, type AdminLoaderQuery, type PluginHandler, renderPlugin } from './pluginPage.ts';
 
@@ -44,7 +44,7 @@ export class UploadilePlugin implements PluginHandler {
 						config.uploads.thumbnails && present.has(`mini_${file.name}`) ? this.deps.uploads.urlFor(owner, `mini_${file.name}`) : null,
 				});
 		}
-		const notices: Record<string, string> = { installed: t.installed, updated: t.updated, deleted: t.deleted, error: t.deleteError };
+		const notices: Record<string, string> = { updated: t.updated, deleted: t.deleted, error: t.deleteError };
 		return renderPlugin(this.deps, request, reply, 'AP_Uploadile.php', 'admin_plugin_uploadile.njk', t.title, {
 			notice: notices[done ?? ''] ?? null,
 			settings: {
@@ -63,12 +63,6 @@ export class UploadilePlugin implements PluginHandler {
 	async #saveUploadile(request: FastifyRequest<{ Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> {
 		const { body } = request;
 		const done = (name: string): FastifyReply => reply.redirect(`admin_loader.php?plugin=AP_Uploadile.php&done=${name}`, 303);
-		if (field(body, 'installation') !== '') {
-			await this.deps.userAdmin.ensureUploadColumn();
-			await this.deps.configStore.replaceValues(new Map(Object.entries(UPLOADILE_DEFAULTS)));
-			await this.deps.configCache.invalidate();
-			return done('installed');
-		}
 		if (field(body, 'update') !== '') {
 			await this.deps.configStore.replaceValues(readUploadileSettings((name) => field(body, name)));
 			await this.deps.configCache.invalidate();

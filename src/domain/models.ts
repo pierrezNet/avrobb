@@ -159,6 +159,14 @@ export interface Post {
 export type FeedType = 'none' | 'rss' | 'atom';
 
 /** Réglages du forum (table config) utiles à l'affichage. */
+/** Balise du sujet (« [MSFS] »…) proposée aux auteurs, avec la couleur de fond de sa pastille. */
+export interface SubjectTag {
+	name: string;
+	group: 'simulator' | 'other';
+	/** Couleur de fond #RRGGBB. */
+	color: string;
+}
+
 export interface BoardConfig {
 	boardTitle: string;
 	defaultStyle: string;
@@ -241,10 +249,6 @@ export interface BoardConfig {
 	announcement: string | null;
 	quickjump: boolean;
 	feedType: FeedType;
-	/** Version de FluxBB de la base (o_cur_version), affichée dans l'administration. */
-	version: string;
-	/** Version de FluxBB affichée dans « Propulsé par » ; null si o_show_version est désactivé. */
-	shownVersion: string | null;
 	privateMessagesEnabled: boolean;
 	/** Émoticônes dans les messages (o_smilies) et dans les signatures (o_smilies_sig). */
 	smilies: boolean;
@@ -259,6 +263,8 @@ export interface BoardConfig {
 	signatureAllCaps: boolean;
 	/** Plugiles du profil dans un bloc de menu à part, sous ce titre (o_plugile_menu_name) ; null sinon. */
 	plugileMenuName: string | null;
+	/** Balises du sujet proposées (o_subject_tags, propre à AvroBB ; liste par défaut si absente). */
+	subjectTags: SubjectTag[];
 	/** Alerte par e-mail des nouveaux MP proposée aux membres (o_pms_notification). */
 	privateMessageNotification: boolean;
 	/** Participants au plus d'une conversation, expéditeur compris (o_pms_max_receiver). */

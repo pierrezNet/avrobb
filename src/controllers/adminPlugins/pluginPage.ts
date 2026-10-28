@@ -21,6 +21,7 @@ import type { PremiumAdminStore } from '../../repositories/PremiumAdminRepositor
 import type { ProfileStore } from '../../repositories/ProfileRepository.ts';
 import type { RegistrationStore } from '../../repositories/RegistrationRepository.ts';
 import type { SmileyAdminStore, SmileyImageStore } from '../../repositories/SmileyAdminRepository.ts';
+import type { SubjectPrefixStore } from '../../repositories/SubjectPrefixRepository.ts';
 import type { UploadileAdminStore } from '../../repositories/UserAdminRepository.ts';
 import { changedOptions } from '../../services/adminOptions.ts';
 import { renderAdminPage } from '../adminPage.ts';
@@ -43,6 +44,7 @@ export interface AdminLoaderControllerDeps extends LayoutDeps {
 	smileyAdmin: SmileyAdminStore;
 	smileyImages: SmileyImageStore;
 	labelAdmin: LabelAdminStore;
+	subjectPrefixes: SubjectPrefixStore;
 }
 
 export interface AdminLoaderQuery {
@@ -51,6 +53,8 @@ export interface AdminLoaderQuery {
 	/** Plugin des balises : add, edit, delete. */
 	action?: string;
 	id?: string;
+	/** Balise du sujet visée (actions tag_*). */
+	tag?: string;
 }
 
 export type Plugin = (typeof ADMIN_PLUGINS)[number];

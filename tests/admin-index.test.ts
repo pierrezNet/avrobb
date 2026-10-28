@@ -42,7 +42,7 @@ describe('admin_index.php', () => {
 		const res = await get(5, '/admin_index.php');
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('Administration du forum');
-		expect(res.body).toContain('1.5.4');
+		expect(res.body).not.toContain('1.5.4');
 		expect(res.body).toContain('href="admin_statistics.php"');
 	});
 });

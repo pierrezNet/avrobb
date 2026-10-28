@@ -116,7 +116,7 @@ export class ExternController {
 			feed = buildTopicsFeed(rows, forumName, orderPosted, input);
 		}
 
-		const context = { selfUrl: `${config.baseUrl}${request.url}`, version: config.shownVersion, now: this.deps.page.clock() };
+		const context = { selfUrl: `${config.baseUrl}${request.url}`, now: this.deps.page.clock() };
 		const body =
 			type === 'rss'
 				? renderRss(feed, context)

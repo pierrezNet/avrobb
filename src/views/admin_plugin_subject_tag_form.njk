@@ -1,0 +1,27 @@
+{#- Ajout ou édition d'une balise du sujet (page Balises, actions tag_add et tag_edit). Données : `view` (controllers/adminPlugins/SubjectTagAdmin.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/adminMenu.njk" as adminMenu %}
+{% import "partials/forms.njk" as forms %}
+
+{% block main %}
+{% set t = lang.adminPlugins.labels %}
+{% set v = view.values %}
+<h1 class="page-title">{{ t.subjectTagEditTitle if view.editing else t.subjectTagAddTitle }}</h1>
+<div class="side-layout">
+{{ adminMenu.menu(view.menu, lang) }}
+<div class="side-layout__content">
+{{ forms.errors(lang.profile.formErrors, lang.profile.formErrorsInfo, view.errors) }}
+<form class="form-box form options-form" method="post" action="{{ url(view.submitAction) }}">
+	{{ forms.csrf(layout) }}
+	<p class="form__field"><label for="name">{{ t.subjectTagName }}</label><input type="text" id="name" name="name" value="{{ v.name }}" maxlength="20" required aria-describedby="name_help"><span id="name_help" class="form__help">{{ t.subjectTagNameHelp }}</span></p>
+	<div class="form__field" role="radiogroup" aria-labelledby="label-group">
+		<span id="label-group" class="form__label">{{ t.subjectTagGroup }}</span>
+		<label class="form__choice"><input type="radio" name="group" value="simulator"{% if v.group == 'simulator' %} checked{% endif %}> {{ t.groups.simulator }}</label>
+		<label class="form__choice"><input type="radio" name="group" value="other"{% if v.group == 'other' %} checked{% endif %}> {{ t.groups.other }}</label>
+	</div>
+	<p class="form__field"><label for="color">{{ t.subjectTagColor }}</label><input type="color" id="color" name="color" value="{{ v.color }}" aria-describedby="color_help"><span id="color_help" class="form__help">{{ t.subjectTagColorHelp }}</span></p>
+	<p class="form__buttons"><button type="submit" class="button button--primary">{{ t.save }}</button> <a class="button" href="{{ url('admin_loader.php?plugin=AP_Balises.php') }}">{{ t.goBack }}</a></p>
+</form>
+</div>
+</div>
+{% endblock %}

@@ -8,17 +8,19 @@ import type { Lang } from '../lang/fr/index.ts';
 import { isAdmin } from '../services/permissions.ts';
 import type { MenuItem } from './profileEditPage.ts';
 
-/** Plugins d'administration de PV : AP_ pour les administrateurs, AMP_ aussi pour les modérateurs (forum_list_plugins()). */
+/**
+ * Plugins d'administration de PV : AP_ pour les administrateurs, AMP_ aussi pour les modérateurs
+ * (forum_list_plugins()). Sondage (sans objet dans PV) et Mod Installer (il modifie les fichiers PHP)
+ * ne font pas partie d'AvroBB.
+ */
 export const ADMIN_PLUGINS = [
 	'AMP_Gestion_utilisateurs.php',
 	'AP_Balises.php',
 	'AP_FluxToolBar.php',
-	'AP_Mod_Installer.php',
 	'AP_Plugile.php',
 	'AP_Premium.php',
 	'AP_Private_messaging.php',
 	'AP_Smilies.php',
-	'AP_Sondage.php',
 	'AP_Uploadile.php',
 ] as const;
 

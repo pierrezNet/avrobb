@@ -7,7 +7,7 @@ export const adminOptions = {
 	title: 'Options',
 	sections: {
 		essentials: 'Principal',
-		timeouts: 'Horaire et délais avant interruption',
+		timeouts: 'Délais',
 		display: 'Affichage',
 		features: 'Fonctionnalités',
 		feed: 'Syndication',
@@ -36,16 +36,10 @@ export const adminOptions = {
 			help: "Le fuseau horaire par défaut pour les invités et les utilisateurs qui s'inscrivent sur le forum.",
 		},
 		default_dst: { label: "Ajustement pour l'heure d'été", help: "Pour activer l'heure d'été (avance d'une heure)." },
-		default_lang: {
-			label: 'Langue par défaut',
-			help: "Ceci est la langue par défaut utilisée si le visiteur est un invité ou si un utilisateur n'a pas modifié ce paramètre dans son profil. Si vous supprimez un paquetage de langue, ceci devra être mis à jour.",
-		},
 		default_style: {
 			label: 'Style par défaut',
 			help: "Ceci est le style par défaut utilisé si le visiteur est un invité ou si un utilisateur n'a pas modifié ce paramètre dans son profil.",
 		},
-		time_format: { label: "Format de l'horaire", help: null },
-		date_format: { label: 'Format de la date', help: null },
 		timeout_visit: {
 			label: "Délai d'interruption de visite",
 			help: "Délai en secondes d'inactivité d'un utilisateur avant de mettre à jour ses données de dernière visite (touche principalement les indicateurs de nouveau message).",
@@ -58,7 +52,6 @@ export const adminOptions = {
 			label: 'Délai de redirection',
 			help: 'Délai en secondes avant redirection. Si défini à 0, la page de redirection ne sera pas affichée (non recommandé).',
 		},
-		show_version: { label: 'Numéro de version', help: "Afficher la version d'AvroBB dans le pied de page." },
 		show_user_info: {
 			label: "Infos sur l'utilisateur dans les messages",
 			help: "Afficher les informations à propos de l'utilisateur ayant créé le  message sous son nom d'utilisateur dans la discussion. Les informations données sont : le lieu, la date d'inscription, le nombre de messages publiés et les liens de contact (e-mail et URL).",
@@ -118,10 +111,6 @@ export const adminOptions = {
 			help: "Conserver le nombre de fois qu'un sujet a été visionné. Désactivez cette option si vous constatez une surcharge du serveur dans un forum très fréquenté.",
 		},
 		quickjump: { label: 'Basculement rapide', help: 'Activer la liste déroulante de basculement rapide (basculer vers un forum).' },
-		gzip: {
-			label: 'Compression GZip',
-			help: "Si activée, AvroBB compressera au format gzip ce qui sera envoyé au navigateur. Cela réduira l'utilisation de la bande passante mais utilisera davantage les ressources du processeur. Cette fonctionnalité demande une configuration de PHP avec zlib (--with-zlib). Remarque : si vous avez d'ores et déjà configuré un des modules Apache mod_gzip ou mod_deflate pour compresser les scripts PHP, vous devriez désactiver cette fonctionnalité.",
-		},
 		search_all_forums: {
 			label: 'Rechercher dans tous les forums',
 			help: "Si désactivée, les recherches ne pourront être effectuées que dans un forum à la fois. Désactivez ceci si la charge du serveur est trop élevée à cause d'un nombre de recherches trop important.",
@@ -224,8 +213,6 @@ export const adminOptions = {
 			help: "Le message qui s'affichera pour les utilisateurs lorsque le forum sera en mode maintenance. Si laissé vide, un message par défaut sera utilisé. Ce texte ne sera pas traité comme les messages ordinaires et peut contenir du code HTML.",
 		},
 	} as Record<string, { label: string; help: string | null }>,
-	timeFormatHelp: (current: string) =>
-		`Format actuel\u00a0: ${current}. Voir la documentation de date() du manuel PHP pour les options de formatage.`,
 	smtpChangePass: 'Cocher ceci si vous souhaitez modifier ou supprimer le mot de passe stocké actuellement.',
 	smtpPassConfirm: 'Confirmer le mot de passe SMTP',
 	feedTypes: ['Aucun', 'RSS', 'Atom'],

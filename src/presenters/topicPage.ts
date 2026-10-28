@@ -308,7 +308,12 @@ export function buildTopicPage(input: TopicPageInput): TopicPageView {
 	});
 
 	return {
-		topic: { id: topic.id, subject, subjectParts: subjectSegments(styleSubject(subject, input.labels), () => null), closed: topic.closed },
+		topic: {
+			id: topic.id,
+			subject,
+			subjectParts: subjectSegments(styleSubject(subject, input.labels), () => null, config.subjectTags),
+			closed: topic.closed,
+		},
 		crumbs: crumbs(
 			{ label: lang.common.index, href: 'index.php' },
 			{ label: topic.forum.name, href: `viewforum.php?id=${topic.forum.id}` },

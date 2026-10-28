@@ -1,6 +1,6 @@
 /**
- * Plugin PunBalise (AP_Balises.php) : ajout, édition et suppression des balises de sujets.
- * L'installation, la mise à jour et la désinstallation du mod restent sur le PHP.
+ * Page Balises de l'administration (AP_Balises.php) : balises du sujet (déléguées à SubjectTagAdmin)
+ * et balises de modération PunBalise (ajout, édition, suppression).
  */
 
 import type { FastifyReply, FastifyRequest } from 'fastify';
@@ -8,16 +8,24 @@ import { type FormBody, field } from '../../http/forms.ts';
 import { renderMessage } from '../../http/layout.ts';
 import type { LabelRow } from '../../repositories/LabelAdminRepository.ts';
 import { readLabelForm } from '../../services/labelForm.ts';
+import { readableOn } from '../../services/subjectTags.ts';
 import { type AdminLoaderControllerDeps, type AdminLoaderQuery, type PluginHandler, renderPlugin } from './pluginPage.ts';
+import { SUBJECT_TAG_ACTIONS, SubjectTagAdmin } from './SubjectTagAdmin.ts';
 
 export class LabelsPlugin implements PluginHandler {
-	constructor(private readonly deps: AdminLoaderControllerDeps) {}
+	readonly #subjectTags: SubjectTagAdmin;
+
+	constructor(private readonly deps: AdminLoaderControllerDeps) {
+		this.#subjectTags = new SubjectTagAdmin(deps);
+	}
 
 	show(request: FastifyRequest<{ Querystring: AdminLoaderQuery }>, reply: FastifyReply): Promise<FastifyReply> {
+		if (SUBJECT_TAG_ACTIONS.has(request.query.action ?? '')) return this.#subjectTags.show(request, reply);
 		return this.#showLabels(request, reply);
 	}
 
 	submit(request: FastifyRequest<{ Querystring: AdminLoaderQuery; Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> {
+		if (SUBJECT_TAG_ACTIONS.has(request.query.action ?? '')) return this.#subjectTags.submit(request, reply);
 		return this.#saveLabels(request, reply);
 	}
 
@@ -35,15 +43,27 @@ export class LabelsPlugin implements PluginHandler {
 				deleteAction: `admin_loader.php?plugin=AP_Balises.php&action=delete&id=${label.id}`,
 			});
 		}
-		const notices: Record<string, string> = { added: t.added, updated: t.updated, deleted: t.deleted };
-		const [labels, version] = await Promise.all([this.deps.labelAdmin.listLabels(), this.deps.labelAdmin.installedVersion()]);
+		const notices: Record<string, string> = {
+			added: t.added,
+			updated: t.updated,
+			deleted: t.deleted,
+			tag_saved: t.subjectTagSaved,
+			tag_deleted: t.subjectTagDeleted,
+		};
+		const renamed = /^tag_renamed_(\d+)$/.exec(done ?? '');
+		const labels = await this.deps.labelAdmin.listLabels();
+		const subjectTags = this.#subjectTags.listView(request.board.subjectTags);
 		return renderPlugin(this.deps, request, reply, 'AP_Balises.php', 'admin_plugin_labels.njk', t.title, {
-			notice: notices[done ?? ''] ?? null,
-			version,
+			notice: renamed?.[1] !== undefined ? t.subjectTagRenamed(Number(renamed[1])) : (notices[done ?? ''] ?? null),
+			subjectTagGroups: (['simulator', 'other'] as const).map((group) => ({
+				name: t.groups[group] ?? group,
+				tags: subjectTags.filter((tag) => tag.group === group),
+			})),
+			addSubjectTagHref: 'admin_loader.php?plugin=AP_Balises.php&action=tag_add',
 			labels: labels.map((label) => ({
 				...label,
-				// Couleur reprise dans un attribut style : seulement une valeur #RRGGBB.
-				safeColor: /^#[0-9a-f]{6}$/i.test(label.color) ? label.color : null,
+				// Pastille de la couleur de la balise (#RRGGBB validé, sinon gris), texte lisible.
+				colors: readableOn(/^#[0-9a-f]{6}$/i.test(label.color) ? label.color : '#475569'),
 				styleName: t.styles[label.style] ?? '',
 				editHref: `admin_loader.php?plugin=AP_Balises.php&action=edit&id=${label.id}`,
 				deleteHref: `admin_loader.php?plugin=AP_Balises.php&action=delete&id=${label.id}`,

@@ -3,13 +3,12 @@
  * prévisualisation et rappel des derniers messages du sujet. Fonction pure.
  */
 
-import type { BoardConfig, EditablePost, PostingTarget, ReviewPost, Viewer } from '../domain/models.ts';
+import type { BoardConfig, EditablePost, PostingTarget, ReviewPost, SubjectTag, Viewer } from '../domain/models.ts';
 import type { Lang } from '../lang/fr/index.ts';
 import { parseMessage } from '../services/bbcode.ts';
 import type { Censor } from '../services/censor.ts';
 import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
 import { SMILIES } from '../services/smilies.ts';
-import { OTHER_PREFIXES, SIMULATOR_PREFIXES } from '../services/subjectPrefixes.ts';
 import { type TagColors, tagColors } from '../services/subjectTags.ts';
 import { type ToolbarSettings, toolbarButtons } from '../services/toolbar.ts';
 import { type Crumb, crumbs } from './navigation.ts';
@@ -22,9 +21,12 @@ export interface SubjectTagView {
 	colors: TagColors;
 }
 
-function subjectTagChoices(): { simulators: SubjectTagView[]; other: SubjectTagView[] } {
-	const view = (name: string): SubjectTagView => ({ name, colors: tagColors(name) });
-	return { simulators: SIMULATOR_PREFIXES.map(view), other: OTHER_PREFIXES.map(view) };
+export function subjectTagChoices(tags: readonly SubjectTag[]): { simulators: SubjectTagView[]; other: SubjectTagView[] } {
+	const view = (tag: SubjectTag): SubjectTagView => ({ name: tag.name, colors: tagColors(tag) });
+	return {
+		simulators: tags.filter((tag) => tag.group === 'simulator').map(view),
+		other: tags.filter((tag) => tag.group === 'other').map(view),
+	};
 }
 
 export interface PostFormState {
@@ -176,7 +178,7 @@ export function buildPostPage(input: PostPageInput): PostPageView {
 			input.preview !== null
 				? parseMessage(input.preview, messageParserOptions(config, viewer, lang, censor, input.form.hideSmilies))
 				: null,
-		subjectPrefixes: isNewTopic ? subjectTagChoices() : null,
+		subjectPrefixes: isNewTopic ? subjectTagChoices(config.subjectTags) : null,
 		bbcodeStatus: bbcodeStatus(config, viewer, lang),
 		toolbar: toolbarView(input.toolbar, 'form', config, lang),
 		checkboxes: checkboxes(input, isNewTopic),
@@ -231,7 +233,7 @@ export function buildEditPage(input: EditPageInput): PostPageView {
 		errors: input.errors,
 		previewHtml:
 			input.preview !== null ? parseMessage(input.preview, messageParserOptions(config, viewer, lang, censor, form.hideSmilies)) : null,
-		subjectPrefixes: isTopicPost ? subjectTagChoices() : null,
+		subjectPrefixes: isTopicPost ? subjectTagChoices(input.config.subjectTags) : null,
 		bbcodeStatus: bbcodeStatus(config, viewer, lang),
 		toolbar: toolbarView(input.toolbar, 'form', config, lang),
 		checkboxes,

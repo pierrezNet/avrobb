@@ -11,7 +11,6 @@ import { ADMIN_PLUGINS } from '../presenters/adminMenu.ts';
 import { isAdmin, isAnyModerator } from '../services/permissions.ts';
 import { LabelsPlugin } from './adminPlugins/LabelsPlugin.ts';
 import { PlugilePlugin } from './adminPlugins/PlugilePlugin.ts';
-import { PollPlugin } from './adminPlugins/PollPlugin.ts';
 import { PremiumPlugin } from './adminPlugins/PremiumPlugin.ts';
 import { PrivateMessagesPlugin } from './adminPlugins/PrivateMessagesPlugin.ts';
 import type { AdminLoaderControllerDeps, AdminLoaderQuery, Plugin, PluginHandler } from './adminPlugins/pluginPage.ts';
@@ -24,13 +23,12 @@ export type { AdminLoaderControllerDeps, AdminLoaderQuery } from './adminPlugins
 const isPlugin = (name: string): name is Plugin => (ADMIN_PLUGINS as readonly string[]).includes(name);
 
 export class AdminLoaderController {
-	/** Plugins servis par Node (FluxToolBar et Mod Installer restent sur le PHP). */
+	/** Plugins servis par Node (FluxToolBar, à décider, reste sur le PHP). */
 	readonly #ported: ReadonlyMap<Plugin, PluginHandler>;
 
 	constructor(private readonly deps: AdminLoaderControllerDeps) {
 		this.#ported = new Map<Plugin, PluginHandler>([
 			['AMP_Gestion_utilisateurs.php', new UserManagementPlugin(deps)],
-			['AP_Sondage.php', new PollPlugin(deps)],
 			['AP_Private_messaging.php', new PrivateMessagesPlugin(deps)],
 			['AP_Plugile.php', new PlugilePlugin(deps)],
 			['AP_Premium.php', new PremiumPlugin(deps)],

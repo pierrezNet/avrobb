@@ -20,15 +20,6 @@ export const adminPlugins = {
 		created: "L'utilisateur a été créé.",
 	},
 
-	poll: {
-		title: 'Easy Poll +',
-		intro: 'Ce plugin permet de configurer le système de sondage suivant vos besoins.',
-		options: 'Options',
-		maxOptions: "Nombre d'options",
-		maxOptionsHelp: "Nombre d'options maximum pour un nouveau sondage.",
-		save: 'Enregistrer',
-		saved: 'Options des sondages mises à jour.',
-	},
 	privateMessages: {
 		title: 'Messages privés',
 		intro: 'Plugin de gestion des quotas de messages privés en fonctions des groupes.',
@@ -52,10 +43,6 @@ export const adminPlugins = {
 	plugile: {
 		title: 'Plugile',
 		intro: "Ce plugin vous permet de modifier l'affichage général des plugiles.",
-		install: 'Installer',
-		installInfo: 'Pour installer ou réinstaller/réinitialiser (modifications de la base de données) la mod Plugile, cliquez « Installer ».',
-		uninstall: 'Désinstaller',
-		uninstallInfo: 'Pour désinstaller (modifications de la base de données) la mod Plugile, cliquez « Désinstaller ».',
 		configuration: 'Configuration',
 		settings: 'Partie édition du profil',
 		menu: 'Menu séparé',
@@ -63,11 +50,7 @@ export const adminPlugins = {
 		yes: 'Oui',
 		no: 'Non',
 		submit: 'Envoyer',
-		installed: 'Plugile installé.',
-		reinstalled: 'Plugile réinstallé (réinitialisé).',
-		uninstalled: 'Plugile désinstallé.',
 		saved: 'Configuration de Plugile mise à jour.',
-		notInstalled: "Plugile n'est pas installé.",
 	},
 
 	premium: {
@@ -107,11 +90,6 @@ export const adminPlugins = {
 	uploadile: {
 		title: 'Uploadile',
 		intro: "Ce plugin vous permet de gérer les options d'Uploadile.",
-		install: 'Installer',
-		installInfo: 'Préparer la base de données et les réglages pour faire fonctionner Uploadile (valeurs par défaut).',
-		installed: 'Votre base de données a été correctement préparée pour Uploadile.',
-		uninstallUnavailable:
-			"La désinstallation (suppression de la colonne users.upload) n'est pas proposée ici : les pages du forum en dépendent.",
 		configuration: 'Configuration',
 		legend: 'Choisissez votre configuration',
 		laws: 'Types de fichiers autorisés',
@@ -188,13 +166,39 @@ export const adminPlugins = {
 	},
 
 	labels: {
-		title: 'PunBalise',
-		intro: 'Ce plugin permet de configurer les balises des sujets selon vos besoins.',
-		version: (version: string) => `Version installée : ${version}`,
-		notInstalled: "PunBalise n'est pas installé : l'installation se fait sur le forum PHP.",
+		title: 'Balises',
+		intro:
+			"Deux sortes de balises s'affichent en pastilles colorées devant le titre des discussions : les balises du sujet, choisies par l'auteur, et les balises de modération, posées par les modérateurs.",
+		subjectTagsHead: 'Balises du sujet',
+		subjectTagsInfo:
+			"Proposées à l'auteur d'une discussion (boutons du formulaire, page « Balises du sujet »). Une balise absente de cette liste est retirée du sujet à l'enregistrement.",
+		groups: { simulator: 'Simulateur', other: 'Autre' } as Record<string, string>,
+		addSubjectTag: 'Ajouter une balise du sujet',
+		subjectTagAddTitle: 'Ajout d’une balise du sujet',
+		subjectTagEditTitle: 'Édition d’une balise du sujet',
+		subjectTagName: 'Nom',
+		subjectTagNameHelp: '1 à 20 caractères, sans crochets. Renommer une balise la renomme aussi dans les sujets existants.',
+		subjectTagGroup: 'Groupe',
+		subjectTagColor: 'Couleur de fond',
+		subjectTagColorHelp: 'Le texte de la pastille passe en clair ou en foncé selon le fond, pour rester lisible.',
+		moveUp: (name: string) => `Monter ${name}`,
+		moveDown: (name: string) => `Descendre ${name}`,
+		subjectTagDeleteTitle: 'Suppression d’une balise du sujet',
+		subjectTagDeleteInfo: (name: string) =>
+			`Supprimer la balise « ${name} » ? Elle ne sera plus proposée ni affichée ; les sujets qui la portent la perdront à leur prochaine modification.`,
+		subjectTagErrors: {
+			name: 'Le nom doit compter 1 à 20 caractères, sans crochets ni espace au début ou à la fin.',
+			color: 'Choisissez une couleur.',
+			duplicate: 'Une balise du sujet porte déjà ce nom.',
+		} as Record<string, string>,
+		subjectTagSaved: 'Balise du sujet enregistrée.',
+		subjectTagRenamed: (count: number) => `Balise du sujet enregistrée et renommée dans ${count} sujet(s).`,
+		subjectTagDeleted: 'Balise du sujet supprimée.',
+		moderationHead: 'Balises de modération',
+		moderationInfo: 'Posées par les modérateurs en pied de discussion (« Réglé », « En cours »…).',
 		existing: 'Balises existantes',
 		empty: 'Aucune balise pour le moment.',
-		add: 'Ajouter une nouvelle balise',
+		add: 'Ajouter une balise de modération',
 		addTitle: 'Ajout de balise',
 		editTitle: 'Édition de balise',
 		legend: 'Nom, couleur, type et décoration de la balise',

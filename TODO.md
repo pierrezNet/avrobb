@@ -120,12 +120,13 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
 - [x] Balises de sujet en pastilles colorées (sans crochets) dans les listes et les titres
 - [x] Balises de sujet : balises inventées retirées et doublons supprimés à l'enregistrement, masqués à l'affichage
 - [ ] Balises de sujet : nettoyer en base les anciens sujets (balises inventées, doublons), pour que le PHP les affiche aussi proprement
-- [ ] Balises de sujet : couleurs réglables dans l'administration (aujourd'hui fixées dans `services/subjectTags.ts`)
+- [x] Balises de sujet : liste et couleurs réglables dans l'administration (page Balises, clé `o_subject_tags`), renommage reporté dans les sujets
+
+- [x] Ménage « projet à part » : Sondage (sans objet) et Mod Installer retirés ; plus d'installation/désinstallation de mods (PunBalise, Plugile, Uploadile) ; options sans effet retirées (GZip, formats de date et d'heure, langue par défaut, numéro de version) ; plus de version FluxBB (pied de page, accueil de l'administration, flux)
 
 ## À décider (mis de côté)
 
 - [ ] Plugin FluxToolBar (`AP_FluxToolBar.php`) : encore utile ? Il règle la barre d'outils BBCode (tables `toolbar_conf`/`toolbar_tags`, vides en local). Encore servi par le PHP ; à porter avec un export de production, ou à abandonner
-- [ ] Plugin Mod Installer (`AP_Mod_Installer.php`) : encore utile ? Il modifie les fichiers PHP ; sans objet après l'arrêt du PHP. Encore servi par le PHP
 
 ## Lot 8 — Bascule et décommissionnement
 

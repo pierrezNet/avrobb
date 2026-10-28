@@ -9,7 +9,7 @@ import { buildApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
 import { buildLegacyCookie } from '../src/services/legacySession.ts';
-import { boardConfig, type FakeData, fakeDeps, group, guest, NOW, viewer } from './fixtures.ts';
+import { boardConfig, type FakeData, fakeDeps, group, guest, NOW, topic, viewer } from './fixtures.ts';
 
 const SEED = 'graine-de-test';
 const CSRF_SECRET = '9'.repeat(64);
@@ -91,11 +91,11 @@ describe('plugins de réglages', () => {
 		return { server, fake };
 	}
 
-	it('sondages : nombre d’options', async () => {
-		const { server, fake } = await withConfig({ poll_max_fields: '5' });
-		expect((await get(server, 2, '/admin_loader.php?plugin=AP_Sondage.php')).body).toContain('name="max_options" value="5"');
-		await send(server, 'AP_Sondage.php', { form_sent: '1', max_options: ' 8 ' });
-		expect(fake.configUpdates).toEqual([new Map([['poll_max_fields', '8']])]);
+	it('Sondage et Mod Installer ne font pas partie d’AvroBB', async () => {
+		const { server } = await withConfig({});
+		expect((await get(server, 2, '/admin_loader.php?plugin=AP_Sondage.php')).statusCode).toBe(400);
+		expect((await get(server, 2, '/admin_loader.php?plugin=AP_Mod_Installer.php')).statusCode).toBe(400);
+		expect((await get(server, 2, '/admin_index.php')).body).not.toContain('AP_Sondage.php');
 	});
 
 	it('messagerie privée : options, destinataires (+1 comme le PHP) et droits des groupes', async () => {
@@ -120,21 +120,16 @@ describe('plugins de réglages', () => {
 		expect(fake.groupAdminLog).toEqual(['pm 4 false 50']);
 	});
 
-	it('Plugile : installation, configuration, désinstallation', async () => {
-		const { server, fake } = await withConfig({});
-		expect((await get(server, 2, '/admin_loader.php?plugin=AP_Plugile.php')).body).toContain('Plugile n&#39;est pas installé.');
-		expect((await send(server, 'AP_Plugile.php', { update: '1' })).headers.location).toBe(
-			'admin_loader.php?plugin=AP_Plugile.php&done=installed',
-		);
+	it('Plugile : réglage du menu seulement, plus d’installation de mod', async () => {
+		const { server, fake } = await withConfig({ o_plugile_menu: '1', o_plugile_menu_name: 'Extras' });
+		const page = await get(server, 2, '/admin_loader.php?plugin=AP_Plugile.php');
+		expect(page.body).not.toContain('name="update"');
+		expect(page.body).not.toContain('name="delete"');
 		await send(server, 'AP_Plugile.php', { saveconfig: '1', menu: '0', plugile_menu_name: 'Mes <fichiers>' });
 		expect(fake.configValues?.get('o_plugile_menu_name')).toBe('Mes &lt;fichiers&gt;');
 		expect((await get(server, 2, '/admin_loader.php?plugin=AP_Plugile.php')).body).toContain('value="Mes &lt;fichiers&gt;"');
-		await send(server, 'AP_Plugile.php', { delete: '1' });
-		expect(fake.configLog).toEqual([
-			'replace o_plugile_version,o_plugile_menu,o_plugile_menu_name',
-			'replace o_plugile_menu,o_plugile_menu_name',
-			'delete o_plugile_version,o_plugile_menu,o_plugile_menu_name',
-		]);
+		expect((await send(server, 'AP_Plugile.php', { delete: '1' })).statusCode).toBe(400);
+		expect(fake.configLog).toEqual(['replace o_plugile_menu,o_plugile_menu_name']);
 	});
 });
 
@@ -177,7 +172,7 @@ describe('plugin Uploadile', () => {
 			payload: new URLSearchParams({ csrf_token: csrfToken(CSRF_SECRET, SEED, 2), ...fields }).toString(),
 		});
 
-	it('réglages, installation et suppression ciblée d’un fichier avec recalcul du quota', async () => {
+	it('réglages et suppression ciblée d’un fichier avec recalcul du quota', async () => {
 		const { server, fake } = await start();
 		fake.config = { ...fake.config, uploads: { ...boardConfig.uploads, extensions: ['png', 'pdf'], thumbnails: true } };
 		fake.memberFiles = new Map([
@@ -204,8 +199,7 @@ describe('plugin Uploadile', () => {
 		await send(server, { update: '1', laws: 'png, jpg', thumb: '0', thumb_size: '-1' });
 		expect(fake.configValues?.get('o_uploadile_laws')).toBe('png,jpg');
 		expect(fake.configValues?.get('o_uploadile_thumb_size')).toBe('100');
-		await send(server, { installation: '1' });
-		expect(fake.userActionLog).toEqual(['ensureUploadColumn']);
+		expect((await send(server, { installation: '1' })).statusCode).toBe(400);
 	});
 });
 
@@ -309,7 +303,7 @@ describe('plugin PunBalise', () => {
 		const { server, fake } = await start();
 		fake.labelRows = [label, { ...label, id: 2, name: 'Piège', color: 'red;background:url(x)' }];
 		const page = await get(server, 2, '/admin_loader.php?plugin=AP_Balises.php');
-		expect(page.body).toContain('style="color: #00AA00"');
+		expect(page.body).toContain('style="background-color: #00AA00; color: #1a1a1a">Réglé</span>');
 		expect(page.body).not.toContain('url(x)');
 		expect((await send(server, '&action=add', { nom: 'Réglé', color1: '#000000', baltype: '0' })).body).toContain('déjà utilisé');
 		expect((await send(server, '&action=add', { nom: 'Urgent', color1: 'rouge' })).body).toContain('n&#39;est pas valide');
@@ -321,5 +315,44 @@ describe('plugin PunBalise', () => {
 		expect((await get(server, 2, '/admin_loader.php?plugin=AP_Balises.php&action=delete&id=2')).body).toContain('name="delete_comply"');
 		await send(server, '&action=delete&id=2', { delete_comply: '1' });
 		expect(fake.labelRows?.map((l) => l.id)).toEqual([1, 9]);
+	});
+});
+
+describe('page Balises : balises du sujet', () => {
+	const send = (server: FastifyInstance, query: string, fields: Record<string, string>) =>
+		server.inject({
+			method: 'POST',
+			url: `/admin_loader.php?plugin=AP_Balises.php${query}`,
+			headers: { cookie: cookies(2), 'content-type': 'application/x-www-form-urlencoded' },
+			payload: new URLSearchParams({ csrf_token: csrfToken(CSRF_SECRET, SEED, 2), ...fields }).toString(),
+		});
+	const saved = (fake: FakeData) =>
+		JSON.parse(fake.configValues?.get('o_subject_tags') ?? '[]') as { name: string; group: string; color: string }[];
+
+	it('liste en pastilles, sans version du mod', async () => {
+		const { server } = await start();
+		const page = await get(server, 2, '/admin_loader.php?plugin=AP_Balises.php');
+		expect(page.body).toContain('style="background-color: #1d4ed8; color: #ffffff">MSFS</span>');
+		expect(page.body).not.toContain('Version installée');
+	});
+
+	it('ajout, doublon refusé, renommage reporté dans les sujets, ordre et suppression', async () => {
+		const { server, fake } = await start();
+		fake.configValues = new Map();
+		fake.topics = [topic({ id: 10, subject: '[MSFS][Résolu] Vol de nuit' })];
+		expect((await send(server, '&action=tag_add', { name: 'msfs', group: 'simulator', color: '#000000' })).body).toContain(
+			'porte déjà ce nom',
+		);
+		await send(server, '&action=tag_add', { name: 'DCS', group: 'simulator', color: '#FF0000' });
+		expect(saved(fake).map((t) => t.name)).toContain('DCS');
+		const renamed = await send(server, '&action=tag_edit&tag=MSFS', { name: 'MSFS 2024', group: 'simulator', color: '#1d4ed8' });
+		expect(renamed.headers.location).toBe('admin_loader.php?plugin=AP_Balises.php&done=tag_renamed_1');
+		expect(fake.subjectUpdates).toEqual([{ topicId: 10, subject: '[MSFS 2024][Résolu] Vol de nuit' }]);
+		fake.config = { ...fake.config, subjectTags: saved(fake) as never };
+		await send(server, '&action=tag_down&tag=MSFS%202024', {});
+		expect(saved(fake)[1]?.name).toBe('MSFS 2024');
+		fake.config = { ...fake.config, subjectTags: saved(fake) as never };
+		await send(server, '&action=tag_delete&tag=DCS', { delete_comply: '1' });
+		expect(saved(fake).map((t) => t.name)).not.toContain('DCS');
 	});
 });

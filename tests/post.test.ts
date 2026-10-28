@@ -11,6 +11,7 @@ import { buildCensor } from '../src/services/censor.ts';
 import { buildLegacyCookie } from '../src/services/legacySession.ts';
 import { canPostIn } from '../src/services/permissions.ts';
 import { type PostContext, type PostForm, promotionGroup, quoteText, subscriptionChange, validatePost } from '../src/services/posting.ts';
+import { DEFAULT_SUBJECT_TAGS } from '../src/services/subjectTagConfig.ts';
 import { type FakeData, fakeDeps, group, guest, NOW, post, topic, viewer } from './fixtures.ts';
 
 const form = (overrides: Partial<PostForm> = {}): PostForm => ({
@@ -30,7 +31,14 @@ const context = (overrides: Partial<PostContext> = {}): PostContext => ({
 	now: NOW,
 	isAnyModerator: false,
 	isForumModerator: false,
-	config: { bbcode: true, subjectAllCaps: false, messageAllCaps: false, forceGuestEmail: true, allowBannedEmail: false },
+	config: {
+		bbcode: true,
+		subjectAllCaps: false,
+		messageAllCaps: false,
+		forceGuestEmail: true,
+		allowBannedEmail: false,
+		subjectTags: DEFAULT_SUBJECT_TAGS,
+	},
 	preparse: { quoteDepth: 3, makeLinks: true, indentSpaces: 4, baseUrl: 'http://forum.test' },
 	censor: null,
 	bans: [],

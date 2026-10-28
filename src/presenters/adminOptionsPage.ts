@@ -5,7 +5,7 @@
  */
 
 import type { Lang } from '../lang/fr/index.ts';
-import { FEED_TTLS, LANGUAGES, type OptionChoices, type OptionInput, type OptionSection } from '../services/adminOptions.ts';
+import { FEED_TTLS, type OptionChoices, type OptionInput, type OptionSection } from '../services/adminOptions.ts';
 import { TIMEZONES } from '../services/registration.ts';
 import { THEMES } from '../services/themes.ts';
 
@@ -46,13 +46,6 @@ function choiceList(choices: OptionChoices, current: string, lang: Lang): Option
 	switch (choices) {
 		case 'timezones':
 			return list(TIMEZONES.map((zone) => [String(zone), lang.register.timezones[String(zone)] ?? String(zone)] as const));
-		case 'languages':
-			// Une valeur inconnue (paquet de langue retiré) reste affichée pour ne pas être perdue en silence.
-			return list(
-				[...LANGUAGES, ...((LANGUAGES as readonly string[]).includes(current) ? [] : [current])].map(
-					(name) => [name, name.replaceAll('_', ' ')] as const,
-				),
-			);
 		case 'styles':
 			return list(THEMES.map((name) => [name, name] as const));
 		case 'feedTypes':
@@ -102,7 +95,6 @@ export function buildAdminOptions(input: {
 	notice: string | null;
 	lang: Lang;
 }): AdminOptionsView {
-	const t = input.lang.adminOptions;
 	const value = (key: string): string => input.values.get(`${input.prefix}${key}`) ?? '';
 	return {
 		title: input.texts.title,
@@ -112,7 +104,7 @@ export function buildAdminOptions(input: {
 			legend: input.texts.sections[section.id] ?? section.id,
 			fields: section.fields.map(({ key, input: control }): OptionFieldView => {
 				const texts = input.texts.fields[key] ?? { label: key, help: null };
-				const help = key === 'time_format' || key === 'date_format' ? t.timeFormatHelp(value(key)) : texts.help;
+				const help = texts.help;
 				return { key, label: texts.label, help, control: fieldControl(control, value(key), input.lang) };
 			}),
 		})),

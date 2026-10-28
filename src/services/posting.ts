@@ -8,7 +8,7 @@
  * utf8mb4 (PHP compris), et PV affiche ses émoticônes en émojis.
  */
 
-import type { Viewer } from '../domain/models.ts';
+import type { SubjectTag, Viewer } from '../domain/models.ts';
 import type { Ban } from './bans.ts';
 import type { Censor } from './censor.ts';
 import { isValidEmail } from './mail.ts';
@@ -65,6 +65,8 @@ export interface PostContext {
 		messageAllCaps: boolean;
 		forceGuestEmail: boolean;
 		allowBannedEmail: boolean;
+		/** Balises du sujet proposées (les autres sont retirées du sujet). */
+		subjectTags: readonly SubjectTag[];
 	};
 	preparse: Omit<PreparseOptions, 'isSignature' | 'allowLinks'>;
 	censor: Censor | null;
@@ -139,7 +141,7 @@ export function validatePost(form: PostForm, context: PostContext): ValidatedPos
 	if (flood !== null) errors.push(flood);
 
 	// Balises du sujet (PV) : inventées retirées, doublons supprimés avant les contrôles de longueur.
-	const subject = form.subject !== null ? punTrim(normalizeSubjectTags(form.subject)) : '';
+	const subject = form.subject !== null ? punTrim(normalizeSubjectTags(form.subject, context.config.subjectTags)) : '';
 	if (form.subject !== null) errors.push(...subjectErrors(subject, context));
 
 	const username = viewer.isGuest ? punTrim(form.username) : viewer.username;

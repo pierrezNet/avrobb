@@ -5,6 +5,7 @@
  */
 
 import type { BoardConfig, FeedType } from '../domain/models.ts';
+import { parseSubjectTags, SUBJECT_TAGS_KEY } from './subjectTagConfig.ts';
 
 const FEED_TYPES: Readonly<Record<string, FeedType>> = { '1': 'rss', '2': 'atom' };
 
@@ -77,8 +78,6 @@ export function toBoardConfig(values: ReadonlyMap<string, string>): BoardConfig 
 		announcement: flag('o_announcement') ? text('o_announcement_message') : null,
 		quickjump: flag('o_quickjump'),
 		feedType: FEED_TYPES[text('o_feed_type')] ?? 'none',
-		version: text('o_cur_version'),
-		shownVersion: flag('o_show_version') ? text('o_cur_version') : null,
 		privateMessagesEnabled: flag('o_pms_enabled'),
 		smilies: flag('o_smilies'),
 		signatureSmilies: flag('o_smilies_sig'),
@@ -89,6 +88,7 @@ export function toBoardConfig(values: ReadonlyMap<string, string>): BoardConfig 
 		signatureMaxLines: int('p_sig_lines', 4),
 		signatureAllCaps: flag('p_sig_all_caps'),
 		plugileMenuName: flag('o_plugile_menu') ? text('o_plugile_menu_name') : null,
+		subjectTags: parseSubjectTags(values.get(SUBJECT_TAGS_KEY)),
 		privateMessageNotification: flag('o_pms_notification'),
 		privateMessageMaxReceivers: int('o_pms_max_receiver', 5),
 		privateMessagesPerPage: Math.max(1, int('o_pms_mess_per_page', 15)),

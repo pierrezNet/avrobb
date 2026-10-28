@@ -66,7 +66,9 @@ describe('admin_options.php', () => {
 		const res = await server.inject({ url: '/admin_options.php', headers: { cookie: cookies(2) } });
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('name="form[board_title]" value="Pilote-Virtuel"');
-		expect(res.body).toContain('<option value="French" selected>French</option>');
+		// Options de FluxBB sans effet dans AvroBB : absentes du formulaire.
+		for (const removed of ['gzip', 'time_format', 'date_format', 'default_lang', 'show_version'])
+			expect(res.body).not.toContain(`name="form[${removed}]"`);
 		expect(res.body).toContain('name="form[quickpost]" value="1" checked');
 		expect(res.body).not.toContain('old');
 	});

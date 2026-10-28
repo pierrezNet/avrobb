@@ -15,8 +15,6 @@
 <form class="form-box form" method="post" action="{{ url(view.formAction) }}">
 	{{ forms.csrf(layout) }}
 	<p class="form__help">{{ t.intro }}</p>
-	<p><button type="submit" class="button" name="installation" value="1">{{ t.install }}</button> {{ t.installInfo }}</p>
-	<p class="form__help">{{ t.uninstallUnavailable }}</p>
 </form>
 <form class="form-box form options-form" method="post" action="{{ url(view.formAction) }}">
 	{{ forms.csrf(layout) }}

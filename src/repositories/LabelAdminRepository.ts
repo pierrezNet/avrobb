@@ -33,8 +33,6 @@ export interface LabelAdminStore {
 	updateLabel(id: number, values: LabelValues & { position: number }): Promise<void>;
 	/** Supprime la balise et sa colonne bal<id>. */
 	deleteLabel(id: number): Promise<void>;
-	/** o_balises_version, ou null si le mod n'est pas installé. */
-	installedVersion(): Promise<string | null>;
 }
 
 const flag = (value: boolean): number => (value ? 1 : 0);
@@ -100,10 +98,5 @@ export class LabelAdminRepository implements LabelAdminStore {
 	async deleteLabel(id: number): Promise<void> {
 		await this.db.deleteFrom('balises').where('id', '=', id).execute();
 		await sql`ALTER TABLE ${sql.table('balises_modo')} DROP COLUMN IF EXISTS ${sql.ref(`bal${id}`)}`.execute(this.db);
-	}
-
-	async installedVersion(): Promise<string | null> {
-		const row = await this.db.selectFrom('config').select('conf_value').where('conf_name', '=', 'o_balises_version').executeTakeFirst();
-		return row !== undefined ? (row.conf_value ?? '') : null;
 	}
 }

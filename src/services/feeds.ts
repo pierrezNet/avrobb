@@ -27,8 +27,6 @@ export interface Feed {
 export interface FeedContext {
 	/** URL de la requête, pour le lien « self ». */
 	selfUrl: string;
-	/** o_cur_version si o_show_version est activé, sinon null. */
-	version: string | null;
 	now: number;
 }
 
@@ -65,7 +63,7 @@ export function renderRss(feed: Feed, context: FeedContext): string {
 		`\t\t<link>${escapeAttr(feed.link)}</link>`,
 		`\t\t<description>${cdata(feed.description)}</description>`,
 		`\t\t<lastBuildDate>${rfc2822(lastUpdate(feed, context.now))}</lastBuildDate>`,
-		`\t\t<generator>FluxBB${context.version !== null ? ` ${context.version}` : ''}</generator>`,
+		'\t\t<generator>AvroBB</generator>',
 	];
 
 	for (const item of feed.items) {
@@ -102,9 +100,7 @@ export function renderAtom(feed: Feed, context: FeedContext): string {
 		`\t<link rel="self" href="${escapeAttr(context.selfUrl)}"/>`,
 		`\t<link href="${escapeAttr(feed.link)}"/>`,
 		`\t<updated>${iso8601(lastUpdate(feed, context.now))}</updated>`,
-		context.version !== null
-			? `\t<generator version="${escapeAttr(context.version)}">FluxBB</generator>`
-			: '\t<generator>FluxBB</generator>',
+		'\t<generator>AvroBB</generator>',
 		`\t<id>${escapeAttr(feed.link)}</id>`,
 	];
 

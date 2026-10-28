@@ -12,11 +12,6 @@ function integer(value: string, fallback: number): number {
 	return Number.isNaN(parsed) ? fallback : parsed;
 }
 
-/** AP_Sondage.php : poll_max_fields = intval(trim()). */
-export function readPollMaxOptions(value: string): string {
-	return String(integer(value, 0));
-}
-
 /**
  * AP_Private_messaging.php : options de la messagerie. Le PHP enregistre le nombre de destinataires
  * plus un (l'expéditeur compte parmi eux) ; l'affichage retire ce un.
@@ -37,21 +32,14 @@ export function readGroupPrivateMessageRights(read: Read, groupId: number): { al
 	return { allowed: allowed === '1', limit: Math.max(0, integer(limit, 0)) };
 }
 
-/** Clés de config de Plugile et leurs valeurs à l'installation. */
-export const PLUGILE_DEFAULTS: ReadonlyMap<string, string> = new Map([
-	['o_plugile_version', '2.0'],
-	['o_plugile_menu', '1'],
-	['o_plugile_menu_name', 'Plugile'],
-]);
-
 /** Inverse de pun_htmlspecialchars() : le titre Plugile est stocké échappé, il est réaffiché tel que saisi. */
 export function unescapeHtml(text: string): string {
 	const entities: Readonly<Record<string, string>> = { amp: '&', lt: '<', gt: '>', quot: '"' };
 	return text.replace(/&(amp|lt|gt|quot|#0?39);/g, (_, entity: string) => entities[entity] ?? "'");
 }
 
-/** Réglages d'Uploadile à l'installation du plugin. */
-export const UPLOADILE_DEFAULTS = {
+/** Réglages d'Uploadile par défaut (valeur absente ou invalide). */
+const UPLOADILE_DEFAULTS = {
 	o_uploadile_laws: 'jpg,jpeg,png,gif,swf,odt,ods,doc,xls,ppt,odp,mp3,pdf',
 	o_uploadile_thumb: '1',
 	o_uploadile_thumb_size: '100',

@@ -29,15 +29,14 @@ describe('readOptionsForm', () => {
 	it('oui/non, formats vides, barres obliques finales, liste de diffusion', () => {
 		const v = values({
 			smilies: '1',
-			gzip: 'oui',
-			time_format: ' ',
 			base_url: 'http://pv.test/forum/',
 			avatars_dir: 'img/avatars/',
 			mailing_list: 'A@Ex.test, b@ex.test',
 		});
 		expect(v.get('o_smilies')).toBe('1');
-		expect(v.get('o_gzip')).toBe('0');
-		expect(v.get('o_time_format')).toBe('H:i:s');
+		// Options retirées : jamais écrites (le PHP garde ses valeurs).
+		for (const removed of ['o_gzip', 'o_time_format', 'o_date_format', 'o_default_lang', 'o_show_version'])
+			expect(v.has(removed)).toBe(false);
 		expect(v.get('o_base_url')).toBe('http://pv.test/forum');
 		expect(v.get('o_avatars_dir')).toBe('img/avatars');
 		expect(v.get('o_mailing_list')).toBe('a@ex.test,b@ex.test');
@@ -67,7 +66,7 @@ describe('readOptionsForm', () => {
 	it('erreurs de saisie et requêtes invalides', () => {
 		const invalid = readOptionsForm(read(optionsForm({ board_title: ' ', admin_email: 'x', timeout_online: '1800' })), DEFAULTS);
 		expect(invalid).toEqual({ kind: 'invalid', errors: ['missingTitle', 'timeout', 'invalidAdminEmail'] });
-		for (const bad of [{ feed_type: '3' }, { default_lang: 'Klingon' }, { default_style: '../x' }, { default_timezone: '1.3' }]) {
+		for (const bad of [{ feed_type: '3' }, { default_style: '../x' }, { default_timezone: '1.3' }]) {
 			expect(readOptionsForm(read(optionsForm(bad)), DEFAULTS)).toEqual({ kind: 'badRequest' });
 		}
 	});

@@ -5,6 +5,10 @@
  * Fidèle à FluxBB : intval()/floatval() sur les nombres, bornes et valeurs de repli identiques,
  * messages vides remplacés par le texte par défaut avec l'option correspondante désactivée, et
  * seules les clés qui changent sont écrites (une chaîne vide devient NULL).
+ *
+ * Options de FluxBB sans effet dans AvroBB retirées du formulaire (et donc jamais écrites) :
+ * compression GZip (affaire du serveur web), formats de date et d'heure (PV impose d/m/Y et H:i),
+ * langue par défaut (forum en français), affichage du numéro de version de FluxBB.
  */
 
 import { isValidEmail } from './mail.ts';
@@ -12,13 +16,10 @@ import { punLinebreaks, punTrim } from './phpString.ts';
 import { TIMEZONES } from './registration.ts';
 import { THEMES } from './themes.ts';
 
-/** Paquets de langue de l'installation PHP (lang/), proposés comme langue par défaut. */
-export const LANGUAGES = ['Chinese_Taiwan', 'Dutch', 'English', 'French', 'Italian', 'Polish'] as const;
-
 /** Durées de cache des flux proposées par le PHP (minutes, 0 : pas de cache). */
 export const FEED_TTLS = [0, 5, 15, 30, 60] as const;
 
-export type OptionChoices = 'timezones' | 'languages' | 'styles' | 'feedTypes' | 'feedTtls' | 'reportMethods' | 'emailSettings';
+export type OptionChoices = 'timezones' | 'styles' | 'feedTypes' | 'feedTtls' | 'reportMethods' | 'emailSettings';
 
 export type OptionInput =
 	| { kind: 'text'; maxLength: number; type: 'text' | 'email' | 'url' }
@@ -68,24 +69,17 @@ export const OPTION_SECTIONS: readonly OptionSection<OptionSectionId>[] = [
 			field('base_url', text(100, 'url')),
 			field('default_timezone', { kind: 'select', choices: 'timezones' }),
 			field('default_dst', yesno),
-			field('default_lang', { kind: 'select', choices: 'languages' }),
 			field('default_style', { kind: 'select', choices: 'styles' }),
 		],
 	},
 	{
 		id: 'timeouts',
-		fields: [
-			field('time_format', text(25)),
-			field('date_format', text(25)),
-			field('timeout_visit', num(1)),
-			field('timeout_online', num(1)),
-			field('redirect_delay', num(0, 999)),
-		],
+		fields: [field('timeout_visit', num(1)), field('timeout_online', num(1)), field('redirect_delay', num(0, 999))],
 	},
 	{
 		id: 'display',
 		fields: [
-			...flags('show_version', 'show_user_info', 'show_post_count', 'smilies', 'smilies_sig', 'make_links'),
+			...flags('show_user_info', 'show_post_count', 'smilies', 'smilies_sig', 'make_links'),
 			field('topic_review', num(0, 999)),
 			field('disp_topics_default', num(3, 75)),
 			field('disp_posts_default', num(3, 75)),
@@ -96,7 +90,7 @@ export const OPTION_SECTIONS: readonly OptionSection<OptionSectionId>[] = [
 	{
 		id: 'features',
 		fields: [
-			...flags('quickpost', 'users_online', 'censoring', 'signatures', 'show_dot', 'topic_views', 'quickjump', 'gzip', 'search_all_forums'),
+			...flags('quickpost', 'users_online', 'censoring', 'signatures', 'show_dot', 'topic_views', 'quickjump', 'search_all_forums'),
 			field('additional_navlinks', { kind: 'textarea', rows: 3 }),
 		],
 	},
@@ -208,7 +202,6 @@ export function readOptionsForm(read: (key: string) => string, defaults: Options
 	set('base_url', baseUrl ?? '');
 
 	const timezone = floatval(read('default_timezone'));
-	const language = trimmed('default_lang');
 	const style = trimmed('default_style');
 	const feedType = intval(read('feed_type'));
 	const feedTtl = intval(read('feed_ttl'));
@@ -216,7 +209,6 @@ export function readOptionsForm(read: (key: string) => string, defaults: Options
 	const emailSetting = intval(read('default_email_setting'));
 	if (
 		!(TIMEZONES as readonly number[]).includes(timezone) ||
-		!(LANGUAGES as readonly string[]).includes(language) ||
 		!(THEMES as readonly string[]).includes(style) ||
 		feedType < 0 ||
 		feedType > 2 ||
@@ -228,15 +220,12 @@ export function readOptionsForm(read: (key: string) => string, defaults: Options
 	)
 		return { kind: 'badRequest' };
 	set('default_timezone', timezone);
-	set('default_lang', language);
 	set('default_style', style);
 	set('feed_type', feedType);
 	set('feed_ttl', feedTtl);
 	set('report_method', reportMethod);
 	set('default_email_setting', emailSetting);
 
-	set('time_format', trimmed('time_format') || 'H:i:s');
-	set('date_format', trimmed('date_format') || 'Y-m-d');
 	const timeoutVisit = atLeast(intval(read('timeout_visit')), 1, 1);
 	const timeoutOnline = atLeast(intval(read('timeout_online')), 1, 1);
 	if (timeoutOnline >= timeoutVisit) errors.push('timeout');

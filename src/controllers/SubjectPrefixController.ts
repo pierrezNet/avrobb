@@ -14,7 +14,7 @@ import type { TopicReader } from '../repositories/TopicRepository.ts';
 import { canEditSubjectPrefixes } from '../services/permissions.ts';
 import { MAX_SUBJECT_LENGTH } from '../services/posting.ts';
 import { indexWords } from '../services/searchIndex.ts';
-import { applyPrefixes, OTHER_PREFIXES, SIMULATOR_PREFIXES, splitPrefixes } from '../services/subjectPrefixes.ts';
+import { applyPrefixes, splitPrefixes } from '../services/subjectPrefixes.ts';
 import { tagColors } from '../services/subjectTags.ts';
 import { positiveInt } from './params.ts';
 
@@ -34,7 +34,7 @@ export class SubjectPrefixController {
 	show = async (request: FastifyRequest<{ Querystring: SubjectPrefixQuery }>, reply: FastifyReply): Promise<FastifyReply> => {
 		const topic = await this.#topic(request, reply);
 		if (!('subject' in topic)) return topic;
-		return this.#render(request, reply, topic, splitPrefixes(topic.subject).prefixes, null);
+		return this.#render(request, reply, topic, splitPrefixes(topic.subject, request.board.subjectTags).prefixes, null);
 	};
 
 	submit = async (
@@ -43,8 +43,9 @@ export class SubjectPrefixController {
 	): Promise<FastifyReply> => {
 		const topic = await this.#topic(request, reply);
 		if (!('subject' in topic)) return topic;
-		const selected = [...SIMULATOR_PREFIXES, ...OTHER_PREFIXES].filter((prefix) => field(request.body, `prefix[${prefix}]`) !== '');
-		const subject = applyPrefixes(topic.subject, selected);
+		const tags = request.board.subjectTags;
+		const selected = tags.map((tag) => tag.name).filter((name) => field(request.body, `prefix[${name}]`) !== '');
+		const subject = applyPrefixes(topic.subject, selected, tags);
 		if ([...subject].length > MAX_SUBJECT_LENGTH)
 			return this.#render(request, reply, topic, selected, this.deps.page.lang.topic.prefixesTooLong, 400);
 		if (subject !== topic.subject) {
@@ -74,8 +75,10 @@ export class SubjectPrefixController {
 		status = 200,
 	): Promise<FastifyReply> {
 		const { lang } = this.deps.page;
-		const choices = (list: readonly string[]) =>
-			list.map((prefix) => ({ prefix, checked: selected.includes(prefix), colors: tagColors(prefix) }));
+		const choices = (group: 'simulator' | 'other') =>
+			request.board.subjectTags
+				.filter((tag) => tag.group === group)
+				.map((tag) => ({ prefix: tag.name, checked: selected.includes(tag.name), colors: tagColors(tag) }));
 		reply.code(status);
 		return renderPage(
 			request,
@@ -87,8 +90,8 @@ export class SubjectPrefixController {
 				subject: topic.subject,
 				formAction: `topic_prefixes.php?id=${topic.id}`,
 				topicHref: topicUrl(topic.id),
-				simulators: choices(SIMULATOR_PREFIXES),
-				other: choices(OTHER_PREFIXES),
+				simulators: choices('simulator'),
+				other: choices('other'),
 				error,
 			},
 		);

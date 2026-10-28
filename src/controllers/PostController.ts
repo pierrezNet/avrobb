@@ -236,6 +236,7 @@ export class PostController {
 				subjectAllCaps: config.posting.subjectAllCaps,
 				messageAllCaps: config.posting.messageAllCaps,
 				forceGuestEmail: config.posting.forceGuestEmail,
+				subjectTags: config.subjectTags,
 				allowBannedEmail: config.registration.allowBannedEmail,
 			},
 			preparse: {

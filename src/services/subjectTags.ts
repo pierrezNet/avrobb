@@ -3,7 +3,8 @@
  * sans crochets. Affichage seulement : le sujet enregistré garde ses crochets (le PHP l'affiche tel quel).
  */
 
-import { knownTag, OTHER_PREFIXES, SIMULATOR_PREFIXES } from './subjectPrefixes.ts';
+import type { SubjectTag } from '../domain/models.ts';
+import { knownTag } from './subjectPrefixes.ts';
 import type { SubjectPart } from './topicLabels.ts';
 
 export interface TagColors {
@@ -19,41 +20,16 @@ export interface SubjectSegment {
 	tag: TagColors | null;
 }
 
-/** Couleurs des balises proposées (fond foncé, texte blanc : contraste ≥ 4,5:1). */
-const KNOWN_COLORS: Readonly<Record<string, string>> = {
-	msfs: '#1d4ed8',
-	'fs-24': '#0f766e',
-	fsx: '#6d28d9',
-	'x-plane': '#9a3412',
-	flight: '#be185d',
-	p3d: '#4d7c0f',
-	'multi-simu': '#475569',
-	résolu: '#15803d',
-	réel: '#a16207',
-	video: '#b91c1c',
-};
+/** Pastille d'une balise PunBalise dont la couleur n'est pas utilisable. */
+const NEUTRAL = '#475569';
 
-/** Couleurs des autres balises, choisies d'après le nom (toujours la même pour un nom donné). */
-const PALETTE = ['#1e40af', '#155e75', '#5b21b6', '#86198f', '#9f1239', '#854d0e', '#166534', '#3f3f46'] as const;
-
-/** Toutes les balises proposées ont une couleur propre. */
-export const KNOWN_TAGS: readonly string[] = [...SIMULATOR_PREFIXES, ...OTHER_PREFIXES];
-
-function hash(text: string): number {
-	let value = 0;
-	for (const char of text) value = (value * 31 + (char.codePointAt(0) ?? 0)) >>> 0;
-	return value;
+/** Couleurs de la pastille d'une balise proposée (fond réglé dans l'administration, texte lisible). */
+export function tagColors(tag: SubjectTag): TagColors {
+	return readableOn(tag.color);
 }
 
-/** Couleurs d'une balise d'après son nom. */
-export function tagColors(name: string): TagColors {
-	const key = name.trim().toLowerCase();
-	const background = KNOWN_COLORS[key] ?? PALETTE[hash(key) % PALETTE.length] ?? PALETTE[0];
-	return { background, foreground: '#ffffff' };
-}
-
-/** Texte foncé ou clair selon la luminance du fond (couleurs PunBalise réglées par l'administrateur). */
-function readableOn(background: string): TagColors {
+/** Texte foncé ou clair selon la luminance du fond (couleur réglée par l'administrateur). */
+export function readableOn(background: string): TagColors {
 	const hex = background.length === 4 ? background.replace(/^#(.)(.)(.)$/, '#$1$1$2$2$3$3') : background;
 	const [r, g, b] = [1, 3, 5].map((i) => {
 		const channel = Number.parseInt(hex.slice(i, i + 2), 16) / 255;
@@ -71,7 +47,11 @@ const TAG = /^\s*\[([^[\]]{1,20})\]\s*/;
  * doublons ne sont pas affichés, même dans les anciens sujets (le sujet enregistré n'est pas modifié).
  * Dès qu'un autre texte apparaît, le reste du sujet est laissé tel quel.
  */
-export function subjectSegments(parts: readonly SubjectPart[], css: (part: SubjectPart) => string | null): SubjectSegment[] {
+export function subjectSegments(
+	parts: readonly SubjectPart[],
+	css: (part: SubjectPart) => string | null,
+	tags: readonly SubjectTag[],
+): SubjectSegment[] {
 	const segments: SubjectSegment[] = [];
 	const shown = new Set<string>();
 	const pushTag = (name: string, colors: TagColors): void => {
@@ -91,7 +71,7 @@ export function subjectSegments(parts: readonly SubjectPart[], css: (part: Subje
 			const color = part.style.color;
 			if (bracketed?.[1] !== undefined) {
 				const name = bracketed[1].trim();
-				pushTag(name, color !== null && /^#[0-9a-f]{3}([0-9a-f]{3})?$/i.test(color) ? readableOn(color) : tagColors(name));
+				pushTag(name, readableOn(color !== null && /^#[0-9a-f]{3}([0-9a-f]{3})?$/i.test(color) ? color : NEUTRAL));
 			} else {
 				leading = false;
 				segments.push({ text: part.text, css: css(part), tag: null });
@@ -100,8 +80,8 @@ export function subjectSegments(parts: readonly SubjectPart[], css: (part: Subje
 		}
 		let text = part.text;
 		for (let match = TAG.exec(text); match?.[1] !== undefined; match = TAG.exec(text)) {
-			const known = knownTag(match[1]);
-			if (known !== undefined) pushTag(known, tagColors(known));
+			const known = knownTag(match[1], tags);
+			if (known !== undefined) pushTag(known.name, tagColors(known));
 			text = text.slice(match[0].length);
 		}
 		if (text.trim() !== '') {

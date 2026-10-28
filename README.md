@@ -105,15 +105,14 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   POST avec jeton CSRF (le PHP enchaînait des GET qui écrivaient), un script enchaîne les étapes et
   un bouton « Continuer » le remplace sans JavaScript ; l'élagage demande confirmation comme le PHP.
   Ajout : « Vider les caches » supprime les fichiers `cache/cache_*.php`, que le PHP régénère.
-- Plugins Sondage, Messagerie privée et Plugile : mêmes réglages que le PHP, avec jeton CSRF ; seules
-  les clés modifiées sont écrites ; le plugin Sondage ne vide plus tous les caches PHP, seulement
-  celui des réglages.
+- Plugins Messagerie privée et Plugile : mêmes réglages que le PHP, avec jeton CSRF ; seules les clés
+  modifiées sont écrites. Plugile : plus d'installation ni de désinstallation du mod.
 - Plugin Premium (`AP_Premium.php`, table `premium` distincte de la boutique `apremium`) : table
   créée en InnoDB (MyISAM dans le PHP) ; erreurs réaffichées dans la page ; pas de retour automatique
   au groupe initial à l'échéance, comme dans le PHP malgré sa description.
 - Plugin Uploadile : réglages et installation comme le PHP ; la suppression vise le fichier d'un
   membre précis (le PHP supprimait le même nom chez tous les membres) et recalcule son espace utilisé ;
-  ni désinstallation (elle supprime `users.upload`, dont dépendent les pages) ni régénération des
+  ni installation ni désinstallation du mod, ni régénération des
   miniatures (pas de bibliothèque d'images côté serveur, les miniatures sont faites par le navigateur).
 - Plugin Smilies : gère la table `smilies` et les images du PHP (les pages Node affichent des
   émojis) ; type d'image lu dans son contenu ; nom de fichier limité à lettres, chiffres, « _ » et
@@ -123,8 +122,16 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   balise se modifie (le PHP le figeait), sans doublon nom et type ; sélecteur de couleur natif du navigateur ; couleur
   vérifiée (#RRGGBB) avant affichage. L'installation, la mise à jour et la désinstallation du mod
   restent sur le PHP.
-- Plugins encore servis par le PHP (redirection depuis `admin_loader.php`) : FluxToolBar et Mod
-  Installer.
+- Plugins encore servis par le PHP (redirection depuis `admin_loader.php`) : FluxToolBar (à décider).
+- AvroBB est un projet à part, apparenté à FluxBB : ce qui ne lui sert pas est retiré. Plugins Sondage
+  (sans objet dans PV) et Mod Installer (il modifie les fichiers PHP) absents ; plus d'installation
+  ni de désinstallation de mods (PunBalise, Plugile, Uploadile) ; options sans effet retirées du
+  formulaire et jamais écrites (compression GZip, formats de date et d'heure, langue par défaut,
+  numéro de version) ; plus de numéro de version FluxBB (pied de page, accueil, générateur des flux).
+- Page Balises de l'administration : balises du sujet (nom, groupe simulateur ou autre, couleur de
+  fond, ordre ; renommer une balise la renomme dans les sujets existants, sans refaire l'index de
+  recherche) et balises de modération, toutes en pastilles. Liste des balises du sujet enregistrée
+  dans `config` (`o_subject_tags`, ignorée par le PHP).
 - Balises du sujet (PV, « préfixes » dans le PHP) : page `topic_prefixes.php`, propre à Node (le PHP n'a pas d'équivalent),
   ouverte par un bouton de viewtopic pour l'auteur de la discussion et les modérateurs du forum ; les
   préfixes connus sont réécrits dans l'ordre des listes, séparés du titre par une espace.

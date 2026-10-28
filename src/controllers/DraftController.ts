@@ -119,6 +119,7 @@ export class DraftController {
 					subjectAllCaps: config.posting.subjectAllCaps,
 					messageAllCaps: config.posting.messageAllCaps,
 					forceGuestEmail: false,
+					subjectTags: config.subjectTags,
 					allowBannedEmail: true,
 				},
 				preparse: {

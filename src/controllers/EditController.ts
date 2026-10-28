@@ -104,6 +104,7 @@ export class EditController {
 					subjectAllCaps: config.posting.subjectAllCaps,
 					messageAllCaps: config.posting.messageAllCaps,
 					forceGuestEmail: false,
+					subjectTags: config.subjectTags,
 					allowBannedEmail: true,
 				},
 				preparse: {

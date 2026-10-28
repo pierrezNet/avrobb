@@ -5,7 +5,6 @@
 import { describe, expect, it } from 'vitest';
 import {
 	readGroupPrivateMessageRights,
-	readPollMaxOptions,
 	readPrivateMessageSettings,
 	readUploadileSettings,
 	unescapeHtml,
@@ -14,11 +13,6 @@ import {
 const reader = (values: Record<string, string>) => (name: string) => values[name] ?? '';
 
 describe('plugins', () => {
-	it('sondage : entier, 0 par défaut', () => {
-		expect(readPollMaxOptions(' 8 ')).toBe('8');
-		expect(readPollMaxOptions('dix')).toBe('0');
-	});
-
 	it('messagerie : destinataires plus un, droits des groupes présents seulement', () => {
 		expect(readPrivateMessageSettings(reader({ 'form[pms_enabled]': '1', 'form[pms_max_receiver]': '-3' }))).toEqual(
 			new Map([

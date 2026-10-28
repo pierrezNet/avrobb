@@ -58,6 +58,7 @@ import type { Ban } from '../src/services/bans.ts';
 import type { CensoredWord } from '../src/services/censor.ts';
 import type { GroupForumPermissionRow } from '../src/services/forumPermissions.ts';
 import type { MailMessage } from '../src/services/mail.ts';
+import { DEFAULT_SUBJECT_TAGS } from '../src/services/subjectTagConfig.ts';
 import type { UserSearchCriteria } from '../src/services/userSearch.ts';
 import { fakePrivateContacts, fakePrivateMessageStore, type PmData, pmData } from './fakePrivateMessages.ts';
 
@@ -252,8 +253,6 @@ export const boardConfig: BoardConfig = {
 	announcement: null,
 	quickjump: true,
 	feedType: 'atom',
-	version: '1.5.4',
-	shownVersion: null,
 	privateMessagesEnabled: false,
 	smilies: true,
 	signatureSmilies: true,
@@ -264,6 +263,7 @@ export const boardConfig: BoardConfig = {
 	signatureMaxLines: 4,
 	signatureAllCaps: false,
 	plugileMenuName: null,
+	subjectTags: [...DEFAULT_SUBJECT_TAGS],
 	privateMessageNotification: false,
 	privateMessageMaxReceivers: 3,
 	privateMessagesPerPage: 15,
@@ -774,6 +774,11 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			updateSubject: async (topicId, _firstPostId, subject) => {
 				data.subjectUpdates = [...(data.subjectUpdates ?? []), { topicId, subject }];
 			},
+			findSubjectsContaining: async (text) =>
+				data.topics.filter((t) => t.subject.includes(text)).map((t) => ({ id: t.id, subject: t.subject })),
+			updateSubjects: async (updates) => {
+				for (const { id, subject } of updates) data.subjectUpdates = [...(data.subjectUpdates ?? []), { topicId: id, subject }];
+			},
 		},
 		labelAdmin: {
 			listLabels: async () => data.labelRows ?? [],
@@ -788,7 +793,6 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			deleteLabel: async (id) => {
 				data.labelRows = (data.labelRows ?? []).filter((label) => label.id !== id);
 			},
-			installedVersion: async () => '2.7',
 		},
 		smileyAdmin: {
 			listSmilies: async () => data.smileyRows ?? [],
@@ -924,9 +928,6 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			},
 			findUsernames: async (ids) =>
 				new Map(data.users.filter((u) => ids.includes(u.viewer.id)).map((u) => [u.viewer.id, u.viewer.username])),
-			ensureUploadColumn: async () => {
-				data.userActionLog = [...(data.userActionLog ?? []), 'ensureUploadColumn'];
-			},
 			countPrivileged: async (ids) => {
 				const groups = ids.map((id) => data.users.find((u) => u.viewer.id === id)?.viewer.group);
 				return {

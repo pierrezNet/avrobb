@@ -520,7 +520,7 @@ describe('PremiumAdminRepository (AP_Premium.php)', () => {
 });
 
 describe('UserAdminRepository (plugin Uploadile)', () => {
-	it('noms des membres ; colonne upload déjà présente sans erreur', async () => {
+	it('noms des membres', async () => {
 		const { UserAdminRepository } = await import('../../src/repositories/UserAdminRepository.ts');
 		const store = new UserAdminRepository(db);
 		expect(await store.findUsernames([3, 5, 999])).toEqual(
@@ -529,7 +529,6 @@ describe('UserAdminRepository (plugin Uploadile)', () => {
 				[5, 'MaxDUO'],
 			]),
 		);
-		await store.ensureUploadColumn();
 	});
 });
 

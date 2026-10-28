@@ -103,8 +103,10 @@ export function buildTopicRow(topic: TopicSummary, forumId: number, labels: read
 	return {
 		id: topic.id,
 		href: topicUrl(topic.movedTo ?? topic.id),
-		subject: subjectSegments(styleSubject(subject, context.labelDefinitions), (part) =>
-			part.style !== null ? labelCss(part.style) : null,
+		subject: subjectSegments(
+			styleSubject(subject, context.labelDefinitions),
+			(part) => (part.style !== null ? labelCss(part.style) : null),
+			config.subjectTags,
 		),
 		subjectText: subject,
 		poster: topic.poster,

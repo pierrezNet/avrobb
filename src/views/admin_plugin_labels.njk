@@ -1,7 +1,11 @@
-{#- Plugin PunBalise (admin_loader.php?plugin=AP_Balises.php). Données : `view` (controllers/AdminLoaderController.ts). -#}
+{#- Page Balises de l'administration (admin_loader.php?plugin=AP_Balises.php) : balises du sujet et
+    balises de modération, en pastilles. Données : `view` (controllers/adminPlugins/LabelsPlugin.ts). -#}
 {% extends "layout.njk" %}
 {% import "partials/adminMenu.njk" as adminMenu %}
+{% import "partials/forms.njk" as forms %}
 {% import "partials/sideMenu.njk" as sideMenu %}
+
+{% macro pill(name, colors) %}<span class="subject-tag" style="background-color: {{ colors.background }}; color: {{ colors.foreground }}">{{ name }}</span>{% endmacro %}
 
 {% block main %}
 {% set t = lang.adminPlugins.labels %}
@@ -10,17 +14,34 @@
 {{ adminMenu.menu(view.menu, lang) }}
 <div class="side-layout__content">
 {{ sideMenu.notice(view.notice) }}
-<section class="form-box">
-	<p>{{ t.intro }}</p>
-	<p>{{ t.version(view.version) if view.version !== null else t.notInstalled }}</p>
-	<p><a class="button button--primary" href="{{ url(view.addHref) }}">{{ t.add }}</a></p>
-	<h2 class="form-box__title">{{ t.existing }}</h2>
+<p>{{ t.intro }}</p>
+<section class="form-box" aria-labelledby="subject-tags">
+	<h2 id="subject-tags" class="form-box__title">{{ t.subjectTagsHead }}</h2>
+	<p class="form__help">{{ t.subjectTagsInfo }}</p>
+	{% for group in view.subjectTagGroups %}
+	<h3 class="form__legend">{{ group.name }}</h3>
+	<ul class="admin-rows">
+		{% for tag in group.tags %}
+		<li class="admin-rows__item">
+			<p class="admin-rows__main">{{ pill(tag.name, tag.colors) }} <span class="form__help">{{ tag.colors.background }}</span></p>
+			<form method="post" action="{{ url(tag.upAction) }}" class="inline-form">{{ forms.csrf(layout) }}<button type="submit" class="button button--small" aria-label="{{ t.moveUp(tag.name) }}">↑</button></form>
+			<form method="post" action="{{ url(tag.downAction) }}" class="inline-form">{{ forms.csrf(layout) }}<button type="submit" class="button button--small" aria-label="{{ t.moveDown(tag.name) }}">↓</button></form>
+			<p><a href="{{ url(tag.editHref) }}">{{ t.edit }}</a> · <a href="{{ url(tag.deleteHref) }}">{{ t.delete }}</a></p>
+		</li>
+		{% endfor %}
+	</ul>
+	{% endfor %}
+	<p><a class="button button--primary" href="{{ url(view.addSubjectTagHref) }}">{{ t.addSubjectTag }}</a></p>
+</section>
+<section class="form-box" aria-labelledby="moderation-tags">
+	<h2 id="moderation-tags" class="form-box__title">{{ t.moderationHead }}</h2>
+	<p class="form__help">{{ t.moderationInfo }}</p>
 	{% if view.labels.length %}
 	<ul class="admin-rows">
 		{% for l in view.labels %}
 		<li class="admin-rows__item">
 			<p class="admin-rows__main">
-				<span{% if l.safeColor %} style="color: {{ l.safeColor }}"{% endif %}>{% if l.bold %}<strong>{% endif %}{{ l.name }}{% if l.bold %}</strong>{% endif %}</span>
+				{{ pill(l.name, l.colors) }}
 				<br>{{ t.style }}&#160;: {{ l.styleName }} · {{ t.position }}&#160;: {{ l.position }} · {{ t.moderatorVisible }}&#160;: {{ t.yes if l.moderatorVisible else t.no }}
 			</p>
 			<p><a href="{{ url(l.editHref) }}">{{ t.edit }}</a> · <a href="{{ url(l.deleteHref) }}">{{ t.delete }}</a></p>
@@ -30,6 +51,7 @@
 	{% else %}
 	<p>{{ t.empty }}</p>
 	{% endif %}
+	<p><a class="button button--primary" href="{{ url(view.addHref) }}">{{ t.add }}</a></p>
 </section>
 </div>
 </div>

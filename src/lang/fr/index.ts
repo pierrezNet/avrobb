@@ -9,6 +9,7 @@ import { adminForums } from './adminForums.ts';
 import { adminGroups } from './adminGroups.ts';
 import { adminOptions } from './adminOptions.ts';
 import { adminPermissions } from './adminPermissions.ts';
+import { adminPlugins } from './adminPlugins.ts';
 import { adminUsers } from './adminUsers.ts';
 import { common } from './common.ts';
 import { deletePage } from './delete.ts';
@@ -57,6 +58,7 @@ export const fr = {
 	adminGroups,
 	adminUsers,
 	adminOptions,
+	adminPlugins,
 	adminPermissions,
 };
 

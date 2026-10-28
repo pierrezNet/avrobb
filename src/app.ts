@@ -13,6 +13,7 @@ import type { Mailer } from './adapters/mailer.ts';
 import type { ServerInfo } from './adapters/serverInfo.ts';
 import { AdminGroupsController, type AdminGroupsQuery } from './controllers/AdminGroupsController.ts';
 import { AdminIndexController } from './controllers/AdminIndexController.ts';
+import { AdminLoaderController, type AdminLoaderQuery } from './controllers/AdminLoaderController.ts';
 import { AdminOptionsController, type AdminOptionsQuery } from './controllers/AdminOptionsController.ts';
 import { AdminPermissionsController, type AdminPermissionsQuery } from './controllers/AdminPermissionsController.ts';
 import { AdminReportsController, type AdminReportsQuery } from './controllers/AdminReportsController.ts';
@@ -168,6 +169,7 @@ const PORTED_PAGES = new Set([
 	'admin_forums.php',
 	'admin_groups.php',
 	'admin_index.php',
+	'admin_loader.php',
 	'admin_options.php',
 	'admin_permissions.php',
 	'admin_reports.php',
@@ -383,6 +385,14 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 	const adminUsers = new AdminUsersController(deps);
 	app.get<{ Querystring: AdminUsersQuery }>('/admin_users.php', { preHandler: authenticate }, adminUsers.show);
 	app.post<{ Body: FormBody }>('/admin_users.php', { preHandler: [authenticate, verifyCsrf] }, adminUsers.submit);
+
+	const adminLoader = new AdminLoaderController(deps);
+	app.get<{ Querystring: AdminLoaderQuery }>('/admin_loader.php', { preHandler: authenticate }, adminLoader.show);
+	app.post<{ Querystring: AdminLoaderQuery; Body: FormBody }>(
+		'/admin_loader.php',
+		{ preHandler: [authenticate, verifyCsrf] },
+		adminLoader.submit,
+	);
 
 	const adminReports = new AdminReportsController(deps);
 	app.get<{ Querystring: AdminReportsQuery }>('/admin_reports.php', { preHandler: authenticate }, adminReports.show);

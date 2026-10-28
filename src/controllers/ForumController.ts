@@ -3,6 +3,7 @@
  */
 
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { TopicAgeFilter } from '../domain/models.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { buildForumPage, forumUrl } from '../presenters/forumPage.ts';
 import type { CensorReader } from '../repositories/CensorRepository.ts';
@@ -25,6 +26,8 @@ export interface ForumControllerDeps extends LayoutDeps {
 export interface ForumQuery {
 	id?: string;
 	p?: string;
+	/** Anciennes discussions (o_cold_topic_days). */
+	old?: string;
 }
 
 export class ForumController {
@@ -43,8 +46,19 @@ export class ForumController {
 		// Forum de redirection : viewforum.php renvoie directement vers son adresse.
 		if (forum.redirectUrl !== null) return reply.redirect(forum.redirectUrl);
 
+		const now = this.deps.page.clock();
+		const age: TopicAgeFilter | null =
+			config.coldTopicDays > 0 ? { before: now - config.coldTopicDays * 86400, old: request.query.old === '1' } : null;
+		const [count, otherCount] =
+			age !== null
+				? await Promise.all([
+						this.deps.topics.countForumTopics(forum.id, age),
+						this.deps.topics.countForumTopics(forum.id, { ...age, old: !age.old }),
+					])
+				: [forum.numTopics, 0];
+
 		const perPage = viewer.topicsPerPage ?? config.defaultTopicsPerPage;
-		const numPages = pageCount(forum.numTopics, perPage);
+		const numPages = pageCount(count, perPage);
 		const page = clampPage(request.query.p, numPages);
 
 		const topics = await this.deps.topics.listForumPage(
@@ -53,6 +67,7 @@ export class ForumController {
 			(page - 1) * perPage,
 			perPage,
 			config.showDot && !viewer.isGuest ? viewer.id : null,
+			age,
 		);
 		const [topicLabels, labelDefinitions, censoredWords] = await Promise.all([
 			this.deps.topicLabels.listForTopics(topics.map((topic) => topic.id)),
@@ -71,9 +86,10 @@ export class ForumController {
 			censor: config.censoring ? buildCensor(censoredWords) : null,
 			page,
 			numPages,
+			age: age !== null ? { old: age.old, days: config.coldTopicDays, otherCount } : null,
 			lang,
 			dateWords: this.deps.page.dateWords,
-			now: this.deps.page.clock(),
+			now,
 		});
 
 		return renderPage(
@@ -83,12 +99,12 @@ export class ForumController {
 			'viewforum.njk',
 			{
 				pageId: 'viewforum',
-				titleParts: [config.boardTitle, forum.name],
+				titleParts: [config.boardTitle, forum.name, ...(age?.old ? [lang.forum.oldTopicsTitle] : [])],
 				pageNumber: page,
 				activeNav: 'index',
 				footer: { kind: 'viewforum', forum, page },
 				allowIndex: true,
-				canonicalUrl: forumUrl(forum.id, page),
+				canonicalUrl: forumUrl(forum.id, page, age?.old ?? false),
 			},
 			view,
 		);

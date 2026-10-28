@@ -4,6 +4,13 @@
 
 export const adminMaintenance = {
 	title: 'Maintenance du forum',
+	coldSubhead: 'Discussions anciennes',
+	coldInfo:
+		'Pour distinguer le contenu récent du contenu ancien sans rien supprimer : une discussion sans nouveau message depuis ce nombre de jours quitte la liste de son forum et rejoint sa page « Anciennes discussions » (bouton en haut de la liste). Les discussions épinglées restent toujours dans la liste. La recherche et les liens continuent de les trouver.',
+	coldDays: 'Ancienneté en jours',
+	coldDaysHelp: '0 : toutes les discussions restent dans la liste.',
+	coldDaysInvalid: "L'ancienneté doit être un nombre entier de jours.",
+	coldSaved: 'Seuil des discussions anciennes enregistré.',
 	modeSubhead: 'Mode maintenance',
 	modeInfo:
 		'En mode maintenance, seuls les administrateurs peuvent utiliser le forum ; les autres visiteurs voient la page de maintenance avec le message ci-dessous. Les administrateurs peuvent toujours se connecter.',
@@ -38,33 +45,10 @@ export const adminMaintenance = {
 	continue: 'Continuer',
 	rebuilt: 'Index de recherche reconstruit.',
 	perCycleNotInteger: 'Le nombre de messages par cycle doit être une valeur entière positive.',
-	daysNotInteger: 'Le nombre de jours à prendre en compte pour élaguer doit être indiqué sous forme de nombre entier positif.',
-	noOldTopics: (days: string) =>
-		`Aucune discussion ne date de plus de ${days} jours. Veuillez réduire la valeur de « Ancienneté en jours » et essayer à nouveau.`,
-	pruned: 'Messages élagués.',
-	pruneHead: 'Élaguer',
-	pruneSubhead: "Supprimer d'anciens messages",
-	daysOld: 'Ancienneté en jours',
-	daysOldHelp:
-		"L'ancienneté d'une discussion pour qu'elle puisse être supprimée. Ex. : si vous indiquez le nombre 30, toute discussion qui ne contient pas de message datant de moins de 30 jours sera supprimée.",
-	pruneSticky: 'Supprimer les discussions épinglées',
-	pruneStickyHelp: "Si activé, les discussions épinglées seront également prises en compte lors de l'élagage.",
-	pruneFrom: 'Élaguer dans le forum',
-	allForums: 'Tous les forums',
-	pruneFromHelp: 'Le forum dans lequel vous souhaitez élaguer les messages.',
-	pruneInfo:
-		'Utilisez cette fonctionnalité avec prudence. Les messages supprimés ne peuvent plus être récupérés. Pour une performance optimale, vous devriez passer le forum en mode maintenance pendant l’élagage.',
-	prune: 'Élaguer',
-	confirmPruneSubhead: "Confirmer l'élagage des messages",
-	confirmPruneInfo: (days: string, forum: string, count: number) =>
-		`Souhaitez-vous vraiment supprimer toutes les discussions datant de plus de ${days} jours de ${forum} (${count} discussions) ?`,
-	confirmPruneWarn: "ATTENTION ! La suppression des messages est irréversible lors de l'élagage.",
 	cacheSubhead: 'Vider les caches',
 	cacheInfo:
 		'Supprime les fichiers de cache du forum (réglages, bannissements, censure, listes « Atteindre », flux…). Ils sont recréés automatiquement à la visite suivante. Utile après une modification faite directement dans la base de données.',
 	clearCache: 'Vider les caches',
 	cacheCleared: 'Caches vidés.',
-	yes: 'Oui',
-	no: 'Non',
 	goBack: 'Retour',
 };

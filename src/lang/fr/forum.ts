@@ -11,6 +11,13 @@ export const forum = {
 	sticky: 'Épinglée :',
 	closed: 'Fermée :',
 	emptyForum: 'Le forum ne contient aucune discussion.',
+	// Discussions récentes et anciennes (AvroBB, réglées dans Maintenance)
+	oldTopics: (count: number) => `Anciennes discussions (${count})`,
+	recentTopics: (count: number) => `Discussions récentes (${count})`,
+	oldTopicsTitle: 'Anciennes discussions',
+	oldTopicsInfo: (days: number) => `Discussions sans nouveau message depuis plus de ${days} jours.`,
+	noRecentTopics: 'Aucune discussion récente : voir les anciennes discussions.',
+	noOldTopics: 'Aucune ancienne discussion dans ce forum.',
 	isSubscribed: 'Vous suivez ce forum',
 	unsubscribe: 'Ne plus suivre',
 	subscribe: 'Suivre ce forum',

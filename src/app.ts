@@ -96,6 +96,7 @@ import type { UploadileAdminStore, UserAdminReader, UserAdminWriter } from './re
 import type { CredentialsStore, MemberListReader, PasswordResetStore, ProfileReader } from './repositories/UserRepository.ts';
 import type { UsersInfoReader } from './repositories/UsersInfoLoader.ts';
 import type { AvatarLocator, AvatarStore } from './services/avatars.ts';
+import { readOnlyViewer } from './services/permissions.ts';
 
 declare module 'fastify' {
 	interface FastifyRequest {
@@ -189,6 +190,13 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	/** Derrière un reverse proxy : l'IP du client est lue dans X-Forwarded-For. */
 	trustProxy?: boolean;
 	logger?: boolean;
+}
+
+/** Écritures permises à un visiteur banni : connexion, lu/non lu, abonnements (rien qui publie). */
+function allowedWhileBanned(request: FastifyRequest): boolean {
+	const path = request.url.split('?')[0];
+	const query = request.query as { email?: string; report?: string };
+	return path === '/login.php' || (path === '/misc.php' && query.email === undefined && query.report === undefined);
 }
 
 /** Fichiers de img/ que Node accepte de servir. */
@@ -302,17 +310,25 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 			request.csrfToken = ensureCsrfToken(request, reply, deps.legacyCookie, request.viewer.id);
 
 			const block = await checkAccess(request, deps, request.viewer, request.board, now, options.allowDuringMaintenance ?? false);
-			if (block !== null) return renderBlock(request, reply, deps, block);
+			// Banni : lecture seule (AvroBB) ; les écritures sont refusées par verifyCsrf.
+			if (block?.kind === 'banned') request.viewer = readOnlyViewer(request.viewer, { expire: block.expire, message: block.message });
+			else if (block !== null) return renderBlock(request, reply, deps, block);
 
 			await purgeOnline(deps, request.board, now);
 			return undefined;
 		};
 	const authenticate = session();
-	/** Formulaires POST : session puis jeton CSRF (403 sinon), avant toute écriture. */
-	const verifyCsrf = async (request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply | undefined> =>
-		isValidCsrf(request, deps.legacyCookie, request.viewer.id)
-			? undefined
-			: renderMessage(request, reply, deps, 403, deps.page.lang.common.badCsrf);
+	/**
+	 * Formulaires POST : session puis jeton CSRF (403 sinon), avant toute écriture. Un visiteur banni
+	 * ne peut que se connecter ou se déconnecter, marquer comme lu et gérer ses abonnements.
+	 */
+	const verifyCsrf = async (request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply | undefined> => {
+		if (!isValidCsrf(request, deps.legacyCookie, request.viewer.id))
+			return renderMessage(request, reply, deps, 403, deps.page.lang.common.badCsrf);
+		const { ban } = request.viewer;
+		if (ban !== null && !allowedWhileBanned(request)) return renderBlock(request, reply, deps, { kind: 'banned', ...ban });
+		return undefined;
+	};
 	const quietSession = session({ quiet: true });
 
 	app.setErrorHandler((error: FastifyError, request, reply) => handleError(error, request, reply, deps));

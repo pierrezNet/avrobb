@@ -45,6 +45,12 @@ export interface ForumPageView {
 	pagination: PaginationLink[];
 	postTopicUrl: string | null;
 	topics: TopicRowView[];
+	/**
+	 * Discussions récentes / anciennes (o_cold_topic_days) : page affichée, lien vers l'autre et
+	 * texte d'une liste vide ; null si le forum n'est pas coupé.
+	 */
+	age: { old: boolean; info: string | null; toggle: { href: string; label: string } } | null;
+	emptyMessage: string;
 	/** Abonnement au forum (membres, o_forum_subscriptions). */
 	subscription: { subscribed: boolean; href: string } | null;
 	markReadUrl: string | null;
@@ -62,14 +68,16 @@ export interface ForumPageInput {
 	censor: Censor | null;
 	page: number;
 	numPages: number;
+	/** Liste coupée : page des anciennes ou des récentes, et nombre de discussions de l'autre page. */
+	age: { old: boolean; days: number; otherCount: number } | null;
 	lang: Lang;
 	dateWords: DateWords;
 	now: number;
 }
 
-/** URL d'une page du forum (la page 1 n'a pas de paramètre p). */
-export function forumUrl(forumId: number, page = 1): string {
-	return page > 1 ? `viewforum.php?id=${forumId}&p=${page}` : `viewforum.php?id=${forumId}`;
+/** URL d'une page du forum (la page 1 n'a pas de paramètre p) ; `old` : anciennes discussions. */
+export function forumUrl(forumId: number, page = 1, old = false): string {
+	return `viewforum.php?id=${forumId}${old ? '&old=1' : ''}${page > 1 ? `&p=${page}` : ''}`;
 }
 
 /** Nouveaux messages dans un sujet (viewforum.php) : après la dernière visite et les lectures suivies. */
@@ -143,7 +151,7 @@ export function buildForumPage(input: ForumPageInput): ForumPageView {
 	return {
 		forum: { id: forum.id, name: forum.name },
 		crumbs: crumbs({ label: lang.common.index, href: 'index.php' }, { label: forum.name, href: forumUrl(forum.id) }),
-		pagination: paginationLinks(input.numPages, input.page, (page) => forumUrl(forum.id, page)),
+		pagination: paginationLinks(input.numPages, input.page, (page) => forumUrl(forum.id, page, input.age?.old ?? false)),
 		postTopicUrl: canPostTopic(viewer, forum) ? `post.php?fid=${forum.id}` : null,
 		topics,
 		subscription:
@@ -154,5 +162,18 @@ export function buildForumPage(input: ForumPageInput): ForumPageView {
 					}
 				: null,
 		markReadUrl: member ? `misc.php?action=markforumread&fid=${forum.id}` : null,
+		// Pas de bouton vers une page des anciennes discussions vide.
+		age:
+			input.age === null || (!input.age.old && input.age.otherCount === 0)
+				? null
+				: {
+						old: input.age.old,
+						info: input.age.old ? lang.forum.oldTopicsInfo(input.age.days) : null,
+						toggle: {
+							href: forumUrl(forum.id, 1, !input.age.old),
+							label: input.age.old ? lang.forum.recentTopics(input.age.otherCount) : lang.forum.oldTopics(input.age.otherCount),
+						},
+					},
+		emptyMessage: input.age === null ? lang.forum.emptyForum : input.age.old ? lang.forum.noOldTopics : lang.forum.noRecentTopics,
 	};
 }

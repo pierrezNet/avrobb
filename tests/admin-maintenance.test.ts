@@ -36,7 +36,6 @@ async function start(): Promise<{ server: FastifyInstance; fake: FakeData }> {
 			forums: [{ id: 7, name: 'Technique', description: '', redirectUrl: '', numTopics: 3, sortBy: 0, categoryId: 1 }],
 			permissions: [],
 		},
-		prunableCount: 4,
 	};
 	app = await buildApp(fakeDeps(fake));
 	return { server: app, fake };
@@ -59,7 +58,8 @@ describe('admin_maintenance.php', () => {
 		expect((await server.inject({ url: '/admin_maintenance.php', headers: { cookie: cookies(5) } })).statusCode).toBe(403);
 		const page = await server.inject({ url: '/admin_maintenance.php', headers: { cookie: cookies(2) } });
 		expect(page.body).toContain('name="i_start_at" value="100"');
-		expect(page.body).toContain('<option value="7">Simulateurs — Technique</option>');
+		expect(page.body).toContain('id="cold-topics"');
+		expect(page.body).not.toContain('prune');
 	});
 
 	it('reconstruit l’index par lots, étape suivante en POST', async () => {
@@ -99,21 +99,20 @@ describe('admin_maintenance.php', () => {
 		expect(blocked.body).not.toContain('Aperçu');
 	});
 
+	it('discussions anciennes : seuil enregistré (REPLACE), saisie invalide refusée', async () => {
+		const { server, fake } = await start();
+		expect((await send(server, 2, { action: 'cold', cold_days: 'x' })).statusCode).toBe(400);
+		const saved = await send(server, 2, { action: 'cold', cold_days: '090' });
+		expect(saved.headers.location).toBe('admin_maintenance.php?done=cold#cold-topics');
+		expect(fake.configValues?.get('o_cold_topic_days')).toBe('90');
+		expect(fake.configLog).toEqual(['replace o_cold_topic_days']);
+		expect((await send(server, 5, { action: 'cold', cold_days: '30' })).statusCode).toBe(403);
+	});
+
 	it('vidage des caches', async () => {
 		const { server, fake } = await start();
 		const res = await send(server, 2, { action: 'clear_cache' });
 		expect(res.headers.location).toBe('admin_maintenance.php?done=cleared');
 		expect(fake.configInvalidations).toBe(1);
-	});
-
-	it('élagage : nombre de jours, confirmation puis effet', async () => {
-		const { server, fake } = await start();
-		expect((await send(server, 2, { action: 'prune', req_prune_days: 'x', prune_from: 'all' })).statusCode).toBe(400);
-		const confirm = await send(server, 2, { action: 'prune', req_prune_days: '30', prune_sticky: '0', prune_from: '7' });
-		expect(confirm.body).toContain('« Technique » (4 discussions)');
-		expect(fake.maintenanceLog).toBeUndefined();
-		const done = await send(server, 2, { action: 'prune', prune_comply: '1', prune_days: '30', prune_sticky: '0', prune_from: '7' });
-		expect(done.headers.location).toBe('admin_maintenance.php?done=pruned');
-		expect(fake.maintenanceLog).toEqual([`prune ${NOW - 30 * 86400} false 7`]);
 	});
 });

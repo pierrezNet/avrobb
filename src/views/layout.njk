@@ -78,6 +78,12 @@
 	</div>
 </header>
 
+{% if layout.ban %}
+<aside class="announcement ban-notice" role="note">
+	<p>{{ lang.common.banReadOnly }}{% if layout.ban.expires %} {{ lang.common.banExpires(layout.ban.expires) }}{% endif %}</p>
+	{% if layout.ban.reason %}<p>{{ lang.common.banReason }} <strong>{{ layout.ban.reason }}</strong></p>{% endif %}
+</aside>
+{% endif %}
 {% if layout.announcementHtml %}
 <aside class="announcement" id="announce" aria-labelledby="announce-title">
 	<h2 id="announce-title" class="announcement__title">{{ lang.common.announcement }}</h2>

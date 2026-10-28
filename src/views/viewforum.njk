@@ -7,13 +7,15 @@
 {% macro forumBar(view, lang) %}
 <div class="page-bar">
 	{{ navigation.pagination(view.pagination, lang) }}
+	{% if view.age %}<p class="page-bar__actions"><a class="button" href="{{ url(view.age.toggle.href) }}">{{ view.age.toggle.label }}</a></p>{% endif %}
 	{% if view.postTopicUrl %}<p class="page-bar__actions"><a class="button button--primary" href="{{ url(view.postTopicUrl) }}">{{ lang.forum.postTopic }}</a></p>{% endif %}
 </div>
 {% endmacro %}
 
 {% block main %}
 {{ navigation.breadcrumbs(view.crumbs, lang) }}
-<h1 class="page-title">{{ view.forum.name }}</h1>
+<h1 class="page-title">{{ view.forum.name }}{% if view.age and view.age.old %} — {{ lang.forum.oldTopicsTitle }}{% endif %}</h1>
+{% if view.age and view.age.info %}<p class="page-intro">{{ view.age.info }}</p>{% endif %}
 {{ forumBar(view, lang) }}
 
 <section class="category" id="vf" aria-labelledby="vf-title">
@@ -57,7 +59,7 @@
 	{% endfor %}
 	</ul>
 	{% else %}
-	<p class="forum-row">{{ lang.forum.emptyForum }}</p>
+	<p class="forum-row">{{ view.emptyMessage }}</p>
 	{% endif %}
 </section>
 

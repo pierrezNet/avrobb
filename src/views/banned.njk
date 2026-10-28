@@ -4,7 +4,7 @@
 {% block main %}
 <section class="message-box" id="msg" aria-labelledby="ban-title">
 	<h1 id="ban-title" class="message-box__title">{{ lang.common.info }}</h1>
-	<p>{{ lang.common.banMessage }}{% if view.expires %} {{ lang.common.banExpires(view.expires) }}{% endif %}</p>
+	<p>{{ lang.common.banWriteRefused }}{% if view.expires %} {{ lang.common.banExpires(view.expires) }}{% endif %}</p>
 	{% if view.reason %}<p>{{ lang.common.banReason }}</p><p><strong>{{ view.reason }}</strong></p>{% endif %}
 	<p>{{ lang.common.banContact }} <a href="mailto:{{ view.adminEmail }}">{{ view.adminEmail }}</a>.</p>
 </section>

@@ -56,6 +56,15 @@ export interface Group {
 	reputationMinusMinPosts: number;
 }
 
+/**
+ * Liste d'un forum coupée en discussions récentes et anciennes (AvroBB) : `before` est le seuil
+ * (secondes Unix) ; `old` choisit les anciennes (non épinglées, dernier message avant le seuil).
+ */
+export interface TopicAgeFilter {
+	before: number;
+	old: boolean;
+}
+
 /** Utilisateur qui consulte la page (invité ou membre connecté). */
 export interface Viewer {
 	id: number;
@@ -94,6 +103,15 @@ export interface Viewer {
 	autoNotify: boolean;
 	/** Date de sa dernière recherche (users.last_search, ou online.last_search pour un invité). */
 	lastSearch: number | null;
+	/** Bannissement en cours : le visiteur lit le forum mais n'écrit plus (AvroBB) ; null sinon. */
+	ban: ViewerBan | null;
+}
+
+/** Bannissement qui touche le visiteur (nom, adresse IP ou e-mail), voir services/bans.ts. */
+export interface ViewerBan {
+	/** Fin du bannissement (secondes Unix) ; null = définitif. */
+	expire: number | null;
+	message: string;
 }
 
 export interface Forum {
@@ -207,6 +225,11 @@ export interface BoardConfig {
 	maintenance: boolean;
 	/** Message du mode maintenance (o_maintenance_message), HTML saisi par l'administrateur. */
 	maintenanceMessage: string;
+	/**
+	 * Discussions « anciennes » (AvroBB, o_cold_topic_days) : sans message depuis ce nombre de jours, elles
+	 * quittent la liste d'un forum pour sa page « Anciennes discussions » ; 0 = toutes dans la liste.
+	 */
+	coldTopicDays: number;
 	/** Durée d'une visite (o_timeout_visit) et délai d'inactivité de la liste des présents (o_timeout_online), en secondes. */
 	timeoutVisit: number;
 	timeoutOnline: number;

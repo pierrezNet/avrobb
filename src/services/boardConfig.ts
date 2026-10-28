@@ -50,6 +50,7 @@ export function toBoardConfig(values: ReadonlyMap<string, string>): BoardConfig 
 		reportsByEmail: reportMethod === '1' || reportMethod === '2',
 		maintenance: flag('o_maintenance'),
 		maintenanceMessage: text('o_maintenance_message'),
+		coldTopicDays: int('o_cold_topic_days', 0),
 		timeoutVisit: Number(text('o_timeout_visit', '1800')) || 1800,
 		timeoutOnline: Number(text('o_timeout_online', '300')) || 300,
 		adminEmail: text('o_admin_email'),

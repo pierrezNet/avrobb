@@ -7,6 +7,7 @@ import type { FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
+import { csrfToken } from '../src/http/csrf.ts';
 import { type Ban, checkBans } from '../src/services/bans.ts';
 import { buildLegacyCookie, cookieMaxAge, forumHmac, renewedExpiry } from '../src/services/legacySession.ts';
 import { memberPresenceUpdate, planOnlinePurge } from '../src/services/presence.ts';
@@ -155,7 +156,7 @@ describe('session à chaque requête', () => {
 		expect((await app.inject({ url: '/index.php', headers: { cookie: cookieFor(2, 'hash-admin') } })).statusCode).toBe(200);
 	});
 
-	it('bannissement : page 403 avec échéance et motif ; les échus sont supprimés', async () => {
+	it('bannissement : lecture seule avec bandeau (échéance, motif), écritures refusées ; les échus sont supprimés', async () => {
 		const online = fakeOnline();
 		const deps = {
 			...base({
@@ -167,14 +168,30 @@ describe('session à chaque requête', () => {
 			online,
 		};
 		app = await buildApp(deps);
-		const res = await app.inject({ url: '/viewforum.php?id=1', headers: { cookie: cookieFor(3, 'hash-tessy') } });
+		const cookie = cookieFor(3, 'hash-tessy');
+		const res = await app.inject({ url: '/index.php', headers: { cookie } });
 
-		expect(res.statusCode).toBe(403);
-		expect(res.body).toContain('Vous êtes banni(e) de ce forum.');
+		expect(res.statusCode).toBe(200);
+		expect(res.body).toContain('vous pouvez lire le forum, mais plus y écrire.');
 		expect(res.body).toContain('<strong>Spam &lt;répété&gt;</strong>');
 		expect(await deps.bans.listBans()).toHaveLength(1);
 		expect(online.log).toContain('remove ident Tessy');
+
+		// Écrire : formulaire refusé (droits du groupe retirés) et POST refusé avant tout traitement.
+		expect((await app.inject({ url: '/post.php?fid=1', headers: { cookie } })).statusCode).not.toBe(200);
+		const secret = 'a'.repeat(64);
+		const posted = await app.inject({
+			method: 'POST',
+			url: '/post.php?tid=1',
+			headers: { cookie: `${cookie}; punbb_cookie_csrf=${secret}`, 'content-type': 'application/x-www-form-urlencoded' },
+			payload: new URLSearchParams({ csrf_token: csrfToken(secret, SEED, 3), req_message: 'Coucou' }).toString(),
+		});
+		expect(posted.statusCode).toBe(403);
+		expect(posted.body).toContain('Cette action vous est refusée.');
+
 		// Les administrateurs ne sont jamais bloqués.
-		expect((await app.inject({ url: '/index.php', headers: { cookie: cookieFor(2, 'hash-admin') } })).statusCode).toBe(200);
+		const forAdmin = await app.inject({ url: '/index.php', headers: { cookie: cookieFor(2, 'hash-admin') } });
+		expect(forAdmin.statusCode).toBe(200);
+		expect(forAdmin.body).not.toContain('ban-notice');
 	});
 });

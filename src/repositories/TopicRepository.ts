@@ -2,9 +2,10 @@
  * Sujets : lecture avec les permissions du forum, localisation d'un message dans son sujet.
  */
 
-import { sql } from 'kysely';
+import { type SelectQueryBuilder, sql } from 'kysely';
 import type { Db } from '../db/database.ts';
-import { GUEST_USER_ID, type RecentTopic, type Topic, type TopicSort, type TopicSummary } from '../domain/models.ts';
+import type { Database, TopicsTable } from '../db/schema.ts';
+import { GUEST_USER_ID, type RecentTopic, type Topic, type TopicAgeFilter, type TopicSort, type TopicSummary } from '../domain/models.ts';
 import { parseModerators } from '../services/phpSerialize.ts';
 import { forumReadable } from './forumPermissions.ts';
 
@@ -26,7 +27,16 @@ export interface TopicReader {
 	 * Sujets d'une page de forum : épinglés d'abord, puis l'ordre du forum, puis id décroissant.
 	 * @param dotUserId membre pour qui calculer « le point » (o_show_dot), ou null
 	 */
-	listForumPage(forumId: number, sort: TopicSort, offset: number, limit: number, dotUserId: number | null): Promise<TopicSummary[]>;
+	listForumPage(
+		forumId: number,
+		sort: TopicSort,
+		offset: number,
+		limit: number,
+		dotUserId: number | null,
+		age?: TopicAgeFilter | null,
+	): Promise<TopicSummary[]>;
+	/** Nombre de discussions récentes ou anciennes d'un forum (pagination, bouton « Anciennes discussions »). */
+	countForumTopics(forumId: number, age: TopicAgeFilter): Promise<number>;
 	/** Premier message posté après `since` (viewtopic.php?action=new), ou null. */
 	findFirstPostAfter(topicId: number, since: number): Promise<number | null>;
 }
@@ -34,6 +44,15 @@ export interface TopicReader {
 export interface TopicWriter {
 	/** num_views + 1 à chaque affichage d'un sujet (o_topic_views). */
 	incrementViews(topicId: number): Promise<void>;
+}
+
+/** Filtre récent/ancien (TopicAgeFilter) sur une requête de sujets aliasés « t ». */
+type TopicsQuery<O> = SelectQueryBuilder<Database & { t: TopicsTable }, 't', O>;
+
+function withAge<O>(query: TopicsQuery<O>, age: TopicAgeFilter | null): TopicsQuery<O> {
+	if (age === null) return query;
+	if (age.old) return query.where('t.sticky', '=', 0).where('t.last_post', '<', age.before);
+	return query.where((eb) => eb.or([eb('t.sticky', '=', 1), eb('t.last_post', '>=', age.before)]));
 }
 
 const SORT_COLUMNS = { lastPost: 't.last_post', posted: 't.posted', subject: 't.subject' } as const;
@@ -127,9 +146,22 @@ export class TopicRepository implements TopicReader, TopicWriter {
 		return rows.map((row) => ({ forumId: row.forum_id, topicId: row.id, lastPost: row.last_post }));
 	}
 
-	async listForumPage(forumId: number, sort: TopicSort, offset: number, limit: number, dotUserId: number | null): Promise<TopicSummary[]> {
-		const rows = await this.db
-			.selectFrom('topics as t')
+	async countForumTopics(forumId: number, age: TopicAgeFilter): Promise<number> {
+		const row = await withAge(this.db.selectFrom('topics as t').where('t.forum_id', '=', forumId), age)
+			.select((eb) => eb.fn.countAll<number>().as('total'))
+			.executeTakeFirstOrThrow();
+		return Number(row.total);
+	}
+
+	async listForumPage(
+		forumId: number,
+		sort: TopicSort,
+		offset: number,
+		limit: number,
+		dotUserId: number | null,
+		age: TopicAgeFilter | null = null,
+	): Promise<TopicSummary[]> {
+		const rows = await withAge(this.db.selectFrom('topics as t'), age)
 			.select([
 				't.id',
 				't.poster',

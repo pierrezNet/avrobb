@@ -126,6 +126,8 @@ export interface LayoutView {
 	 * null si le lecteur ne peut pas consulter la liste des membres.
 	 */
 	memberSuggest: { profileBase: string } | null;
+	/** Visiteur banni : il lit le forum mais n'écrit plus (bandeau sous l'en-tête). */
+	ban: { expires: string | null; reason: string | null } | null;
 }
 
 export interface LayoutInput {
@@ -372,6 +374,16 @@ export function buildLayout(input: LayoutInput): LayoutView {
 		quickjump: buildQuickjump(input.forums, footer),
 		csrfToken: input.csrfToken,
 		memberSuggest: !viewer.isGuest && viewer.group.canViewUsers ? { profileBase: `${config.baseUrl}/profile.php?id=` } : null,
+		ban:
+			viewer.ban !== null
+				? {
+						expires:
+							viewer.ban.expire !== null
+								? formatTime(viewer.ban.expire, viewerTimeSettings(viewer), input.dateWords, input.now, true).toLowerCase()
+								: null,
+						reason: viewer.ban.message !== '' ? viewer.ban.message : null,
+					}
+				: null,
 	};
 }
 
@@ -397,5 +409,6 @@ export function buildMinimalLayout(lang: Lang, title: string): LayoutView {
 		quickjump: null,
 		csrfToken: '',
 		memberSuggest: null,
+		ban: null,
 	};
 }

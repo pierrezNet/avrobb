@@ -102,11 +102,19 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
 - Bannissements (`admin_bans.php`) : suppression par bouton POST après confirmation (le PHP
   supprimait sur un lien GET) ; erreurs réaffichées dans le formulaire ; un octet « 000 » d'une IP
   devient « 0 » (le PHP le vidait) ; dates de recherche aux formats proposés (aaaa-mm-jj).
+  **Un banni lit le forum mais n'y écrit plus** (FluxBB lui fermait tout le forum) : ses droits
+  d'écriture sont retirés (messages, modification, suppression, e-mail, messagerie, renommée, balises
+  du sujet), un bandeau rappelle l'échéance et le motif, et tout envoi de formulaire est refusé sauf
+  connexion/déconnexion, « marquer comme lu » et abonnements. Le PHP, lui, bloque encore tout.
 - Censure (`admin_censoring.php`) : identique au PHP, avec jeton CSRF ; `cache_censoring.php` est
   supprimé après chaque modification.
 - Maintenance (`admin_maintenance.php`) : chaque lot de la reconstruction de l'index est envoyé en
   POST avec jeton CSRF (le PHP enchaînait des GET qui écrivaient), un script enchaîne les étapes et
-  un bouton « Continuer » le remplace sans JavaScript ; l'élagage demande confirmation comme le PHP.
+  un bouton « Continuer » le remplace sans JavaScript. **Pas d'élagage** (suppression définitive des
+  anciennes discussions) : il est remplacé par un seuil « Discussions anciennes » (`o_cold_topic_days`,
+  clé propre à AvroBB, 0 = désactivé). Au-delà, une discussion non épinglée quitte la liste de son
+  forum pour la page « Anciennes discussions » (`viewforum.php?id=…&old=1`, bouton en haut de la
+  liste, masqué s'il n'y en a aucune) ; rien n'est supprimé, la recherche et les liens les trouvent.
   Ajout : « Vider les caches » supprime les fichiers `cache/cache_*.php`, que le PHP régénère.
   Le **mode maintenance** (interrupteur et message, `o_maintenance*`) se règle dans cette page et
   non plus dans les Options, avec un aperçu de la page vue par les membres

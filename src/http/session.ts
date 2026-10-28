@@ -166,6 +166,7 @@ async function trackGuest(request: FastifyRequest, deps: SessionDeps, now: numbe
 		logged: presence?.logged ?? now,
 		lastPost: presence?.lastPost ?? null,
 		lastSearch: presence?.lastSearch ?? null,
+		ban: null,
 	};
 }
 

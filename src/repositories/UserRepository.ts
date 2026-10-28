@@ -205,6 +205,7 @@ export class UserRepository implements UserReader, MemberListReader, ProfileRead
 				lastPost: row.last_post,
 				autoNotify: row.auto_notify === 1,
 				lastSearch: row.last_search,
+				ban: null,
 			},
 		};
 	}

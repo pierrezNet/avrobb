@@ -126,6 +126,9 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
 - [ ] Balises de sujet : nettoyer en base les anciens sujets (balises inventées, doublons), pour que le PHP les affiche aussi proprement
 - [x] Balises de sujet : liste et couleurs réglables dans l'administration (page Balises, clé `o_subject_tags`), renommage reporté dans les sujets
 
+- [x] Bannissement en lecture seule : le banni lit le forum mais n'écrit plus (bandeau, écritures refusées)
+- [x] Contenu chaud / froid : l'élagage est remplacé par un seuil « Discussions anciennes » (Maintenance) et une page « Anciennes discussions » par forum
+- [x] Galerie : recherche (titre, description) ; sélecteur d'images en popin dans l'éditeur
 - [x] Administration sans « Menu des plugins » : pages propres à PV intégrées au menu ; FluxToolBar, Plugile, Smilies, AP_Premium et la miniaturisation Uploadile retirés ; plus de flux Atom (RSS seulement, liens masqués avec le réglage actuel de PV) ; pagination discrète
 - [ ] **Éditeur WYSIWYG** avec bouton « Source BBCode », basé sur **SCEditor** (MIT, mode source BBCode natif) : le BBCode reste le format enregistré (compatibilité PHP, index de recherche) ; amélioration progressive du champ actuel (sans JS : BBCode) ; déclarer les balises PV (spoiler, vidéo, alignements, cartes de la galerie, mentions…), brancher la popin galerie, les mentions et les émojis ; thèmes ; tests aller-retour BBCode → éditeur → BBCode ; la prévisualisation serveur reste la référence. Estimation : 2 à 3 jours
 - [x] Ménage « projet à part » : Sondage (sans objet) et Mod Installer retirés ; plus d'installation/désinstallation de mods (PunBalise, Plugile, Uploadile) ; options sans effet retirées (GZip, formats de date et d'heure, langue par défaut, numéro de version) ; plus de version FluxBB (pied de page, accueil de l'administration, flux)

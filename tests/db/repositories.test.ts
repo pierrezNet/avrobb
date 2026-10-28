@@ -254,6 +254,17 @@ describe('viewforum : forum et sujets', () => {
 		});
 		expect((await topics.listForumPage(2, 'subject', 0, 10, null))[0]?.hasPosted).toBe(false);
 	});
+
+	it('discussions récentes et anciennes : les épinglées restent récentes', async () => {
+		const topics = new TopicRepository(db);
+		// Forum 1 : 13 épinglée (1782700000), 12 non épinglée (1782800200).
+		const recent = { before: 1782800100, old: false };
+		const old = { before: 1782800300, old: true };
+		expect((await topics.listForumPage(1, 'lastPost', 0, 10, null, recent)).map((t) => t.id)).toEqual([13, 12]);
+		expect(await topics.countForumTopics(1, { ...recent, before: 1782800300 })).toBe(1);
+		expect((await topics.listForumPage(1, 'lastPost', 0, 10, null, old)).map((t) => t.id)).toEqual([12]);
+		expect(await topics.countForumTopics(1, old)).toBe(1);
+	});
 });
 
 describe('FeedRepository', () => {

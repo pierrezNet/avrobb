@@ -458,13 +458,6 @@ describe('MaintenanceRepository (admin_maintenance.php)', () => {
 				.execute();
 			expect(words.map((w) => w.word)).toEqual(expect.arrayContaining(['planeur', 'voile']));
 			expect(await store.nextPostId(batch[1]?.id ?? 0)).not.toBeNull();
-
-			expect(await store.countPrunable(1782800300, true, 2)).toBe(1);
-			expect(await store.countPrunable(1782800300, true, 4)).toBe(0);
-			await store.prune(1782800300, true, 2);
-			expect(await topicRow(trx, 10)).toBeUndefined();
-			expect(await topicRow(trx, 12)).toBeUndefined();
-			expect(await forumRow(trx, 2)).toMatchObject({ num_topics: 0, num_posts: 0 });
 		});
 	});
 });

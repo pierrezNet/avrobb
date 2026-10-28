@@ -13,6 +13,30 @@ import {
 	type Viewer,
 } from '../domain/models.ts';
 
+/**
+ * Visiteur banni (AvroBB) : il lit le forum comme avant, mais son groupe perd tout droit d'écriture
+ * (messages, modification, suppression, e-mail, messagerie, renommée, titre). FluxBB lui fermait
+ * tout le forum (check_bans() puis message()).
+ */
+export function readOnlyViewer(viewer: Viewer, ban: { expire: number | null; message: string }): Viewer {
+	return {
+		...viewer,
+		ban,
+		group: {
+			...viewer.group,
+			canPostReplies: false,
+			canPostTopics: false,
+			canEditPosts: false,
+			canDeletePosts: false,
+			canDeleteTopics: false,
+			canSendEmail: false,
+			canUsePrivateMessages: false,
+			canUseReputation: false,
+			canSetTitle: false,
+		},
+	};
+}
+
 export function isAdmin(viewer: Viewer): boolean {
 	return viewer.group.id === GroupId.Admin;
 }
@@ -102,7 +126,7 @@ export function canEditPost(viewer: Viewer, post: PostOwnership, now: number): b
  * le délai de modification du message ; les modérateurs du forum aussi.
  */
 export function canEditSubjectPrefixes(viewer: Viewer, topic: Pick<Topic, 'posterId' | 'forum'>): boolean {
-	if (viewer.isGuest) return false;
+	if (viewer.isGuest || viewer.ban !== null) return false;
 	return isForumModerator(viewer, topic.forum) || topic.posterId === viewer.id;
 }
 

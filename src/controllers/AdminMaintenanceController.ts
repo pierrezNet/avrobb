@@ -1,6 +1,10 @@
 /**
  * Maintenance du forum (admin_maintenance.php), réservée aux administrateurs : mode maintenance,
- * reconstruction de l'index de recherche par lots et élagage des anciennes discussions.
+ * reconstruction de l'index de recherche par lots, seuil des discussions anciennes.
+ *
+ * Écart : l'élagage de FluxBB (suppression définitive des anciennes discussions) n'est pas repris.
+ * AvroBB sépare plutôt le contenu « chaud » du contenu « froid » : au-delà d'un seuil réglé ici
+ * (o_cold_topic_days), une discussion passe dans la page « Anciennes discussions » de son forum.
  *
  * Ajout : le mode maintenance (o_maintenance et son message), réglé dans admin_options.php par
  * FluxBB, se règle ici, avec un aperçu de la page vue par les membres (?preview=1).
@@ -17,7 +21,6 @@ import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import type { ConfigCache } from '../repositories/ConfigLoader.ts';
 import type { ConfigStore } from '../repositories/ConfigRepository.ts';
-import type { ForumAdminStore } from '../repositories/ForumAdminRepository.ts';
 import type { MaintenanceStore } from '../repositories/MaintenanceRepository.ts';
 import type { PhpCacheName, PhpCacheStore } from '../repositories/PhpCacheFiles.ts';
 import type { StopwordsReader } from '../repositories/StopwordsLoader.ts';
@@ -28,7 +31,6 @@ import { positiveInt } from './params.ts';
 
 export interface AdminMaintenanceControllerDeps extends LayoutDeps {
 	maintenance: MaintenanceStore;
-	forumAdmin: ForumAdminStore;
 	stopwords: StopwordsReader;
 	configStore: ConfigStore;
 	configCache: ConfigCache;
@@ -53,11 +55,11 @@ export class AdminMaintenanceController {
 		const t = this.deps.page.lang.adminMaintenance;
 		const notices: Record<string, string> = {
 			rebuilt: t.rebuilt,
-			pruned: t.pruned,
 			cleared: t.cacheCleared,
 			mode: request.board.maintenance ? t.modeEnabled : t.modeDisabled,
+			cold: t.coldSaved,
 		};
-		const [firstPostId, forums] = await Promise.all([this.deps.maintenance.firstPostId(), this.deps.forumAdmin.listForums()]);
+		const firstPostId = await this.deps.maintenance.firstPostId();
 		return renderAdminPage(
 			request,
 			reply,
@@ -71,7 +73,7 @@ export class AdminMaintenanceController {
 					previewHref: 'admin_maintenance.php?preview=1',
 				},
 				firstPostId,
-				forums: forums.map((row) => ({ id: row.forumId, name: row.forumName, category: row.categoryName })),
+				coldTopicDays: request.board.coldTopicDays,
 			},
 		);
 	};
@@ -81,8 +83,8 @@ export class AdminMaintenanceController {
 		if (denied !== null) return denied;
 		const action = field(request.body, 'action');
 		if (action === 'rebuild') return this.#rebuild(request, reply);
-		if (action === 'prune') return this.#prune(request, reply);
 		if (action === 'mode') return this.#saveMode(request, reply);
+		if (action === 'cold') return this.#saveColdTopics(request, reply);
 		if (action === 'clear_cache') {
 			for (const name of PHP_CACHES) await this.deps.phpCache?.invalidate(name);
 			await this.deps.phpCache?.invalidateFamily('quickjump');
@@ -102,6 +104,15 @@ export class AdminMaintenanceController {
 			await this.deps.configCache.invalidate();
 		}
 		return reply.redirect('admin_maintenance.php?done=mode#maintenance-mode', 303);
+	}
+
+	async #saveColdTopics(request: FastifyRequest<{ Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> {
+		const raw = field(request.body, 'cold_days').trim();
+		if (!/^\d{1,4}$/.test(raw)) return renderMessage(request, reply, this.deps, 400, this.deps.page.lang.adminMaintenance.coldDaysInvalid);
+		// Clé propre à AvroBB, absente de la table tant qu'elle n'a pas été réglée : REPLACE.
+		await this.deps.configStore.replaceValues(new Map([['o_cold_topic_days', String(Number(raw))]]));
+		await this.deps.configCache.invalidate();
+		return reply.redirect('admin_maintenance.php?done=cold#cold-topics', 303);
 	}
 
 	/** La page que voient les membres pendant la maintenance (les administrateurs passent outre). */
@@ -142,41 +153,6 @@ export class AdminMaintenanceController {
 			this.deps,
 			{ active: 'maintenance', template: 'admin_rebuild.njk', title: t.rebuilding },
 			{ processed: t.processed(posts[0]?.id ?? startAt, last?.id ?? startAt), perPage, next },
-		);
-	}
-
-	async #prune(request: FastifyRequest<{ Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> {
-		const { lang, clock } = this.deps.page;
-		const t = lang.adminMaintenance;
-		const { body } = request;
-		const withSticky = field(body, 'prune_sticky') === '1';
-		const from = field(body, 'prune_from');
-		const forums = await this.deps.forumAdmin.listForums();
-		const forum = from === 'all' ? null : (forums.find((row) => row.forumId === positiveInt(from)) ?? undefined);
-		if (forum === undefined) return renderMessage(request, reply, this.deps, 400, lang.common.badRequest);
-		const forumId = forum?.forumId ?? null;
-
-		if (field(body, 'prune_comply') !== '') {
-			const days = positiveInt(field(body, 'prune_days'));
-			await this.deps.maintenance.prune(days > 0 ? clock() - days * 86400 : null, withSticky, forumId);
-			return reply.redirect('admin_maintenance.php?done=pruned', 303);
-		}
-
-		const days = field(body, 'req_prune_days').trim();
-		if (!/^\d{1,6}$/.test(days)) return renderMessage(request, reply, this.deps, 400, t.daysNotInteger);
-		const count = await this.deps.maintenance.countPrunable(clock() - Number(days) * 86400, withSticky, forumId);
-		if (count === 0) return renderMessage(request, reply, this.deps, 400, t.noOldTopics(days));
-		return renderAdminPage(
-			request,
-			reply,
-			this.deps,
-			{ active: 'maintenance', template: 'admin_prune.njk', title: t.pruneHead },
-			{
-				info: t.confirmPruneInfo(days, forum !== null ? `« ${forum.forumName} »` : t.allForums, count),
-				days,
-				withSticky,
-				from,
-			},
 		);
 	}
 }

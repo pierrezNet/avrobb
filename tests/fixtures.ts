@@ -29,6 +29,7 @@ import {
 	type SubscribedTopic,
 	type Subscriber,
 	type Topic,
+	type TopicAgeFilter,
 	type TopicLabel,
 	type TopicSummary,
 	type UserProfile,
@@ -124,6 +125,7 @@ export function viewer(overrides: Partial<Viewer> = {}): Viewer {
 		lastPost: null,
 		autoNotify: false,
 		lastSearch: null,
+		ban: null,
 		...overrides,
 	};
 }
@@ -222,6 +224,7 @@ export const boardConfig: BoardConfig = {
 	reportsByBoard: true,
 	maintenance: false,
 	maintenanceMessage: 'Le forum est fermé pour <b>maintenance</b>.',
+	coldTopicDays: 0,
 	timeoutVisit: 1800,
 	timeoutOnline: 300,
 	adminEmail: 'admin@forum.test',
@@ -393,7 +396,6 @@ export interface FakeData {
 	banLog?: string[];
 	/** admin_maintenance.php : actions consignées, discussions élagables. */
 	maintenanceLog?: string[];
-	prunableCount?: number;
 	/** Plugin AP_Smilies.php. */
 	/** Plugin AP_Balises.php. */
 	labelRows?: LabelRow[];
@@ -729,6 +731,13 @@ function fakeForumAdmin(data: FakeData): ForumAdminStore {
 	};
 }
 
+/** Filtre récent/ancien des doublures, comme TopicRepository. */
+function matchesAge(topic: TopicSummary, age: TopicAgeFilter | null): boolean {
+	if (age === null) return true;
+	const last = topic.lastPost?.postedAt ?? 0;
+	return age.old ? !topic.sticky && last < age.before : topic.sticky || last >= age.before;
+}
+
 export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppDeps {
 	data.pm ??= pmData();
 	const contactsAndLists = fakePrivateContacts(data.pm);
@@ -824,10 +833,6 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 					.map((p) => p.id)
 					.filter((id) => id > postId)
 					.sort((a, b) => a - b)[0] ?? null,
-			countPrunable: async () => data.prunableCount ?? 0,
-			prune: async (before, withSticky, forumId) => {
-				data.maintenanceLog = [...(data.maintenanceLog ?? []), `prune ${before} ${withSticky} ${forumId}`];
-			},
 		},
 		banStore: {
 			findBan: async (id) => {
@@ -1069,7 +1074,9 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			},
 			findLastPostId: async (topicId) => data.posts.get(topicId)?.at(-1)?.id ?? null,
 			listUpdatedSince: async (_groupId, since) => (data.recentTopics ?? []).filter((t) => t.lastPost > since),
-			listForumPage: async (forumId, _sort, offset, limit) => (data.forumTopics?.get(forumId) ?? []).slice(offset, offset + limit),
+			listForumPage: async (forumId, _sort, offset, limit, _dot, age = null) =>
+				(data.forumTopics?.get(forumId) ?? []).filter((t) => matchesAge(t, age)).slice(offset, offset + limit),
+			countForumTopics: async (forumId, age) => (data.forumTopics?.get(forumId) ?? []).filter((t) => matchesAge(t, age)).length,
 			findFirstPostAfter: async (topicId, since) => (data.posts.get(topicId) ?? []).find((p) => p.posted > since)?.id ?? null,
 		},
 		topicWriter: {

@@ -161,6 +161,39 @@ describe('GET /viewforum.php', () => {
 		expect((await app.inject('/viewforum.php?id=abc')).statusCode).toBe(404);
 	});
 
+	it('discussions anciennes (o_cold_topic_days) : liste récente, bouton et page des anciennes', async () => {
+		const aged = [
+			summary(20, { sticky: true, lastPost: { postedAt: NOW - 400 * 86_400, postId: 200, poster: 'admin' } }),
+			summary(21),
+			summary(22, { lastPost: { postedAt: NOW - 100 * 86_400, postId: 220, poster: 'admin' } }),
+			summary(23, { lastPost: { postedAt: NOW - 200 * 86_400, postId: 230, poster: 'admin' } }),
+		];
+		app = await buildApp(deps({ forumTopics: new Map([[2, aged]]), config: { coldTopicDays: 90 } }));
+		const recent = await app.inject('/viewforum.php?id=2');
+		// L'épinglée reste dans la liste, quel que soit son âge.
+		expect(recent.body).toContain('viewtopic.php?id=20"');
+		expect(recent.body).toContain('viewtopic.php?id=21"');
+		expect(recent.body).not.toContain('viewtopic.php?id=22"');
+		expect(recent.body).toContain('href="viewforum.php?id=2&amp;old=1">Anciennes discussions (2)</a>');
+
+		const old = await app.inject('/viewforum.php?id=2&old=1');
+		expect(old.body).toContain('— Anciennes discussions</h1>');
+		expect(old.body).toContain('plus de 90 jours');
+		expect(old.body).toContain('viewtopic.php?id=22"');
+		expect(old.body).toContain('viewtopic.php?id=23"');
+		expect(old.body).not.toContain('viewtopic.php?id=20"');
+		expect(old.body).toContain('href="viewforum.php?id=2">Discussions récentes (2)</a>');
+		expect(old.body).toContain('<link rel="canonical" href="viewforum.php?id=2&amp;old=1">');
+	});
+
+	it('sans seuil ou sans ancienne discussion : pas de bouton', async () => {
+		app = await buildApp(deps());
+		expect((await app.inject('/viewforum.php?id=2')).body).not.toContain('old=1');
+		await app.close();
+		app = await buildApp(deps({ config: { coldTopicDays: 90 }, forumTopics: new Map([[2, [summary(30)]]]) }));
+		expect((await app.inject('/viewforum.php?id=2')).body).not.toContain('old=1');
+	});
+
 	it('forum vide et permission de créer des sujets retirée par forum_perms', async () => {
 		app = await buildApp(deps({ forumTopics: new Map(), forumInfos: [{ ...forumInfo, topicPermission: false, numTopics: 0 }] }));
 		const res = await app.inject('/viewforum.php?id=2');

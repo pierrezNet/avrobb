@@ -1211,8 +1211,11 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 		stopwords: { load: async () => new Set(['les', 'pour']) },
 		gallery: {
 			countImages: async (owner) => (data.galleryImages ?? []).filter((i) => (owner ?? null) === null || i.userId === owner).length,
-			listImages: async (offset, limit, owner) =>
-				(data.galleryImages ?? []).filter((i) => (owner ?? null) === null || i.userId === owner).slice(offset, offset + limit),
+			listImages: async (offset, limit, owner, search = '') =>
+				(data.galleryImages ?? [])
+					.filter((i) => (owner ?? null) === null || i.userId === owner)
+					.filter((i) => `${i.title} ${i.description}`.toLowerCase().includes(search.toLowerCase()))
+					.slice(offset, offset + limit),
 			findImage: async (id) => data.galleryImages?.find((i) => i.id === id) ?? null,
 			createImage: async (image) => {
 				const id = 300 + (data.galleryImages?.length ?? 0);

@@ -43,6 +43,23 @@ describe('GalleryRepository', () => {
 		});
 	});
 
+	it('cherche dans le titre et la description, sans jokers', async () => {
+		await inRollback(async (trx) => {
+			const gallery = new GalleryRepository(trx);
+			const id = await gallery.createImage({
+				title: 'Concorde',
+				description: 'Approche 100% manuelle',
+				userId: 3,
+				addedAt: 1_793_184_400,
+				extension: '.webp',
+			});
+			expect((await gallery.listImages(0, 50, 3, 'concorde')).map((image) => image.id)).toContain(id);
+			expect((await gallery.listImages(0, 50, 3, '100% man')).map((image) => image.id)).toContain(id);
+			expect((await gallery.listImages(0, 50, 3, 'Appro_he')).map((image) => image.id)).not.toContain(id);
+			expect(await gallery.listImages(0, 50, 999, 'concorde')).toEqual([]);
+		});
+	});
+
 	it('ajoute, filtre par membre, retrouve et supprime une image', async () => {
 		await inRollback(async (trx) => {
 			const gallery = new GalleryRepository(trx);

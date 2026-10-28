@@ -128,7 +128,13 @@ export function toolbarView(
 	const toolbar = toolbarButtons(settings, form, { bbcode: config.bbcode, imgTag: config.imgTag, smilies: config.smilies }, lang.toolbar);
 	if (toolbar === null) return null;
 	const imageChooser = member
-		? { ...lang.toolbar.imageChooser, galleryUrl: 'gallery.php?info=pick', uploadUrl: 'gallery.php?info=pick#gallery-upload' }
+		? {
+				...lang.toolbar.imageChooser,
+				// Popin (iframe) ; la fenêtre séparée ne sert que sans <dialog>.
+				galleryUrl: 'gallery.php?info=pick&embed=1',
+				uploadUrl: 'gallery.php?info=pick&embed=1#gallery-upload',
+				windowUrl: 'gallery.php?info=pick',
+			}
 		: null;
 	return {
 		imageDir: toolbar.imageDir,

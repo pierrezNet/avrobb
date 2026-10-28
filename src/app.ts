@@ -188,10 +188,18 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	usersInfo: UsersInfoReader;
 	/** URL de l'installation PHP : les liens vers les pages non portées y renvoient. */
 	legacyBaseUrl: string;
+	/**
+	 * Dossier img/ de l'installation PHP, servi sous /img/ (images seulement) : o_base_url peut
+	 * désigner Node, et les images insérées dans les messages (galerie, uploads) y pointent.
+	 */
+	legacyImagesRoot?: string;
 	/** Derrière un reverse proxy : l'IP du client est lue dans X-Forwarded-For. */
 	trustProxy?: boolean;
 	logger?: boolean;
 }
+
+/** Fichiers de img/ que Node accepte de servir. */
+const LEGACY_IMAGE_PATH = /\.(?:gif|jpe?g|png|webp|ico)$/i;
 
 /** Pages déjà servies par Node ; les autres liens partent vers l'installation PHP. */
 const PORTED_PAGES = new Set([
@@ -273,6 +281,17 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 		maxAge: '30d',
 		immutable: true,
 	});
+	if (deps.legacyImagesRoot !== undefined) {
+		await app.register(fastifyStatic, {
+			root: deps.legacyImagesRoot,
+			prefix: '/img/',
+			decorateReply: false,
+			index: false,
+			maxAge: '7d',
+			// Rien d'autre que des images : le dossier contient aussi des .html et des Thumbs.db.
+			allowedPath: (pathname) => LEGACY_IMAGE_PATH.test(pathname),
+		});
+	}
 
 	app.decorateRequest('viewer', null as unknown as Viewer);
 	app.decorateRequest('board', null as unknown as BoardConfig);

@@ -1,0 +1,20 @@
+{#- Mise en page nue d'une page affichée dans une popin (iframe) : ni en-tête, ni menu, ni pied. Données : `layout` (presenters/layout.ts). -#}
+<!DOCTYPE html>
+<html lang="{{ lang.common.langCode }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ layout.pageTitle }}</title>
+<meta name="robots" content="noindex, follow">
+<link rel="stylesheet" href="{{ asset('css/base.css') }}">
+<link rel="stylesheet" href="{{ asset('css/themes/' ~ layout.theme ~ '.css') }}">
+{% block head %}{% endblock %}
+</head>
+<body class="frame">
+<div id="pun{{ layout.pageId }}" class="page page--frame theme-{{ layout.theme }}">
+<main id="main" class="site-main" tabindex="-1">
+{% block main %}{% endblock %}
+</main>
+</div>
+</body>
+</html>

@@ -9,8 +9,11 @@ import type { GalleryExtension, GalleryImage } from '../domain/models.ts';
 export interface GalleryReader {
 	/** Nombre d'images, de tous ou d'un seul membre (filtre « Mes images »). */
 	countImages(ownerId?: number | null): Promise<number>;
-	/** Images les plus récentes d'abord, avec le pseudo de l'auteur. */
-	listImages(offset: number, limit: number, ownerId?: number | null): Promise<GalleryImage[]>;
+	/**
+	 * Images les plus récentes d'abord, avec le pseudo de l'auteur ; `search` filtre sur le titre et
+	 * la description (sélecteur d'images des messages).
+	 */
+	listImages(offset: number, limit: number, ownerId?: number | null, search?: string): Promise<GalleryImage[]>;
 }
 
 export interface NewGalleryImage {
@@ -34,9 +37,14 @@ const isGalleryExtension = (ext: string): ext is GalleryExtension => ext === '.j
 export class GalleryRepository implements GalleryStore {
 	constructor(private readonly db: Db) {}
 
-	#images(ownerId: number | null) {
+	#images(ownerId: number | null, search = '') {
 		let query = this.db.selectFrom('gallery as g').innerJoin('users as u', 'u.id', 'g.user_id');
 		if (ownerId !== null) query = query.where('g.user_id', '=', ownerId);
+		if (search !== '') {
+			// Texte cherché tel quel : % et _ ne sont pas des jokers pour le membre.
+			const pattern = `%${search.replace(/[\\%_]/g, '\\$&')}%`;
+			query = query.where((eb) => eb.or([eb('g.titre', 'like', pattern), eb('g.description', 'like', pattern)]));
+		}
 		return query;
 	}
 
@@ -47,8 +55,8 @@ export class GalleryRepository implements GalleryStore {
 		return Number(row.total);
 	}
 
-	async listImages(offset: number, limit: number, ownerId: number | null = null): Promise<GalleryImage[]> {
-		const rows = await this.#images(ownerId)
+	async listImages(offset: number, limit: number, ownerId: number | null = null, search = ''): Promise<GalleryImage[]> {
+		const rows = await this.#images(ownerId, search)
 			.select(['g.id', 'g.titre', 'g.user_id', 'g.description', 'g.date_ajout', 'g.ext', 'u.username'])
 			.orderBy('g.date_ajout', 'desc')
 			.orderBy('g.id', 'desc')

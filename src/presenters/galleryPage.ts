@@ -112,6 +112,10 @@ export interface GalleryFormView {
 export interface PickerImageView {
 	id: number;
 	title: string;
+	/** Auteur, montré quand le sélecteur parcourt toute la galerie. */
+	author: string | null;
+	/** Coché d'office dans la popin (image qui vient d'être envoyée). */
+	selected: boolean;
 	thumbUrl: string;
 	fullUrl: string;
 	insertCode: string;
@@ -123,6 +127,11 @@ export interface GalleryPickerView {
 	images: PickerImageView[];
 	form: GalleryFormView;
 	notice: string | null;
+	/** Recherche (formulaire GET) : texte cherché et portée. */
+	search: { action: string; query: string; allImages: boolean; embedded: boolean };
+	/** Affiché dans la popin de la barre d'outils (iframe) : sans en-tête ni pied de page. */
+	embedded: boolean;
+	emptyMessage: string;
 }
 
 export function buildGalleryPicker(input: {
@@ -131,14 +140,21 @@ export function buildGalleryPicker(input: {
 	form: { title: string; description: string; errors: string[] };
 	lang: Lang;
 	notice: string | null;
+	search: string;
+	allImages: boolean;
+	embedded: boolean;
+	preselectFirst: boolean;
 }): GalleryPickerView {
 	const t = input.lang.gallery;
+	const embed = input.embedded ? '&embed=1' : '';
 	return {
-		images: input.images.map((image) => {
+		images: input.images.map((image, index) => {
 			const files = galleryFiles(image);
 			return {
 				id: image.id,
 				title: image.title,
+				author: input.allImages ? image.username : null,
+				selected: input.embedded && input.preselectFirst && index === 0,
 				thumbUrl: files.thumb,
 				fullUrl: files.full,
 				insertCode: galleryInsertCode(image, input.config.baseUrl),
@@ -146,7 +162,10 @@ export function buildGalleryPicker(input: {
 				codeLabel: t.insertCode(image.title),
 			};
 		}),
-		form: { formAction: 'gallery.php?info=new&from=pick', ...input.form },
+		form: { formAction: `gallery.php?info=new&from=pick${embed}`, ...input.form },
 		notice: input.notice,
+		search: { action: 'gallery.php', query: input.search, allImages: input.allImages, embedded: input.embedded },
+		embedded: input.embedded,
+		emptyMessage: input.search !== '' ? t.noMatchingImages : input.allImages ? t.empty : t.noOwnImages,
 	};
 }

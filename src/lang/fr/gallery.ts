@@ -63,4 +63,13 @@ export const gallery = {
 	inserted: 'Inséré dans le message.',
 	closeWindow: 'Fermer cette fenêtre',
 	noOwnImages: "Vous n'avez encore envoyé aucune image.",
+	noMatchingImages: 'Aucune image ne correspond à cette recherche.',
+	pickerSearch: 'Rechercher une image',
+	searchLabel: 'Titre ou description',
+	scopeLabel: 'Parmi',
+	scopeMine: 'Mes images',
+	scopeAll: 'Toute la galerie',
+	searchButton: 'Rechercher',
+	pickLabel: (title: string) => `Choisir « ${title} »`,
+	by: (author: string) => `par ${author}`,
 };

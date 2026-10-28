@@ -47,5 +47,8 @@ export const toolbar = {
 		url: 'Adresse d’une image (URL)',
 		gallery: 'Mes images de la galerie',
 		upload: 'Nouvelle image (envoi)',
+		dialogTitle: 'Insérer une image de la galerie',
+		close: 'Fermer',
+		insertAndClose: 'Insérer et fermer',
 	},
 };

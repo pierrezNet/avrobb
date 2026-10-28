@@ -77,8 +77,75 @@
 	}
 
 	/**
+	 * Popin de la galerie (iframe gallery.php?info=pick&embed=1) : on coche une image, « Insérer et
+	 * fermer » ajoute son BBCode à la place de la sélection (un double-clic sur la tuile aussi).
+	 */
+	function galleryDialog(textarea, chooser, returnFocus) {
+		const dialog = document.createElement('dialog');
+		dialog.className = 'picker-dialog';
+		const title = document.createElement('h2');
+		title.className = 'picker-dialog__title';
+		title.id = `picker-title-${textarea.id}`;
+		title.textContent = chooser.dialogTitle;
+		dialog.setAttribute('aria-labelledby', title.id);
+		const frame = document.createElement('iframe');
+		frame.className = 'picker-dialog__frame';
+		frame.title = chooser.dialogTitle;
+		const actions = document.createElement('div');
+		actions.className = 'picker-dialog__actions';
+		const closeButton = document.createElement('button');
+		closeButton.type = 'button';
+		closeButton.className = 'button';
+		closeButton.textContent = chooser.close;
+		const insertButton = document.createElement('button');
+		insertButton.type = 'button';
+		insertButton.className = 'button button--primary';
+		insertButton.textContent = chooser.insertAndClose;
+		actions.append(closeButton, insertButton);
+		dialog.append(title, frame, actions);
+		document.body.append(dialog);
+
+		const checked = () => frame.contentDocument?.querySelector('input[name="pick"]:checked') ?? null;
+		const refresh = () => {
+			insertButton.disabled = checked() === null;
+		};
+		const insert = () => {
+			const choice = checked();
+			if (choice === null) return;
+			dialog.close();
+			enclose(textarea, '', '', choice.value);
+		};
+		frame.addEventListener('load', () => {
+			refresh();
+			const doc = frame.contentDocument;
+			if (doc === null) return;
+			doc.addEventListener('change', refresh);
+			doc.addEventListener('dblclick', (event) => {
+				const tile = event.target instanceof Element ? event.target.closest('label') : null;
+				const radio = tile?.querySelector('input[name="pick"]');
+				if (radio) {
+					radio.checked = true;
+					insert();
+				}
+			});
+		});
+		closeButton.addEventListener('click', () => dialog.close());
+		insertButton.addEventListener('click', insert);
+		dialog.addEventListener('close', () => {
+			if (document.activeElement === document.body || dialog.contains(document.activeElement)) returnFocus.focus();
+		});
+
+		return (url) => {
+			insertButton.disabled = true;
+			frame.src = url;
+			dialog.showModal();
+		};
+	}
+
+	/**
 	 * Bouton image : petit menu « Adresse (URL) », « Mes images de la galerie », « Nouvelle image ».
-	 * La galerie s'ouvre dans une fenêtre qui insère le code dans ce message (insert-into-message.js).
+	 * La galerie s'ouvre dans une popin (galleryDialog) ; sans <dialog>, dans une fenêtre qui insère
+	 * le code dans ce message (insert-into-message.js).
 	 */
 	function imageChooser(element, action, textarea, chooser) {
 		const anchor = document.createElement('span');
@@ -112,10 +179,18 @@
 			});
 			menu.append(item);
 		};
-		const gallery = (url) => window.open(url, 'galerie', 'width=900,height=700,scrollbars=yes,resizable=yes');
+		let openDialog = null;
+		const gallery = (url, windowUrl) => {
+			if (typeof HTMLDialogElement !== 'function') {
+				window.open(windowUrl, 'galerie', 'width=900,height=700,scrollbars=yes,resizable=yes');
+				return;
+			}
+			openDialog ??= galleryDialog(textarea, chooser, element);
+			openDialog(url);
+		};
 		entry(chooser.url, () => run(action, textarea));
-		entry(chooser.gallery, () => gallery(chooser.galleryUrl));
-		entry(chooser.upload, () => gallery(chooser.uploadUrl));
+		entry(chooser.gallery, () => gallery(chooser.galleryUrl, chooser.windowUrl));
+		entry(chooser.upload, () => gallery(chooser.uploadUrl, `${chooser.windowUrl}#gallery-upload`));
 
 		element.addEventListener('click', () => (menu.hidden ? open() : close(true)));
 		menu.addEventListener('keydown', (event) => {

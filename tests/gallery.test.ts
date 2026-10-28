@@ -197,6 +197,43 @@ describe('POST /gallery.php', () => {
 		expect(picker.body).not.toContain('Image 2');
 	});
 
+	it('popin : page nue, images à cocher, la nouvelle cochée d’office', async () => {
+		const fake = data();
+		app = await buildApp(fakeDeps(fake));
+		const res = await upload(
+			app,
+			3,
+			'/gallery.php?info=new&from=pick&embed=1',
+			{ titre: 'Cockpit', description: 'Vue' },
+			{ req_file: ['c.png', png] },
+		);
+		expect(res.headers.location).toBe('gallery.php?info=pick&done=added&embed=1');
+
+		const picker = await get(app, 3, '/gallery.php?info=pick&done=added&embed=1');
+		expect(picker.body).not.toContain('site-header');
+		expect(picker.body).toContain('<input type="hidden" name="embed" value="1">');
+		expect(picker.body).toContain('action="gallery.php?info=new&amp;from=pick&amp;embed=1"');
+		expect(picker.body).toMatch(/name="pick" value="\[b\]Cockpit\[\/b\][^"]*"[^>]*checked/);
+		expect(picker.body).not.toContain('data-insert=');
+	});
+
+	it('sélecteur : recherche dans le titre et la description, ses images ou toute la galerie', async () => {
+		app = await buildApp(fakeDeps(data()));
+		const mine = await get(app, 6, '/gallery.php?info=pick&q=image%201');
+		expect(mine.body).toContain('Image 10');
+		expect(mine.body).not.toContain('Image 2&lt;');
+		expect(mine.body).not.toContain('Image 1&lt;');
+		expect(mine.body).toContain('value="image 1"');
+
+		const all = await get(app, 6, '/gallery.php?info=pick&scope=all&q=image%201');
+		expect(all.body).toContain('&lt;b&gt;Image 1&lt;/b&gt;');
+		expect(all.body).toContain('par Tessy');
+		expect(all.body).toContain('<option value="all" selected>');
+
+		const none = await get(app, 6, '/gallery.php?info=pick&q=zzz');
+		expect(none.body).toContain('Aucune image ne correspond à cette recherche.');
+	});
+
 	it('supprime après confirmation, si le lecteur en a le droit', async () => {
 		const fake = data();
 		app = await buildApp(fakeDeps(fake));
@@ -214,5 +251,28 @@ describe('POST /gallery.php', () => {
 		expect(res.headers.location).toBe('gallery.php?done=deleted');
 		expect(fake.galleryImages?.some((i) => i.id === 1)).toBe(false);
 		expect(fake.galleryFileLog).toEqual(['delete 1705145503.jpg']);
+	});
+});
+
+describe('Images de l’installation PHP (/img/)', () => {
+	it('sert les images et rien d’autre', async () => {
+		const { mkdtemp, mkdir, writeFile } = await import('node:fs/promises');
+		const { tmpdir } = await import('node:os');
+		const path = await import('node:path');
+		const root = await mkdtemp(path.join(tmpdir(), 'pv-img-'));
+		await mkdir(path.join(root, 'gallery'));
+		await writeFile(path.join(root, 'gallery', '1.webp'), 'RIFF');
+		await writeFile(path.join(root, 'gallery', 'index.html'), '<p>');
+		const app = await buildApp(fakeDeps(data(), { legacyImagesRoot: root }));
+		try {
+			const ok = await app.inject({ url: '/img/gallery/1.webp' });
+			expect(ok.statusCode).toBe(200);
+			expect(ok.headers['content-type']).toBe('image/webp');
+			const refused = await app.inject({ url: '/img/gallery/index.html' });
+			expect(refused.statusCode).toBe(404);
+			expect((await app.inject({ url: '/img/../package.json' })).statusCode).toBe(404);
+		} finally {
+			await app.close();
+		}
 	});
 });

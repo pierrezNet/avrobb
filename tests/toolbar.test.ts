@@ -72,7 +72,7 @@ describe('pages de rédaction', () => {
 			expect(res.body).toContain('data-toolbar-images="http://php.test/img/fluxtoolbar/smooth/"');
 			expect(res.body).toContain('/assets/js/toolbar.js?v=');
 			// Bouton image d'un membre : URL, galerie ou nouvelle image.
-			expect(res.body).toContain('&quot;galleryUrl&quot;:&quot;gallery.php?info=pick&quot;');
+			expect(res.body).toContain('&quot;galleryUrl&quot;:&quot;gallery.php?info=pick&amp;embed=1&quot;');
 		}
 	});
 

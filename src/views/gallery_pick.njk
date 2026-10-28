@@ -1,37 +1,68 @@
-{#- Sélecteur d'images de la galerie à insérer dans un message (gallery.php?info=pick). Données : `view` (presenters/galleryPage.ts). -#}
-{% extends "layout.njk" %}
+{#- Sélecteur d'images de la galerie à insérer dans un message (gallery.php?info=pick), en page ou dans la popin de la barre d'outils (embed=1). Données : `view` (presenters/galleryPage.ts). -#}
+{% extends "frame.njk" if view.embedded else "layout.njk" %}
 {% import "partials/forms.njk" as forms %}
 {% import "partials/galleryForm.njk" as galleryForm %}
 {% import "partials/sideMenu.njk" as sideMenu %}
 
-{% block head %}<script src="{{ asset('js/insert-into-message.js') }}" defer></script>{% endblock %}
+{% block head %}{% if not view.embedded %}<script src="{{ asset('js/insert-into-message.js') }}" defer></script>{% endif %}{% endblock %}
 
 {% block main %}
+{% if not view.embedded %}
 <h1 class="page-title">{{ lang.gallery.pickerTitle }}</h1>
 <p class="page-intro">{{ lang.gallery.pickerInfo }} <button type="button" class="link-button" data-close-window hidden>{{ lang.gallery.closeWindow }}</button></p>
+{% endif %}
 {{ sideMenu.notice(view.notice) }}
 <p class="visually-hidden" role="status" data-insert-status data-message="{{ lang.gallery.inserted }}"></p>
+
+<form class="picker-search" method="get" action="{{ url(view.search.action) }}" role="search" aria-label="{{ lang.gallery.pickerSearch }}">
+	<input type="hidden" name="info" value="pick">
+	{% if view.search.embedded %}<input type="hidden" name="embed" value="1">{% endif %}
+	<p class="picker-search__field">
+		<label for="picker-q">{{ lang.gallery.searchLabel }}</label>
+		<input id="picker-q" type="search" name="q" value="{{ view.search.query }}" maxlength="80">
+	</p>
+	<p class="picker-search__field">
+		<label for="picker-scope">{{ lang.gallery.scopeLabel }}</label>
+		<select id="picker-scope" name="scope">
+			<option value="mine"{% if not view.search.allImages %} selected{% endif %}>{{ lang.gallery.scopeMine }}</option>
+			<option value="all"{% if view.search.allImages %} selected{% endif %}>{{ lang.gallery.scopeAll }}</option>
+		</select>
+	</p>
+	<p class="picker-search__submit"><button type="submit" class="button">{{ lang.gallery.searchButton }}</button></p>
+</form>
 
 {% if view.images.length %}
 <ul class="gallery gallery--picker">
 {% for image in view.images %}
 	<li class="gallery__item">
+	{% if view.embedded %}
+		<label class="gallery__figure gallery__choice">
+			<input type="radio" class="gallery__radio" name="pick" value="{{ image.insertCode }}" aria-label="{{ lang.gallery.pickLabel(image.title) }}"{% if image.selected %} checked{% endif %}>
+			<img class="gallery__thumb" src="{{ url(image.thumbUrl) }}" alt="" loading="lazy">
+			<span class="gallery__caption">
+				<strong class="gallery__title">{{ image.title }}</strong>
+				{% if image.author %}<span class="gallery__author">{{ lang.gallery.by(image.author) }}</span>{% endif %}
+			</span>
+		</label>
+	{% else %}
 		<figure class="gallery__figure">
 			<a class="gallery__link" href="{{ url(image.fullUrl) }}" target="_blank" rel="noopener">
 				<img class="gallery__thumb" src="{{ url(image.thumbUrl) }}" alt="" loading="lazy">
 			</a>
 			<figcaption class="gallery__caption">
 				<strong class="gallery__title">{{ image.title }}</strong>
+				{% if image.author %}<span class="gallery__author">{{ lang.gallery.by(image.author) }}</span>{% endif %}
 				<button type="button" class="button button--small" data-insert="{{ image.insertCode }}" aria-label="{{ image.insertLabel }}" hidden>{{ lang.gallery.insert }}</button>
 				<label class="visually-hidden" for="code-{{ image.id }}">{{ image.codeLabel }}</label>
 				<textarea id="code-{{ image.id }}" class="gallery__code" rows="3" readonly>{{ image.insertCode }}</textarea>
 			</figcaption>
 		</figure>
+	{% endif %}
 	</li>
 {% endfor %}
 </ul>
 {% else %}
-<p class="message-box">{{ lang.gallery.noOwnImages }}</p>
+<p class="message-box">{{ view.emptyMessage }}</p>
 {% endif %}
 
 <h2 id="gallery-upload" class="form-box__title">{{ lang.gallery.addPicture }}</h2>

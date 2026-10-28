@@ -20,6 +20,7 @@ import { buildCensor } from '../services/censor.ts';
 import { canDeleteGalleryImage, GALLERY_MAX_BYTES, THUMBNAIL_MAX_SIDE, validateGalleryUpload } from '../services/gallery.ts';
 import { FULL_MAX_SIDE, MOBILE_MAX_SIDE } from '../services/imageVariants.ts';
 import { clampPage, pageCount } from '../services/pagination.ts';
+import { punTrim } from '../services/phpString.ts';
 import { positiveInt } from './params.ts';
 
 export interface GalleryControllerDeps extends LayoutDeps {
@@ -37,14 +38,20 @@ export interface GalleryQuery {
 	mine?: string;
 	from?: string;
 	done?: string;
+	/** Sélecteur : recherche (titre, description), portée (`all` : toute la galerie) et affichage en popin. */
+	q?: string;
+	scope?: string;
+	embed?: string;
 }
 
 type GalleryRequest = FastifyRequest<{ Querystring: GalleryQuery; Body?: FormBody }>;
 
 /** 5 lignes de 4 images, comme gallery.php. */
 const PER_PAGE = 20;
-/** Images proposées par le sélecteur : les plus récentes du membre. */
+/** Images proposées par le sélecteur : les plus récentes (du membre par défaut). */
 const PICKER_LIMIT = 60;
+/** Longueur maximale du texte cherché dans le sélecteur. */
+const PICKER_SEARCH_MAX = 80;
 
 interface FormState {
 	title: string;
@@ -157,7 +164,8 @@ export class GalleryController {
 			addedAt,
 			extension: '.webp',
 		});
-		return reply.redirect(fromPicker ? 'gallery.php?info=pick&done=added' : 'gallery.php?done=added', 303);
+		if (!fromPicker) return reply.redirect('gallery.php?done=added', 303);
+		return reply.redirect(`gallery.php?info=pick&done=added${request.query.embed === '1' ? '&embed=1' : ''}`, 303);
 	}
 
 	async #convert(source: Buffer): Promise<{ image: Buffer; thumbnail: Buffer; mobile: Buffer } | null> {
@@ -221,14 +229,21 @@ export class GalleryController {
 	}
 
 	private async renderPicker(request: GalleryRequest, reply: FastifyReply, form: FormState): Promise<FastifyReply> {
-		const { viewer, board: config } = request;
+		const { viewer, board: config, query } = request;
 		const { lang } = this.deps.page;
+		const search = [...punTrim(query.q ?? '')].slice(0, PICKER_SEARCH_MAX).join('');
+		const allImages = query.scope === 'all';
+		const added = query.done === 'added';
 		const view = buildGalleryPicker({
 			config,
-			images: await this.deps.gallery.listImages(0, PICKER_LIMIT, viewer.id),
+			images: await this.deps.gallery.listImages(0, PICKER_LIMIT, allImages ? null : viewer.id, search),
 			form,
 			lang,
-			notice: request.query.done === 'added' ? lang.gallery.added : null,
+			notice: added ? lang.gallery.added : null,
+			search,
+			allImages,
+			embedded: query.embed === '1',
+			preselectFirst: added,
 		});
 		return renderPage(
 			request,

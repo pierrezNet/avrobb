@@ -143,6 +143,7 @@ const app = await buildApp({
 	page: { lang: fr, dateWords: frDateWords, clock },
 	legacyCookie: config.legacyCookie,
 	legacyBaseUrl: config.legacyBaseUrl,
+	...(config.legacyRoot !== '' ? { legacyImagesRoot: path.join(config.legacyRoot, 'img') } : {}),
 	trustProxy: config.trustProxy,
 	logger: true,
 });

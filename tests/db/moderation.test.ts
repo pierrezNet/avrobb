@@ -218,3 +218,65 @@ describe('ConfigRepository (admin_options.php)', () => {
 		});
 	});
 });
+
+describe('ForumAdminRepository (admin_categories.php, admin_forums.php)', () => {
+	it('liste, ajoute, modifie et ordonne', async () => {
+		const { ForumAdminRepository } = await import('../../src/repositories/ForumAdminRepository.ts');
+		await inRollback(async (trx) => {
+			const store = new ForumAdminRepository(trx);
+			expect((await store.listCategories()).map((cat) => cat.id)).toEqual([2, 1]);
+			expect((await store.listForums()).map((row) => row.forumId)).toEqual([2, 1, 3, 4]);
+			await store.addForum(1, 'Nouveau forum');
+			await store.addCategory('Vide');
+			await store.updateForumPositions([{ id: 1, position: 9 }]);
+			expect((await store.listForums()).map((row) => row.forumName).at(-1)).toBe('Technique');
+			await store.updateForum(1, { name: 'Tech', description: null, redirectUrl: null, sortBy: 2, categoryId: 2 });
+			expect(await store.findForum(1)).toMatchObject({ name: 'Tech', description: '', sortBy: 2, categoryId: 2 });
+			await store.updateCategories([{ id: 1, name: 'Simus', position: 0 }]);
+			expect((await store.listCategories()).map((cat) => cat.name).slice(0, 2)).toEqual(['Simus', 'Vide']);
+		});
+	});
+
+	it('permissions des groupes : lecture, ligne propre, retour aux réglages du groupe', async () => {
+		const { ForumAdminRepository } = await import('../../src/repositories/ForumAdminRepository.ts');
+		await inRollback(async (trx) => {
+			const store = new ForumAdminRepository(trx);
+			const rows = await store.listGroupPermissions(2);
+			expect(rows.map((row) => row.groupId)).toEqual([2, 3, 4]);
+			expect(rows.find((row) => row.groupId === 4)?.forum).toEqual({ readForum: true, postReplies: false, postTopics: true });
+			await store.setGroupPermission(2, 3, { readForum: false, postReplies: false, postTopics: false });
+			await store.setGroupPermission(2, 4, { readForum: true, postReplies: true, postTopics: false });
+			const perms = await trx.selectFrom('forum_perms').selectAll().where('forum_id', '=', 2).orderBy('group_id').execute();
+			expect(perms).toEqual([
+				{ group_id: 3, forum_id: 2, read_forum: 0, post_replies: 0, post_topics: 0 },
+				{ group_id: 4, forum_id: 2, read_forum: 1, post_replies: 1, post_topics: 0 },
+			]);
+			await store.setGroupPermission(2, 4, null);
+			await store.revertPermissions(3);
+			expect(await trx.selectFrom('forum_perms').select(['group_id', 'forum_id']).execute()).toEqual([{ group_id: 3, forum_id: 2 }]);
+		});
+	});
+
+	it('supprime un forum avec ses sujets, messages, index et redirections orphelines', async () => {
+		const { ForumAdminRepository } = await import('../../src/repositories/ForumAdminRepository.ts');
+		await inRollback(async (trx) => {
+			await new ForumAdminRepository(trx).deleteForum(2);
+			expect(await trx.selectFrom('forums').select('id').where('id', '=', 2).execute()).toEqual([]);
+			expect(await trx.selectFrom('posts').select('id').where('id', 'in', [100, 101, 102]).execute()).toEqual([]);
+			expect(await trx.selectFrom('search_matches').select('post_id').where('post_id', 'in', [100, 101, 102]).execute()).toEqual([]);
+			// Sujet 12 (forum 1) : lien vers le sujet 10 supprimé.
+			expect(await topicRow(trx, 12)).toBeUndefined();
+			expect(await trx.selectFrom('forum_perms').select('group_id').where('forum_id', '=', 2).execute()).toEqual([]);
+		});
+	});
+
+	it('supprime une catégorie et ses forums', async () => {
+		const { ForumAdminRepository } = await import('../../src/repositories/ForumAdminRepository.ts');
+		await inRollback(async (trx) => {
+			await new ForumAdminRepository(trx).deleteCategory(1);
+			expect((await trx.selectFrom('forums').select('id').execute()).map((row) => row.id)).toEqual([2]);
+			expect(await trx.selectFrom('categories').select('id').execute()).toEqual([{ id: 2 }]);
+			expect(await topicRow(trx, 11)).toBeUndefined();
+		});
+	});
+});

@@ -75,6 +75,12 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   une valeur factice) ; fuseau, langue et style limités aux listes proposées ; une URL de base au
   domaine accentué passe en punycode par l'analyseur d'URL de Node. Formats de date et d'heure
   enregistrés mais sans effet sur l'affichage (PV utilise des formats fixes).
+- Catégories et forums (`admin_categories.php`, `admin_forums.php`) : erreurs réaffichées dans la
+  page ; la suppression d'un forum se confirme par un bouton POST (le lien GET n'affiche que la
+  confirmation) ; enregistrer un forum qui contient des sujets conserve son URL de redirection (le
+  PHP la vidait, le champ n'étant pas envoyé) ; une permission qui diffère du groupe est signalée
+  « (modifié) » au lieu de la seule couleur. Les listes « Atteindre » du PHP sont supprimées après
+  chaque modification, il les régénère.
 - Rédaction (`post.php`) : émojis conservés (le PHP remplaçait les caractères de 4 octets par « ? »,
   héritage d'une base en utf8 sur 3 octets) ; redirection immédiate vers le message ; boutons de
   préfixe du sujet en JavaScript et seulement pour une nouvelle discussion ; pas de réponse dans le

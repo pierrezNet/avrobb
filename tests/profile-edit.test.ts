@@ -495,7 +495,7 @@ describe('profile.php : sections', () => {
 					version: async () => null,
 					read: async () => null,
 					invalidate: async (name) => void invalidated.push(name),
-					invalidateFeeds: async () => {},
+					invalidateFamily: async () => {},
 				},
 			}),
 		);

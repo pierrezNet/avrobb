@@ -21,6 +21,7 @@ import { DraftController, type DraftQuery } from './controllers/DraftController.
 import { EditController, type EditQuery } from './controllers/EditController.ts';
 import { ExternController, type ExternQuery } from './controllers/ExternController.ts';
 import { FileManagerController, type FileManagerQuery } from './controllers/FileManagerController.ts';
+import { type AdminCategoriesQuery, type AdminForumsQuery, ForumAdminController } from './controllers/ForumAdminController.ts';
 import { ForumController, type ForumQuery } from './controllers/ForumController.ts';
 import { GalleryController, type GalleryQuery } from './controllers/GalleryController.ts';
 import { HelpController } from './controllers/HelpController.ts';
@@ -53,6 +54,7 @@ import type { ConfigStore } from './repositories/ConfigRepository.ts';
 import type { ContactStore } from './repositories/ContactRepository.ts';
 import type { DraftStore } from './repositories/DraftRepository.ts';
 import type { FeedReader } from './repositories/FeedRepository.ts';
+import type { ForumAdminStore } from './repositories/ForumAdminRepository.ts';
 import type { GalleryFileStore } from './repositories/GalleryFiles.ts';
 import type { GalleryStore } from './repositories/GalleryRepository.ts';
 import type { MailTemplateReader } from './repositories/MailTemplateFiles.ts';
@@ -127,6 +129,8 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	/** Options du forum (admin_options.php) : table config et invalidation des caches. */
 	configStore: ConfigStore;
 	configCache: ConfigCache;
+	/** Catégories et forums (admin_categories.php, admin_forums.php). */
+	forumAdmin: ForumAdminStore;
 	toolbar: ToolbarReader;
 	avatars: AvatarLocator;
 	avatarStore: AvatarStore;
@@ -152,6 +156,8 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 
 /** Pages déjà servies par Node ; les autres liens partent vers l'installation PHP. */
 const PORTED_PAGES = new Set([
+	'admin_categories.php',
+	'admin_forums.php',
 	'admin_index.php',
 	'admin_options.php',
 	'admin_permissions.php',
@@ -345,6 +351,16 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 	const adminPermissions = new AdminPermissionsController(deps);
 	app.get<{ Querystring: AdminPermissionsQuery }>('/admin_permissions.php', { preHandler: authenticate }, adminPermissions.show);
 	app.post<{ Body: FormBody }>('/admin_permissions.php', { preHandler: [authenticate, verifyCsrf] }, adminPermissions.save);
+
+	const forumAdmin = new ForumAdminController(deps);
+	app.get<{ Querystring: AdminCategoriesQuery }>('/admin_categories.php', { preHandler: authenticate }, forumAdmin.showCategories);
+	app.post<{ Body: FormBody }>('/admin_categories.php', { preHandler: [authenticate, verifyCsrf] }, forumAdmin.submitCategories);
+	app.get<{ Querystring: AdminForumsQuery }>('/admin_forums.php', { preHandler: authenticate }, forumAdmin.showForums);
+	app.post<{ Querystring: AdminForumsQuery; Body: FormBody }>(
+		'/admin_forums.php',
+		{ preHandler: [authenticate, verifyCsrf] },
+		forumAdmin.submitForums,
+	);
 
 	const adminReports = new AdminReportsController(deps);
 	app.get<{ Querystring: AdminReportsQuery }>('/admin_reports.php', { preHandler: authenticate }, adminReports.show);

@@ -57,7 +57,7 @@ export class AdminOptionsController {
 			await this.deps.configStore.updateValues(changes);
 			await this.deps.configCache.invalidate();
 		}
-		await this.deps.phpCache?.invalidateFeeds();
+		await this.deps.phpCache?.invalidateFamily('feed');
 		return reply.redirect('admin_options.php?done=updated', 303);
 	};
 

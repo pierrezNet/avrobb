@@ -1,0 +1,76 @@
+{#- Modification d'un forum (admin_forums.php?edit_forum=…). Données : `view` (presenters/adminForumsPage.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/adminMenu.njk" as adminMenu %}
+{% import "partials/forms.njk" as forms %}
+{% import "partials/sideMenu.njk" as sideMenu %}
+
+{#- Case d'une permission : valeur affichée à l'ouverture (_old) et case envoyée si cochée (_new). -#}
+{% macro permission(name, groupId, cell, label, notDefaultText) %}
+<input type="hidden" name="{{ name }}_old[{{ groupId }}]" value="{{ '1' if cell.checked else '0' }}">
+<label class="form__choice{% if cell.notDefault %} permission--changed{% endif %}"><input type="checkbox" name="{{ name }}_new[{{ groupId }}]" value="1"{% if cell.checked %} checked{% endif %}{% if cell.disabled %} disabled{% endif %}> {{ label }}{% if cell.notDefault %} <em>{{ notDefaultText }}</em>{% endif %}</label>
+{% endmacro %}
+
+{% block main %}
+{% set t = lang.adminForums %}
+{% set f = view.forum %}
+<h1 class="page-title">{{ t.editForumHead }}</h1>
+<div class="side-layout">
+{{ adminMenu.menu(view.menu, lang) }}
+<div class="side-layout__content">
+{{ sideMenu.notice(view.notice) }}
+{{ forms.errors(lang.profile.formErrors, lang.profile.formErrorsInfo, view.errors) }}
+<form id="edit_forum" class="form-box form" method="post" action="{{ url(view.formAction) }}">
+	{{ forms.csrf(layout) }}
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ t.editDetailsSubhead }}</legend>
+		<p class="form__field">
+			<label for="forum_name">{{ t.forumName }}</label>
+			<input type="text" id="forum_name" name="forum_name" value="{{ f.name }}" maxlength="80" required>
+		</p>
+		<p class="form__field">
+			<label for="forum_desc">{{ t.forumDescription }}</label>
+			<textarea id="forum_desc" name="forum_desc" rows="3">{{ f.description }}</textarea>
+		</p>
+		<p class="form__field">
+			<label for="cat_id">{{ t.category }}</label>
+			<select id="cat_id" name="cat_id">
+				{% for cat in view.categories %}<option value="{{ cat.id }}"{% if cat.selected %} selected{% endif %}>{{ cat.name }}</option>{% endfor %}
+			</select>
+		</p>
+		<p class="form__field">
+			<label for="sort_by">{{ t.sortBy }}</label>
+			<select id="sort_by" name="sort_by">
+				{% for option in view.sortOptions %}<option value="{{ option.value }}"{% if option.selected %} selected{% endif %}>{{ t.sortOptions[option.value] }}</option>{% endfor %}
+			</select>
+		</p>
+		<p class="form__field">
+			<label for="redirect_url">{{ t.redirectUrl }}</label>
+			{% if f.redirectEditable %}
+			<input type="url" id="redirect_url" name="redirect_url" value="{{ f.redirectUrl }}" maxlength="100">
+			{% else %}
+			<span id="redirect_url" class="form__help">{{ t.redirectHelp }}</span>
+			{% endif %}
+		</p>
+	</fieldset>
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ t.groupPermissionsSubhead }}</legend>
+		<p class="form__help">{{ t.groupPermissionsInfo }}</p>
+		<ul class="admin-rows">
+			{% for group in view.permissions %}
+			<li class="admin-rows__item admin-rows__item--stack">
+				<strong>{{ group.title }}</strong>
+				<div class="form__field">
+					{{ permission('read_forum', group.groupId, group.readForum, t.readForum, t.notDefault) }}
+					{{ permission('post_replies', group.groupId, group.postReplies, t.postReplies, t.notDefault) }}
+					{{ permission('post_topics', group.groupId, group.postTopics, t.postTopics, t.notDefault) }}
+				</div>
+			</li>
+			{% endfor %}
+		</ul>
+		<p class="form__buttons"><button type="submit" class="button" name="revert_perms" value="1">{{ t.revertToDefault }}</button></p>
+	</fieldset>
+	<p class="form__buttons"><button type="submit" class="button button--primary" name="save" value="1" accesskey="s">{{ t.saveChanges }}</button></p>
+</form>
+</div>
+</div>
+{% endblock %}

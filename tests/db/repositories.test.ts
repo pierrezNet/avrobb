@@ -18,6 +18,7 @@ import { ConfigRepository } from '../../src/repositories/ConfigRepository.ts';
 import { ContactRepository } from '../../src/repositories/ContactRepository.ts';
 import { DraftRepository } from '../../src/repositories/DraftRepository.ts';
 import { FeedRepository } from '../../src/repositories/FeedRepository.ts';
+import { ForumAdminRepository } from '../../src/repositories/ForumAdminRepository.ts';
 import { ForumRepository } from '../../src/repositories/ForumRepository.ts';
 import { GalleryRepository } from '../../src/repositories/GalleryRepository.ts';
 import { ModerationRepository } from '../../src/repositories/ModerationRepository.ts';
@@ -492,6 +493,7 @@ describe('viewtopic de bout en bout', () => {
 			reportStore: new ReportRepository(db),
 			adminStats: new AdminStatsRepository(db, 'fo_'),
 			configStore: new ConfigRepository(db),
+			forumAdmin: new ForumAdminRepository(db),
 			configCache: { invalidate: async () => {} },
 			serverInfo: new NodeServerInfo(),
 			toolbar: new ToolbarRepository(db),

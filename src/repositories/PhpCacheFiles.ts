@@ -24,8 +24,11 @@ export interface PhpCacheStore {
 	read(name: PhpCacheName): Promise<PhpCacheFile | null>;
 	/** Supprime le fichier (sans erreur s'il est déjà absent). */
 	invalidate(name: PhpCacheName): Promise<void>;
-	/** Supprime les flux mis en cache (cache_feed*.php), comme clear_feed_cache(). */
-	invalidateFeeds(): Promise<void>;
+	/**
+	 * Supprime toute une famille de fichiers : flux (cache_feed*.php, clear_feed_cache()) ou listes
+	 * « Atteindre » de chaque groupe (cache_quickjump_*.php, que generate_quickjump_cache() réécrit).
+	 */
+	invalidateFamily(family: 'feed' | 'quickjump'): Promise<void>;
 }
 
 const isMissing = (error: unknown): boolean => error instanceof Error && 'code' in error && error.code === 'ENOENT';
@@ -66,7 +69,7 @@ export class PhpCacheFiles implements PhpCacheStore {
 		}
 	}
 
-	async invalidateFeeds(): Promise<void> {
+	async invalidateFamily(family: 'feed' | 'quickjump'): Promise<void> {
 		let entries: string[];
 		try {
 			entries = await readdir(this.cacheDir);
@@ -75,7 +78,7 @@ export class PhpCacheFiles implements PhpCacheStore {
 			throw error;
 		}
 		for (const entry of entries) {
-			if (!/^cache_feed[A-Za-z0-9_]*\.php$/.test(entry)) continue;
+			if (!entry.startsWith(`cache_${family}`) || !/^[A-Za-z0-9_]+\.php$/.test(entry)) continue;
 			try {
 				await unlink(path.join(this.cacheDir, entry));
 			} catch (error) {

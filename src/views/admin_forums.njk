@@ -1,0 +1,52 @@
+{#- Forums (admin_forums.php) : ajout et positions. Données : `view` (presenters/adminForumsPage.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/adminMenu.njk" as adminMenu %}
+{% import "partials/forms.njk" as forms %}
+{% import "partials/sideMenu.njk" as sideMenu %}
+
+{% block main %}
+{% set t = lang.adminForums %}
+<h1 class="page-title">{{ t.forums }}</h1>
+<div class="side-layout">
+{{ adminMenu.menu(view.menu, lang) }}
+<div class="side-layout__content">
+{{ sideMenu.notice(view.notice) }}
+{{ forms.errors(lang.profile.formErrors, lang.profile.formErrorsInfo, view.errors) }}
+<form class="form-box form" method="post" action="{{ url('admin_forums.php') }}">
+	{{ forms.csrf(layout) }}
+	<h2 class="form-box__title">{{ t.addForumHead }}</h2>
+	<p class="form__field">
+		<label for="add_to_cat">{{ t.addForumLabel }}</label>
+		<select id="add_to_cat" name="add_to_cat" aria-describedby="add_forum_help">
+			{% for cat in view.categories %}<option value="{{ cat.id }}">{{ cat.name }}</option>{% else %}<option value="0" disabled>{{ t.noCategories }}</option>{% endfor %}
+		</select>
+		<span id="add_forum_help" class="form__help">{{ t.addForumHelp }}</span>
+	</p>
+	<p class="form__buttons"><button type="submit" class="button button--primary" name="add_forum" value="1"{% if not view.categories.length %} disabled{% endif %}>{{ t.addForum }}</button></p>
+</form>
+{% if view.groups.length %}
+<form class="form-box form" method="post" action="{{ url('admin_forums.php') }}">
+	{{ forms.csrf(layout) }}
+	<h2 class="form-box__title">{{ t.editForumsHead }}</h2>
+	{% for group in view.groups %}
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ t.categorySubhead(group.name) }}</legend>
+		<ul class="admin-rows">
+			{% for forum in group.forums %}
+			<li class="admin-rows__item">
+				<p class="admin-rows__main"><strong>{{ forum.name }}</strong><br><a href="{{ url(forum.editHref) }}">{{ t.edit }}</a> · <a href="{{ url(forum.deleteHref) }}">{{ t.delete }}</a></p>
+				<p class="form__field admin-rows__position">
+					<label for="position-{{ forum.id }}">{{ t.position }}</label>
+					<input type="number" id="position-{{ forum.id }}" name="position[{{ forum.id }}]" value="{{ forum.position }}" min="0" max="999" inputmode="numeric" required>
+				</p>
+			</li>
+			{% endfor %}
+		</ul>
+	</fieldset>
+	{% endfor %}
+	<p class="form__buttons"><button type="submit" class="button button--primary" name="update_positions" value="1">{{ t.updatePositions }}</button></p>
+</form>
+{% endif %}
+</div>
+</div>
+{% endblock %}

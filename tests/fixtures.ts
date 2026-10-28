@@ -37,6 +37,7 @@ import {
 import { fr, frDateWords } from '../src/lang/fr/index.ts';
 import type { Recipient, SenderLimits } from '../src/repositories/ContactRepository.ts';
 import type { DraftStore, NewDraft } from '../src/repositories/DraftRepository.ts';
+import type { AdminCategory, AdminForum, ForumAdminStore } from '../src/repositories/ForumAdminRepository.ts';
 import type { StoredFile, UploadStore } from '../src/repositories/MemberUploadFiles.ts';
 import type { ModerationStore } from '../src/repositories/ModerationRepository.ts';
 import type { OnlineWriter } from '../src/repositories/OnlineRepository.ts';
@@ -50,6 +51,7 @@ import type { PostLocation } from '../src/repositories/TopicRepository.ts';
 import type { ViewerRecord } from '../src/repositories/UserRepository.ts';
 import type { Ban } from '../src/services/bans.ts';
 import type { CensoredWord } from '../src/services/censor.ts';
+import type { GroupForumPermissionRow } from '../src/services/forumPermissions.ts';
 import type { MailMessage } from '../src/services/mail.ts';
 import { fakePrivateContacts, fakePrivateMessageStore, type PmData, pmData } from './fakePrivateMessages.ts';
 
@@ -370,6 +372,9 @@ export interface FakeData {
 	configValues?: Map<string, string>;
 	configUpdates?: ReadonlyMap<string, string | null>[];
 	configInvalidations?: number;
+	/** Administration des catégories et forums (admin_categories.php, admin_forums.php). */
+	forumAdmin?: { categories: AdminCategory[]; forums: AdminForum[]; permissions: GroupForumPermissionRow[] };
+	forumAdminLog?: string[];
 	/** Signalements listés par admin_reports.php (modifiés en place quand ils sont traités). */
 	reportList?: Report[];
 	/** Messagerie privée en mémoire (créée vide au besoin). */
@@ -666,6 +671,39 @@ function fakeModeration(data: FakeData): ModerationStore {
 	};
 }
 
+/** Administration des catégories et forums en mémoire ; les écritures sont consignées dans `forumAdminLog`. */
+function fakeForumAdmin(data: FakeData): ForumAdminStore {
+	const log = (entry: string): void => {
+		data.forumAdminLog = [...(data.forumAdminLog ?? []), entry];
+	};
+	const admin = (): NonNullable<FakeData['forumAdmin']> => {
+		data.forumAdmin ??= { categories: [], forums: [], permissions: [] };
+		return data.forumAdmin;
+	};
+	return {
+		listCategories: async () => admin().categories,
+		addCategory: async (name) => log(`addCategory ${name}`),
+		updateCategories: async (categories) => log(`updateCategories ${categories.map((c) => `${c.id}:${c.name}:${c.position}`).join(',')}`),
+		deleteCategory: async (id) => log(`deleteCategory ${id}`),
+		listForums: async () =>
+			admin().forums.map((forum) => ({
+				categoryId: forum.categoryId,
+				categoryName: admin().categories.find((cat) => cat.id === forum.categoryId)?.name ?? '',
+				forumId: forum.id,
+				forumName: forum.name,
+				position: 0,
+			})),
+		addForum: async (categoryId, name) => log(`addForum ${categoryId} ${name}`),
+		updateForumPositions: async (positions) => log(`positions ${positions.map((p) => `${p.id}:${p.position}`).join(',')}`),
+		findForum: async (id) => admin().forums.find((forum) => forum.id === id) ?? null,
+		updateForum: async (id, details) => log(`updateForum ${id} ${JSON.stringify(details)}`),
+		listGroupPermissions: async () => admin().permissions,
+		setGroupPermission: async (forumId, groupId, permission) => log(`perm ${forumId} ${groupId} ${JSON.stringify(permission)}`),
+		revertPermissions: async (forumId) => log(`revert ${forumId}`),
+		deleteForum: async (id) => log(`deleteForum ${id}`),
+	};
+}
+
 export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppDeps {
 	data.pm ??= pmData();
 	const contactsAndLists = fakePrivateContacts(data.pm);
@@ -681,6 +719,7 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 				for (const [name, value] of changes) data.configValues?.set(name, value ?? '');
 			},
 		},
+		forumAdmin: fakeForumAdmin(data),
 		configCache: {
 			invalidate: async () => {
 				data.configInvalidations = (data.configInvalidations ?? 0) + 1;

@@ -1,0 +1,21 @@
+{#- Confirmation de suppression d'un forum (admin_forums.php?del_forum=…). Données : `view` (controllers/ForumAdminController.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/adminMenu.njk" as adminMenu %}
+{% import "partials/forms.njk" as forms %}
+
+{% block main %}
+{% set t = lang.adminForums %}
+<h1 class="page-title">{{ t.confirmDeleteForumHead }}</h1>
+<div class="side-layout">
+{{ adminMenu.menu(view.menu, lang) }}
+<div class="side-layout__content">
+<form class="form-box form" method="post" action="{{ url(view.formAction) }}">
+	{{ forms.csrf(layout) }}
+	<h2 class="form-box__title">{{ t.confirmDeleteForumSubhead }}</h2>
+	<p>{{ t.confirmDeleteForumInfo(view.forum.name) }}</p>
+	<p class="form__warning"><strong>{{ t.confirmDeleteForumWarn }}</strong></p>
+	<p class="form__buttons"><button type="submit" class="button button--primary" name="del_forum_comply" value="1">{{ t.delete }}</button> <a class="button" href="{{ url('admin_forums.php') }}">{{ t.goBack }}</a></p>
+</form>
+</div>
+</div>
+{% endblock %}

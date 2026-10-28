@@ -75,14 +75,15 @@ export interface ForumsTable {
 	forum_name: string;
 	forum_desc: string | null;
 	redirect_url: string | null;
-	num_topics: number;
-	num_posts: number;
+	/** Colonnes avec une valeur par défaut (0) : facultatives à la création d'un forum. */
+	num_topics: Generated<number>;
+	num_posts: Generated<number>;
 	last_post: number | null;
 	last_post_id: number | null;
 	last_poster: string | null;
 	moderators: string | null;
-	sort_by: number;
-	disp_position: number;
+	sort_by: Generated<number>;
+	disp_position: Generated<number>;
 	cat_id: number;
 }
 

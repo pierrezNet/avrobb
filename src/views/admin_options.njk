@@ -1,0 +1,68 @@
+{#- Options du forum (admin_options.php). Données : `view` (presenters/adminOptionsPage.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/adminMenu.njk" as adminMenu %}
+{% import "partials/forms.njk" as forms %}
+{% import "partials/sideMenu.njk" as sideMenu %}
+
+{#- Groupe de boutons radio (oui/non ou liste de choix) titré par le libellé de l'option. -#}
+{% macro radios(f, items) %}
+<div class="form__field" role="radiogroup" aria-labelledby="label-{{ f.key }}"{% if f.help %} aria-describedby="help-{{ f.key }}"{% endif %}>
+	<span id="label-{{ f.key }}" class="form__label">{{ f.label }}</span>
+	{% for item in items %}<label class="form__choice"><input type="radio" name="form[{{ f.key }}]" value="{{ item.value }}"{% if item.selected %} checked{% endif %}> {{ item.label }}</label>{% endfor %}
+	{% if f.help %}<span id="help-{{ f.key }}" class="form__help">{{ f.help }}</span>{% endif %}
+</div>
+{% endmacro %}
+
+{% block main %}
+<h1 class="page-title">{{ lang.adminOptions.title }}</h1>
+<div class="side-layout">
+{{ adminMenu.menu(view.menu, lang) }}
+<div class="side-layout__content">
+{{ sideMenu.notice(view.notice) }}
+{{ forms.errors(lang.profile.formErrors, lang.profile.formErrorsInfo, view.errors) }}
+<form id="admin-options" class="form-box form options-form" method="post" action="{{ url('admin_options.php') }}">
+	{{ forms.csrf(layout) }}
+	<input type="hidden" name="form_sent" value="1">
+	{% for section in view.sections %}
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ section.legend }}</legend>
+		{% for f in section.fields %}
+		{% set c = f.control %}
+		{% if c.kind == 'yesno' %}
+		{{ radios(f, [{ value: '1', label: lang.adminOptions.yes, selected: c.checked }, { value: '0', label: lang.adminOptions.no, selected: not c.checked }]) }}
+		{% elif c.kind == 'radio' %}
+		{{ radios(f, c.choices) }}
+		{% elif c.kind == 'smtpPass' %}
+		<div class="form__field">
+			<label class="form__choice"><input type="checkbox" name="form[smtp_change_pass]" value="1"> {{ lang.adminOptions.smtpChangePass }}</label>
+			<label for="smtp_pass1">{{ f.label }}</label>
+			<input type="password" id="smtp_pass1" name="form[smtp_pass1]" maxlength="50" autocomplete="new-password" aria-describedby="help-{{ f.key }}">
+			<label for="smtp_pass2">{{ lang.adminOptions.smtpPassConfirm }}</label>
+			<input type="password" id="smtp_pass2" name="form[smtp_pass2]" maxlength="50" autocomplete="new-password">
+			<span id="help-{{ f.key }}" class="form__help">{{ f.help }}</span>
+		</div>
+		{% else %}
+		<p class="form__field">
+			<label for="opt-{{ f.key }}">{{ f.label }}</label>
+			{% if c.kind == 'text' %}
+			<input type="{{ c.type }}" id="opt-{{ f.key }}" name="form[{{ f.key }}]" value="{{ c.value }}" maxlength="{{ c.maxLength }}"{% if f.help %} aria-describedby="help-{{ f.key }}"{% endif %}>
+			{% elif c.kind == 'number' %}
+			<input type="number" id="opt-{{ f.key }}" name="form[{{ f.key }}]" value="{{ c.value }}" min="{{ c.min }}" max="{{ c.max }}" inputmode="numeric"{% if f.help %} aria-describedby="help-{{ f.key }}"{% endif %}>
+			{% elif c.kind == 'textarea' %}
+			<textarea id="opt-{{ f.key }}" name="form[{{ f.key }}]" rows="{{ c.rows }}"{% if f.help %} aria-describedby="help-{{ f.key }}"{% endif %}>{{ c.value }}</textarea>
+			{% elif c.kind == 'select' %}
+			<select id="opt-{{ f.key }}" name="form[{{ f.key }}]"{% if f.help %} aria-describedby="help-{{ f.key }}"{% endif %}>
+				{% for item in c.choices %}<option value="{{ item.value }}"{% if item.selected %} selected{% endif %}>{{ item.label }}</option>{% endfor %}
+			</select>
+			{% endif %}
+			{% if f.help %}<span id="help-{{ f.key }}" class="form__help">{{ f.help }}</span>{% endif %}
+		</p>
+		{% endif %}
+		{% endfor %}
+	</fieldset>
+	{% endfor %}
+	<p class="form__buttons"><button type="submit" class="button button--primary" name="save" value="1" accesskey="s">{{ lang.adminOptions.save }}</button></p>
+</form>
+</div>
+</div>
+{% endblock %}

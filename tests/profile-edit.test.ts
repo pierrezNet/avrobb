@@ -491,7 +491,12 @@ describe('profile.php : sections', () => {
 		const invalidated: string[] = [];
 		app = await buildApp(
 			fakeDeps(fake, {
-				phpCache: { version: async () => null, read: async () => null, invalidate: async (name) => void invalidated.push(name) },
+				phpCache: {
+					version: async () => null,
+					read: async () => null,
+					invalidate: async (name) => void invalidated.push(name),
+					invalidateFeeds: async () => {},
+				},
 			}),
 		);
 		const res = await post(app, fake, 2, '/profile.php?section=essentials&id=6', {

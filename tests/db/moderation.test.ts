@@ -197,3 +197,24 @@ describe('AdminStatsRepository', () => {
 		expect(info.bytes).toBeGreaterThan(0);
 	});
 });
+
+describe('ConfigRepository (admin_options.php)', () => {
+	it('met à jour des clés, NULL compris', async () => {
+		const { ConfigRepository } = await import('../../src/repositories/ConfigRepository.ts');
+		await inRollback(async (trx) => {
+			const store = new ConfigRepository(trx);
+			await store.updateValues(
+				new Map<string, string | null>([
+					['o_board_title', 'Nouveau titre'],
+					['o_smtp_host', 'smtp.example.test'],
+					['o_time_format', null],
+				]),
+			);
+			const values = await store.loadValues();
+			expect(values.get('o_board_title')).toBe('Nouveau titre');
+			expect(values.get('o_smtp_host')).toBe('smtp.example.test');
+			const row = await trx.selectFrom('config').select('conf_value').where('conf_name', '=', 'o_time_format').executeTakeFirst();
+			expect(row).toEqual({ conf_value: null });
+		});
+	});
+});

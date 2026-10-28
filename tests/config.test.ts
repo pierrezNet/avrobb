@@ -85,6 +85,8 @@ class FakeCacheStore implements PhpCacheStore {
 	async invalidate(name: PhpCacheName): Promise<void> {
 		this.files.delete(name);
 	}
+
+	async invalidateFeeds(): Promise<void> {}
 }
 
 function setup() {

@@ -105,7 +105,7 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
 ## Lot 7 — Administration
 
 - [x] Accueil et statistiques
-- [ ] Options (`admin_options`) avec invalidation de `cache_config.php`
+- [x] Options (`admin_options`) avec invalidation de `cache_config.php`
 - [ ] Catégories, forums, permissions par forum
 - [ ] Groupes, utilisateurs (recherche, actions de masse), gestion utilisateurs (AMP) **(PV)**
 - [ ] Bannissements, censure, rapports

@@ -491,6 +491,8 @@ describe('viewtopic de bout en bout', () => {
 			reportWriter: new ReportRepository(db),
 			reportStore: new ReportRepository(db),
 			adminStats: new AdminStatsRepository(db, 'fo_'),
+			configStore: new ConfigRepository(db),
+			configCache: { invalidate: async () => {} },
 			serverInfo: new NodeServerInfo(),
 			toolbar: new ToolbarRepository(db),
 			forums: new ForumRepository(db),

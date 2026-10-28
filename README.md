@@ -70,6 +70,11 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
 - Accueil de l'administration : pas de vérification de mise à jour (`action=check_upgrade`, le
   service de fluxbb.org n'existe plus). Statistiques du serveur : charge et visiteurs actifs pour
   tous, environnement Node.js et base de données pour les administrateurs ; pas de `phpinfo()`.
+- Options (`admin_options.php`) : erreurs de saisie réaffichées dans le formulaire (toutes à la fois,
+  le PHP s'arrêtait à la première) ; mot de passe SMTP jamais renvoyé au navigateur (le PHP y mettait
+  une valeur factice) ; fuseau, langue et style limités aux listes proposées ; une URL de base au
+  domaine accentué passe en punycode par l'analyseur d'URL de Node. Formats de date et d'heure
+  enregistrés mais sans effet sur l'affichage (PV utilise des formats fixes).
 - Rédaction (`post.php`) : émojis conservés (le PHP remplaçait les caractères de 4 octets par « ? »,
   héritage d'une base en utf8 sur 3 octets) ; redirection immédiate vers le message ; boutons de
   préfixe du sujet en JavaScript et seulement pour une nouvelle discussion ; pas de réponse dans le

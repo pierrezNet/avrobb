@@ -366,6 +366,10 @@ export interface FakeData {
 	moderatedTopics?: ModeratedTopic[];
 	targetForums?: ForumTarget[];
 	moderationLog?: string[];
+	/** Table config brute (admin_options.php), écritures et invalidations du cache. */
+	configValues?: Map<string, string>;
+	configUpdates?: ReadonlyMap<string, string | null>[];
+	configInvalidations?: number;
 	/** Signalements listés par admin_reports.php (modifiés en place quand ils sont traités). */
 	reportList?: Report[];
 	/** Messagerie privée en mémoire (créée vide au besoin). */
@@ -670,6 +674,18 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 
 	return {
 		config: { load: async () => ({ ...boardConfig, ...data.config }) },
+		configStore: {
+			loadValues: async () => new Map(data.configValues ?? []),
+			updateValues: async (changes) => {
+				data.configUpdates = [...(data.configUpdates ?? []), changes];
+				for (const [name, value] of changes) data.configValues?.set(name, value ?? '');
+			},
+		},
+		configCache: {
+			invalidate: async () => {
+				data.configInvalidations = (data.configInvalidations ?? 0) + 1;
+			},
+		},
 		users: {
 			findViewer: async (id) => {
 				const found = data.users.find((u) => u.viewer.id === id);

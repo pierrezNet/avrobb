@@ -6,7 +6,7 @@
  * cache » d'admin_maintenance.php).
  */
 
-import { readFile, stat, unlink } from 'node:fs/promises';
+import { readdir, readFile, stat, unlink } from 'node:fs/promises';
 import path from 'node:path';
 
 /** Noms de caches de FluxBB et de ses mods : sert aussi de garde contre la traversée de chemin. */
@@ -24,6 +24,8 @@ export interface PhpCacheStore {
 	read(name: PhpCacheName): Promise<PhpCacheFile | null>;
 	/** Supprime le fichier (sans erreur s'il est déjà absent). */
 	invalidate(name: PhpCacheName): Promise<void>;
+	/** Supprime les flux mis en cache (cache_feed*.php), comme clear_feed_cache(). */
+	invalidateFeeds(): Promise<void>;
 }
 
 const isMissing = (error: unknown): boolean => error instanceof Error && 'code' in error && error.code === 'ENOENT';
@@ -61,6 +63,24 @@ export class PhpCacheFiles implements PhpCacheStore {
 			await unlink(this.#path(name));
 		} catch (error) {
 			if (!isMissing(error)) throw error;
+		}
+	}
+
+	async invalidateFeeds(): Promise<void> {
+		let entries: string[];
+		try {
+			entries = await readdir(this.cacheDir);
+		} catch (error) {
+			if (isMissing(error)) return;
+			throw error;
+		}
+		for (const entry of entries) {
+			if (!/^cache_feed[A-Za-z0-9_]*\.php$/.test(entry)) continue;
+			try {
+				await unlink(path.join(this.cacheDir, entry));
+			} catch (error) {
+				if (!isMissing(error)) throw error;
+			}
 		}
 	}
 }

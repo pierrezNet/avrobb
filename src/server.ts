@@ -62,8 +62,13 @@ const avatars = new FileAvatarLocator(config.legacyRoot, config.legacyBaseUrl);
 const privateMessages = new PrivateMessageRepository(db);
 const privateContacts = new PrivateContactRepository(db);
 
+const configStore = new ConfigRepository(db);
+const configLoader = new ConfigLoader(configStore, phpCache, clock);
+
 const app = await buildApp({
-	config: new ConfigLoader(new ConfigRepository(db), phpCache, clock),
+	config: configLoader,
+	configStore,
+	configCache: configLoader,
 	users,
 	members: users,
 	credentials: users,

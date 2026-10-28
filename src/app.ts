@@ -12,6 +12,7 @@ import nunjucks from 'nunjucks';
 import type { Mailer } from './adapters/mailer.ts';
 import type { ServerInfo } from './adapters/serverInfo.ts';
 import { AdminIndexController } from './controllers/AdminIndexController.ts';
+import { AdminOptionsController, type AdminOptionsQuery } from './controllers/AdminOptionsController.ts';
 import { AdminReportsController, type AdminReportsQuery } from './controllers/AdminReportsController.ts';
 import { ContactController, type ContactQuery } from './controllers/ContactController.ts';
 import { DeleteController, type DeleteQuery } from './controllers/DeleteController.ts';
@@ -46,7 +47,8 @@ import { type LayoutDeps, renderBlock, renderMessage, renderMinimalMessage } fro
 import { checkAccess, purgeOnline, type SessionDeps, startSession } from './http/session.ts';
 import type { AdminStatsReader } from './repositories/AdminStatsRepository.ts';
 import type { CensorReader } from './repositories/CensorRepository.ts';
-import type { ConfigReader } from './repositories/ConfigLoader.ts';
+import type { ConfigCache, ConfigReader } from './repositories/ConfigLoader.ts';
+import type { ConfigStore } from './repositories/ConfigRepository.ts';
 import type { ContactStore } from './repositories/ContactRepository.ts';
 import type { DraftStore } from './repositories/DraftRepository.ts';
 import type { FeedReader } from './repositories/FeedRepository.ts';
@@ -121,6 +123,9 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	/** Statistiques de l'administration (admin_statistics.php). */
 	adminStats: AdminStatsReader;
 	serverInfo: ServerInfo;
+	/** Options du forum (admin_options.php) : table config et invalidation des caches. */
+	configStore: ConfigStore;
+	configCache: ConfigCache;
 	toolbar: ToolbarReader;
 	avatars: AvatarLocator;
 	avatarStore: AvatarStore;
@@ -147,6 +152,7 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 /** Pages déjà servies par Node ; les autres liens partent vers l'installation PHP. */
 const PORTED_PAGES = new Set([
 	'admin_index.php',
+	'admin_options.php',
 	'admin_reports.php',
 	'admin_statistics.php',
 	'delete.php',
@@ -329,6 +335,10 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 	const adminIndex = new AdminIndexController(deps);
 	app.get('/admin_index.php', { preHandler: authenticate }, adminIndex.index);
 	app.get('/admin_statistics.php', { preHandler: authenticate }, adminIndex.statistics);
+
+	const adminOptions = new AdminOptionsController(deps);
+	app.get<{ Querystring: AdminOptionsQuery }>('/admin_options.php', { preHandler: authenticate }, adminOptions.show);
+	app.post<{ Body: FormBody }>('/admin_options.php', { preHandler: [authenticate, verifyCsrf] }, adminOptions.save);
 
 	const adminReports = new AdminReportsController(deps);
 	app.get<{ Querystring: AdminReportsQuery }>('/admin_reports.php', { preHandler: authenticate }, adminReports.show);

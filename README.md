@@ -189,6 +189,12 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   forum), « Simulateurs de la semaine » (discussions actives par balise de simulateur). Les totaux
   sont sur la page Statistiques (`stats.php`, pied de page). « Marquer toutes les discussions comme
   lues » n'apparaît que s'il reste des nouveaux messages.
+- En-têtes de sécurité sur toutes les réponses (FluxBB n'en envoyait pas) : CSP sans script en
+  ligne (`script-src 'self'`), styles en ligne permis (couleurs des balises), images de partout en
+  http(s), vidéos YouTube/Dailymotion seulement, formulaires vers le forum ou l'installation PHP,
+  pas d'intégration dans un autre site ; `nosniff`, `Referrer-Policy`, `Permissions-Policy`, HSTS
+  en HTTPS (`TRUST_PROXY` derrière un proxy). Un script collé dans l'annonce ou les liens du menu
+  par l'administrateur ne s'exécute plus.
 - Pas de flux Atom : `extern.php?type=atom` sert le flux RSS (les anciens abonnements continuent de
   fonctionner) ; l'option « Flux par défaut » ne propose plus que Aucun ou RSS, et l'ancien choix
   Atom (`o_feed_type` = 2, celui de PV) n'affiche plus de lien de flux. Pas de flux des discussions

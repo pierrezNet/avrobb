@@ -149,7 +149,8 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
 - [ ] Déploiement : reverse proxy, HTTPS, gestion des processus, journaux, sauvegardes de la base
 - [x] Build de production : `npm run build` (tsc → `dist/`, vues copiées), `npm run start` sur `dist/server.js` sans tsx
 - [ ] Performance : index SQL manquants, cache HTTP des pages publiques, ressources statiques
-- [ ] Sécurité : en-têtes (CSP, HSTS), limitation de débit sur login et inscription, audit (`/security-review`)
+- [x] En-têtes de sécurité : CSP, X-Frame-Options, nosniff, Referrer-Policy, Permissions-Policy, HSTS en HTTPS
+- [ ] Sécurité : limitation de débit sur login et inscription, audit (`/security-review`)
 - [ ] Migration des mots de passe SHA-1 vers argon2 au fil des connexions (seulement après l'arrêt du PHP)
 - [ ] URL propres sans `.php` (`/sujet/4`, `/forum/2`…) avec redirections 301 depuis les anciennes (`viewtopic.php?id=4`), pour garder liens externes et référencement ; d'ici là, Node conserve volontairement les URL du PHP pour cohabiter avec lui
 - [ ] Retrait de `LEGACY_BASE_URL`

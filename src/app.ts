@@ -58,6 +58,7 @@ import { ASSETS_PREFIX, createAssetUrl } from './http/assets.ts';
 import { ensureCsrfToken, isValidCsrf } from './http/csrf.ts';
 import { type FormBody, registerFormParser } from './http/forms.ts';
 import { type LayoutDeps, renderBlock, renderMessage, renderMinimalMessage } from './http/layout.ts';
+import { securityHeaders } from './http/securityHeaders.ts';
 import { checkAccess, purgeOnline, type SessionDeps, startSession } from './http/session.ts';
 import type { AdminStatsReader } from './repositories/AdminStatsRepository.ts';
 import type { BanStore } from './repositories/BanRepository.ts';
@@ -265,6 +266,10 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 	};
 	const asset = createAssetUrl(path.join(ROOT_DIR, 'public'));
 
+	// En-têtes de sécurité sur toutes les réponses, fichiers statiques compris (http/securityHeaders.ts).
+	app.addHook('onSend', async (request, reply) => {
+		reply.headers(securityHeaders(deps.legacyBaseUrl, request.protocol === 'https'));
+	});
 	await app.register(fastifyCookie);
 	registerFormParser(app);
 	await app.register(fastifyView, {

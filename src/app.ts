@@ -65,6 +65,7 @@ import type { ForumAdminStore } from './repositories/ForumAdminRepository.ts';
 import type { GalleryFileStore } from './repositories/GalleryFiles.ts';
 import type { GalleryStore } from './repositories/GalleryRepository.ts';
 import type { GroupAdminStore } from './repositories/GroupAdminRepository.ts';
+import type { LabelAdminStore } from './repositories/LabelAdminRepository.ts';
 import type { MailTemplateReader } from './repositories/MailTemplateFiles.ts';
 import type { MaintenanceStore } from './repositories/MaintenanceRepository.ts';
 import type { UploadStore } from './repositories/MemberUploadFiles.ts';
@@ -152,6 +153,8 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	/** Plugin AP_Smilies.php : table smilies et images du PHP. */
 	smileyAdmin: SmileyAdminStore;
 	smileyImages: SmileyImageStore;
+	/** Plugin AP_Balises.php (mod PunBalise). */
+	labelAdmin: LabelAdminStore;
 	/** Groupes d'utilisateurs (admin_groups.php). */
 	groupAdmin: GroupAdminStore;
 	/** Recherche d'utilisateurs et d'adresses IP (admin_users.php). */

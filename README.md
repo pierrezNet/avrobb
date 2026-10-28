@@ -118,6 +118,11 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
 - Plugin Smilies : gère la table `smilies` et les images du PHP (les pages Node affichent des
   émojis) ; type d'image lu dans son contenu ; nom de fichier limité à lettres, chiffres, « _ » et
   « - » ; erreurs réaffichées dans la page.
+- Plugin PunBalise (`AP_Balises.php`) : ajout, édition et suppression des balises (avec la colonne
+  `bal<id>` de `balises_modo`, hors transaction car l'ALTER TABLE valide implicitement) ; le nom d'une
+  balise n'est pas modifiable, comme le PHP ; sélecteur de couleur natif du navigateur ; couleur
+  vérifiée (#RRGGBB) avant affichage. L'installation, la mise à jour et la désinstallation du mod
+  restent sur le PHP.
 - Rédaction (`post.php`) : émojis conservés (le PHP remplaçait les caractères de 4 octets par « ? »,
   héritage d'une base en utf8 sur 3 octets) ; redirection immédiate vers le message ; boutons de
   préfixe du sujet en JavaScript et seulement pour une nouvelle discussion ; pas de réponse dans le

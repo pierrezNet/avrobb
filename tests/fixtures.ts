@@ -38,6 +38,7 @@ import { fr, frDateWords } from '../src/lang/fr/index.ts';
 import type { Recipient, SenderLimits } from '../src/repositories/ContactRepository.ts';
 import type { DraftStore, NewDraft } from '../src/repositories/DraftRepository.ts';
 import type { AdminCategory, AdminForum, ForumAdminStore } from '../src/repositories/ForumAdminRepository.ts';
+import type { LabelRow } from '../src/repositories/LabelAdminRepository.ts';
 import type { StoredFile, UploadStore } from '../src/repositories/MemberUploadFiles.ts';
 import type { ModerationStore } from '../src/repositories/ModerationRepository.ts';
 import type { OnlineWriter } from '../src/repositories/OnlineRepository.ts';
@@ -401,6 +402,8 @@ export interface FakeData {
 	/** Plugin AP_Smilies.php. */
 	smileyRows?: SmileyRow[];
 	smileyImageNames?: string[];
+	/** Plugin AP_Balises.php. */
+	labelRows?: LabelRow[];
 	/** Signalements listés par admin_reports.php (modifiés en place quand ils sont traités). */
 	reportList?: Report[];
 	/** Messagerie privée en mémoire (créée vide au besoin). */
@@ -756,6 +759,21 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			},
 		},
 		forumAdmin: fakeForumAdmin(data),
+		labelAdmin: {
+			listLabels: async () => data.labelRows ?? [],
+			findLabel: async (id) => (data.labelRows ?? []).find((label) => label.id === id) ?? null,
+			addLabel: async (values) => {
+				data.labelRows = [...(data.labelRows ?? []), { ...values, id: 9, position: 0 }];
+				return 9;
+			},
+			updateLabel: async (id, values) => {
+				data.labelRows = (data.labelRows ?? []).map((label) => (label.id === id ? { ...label, ...values } : label));
+			},
+			deleteLabel: async (id) => {
+				data.labelRows = (data.labelRows ?? []).filter((label) => label.id !== id);
+			},
+			installedVersion: async () => '2.7',
+		},
 		smileyAdmin: {
 			listSmilies: async () => data.smileyRows ?? [],
 			updateSmilies: async (rows) => {

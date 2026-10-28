@@ -22,6 +22,7 @@ import { ForumAdminRepository } from '../../src/repositories/ForumAdminRepositor
 import { ForumRepository } from '../../src/repositories/ForumRepository.ts';
 import { GalleryRepository } from '../../src/repositories/GalleryRepository.ts';
 import { GroupAdminRepository } from '../../src/repositories/GroupAdminRepository.ts';
+import { LabelAdminRepository } from '../../src/repositories/LabelAdminRepository.ts';
 import { MaintenanceRepository } from '../../src/repositories/MaintenanceRepository.ts';
 import { ModerationRepository } from '../../src/repositories/ModerationRepository.ts';
 import { OnlineRepository } from '../../src/repositories/OnlineRepository.ts';
@@ -502,6 +503,7 @@ describe('viewtopic de bout en bout', () => {
 			maintenance: new MaintenanceRepository(db),
 			premiumAdmin: new PremiumAdminRepository(db),
 			smileyAdmin: new SmileyAdminRepository(db),
+			labelAdmin: new LabelAdminRepository(db),
 			smileyImages: { listImages: async () => [], deleteImage: async () => false, saveImage: async () => undefined },
 			groupAdmin: new GroupAdminRepository(db),
 			userAdmin: new UserAdminRepository(db),

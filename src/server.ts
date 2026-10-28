@@ -24,6 +24,7 @@ import { ForumRepository } from './repositories/ForumRepository.ts';
 import { GalleryFiles } from './repositories/GalleryFiles.ts';
 import { GalleryRepository } from './repositories/GalleryRepository.ts';
 import { GroupAdminRepository } from './repositories/GroupAdminRepository.ts';
+import { LabelAdminRepository } from './repositories/LabelAdminRepository.ts';
 import { MailTemplateFiles } from './repositories/MailTemplateFiles.ts';
 import { MaintenanceRepository } from './repositories/MaintenanceRepository.ts';
 import { MemberUploadFiles } from './repositories/MemberUploadFiles.ts';
@@ -81,6 +82,7 @@ const app = await buildApp({
 	premiumAdmin: new PremiumAdminRepository(db),
 	smileyAdmin: new SmileyAdminRepository(db),
 	smileyImages: new SmileyImageFiles(config.legacyRoot),
+	labelAdmin: new LabelAdminRepository(db),
 	groupAdmin: new GroupAdminRepository(db),
 	userAdmin: new UserAdminRepository(db),
 	users,

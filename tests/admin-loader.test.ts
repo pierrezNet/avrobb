@@ -56,8 +56,8 @@ describe('admin_loader.php', () => {
 		expect((await get(server, 5, PLUGIN)).statusCode).toBe(200);
 		expect((await get(server, 5, '/admin_loader.php?plugin=AP_Balises.php')).statusCode).toBe(403);
 		expect((await get(server, 2, '/admin_loader.php?plugin=../config.php')).statusCode).toBe(400);
-		const legacy = await get(server, 2, '/admin_loader.php?plugin=AP_Balises.php');
-		expect(legacy.headers.location).toBe('http://php.test/admin_loader.php?plugin=AP_Balises.php');
+		const legacy = await get(server, 2, '/admin_loader.php?plugin=AP_FluxToolBar.php');
+		expect(legacy.headers.location).toBe('http://php.test/admin_loader.php?plugin=AP_FluxToolBar.php');
 	});
 
 	it("ajout d'utilisateur : contrôles, compte, alerte et mot de passe envoyé", async () => {
@@ -282,5 +282,43 @@ describe('plugin Smilies : envoi d’image', () => {
 		const ok = await upload(server, 'clin.gif', png(16, 16));
 		expect(ok.headers.location).toBe('admin_loader.php?plugin=AP_Smilies.php&done=uploaded');
 		expect(fake.smileyImageNames).toEqual(['evil.png', 'clin.png']);
+	});
+});
+
+describe('plugin PunBalise', () => {
+	const send = (server: FastifyInstance, query: string, fields: Record<string, string>) =>
+		server.inject({
+			method: 'POST',
+			url: `/admin_loader.php?plugin=AP_Balises.php${query}`,
+			headers: { cookie: cookies(2), 'content-type': 'application/x-www-form-urlencoded' },
+			payload: new URLSearchParams({ csrf_token: csrfToken(CSRF_SECRET, SEED, 2), ...fields }).toString(),
+		});
+	const label = {
+		id: 1,
+		name: 'Réglé',
+		color: '#00AA00',
+		bold: true,
+		italic: false,
+		underline: false,
+		style: 0,
+		moderatorVisible: true,
+		position: 2,
+	};
+
+	it('liste, ajout, édition et suppression après confirmation', async () => {
+		const { server, fake } = await start();
+		fake.labelRows = [label, { ...label, id: 2, name: 'Piège', color: 'red;background:url(x)' }];
+		const page = await get(server, 2, '/admin_loader.php?plugin=AP_Balises.php');
+		expect(page.body).toContain('style="color: #00AA00"');
+		expect(page.body).not.toContain('url(x)');
+		expect((await send(server, '&action=add', { nom: 'Réglé', color1: '#000000', baltype: '0' })).body).toContain('déjà utilisé');
+		expect((await send(server, '&action=add', { nom: 'Urgent', color1: 'rouge' })).body).toContain('n&#39;est pas valide');
+		await send(server, '&action=add', { nom: 'Urgent', color1: '#FF0000', baltype: '2', affich: '1' });
+		expect(fake.labelRows?.at(-1)).toMatchObject({ id: 9, name: 'Urgent', style: 2, moderatorVisible: true });
+		await send(server, '&action=edit&id=1', { nom: 'Autre', color1: '#123456', position: '5', baltype: '1' });
+		expect(fake.labelRows?.[0]).toMatchObject({ name: 'Réglé', color: '#123456', position: 5, style: 1, bold: false });
+		expect((await get(server, 2, '/admin_loader.php?plugin=AP_Balises.php&action=delete&id=2')).body).toContain('name="delete_comply"');
+		await send(server, '&action=delete&id=2', { delete_comply: '1' });
+		expect(fake.labelRows?.map((l) => l.id)).toEqual([1, 9]);
 	});
 });

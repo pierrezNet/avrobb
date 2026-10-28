@@ -7,7 +7,7 @@
  * (admin) ; sujet 12 (forum 1) : lien de redirection vers le 10 ; sujet 11 dans le forum 3.
  */
 
-import type { Kysely } from 'kysely';
+import { type Kysely, sql } from 'kysely';
 import { afterAll, describe, expect, it } from 'vitest';
 import { createDatabase } from '../../src/db/database.ts';
 import type { Database } from '../../src/db/schema.ts';
@@ -552,5 +552,42 @@ describe('SmileyAdminRepository (AP_Smilies.php)', () => {
 			await store.removeSmilies([added.id]);
 			expect(await store.listSmilies()).toEqual(before);
 		});
+	});
+});
+
+describe('LabelAdminRepository (AP_Balises.php)', () => {
+	// ALTER TABLE balises_modo valide implicitement : pas de transaction annulée, la balise est supprimée à la fin.
+	it('ajoute une balise avec sa colonne bal<id>, la modifie puis la supprime', async () => {
+		const { LabelAdminRepository } = await import('../../src/repositories/LabelAdminRepository.ts');
+		const store = new LabelAdminRepository(db);
+		const id = await store.addLabel({
+			name: 'Test',
+			color: '#123456',
+			bold: true,
+			italic: false,
+			underline: false,
+			style: 1,
+			moderatorVisible: true,
+		});
+		try {
+			const columns = await sql<{ Field: string }>`SHOW COLUMNS FROM ${sql.table('balises_modo')}`.execute(db);
+			expect(columns.rows.map((c) => c.Field)).toContain(`bal${id}`);
+			await store.updateLabel(id, {
+				name: 'Test',
+				color: '#654321',
+				bold: false,
+				italic: true,
+				underline: false,
+				style: 2,
+				moderatorVisible: false,
+				position: 4,
+			});
+			expect(await store.findLabel(id)).toMatchObject({ color: '#654321', italic: true, style: 2, position: 4 });
+		} finally {
+			await store.deleteLabel(id);
+		}
+		const after = await sql<{ Field: string }>`SHOW COLUMNS FROM ${sql.table('balises_modo')}`.execute(db);
+		expect(after.rows.map((c) => c.Field)).not.toContain(`bal${id}`);
+		expect(await store.findLabel(id)).toBeNull();
 	});
 });

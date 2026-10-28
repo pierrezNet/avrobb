@@ -1,0 +1,36 @@
+{#- Plugin PunBalise (admin_loader.php?plugin=AP_Balises.php). Données : `view` (controllers/AdminLoaderController.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/adminMenu.njk" as adminMenu %}
+{% import "partials/sideMenu.njk" as sideMenu %}
+
+{% block main %}
+{% set t = lang.adminPlugins.labels %}
+<h1 class="page-title">{{ t.title }}</h1>
+<div class="side-layout">
+{{ adminMenu.menu(view.menu, lang) }}
+<div class="side-layout__content">
+{{ sideMenu.notice(view.notice) }}
+<section class="form-box">
+	<p>{{ t.intro }}</p>
+	<p>{{ t.version(view.version) if view.version !== null else t.notInstalled }}</p>
+	<p><a class="button button--primary" href="{{ url(view.addHref) }}">{{ t.add }}</a></p>
+	<h2 class="form-box__title">{{ t.existing }}</h2>
+	{% if view.labels.length %}
+	<ul class="admin-rows">
+		{% for l in view.labels %}
+		<li class="admin-rows__item">
+			<p class="admin-rows__main">
+				<span{% if l.safeColor %} style="color: {{ l.safeColor }}"{% endif %}>{% if l.bold %}<strong>{% endif %}{{ l.name }}{% if l.bold %}</strong>{% endif %}</span>
+				<br>{{ t.style }}&#160;: {{ l.styleName }} · {{ t.position }}&#160;: {{ l.position }} · {{ t.moderatorVisible }}&#160;: {{ t.yes if l.moderatorVisible else t.no }}
+			</p>
+			<p><a href="{{ url(l.editHref) }}">{{ t.edit }}</a> · <a href="{{ url(l.deleteHref) }}">{{ t.delete }}</a></p>
+		</li>
+		{% endfor %}
+	</ul>
+	{% else %}
+	<p>{{ t.empty }}</p>
+	{% endif %}
+</section>
+</div>
+</div>
+{% endblock %}

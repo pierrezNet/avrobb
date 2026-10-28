@@ -1,0 +1,20 @@
+{#- Suppression d'une balise (plugin AP_Balises.php). Données : `view` (controllers/AdminLoaderController.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/adminMenu.njk" as adminMenu %}
+{% import "partials/forms.njk" as forms %}
+
+{% block main %}
+{% set t = lang.adminPlugins.labels %}
+<h1 class="page-title">{{ t.deleteTitle }}</h1>
+<div class="side-layout">
+{{ adminMenu.menu(view.menu, lang) }}
+<div class="side-layout__content">
+<form class="form-box form" method="post" action="{{ url(view.deleteAction) }}">
+	{{ forms.csrf(layout) }}
+	<p>{{ t.deleteInfo(view.label.name) }}</p>
+	<p class="form__warning"><strong>{{ t.deleteWarning }}</strong></p>
+	<p class="form__buttons"><button type="submit" class="button button--primary" name="delete_comply" value="1">{{ t.delete }}</button> <a class="button" href="{{ url('admin_loader.php?plugin=AP_Balises.php') }}">{{ t.goBack }}</a></p>
+</form>
+</div>
+</div>
+{% endblock %}

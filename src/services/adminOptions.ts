@@ -53,8 +53,13 @@ const yesno: OptionInput = { kind: 'yesno' };
 const field = (key: string, input: OptionInput): OptionField => ({ key, input });
 const flags = (...keys: string[]): OptionField[] => keys.map((key) => field(key, yesno));
 
+export interface OptionSection<Id extends string = string> {
+	id: Id;
+	fields: readonly OptionField[];
+}
+
 /** Champs dans l'ordre du formulaire PHP. */
-export const OPTION_SECTIONS: readonly { id: OptionSectionId; fields: readonly OptionField[] }[] = [
+export const OPTION_SECTIONS: readonly OptionSection<OptionSectionId>[] = [
 	{
 		id: 'essentials',
 		fields: [
@@ -284,6 +289,24 @@ export function readOptionsForm(read: (key: string) => string, defaults: Options
 	}
 
 	return errors.length > 0 ? { kind: 'invalid', errors } : { kind: 'ok', values };
+}
+
+/** Permissions (admin_permissions.php, clés p_*), dans l'ordre du formulaire PHP. */
+export const PERMISSION_SECTIONS: readonly OptionSection<'posting' | 'signatures' | 'registration'>[] = [
+	{ id: 'posting', fields: flags('message_bbcode', 'message_img_tag', 'message_all_caps', 'subject_all_caps', 'force_guest_email') },
+	{
+		id: 'signatures',
+		fields: [...flags('sig_bbcode', 'sig_img_tag', 'sig_all_caps'), field('sig_length', num(0)), field('sig_lines', num(0, 999))],
+	},
+	{ id: 'registration', fields: flags('allow_banned_email', 'allow_dupe_email') },
+];
+
+/** Formulaire d'admin_permissions.php : intval() de chaque champ, jamais négatif. */
+export function readPermissionsForm(read: (key: string) => string): Map<string, string> {
+	const values = new Map<string, string>();
+	for (const section of PERMISSION_SECTIONS)
+		for (const { key } of section.fields) values.set(`p_${key}`, String(Math.max(0, intval(read(key)))));
+	return values;
 }
 
 /** Clés connues de la table dont la valeur change ; une chaîne vide est enregistrée en NULL. */

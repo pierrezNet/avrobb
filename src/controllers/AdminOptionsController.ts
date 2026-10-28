@@ -11,7 +11,7 @@ import { buildAdminOptions } from '../presenters/adminOptionsPage.ts';
 import type { ConfigCache } from '../repositories/ConfigLoader.ts';
 import type { ConfigStore } from '../repositories/ConfigRepository.ts';
 import type { PhpCacheStore } from '../repositories/PhpCacheFiles.ts';
-import { changedOptions, type OptionsError, readOptionsForm } from '../services/adminOptions.ts';
+import { changedOptions, OPTION_SECTIONS, type OptionsError, readOptionsForm } from '../services/adminOptions.ts';
 import { adminDenied, renderAdminPage } from './adminPage.ts';
 
 export interface AdminOptionsControllerDeps extends LayoutDeps {
@@ -76,7 +76,16 @@ export class AdminOptionsController {
 			reply,
 			this.deps,
 			{ active: 'options', template: 'admin_options.njk', title: lang.adminOptions.title },
-			buildAdminOptions({ values, errors, notice, lang }),
+			buildAdminOptions({
+				sections: OPTION_SECTIONS,
+				prefix: 'o_',
+				texts: lang.adminOptions,
+				formAction: 'admin_options.php',
+				values,
+				errors: errors.map((error) => lang.adminOptions.errors[error]),
+				notice,
+				lang,
+			}),
 		);
 	}
 }

@@ -25,6 +25,8 @@ const current = (): Map<string, string> =>
 		...Object.entries(optionsForm()).map(([key, value]) => [`o_${key}`, value] as [string, string]),
 		['o_quickpost', '1'],
 		['o_smtp_pass', 'old'],
+		['p_message_bbcode', '1'],
+		['p_sig_length', '400'],
 	]);
 
 let app: FastifyInstance | undefined;
@@ -45,12 +47,12 @@ async function start(): Promise<{ server: FastifyInstance; fake: FakeData }> {
 	return { server: app, fake };
 }
 
-function save(server: FastifyInstance, userId: number, fields: Record<string, string>) {
+function save(server: FastifyInstance, userId: number, fields: Record<string, string>, url = '/admin_options.php') {
 	const body = new URLSearchParams({ csrf_token: csrfToken(CSRF_SECRET, SEED, userId), form_sent: '1' });
 	for (const [name, value] of Object.entries(fields)) body.append(`form[${name}]`, value);
 	return server.inject({
 		method: 'POST',
-		url: '/admin_options.php',
+		url,
 		headers: { cookie: cookies(userId), 'content-type': 'application/x-www-form-urlencoded' },
 		payload: body.toString(),
 	});
@@ -87,5 +89,20 @@ describe('admin_options.php', () => {
 		expect(res.body).toContain('value="Nouvelle &lt;b&gt;desc&lt;/b&gt;"');
 		expect(fake.configUpdates).toBeUndefined();
 		expect((await save(server, 2, optionsForm({ feed_type: '9' }))).statusCode).toBe(400);
+	});
+});
+
+describe('admin_permissions.php', () => {
+	it('affiche et enregistre les clés p_* modifiées, jamais négatives', async () => {
+		const { server, fake } = await start();
+		expect((await server.inject({ url: '/admin_permissions.php', headers: { cookie: cookies(5) } })).statusCode).toBe(403);
+		const page = await server.inject({ url: '/admin_permissions.php', headers: { cookie: cookies(2) } });
+		expect(page.body).toContain('name="form[message_bbcode]" value="1" checked');
+		expect(page.body).toContain('name="form[sig_length]" value="400"');
+		expect(page.body).toContain('action="admin_permissions.php"');
+		const res = await save(server, 2, { message_bbcode: '1', sig_length: '-5' }, '/admin_permissions.php');
+		expect(res.headers.location).toBe('admin_permissions.php?done=updated');
+		expect(fake.configUpdates).toEqual([new Map([['p_sig_length', '0']])]);
+		expect(fake.configInvalidations).toBe(1);
 	});
 });

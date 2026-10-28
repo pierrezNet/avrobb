@@ -1,4 +1,4 @@
-{#- Options du forum (admin_options.php). Données : `view` (presenters/adminOptionsPage.ts). -#}
+{#- Réglages de l'administration (admin_options.php, admin_permissions.php). Données : `view` (presenters/adminOptionsPage.ts). -#}
 {% extends "layout.njk" %}
 {% import "partials/adminMenu.njk" as adminMenu %}
 {% import "partials/forms.njk" as forms %}
@@ -14,13 +14,13 @@
 {% endmacro %}
 
 {% block main %}
-<h1 class="page-title">{{ lang.adminOptions.title }}</h1>
+<h1 class="page-title">{{ view.title }}</h1>
 <div class="side-layout">
 {{ adminMenu.menu(view.menu, lang) }}
 <div class="side-layout__content">
 {{ sideMenu.notice(view.notice) }}
 {{ forms.errors(lang.profile.formErrors, lang.profile.formErrorsInfo, view.errors) }}
-<form id="admin-options" class="form-box form options-form" method="post" action="{{ url('admin_options.php') }}">
+<form id="admin-options" class="form-box form options-form" method="post" action="{{ url(view.formAction) }}">
 	{{ forms.csrf(layout) }}
 	<input type="hidden" name="form_sent" value="1">
 	{% for section in view.sections %}

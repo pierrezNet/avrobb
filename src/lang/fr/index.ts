@@ -6,6 +6,7 @@
 import type { DateWords } from '../../services/dateFormat.ts';
 import { admin } from './admin.ts';
 import { adminOptions } from './adminOptions.ts';
+import { adminPermissions } from './adminPermissions.ts';
 import { common } from './common.ts';
 import { deletePage } from './delete.ts';
 import { drafts } from './drafts.ts';
@@ -50,6 +51,7 @@ export const fr = {
 	moderate,
 	admin,
 	adminOptions,
+	adminPermissions,
 };
 
 export const frDateWords: DateWords = {

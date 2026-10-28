@@ -13,6 +13,7 @@ import type { Mailer } from './adapters/mailer.ts';
 import type { ServerInfo } from './adapters/serverInfo.ts';
 import { AdminIndexController } from './controllers/AdminIndexController.ts';
 import { AdminOptionsController, type AdminOptionsQuery } from './controllers/AdminOptionsController.ts';
+import { AdminPermissionsController, type AdminPermissionsQuery } from './controllers/AdminPermissionsController.ts';
 import { AdminReportsController, type AdminReportsQuery } from './controllers/AdminReportsController.ts';
 import { ContactController, type ContactQuery } from './controllers/ContactController.ts';
 import { DeleteController, type DeleteQuery } from './controllers/DeleteController.ts';
@@ -153,6 +154,7 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 const PORTED_PAGES = new Set([
 	'admin_index.php',
 	'admin_options.php',
+	'admin_permissions.php',
 	'admin_reports.php',
 	'admin_statistics.php',
 	'delete.php',
@@ -339,6 +341,10 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 	const adminOptions = new AdminOptionsController(deps);
 	app.get<{ Querystring: AdminOptionsQuery }>('/admin_options.php', { preHandler: authenticate }, adminOptions.show);
 	app.post<{ Body: FormBody }>('/admin_options.php', { preHandler: [authenticate, verifyCsrf] }, adminOptions.save);
+
+	const adminPermissions = new AdminPermissionsController(deps);
+	app.get<{ Querystring: AdminPermissionsQuery }>('/admin_permissions.php', { preHandler: authenticate }, adminPermissions.show);
+	app.post<{ Body: FormBody }>('/admin_permissions.php', { preHandler: [authenticate, verifyCsrf] }, adminPermissions.save);
 
 	const adminReports = new AdminReportsController(deps);
 	app.get<{ Querystring: AdminReportsQuery }>('/admin_reports.php', { preHandler: authenticate }, adminReports.show);

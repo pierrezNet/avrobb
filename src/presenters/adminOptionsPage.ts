@@ -1,17 +1,11 @@
 /**
- * Modèle de vue des options du forum (admin_options.php) : sections et champs dans l'ordre du
- * formulaire PHP, avec leurs valeurs (table config, ou saisie à corriger) et leurs choix. Fonction pure.
+ * Modèle de vue des formulaires de réglages de l'administration (admin_options.php : clés o_*,
+ * admin_permissions.php : clés p_*) : sections et champs dans l'ordre du formulaire PHP, avec leurs
+ * valeurs (table config, ou saisie à corriger) et leurs choix. Fonction pure.
  */
 
 import type { Lang } from '../lang/fr/index.ts';
-import {
-	FEED_TTLS,
-	LANGUAGES,
-	OPTION_SECTIONS,
-	type OptionChoices,
-	type OptionInput,
-	type OptionsError,
-} from '../services/adminOptions.ts';
+import { FEED_TTLS, LANGUAGES, type OptionChoices, type OptionInput, type OptionSection } from '../services/adminOptions.ts';
 import { TIMEZONES } from '../services/registration.ts';
 import { THEMES } from '../services/themes.ts';
 
@@ -38,8 +32,10 @@ export interface OptionFieldView {
 }
 
 export interface AdminOptionsView {
+	title: string;
+	formAction: string;
 	sections: { id: string; legend: string; fields: OptionFieldView[] }[];
-	errors: string[];
+	errors: readonly string[];
 	notice: string | null;
 }
 
@@ -86,28 +82,41 @@ function fieldControl(input: OptionInput, value: string, lang: Lang): OptionCont
 	}
 }
 
+export interface SettingsTexts {
+	title: string;
+	sections: Readonly<Record<string, string>>;
+	fields: Readonly<Record<string, { label: string; help: string | null }>>;
+}
+
 /**
- * @param values valeurs par clé de config (o_…) : la table, ou la saisie réaffichée après une erreur
+ * @param prefix préfixe des clés de config (o_ ou p_)
+ * @param values valeurs par clé de config : la table, ou la saisie réaffichée après une erreur
  */
 export function buildAdminOptions(input: {
+	sections: readonly OptionSection[];
+	prefix: 'o_' | 'p_';
+	texts: SettingsTexts;
+	formAction: string;
 	values: ReadonlyMap<string, string>;
-	errors: readonly OptionsError[];
+	errors: readonly string[];
 	notice: string | null;
 	lang: Lang;
 }): AdminOptionsView {
 	const t = input.lang.adminOptions;
-	const value = (key: string): string => input.values.get(`o_${key}`) ?? '';
+	const value = (key: string): string => input.values.get(`${input.prefix}${key}`) ?? '';
 	return {
-		sections: OPTION_SECTIONS.map((section) => ({
+		title: input.texts.title,
+		formAction: input.formAction,
+		sections: input.sections.map((section) => ({
 			id: section.id,
-			legend: t.sections[section.id],
+			legend: input.texts.sections[section.id] ?? section.id,
 			fields: section.fields.map(({ key, input: control }): OptionFieldView => {
-				const texts = t.fields[key] ?? { label: key, help: null };
+				const texts = input.texts.fields[key] ?? { label: key, help: null };
 				const help = key === 'time_format' || key === 'date_format' ? t.timeFormatHelp(value(key)) : texts.help;
 				return { key, label: texts.label, help, control: fieldControl(control, value(key), input.lang) };
 			}),
 		})),
-		errors: input.errors.map((error) => t.errors[error]),
+		errors: input.errors,
 		notice: input.notice,
 	};
 }

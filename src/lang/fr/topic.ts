@@ -3,7 +3,7 @@
  */
 
 export const topic = {
-	quickPost: 'Réponse rapide',
+	quickPost: 'Réponse',
 	isSubscribed: 'Vous suivez cette discussion',
 	unsubscribe: 'Ne plus suivre',
 	subscribe: 'Suivre cette discussion',

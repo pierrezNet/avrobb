@@ -87,7 +87,7 @@ export const pms = {
 	reply: 'Répondre',
 	quote: 'Citer',
 	edit: 'Modifier',
-	quickPost: 'Réponse rapide',
+	quickPost: 'Réponse',
 	deleteMessage: 'Supprimer le message',
 	deleteConversation: 'Supprimer la discussion',
 	topicBy: (name: string, date: string) => `Discussion démarrée par ${name} (${date})`,

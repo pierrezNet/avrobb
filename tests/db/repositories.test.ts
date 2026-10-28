@@ -21,6 +21,7 @@ import { FeedRepository } from '../../src/repositories/FeedRepository.ts';
 import { ForumAdminRepository } from '../../src/repositories/ForumAdminRepository.ts';
 import { ForumRepository } from '../../src/repositories/ForumRepository.ts';
 import { GalleryRepository } from '../../src/repositories/GalleryRepository.ts';
+import { GroupAdminRepository } from '../../src/repositories/GroupAdminRepository.ts';
 import { ModerationRepository } from '../../src/repositories/ModerationRepository.ts';
 import { OnlineRepository } from '../../src/repositories/OnlineRepository.ts';
 import { PostEditRepository } from '../../src/repositories/PostEditRepository.ts';
@@ -494,6 +495,7 @@ describe('viewtopic de bout en bout', () => {
 			adminStats: new AdminStatsRepository(db, 'fo_'),
 			configStore: new ConfigRepository(db),
 			forumAdmin: new ForumAdminRepository(db),
+			groupAdmin: new GroupAdminRepository(db),
 			configCache: { invalidate: async () => {} },
 			serverInfo: new NodeServerInfo(),
 			toolbar: new ToolbarRepository(db),

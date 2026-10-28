@@ -1,0 +1,58 @@
+{#- Réglages d'un groupe (admin_groups.php, ajout ou modification). Données : `view` (presenters/adminGroupsPage.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/adminMenu.njk" as adminMenu %}
+{% import "partials/forms.njk" as forms %}
+
+{% block main %}
+{% set t = lang.adminGroups %}
+<h1 class="page-title">{{ t.groupSettingsHead }}</h1>
+<div class="side-layout">
+{{ adminMenu.menu(view.menu, lang) }}
+<div class="side-layout__content">
+{{ forms.errors(lang.profile.formErrors, lang.profile.formErrorsInfo, view.errors) }}
+<form id="groups2" class="form-box form options-form" method="post" action="{{ url('admin_groups.php') }}">
+	{{ forms.csrf(layout) }}
+	<input type="hidden" name="mode" value="{{ view.mode }}">
+	{% if view.groupId %}<input type="hidden" name="group_id" value="{{ view.groupId }}">{% endif %}
+	{% if view.baseGroupId %}<input type="hidden" name="base_group" value="{{ view.baseGroupId }}">{% endif %}
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ t.groupSettingsHead }}</legend>
+		<p class="form__help">{{ t.groupSettingsInfo }}</p>
+		<p class="form__field">
+			<label for="req_title">{{ t.groupTitleLabel }}</label>
+			<input type="text" id="req_title" name="req_title" value="{{ view.title }}" maxlength="50" required>
+		</p>
+		<p class="form__field">
+			<label for="user_title">{{ t.userTitleLabel }}</label>
+			<input type="text" id="user_title" name="user_title" value="{{ view.userTitle }}" maxlength="50" aria-describedby="user_title_help">
+			<span id="user_title_help" class="form__help">{{ t.userTitleHelp }}</span>
+		</p>
+		{% for f in view.fields %}
+		{% if f.kind == 'yesno' %}
+		<div class="form__field" role="radiogroup" aria-labelledby="label-{{ f.name }}"{% if f.help %} aria-describedby="help-{{ f.name }}"{% endif %}>
+			<span id="label-{{ f.name }}" class="form__label">{{ f.label }}</span>
+			<label class="form__choice"><input type="radio" name="{{ f.name }}" value="1"{% if f.checked %} checked{% endif %}> {{ t.yes }}</label>
+			<label class="form__choice"><input type="radio" name="{{ f.name }}" value="0"{% if not f.checked %} checked{% endif %}> {{ t.no }}</label>
+			{% if f.help %}<span id="help-{{ f.name }}" class="form__help">{{ f.help }}</span>{% endif %}
+		</div>
+		{% else %}
+		<p class="form__field">
+			<label for="{{ f.name }}">{{ f.label }}</label>
+			{% if f.kind == 'select' %}
+			<select id="{{ f.name }}" name="{{ f.name }}"{% if f.help %} aria-describedby="help-{{ f.name }}"{% endif %}>
+				{% for choice in f.choices %}<option value="{{ choice.value }}"{% if choice.selected %} selected{% endif %}>{{ choice.label }}</option>{% endfor %}
+			</select>
+			{% else %}
+			<input type="number" id="{{ f.name }}" name="{{ f.name }}" value="{{ f.value }}" min="0" max="9999999999" inputmode="numeric"{% if f.help %} aria-describedby="help-{{ f.name }}"{% endif %}>
+			{% endif %}
+			{% if f.help %}<span id="help-{{ f.name }}" class="form__help">{{ f.help }}</span>{% endif %}
+		</p>
+		{% endif %}
+		{% endfor %}
+		{% if view.showModeratorInfo %}<p class="form__warning">{{ t.moderatorInfo }}</p>{% endif %}
+	</fieldset>
+	<p class="form__buttons"><button type="submit" class="button button--primary" name="add_edit_group" value="1" accesskey="s">{{ t.save }}</button></p>
+</form>
+</div>
+</div>
+{% endblock %}

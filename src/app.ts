@@ -11,6 +11,7 @@ import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply, ty
 import nunjucks from 'nunjucks';
 import type { Mailer } from './adapters/mailer.ts';
 import type { ServerInfo } from './adapters/serverInfo.ts';
+import { AdminGroupsController, type AdminGroupsQuery } from './controllers/AdminGroupsController.ts';
 import { AdminIndexController } from './controllers/AdminIndexController.ts';
 import { AdminOptionsController, type AdminOptionsQuery } from './controllers/AdminOptionsController.ts';
 import { AdminPermissionsController, type AdminPermissionsQuery } from './controllers/AdminPermissionsController.ts';
@@ -57,6 +58,7 @@ import type { FeedReader } from './repositories/FeedRepository.ts';
 import type { ForumAdminStore } from './repositories/ForumAdminRepository.ts';
 import type { GalleryFileStore } from './repositories/GalleryFiles.ts';
 import type { GalleryStore } from './repositories/GalleryRepository.ts';
+import type { GroupAdminStore } from './repositories/GroupAdminRepository.ts';
 import type { MailTemplateReader } from './repositories/MailTemplateFiles.ts';
 import type { UploadStore } from './repositories/MemberUploadFiles.ts';
 import type { ModerationStore } from './repositories/ModerationRepository.ts';
@@ -131,6 +133,8 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	configCache: ConfigCache;
 	/** Catégories et forums (admin_categories.php, admin_forums.php). */
 	forumAdmin: ForumAdminStore;
+	/** Groupes d'utilisateurs (admin_groups.php). */
+	groupAdmin: GroupAdminStore;
 	toolbar: ToolbarReader;
 	avatars: AvatarLocator;
 	avatarStore: AvatarStore;
@@ -158,6 +162,7 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 const PORTED_PAGES = new Set([
 	'admin_categories.php',
 	'admin_forums.php',
+	'admin_groups.php',
 	'admin_index.php',
 	'admin_options.php',
 	'admin_permissions.php',
@@ -360,6 +365,14 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 		'/admin_forums.php',
 		{ preHandler: [authenticate, verifyCsrf] },
 		forumAdmin.submitForums,
+	);
+
+	const adminGroups = new AdminGroupsController(deps);
+	app.get<{ Querystring: AdminGroupsQuery }>('/admin_groups.php', { preHandler: authenticate }, adminGroups.show);
+	app.post<{ Querystring: AdminGroupsQuery; Body: FormBody }>(
+		'/admin_groups.php',
+		{ preHandler: [authenticate, verifyCsrf] },
+		adminGroups.submit,
 	);
 
 	const adminReports = new AdminReportsController(deps);

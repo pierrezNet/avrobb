@@ -110,6 +110,7 @@ export interface GalleryTable {
 	ext: string;
 }
 
+/** Colonnes de PV (messagerie, renommée, promotion) : valeurs par défaut en base, absentes d'admin_groups.php. */
 export interface GroupsTable {
 	g_id: Generated<number>;
 	g_title: string;
@@ -117,7 +118,7 @@ export interface GroupsTable {
 	g_promote_min_posts: number;
 	g_promote_next_group: number;
 	g_moderator: number;
-	g_mod_promote_users: number;
+	g_mod_promote_users: Generated<number>;
 	g_mod_edit_users: number;
 	g_mod_rename_users: number;
 	g_mod_change_passwords: number;
@@ -138,11 +139,11 @@ export interface GroupsTable {
 	g_search: number;
 	g_search_users: number;
 	g_search_flood: number;
-	g_pm: number;
-	g_pm_limit: number;
-	g_rep_enable: number;
-	g_rep_plus_min: number;
-	g_rep_minus_min: number;
+	g_pm: Generated<number>;
+	g_pm_limit: Generated<number>;
+	g_rep_enable: Generated<number>;
+	g_rep_plus_min: Generated<number>;
+	g_rep_minus_min: Generated<number>;
 }
 
 /**

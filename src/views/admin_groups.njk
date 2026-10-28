@@ -1,0 +1,50 @@
+{#- Groupes d'utilisateurs (admin_groups.php). Données : `view` (presenters/adminGroupsPage.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/adminMenu.njk" as adminMenu %}
+{% import "partials/forms.njk" as forms %}
+{% import "partials/sideMenu.njk" as sideMenu %}
+
+{% block main %}
+{% set t = lang.adminGroups %}
+<h1 class="page-title">{{ t.title }}</h1>
+<div class="side-layout">
+{{ adminMenu.menu(view.menu, lang) }}
+<div class="side-layout__content">
+{{ sideMenu.notice(view.notice) }}
+{{ forms.errors(lang.profile.formErrors, lang.profile.formErrorsInfo, view.errors) }}
+<form class="form-box form" method="post" action="{{ url('admin_groups.php') }}">
+	{{ forms.csrf(layout) }}
+	<h2 class="form-box__title">{{ t.addGroupSubhead }}</h2>
+	<p class="form__field">
+		<label for="base_group">{{ t.newGroupLabel }}</label>
+		<select id="base_group" name="base_group" aria-describedby="base_group_help">
+			{% for group in view.baseGroups %}<option value="{{ group.id }}"{% if group.selected %} selected{% endif %}>{{ group.title }}</option>{% endfor %}
+		</select>
+		<span id="base_group_help" class="form__help">{{ t.newGroupHelp }}</span>
+	</p>
+	<p class="form__buttons"><button type="submit" class="button button--primary" name="add_group" value="1">{{ t.add }}</button></p>
+</form>
+<form class="form-box form" method="post" action="{{ url('admin_groups.php') }}">
+	{{ forms.csrf(layout) }}
+	<h2 class="form-box__title">{{ t.defaultGroupSubhead }}</h2>
+	<p class="form__field">
+		<label for="default_group">{{ t.defaultGroupLabel }}</label>
+		<select id="default_group" name="default_group" aria-describedby="default_group_help">
+			{% for group in view.defaultGroups %}<option value="{{ group.id }}"{% if group.selected %} selected{% endif %}>{{ group.title }}</option>{% endfor %}
+		</select>
+		<span id="default_group_help" class="form__help">{{ t.defaultGroupHelp }}</span>
+	</p>
+	<p class="form__buttons"><button type="submit" class="button button--primary" name="set_default_group" value="1">{{ t.setDefault }}</button></p>
+</form>
+<section class="form-box">
+	<h2 class="form-box__title">{{ t.existingGroupsHead }}</h2>
+	<p class="form__help">{{ t.editGroupsInfo }}</p>
+	<ul class="admin-rows">
+		{% for group in view.groups %}
+		<li class="admin-rows__item"><span class="admin-rows__main"><strong>{{ group.title }}</strong></span> <a href="{{ url(group.editHref) }}">{{ t.edit }}</a>{% if group.deleteHref %} · <a href="{{ url(group.deleteHref) }}">{{ t.delete }}</a>{% endif %}</li>
+		{% endfor %}
+	</ul>
+</section>
+</div>
+</div>
+{% endblock %}

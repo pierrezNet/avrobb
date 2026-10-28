@@ -81,6 +81,11 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   PHP la vidait, le champ n'étant pas envoyé) ; une permission qui diffère du groupe est signalée
   « (modifié) » au lieu de la seule couleur. Les listes « Atteindre » du PHP sont supprimées après
   chaque modification, il les régénère.
+- Groupes (`admin_groups.php`) : erreurs réaffichées dans le formulaire ; la suppression ne se fait
+  qu'en POST (le lien affiche la confirmation ou le choix du groupe d'accueil) ; les membres ne
+  peuvent pas être déplacés vers les invités ; les valeurs oui/non sont enregistrées en 0/1 (le PHP
+  gardait l'entier reçu). Les colonnes propres à PV (messagerie, renommée) gardent leurs valeurs par
+  défaut à la création, comme avec le PHP.
 - Rédaction (`post.php`) : émojis conservés (le PHP remplaçait les caractères de 4 octets par « ? »,
   héritage d'une base en utf8 sur 3 octets) ; redirection immédiate vers le message ; boutons de
   préfixe du sujet en JavaScript et seulement pour une nouvelle discussion ; pas de réponse dans le

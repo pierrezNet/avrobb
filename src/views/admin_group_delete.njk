@@ -1,0 +1,34 @@
+{#- Suppression d'un groupe (admin_groups.php?del_group=…). Données : `view` (controllers/AdminGroupsController.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/adminMenu.njk" as adminMenu %}
+{% import "partials/forms.njk" as forms %}
+
+{% block main %}
+{% set t = lang.adminGroups %}
+<h1 class="page-title">{{ t.groupDeleteHead }}</h1>
+<div class="side-layout">
+{{ adminMenu.menu(view.menu, lang) }}
+<div class="side-layout__content">
+<form class="form-box form" method="post" action="{{ url(view.formAction) }}">
+	{{ forms.csrf(layout) }}
+	<input type="hidden" name="group_to_delete" value="{{ view.group.id }}">
+	{% if view.members > 0 %}
+	<h2 class="form-box__title">{{ t.moveUsersSubhead }}</h2>
+	<p>{{ t.moveUsersInfo(view.group.title, view.members) }}</p>
+	<p class="form__field">
+		<label for="move_to_group">{{ t.moveUsersLabel }}</label>
+		<select id="move_to_group" name="move_to_group">
+			{% for target in view.moveTargets %}<option value="{{ target.id }}"{% if target.selected %} selected{% endif %}>{{ target.title }}</option>{% endfor %}
+		</select>
+	</p>
+	<p class="form__buttons"><button type="submit" class="button button--primary" name="del_group" value="1">{{ t.deleteGroup }}</button> <a class="button" href="{{ url('admin_groups.php') }}">{{ t.goBack }}</a></p>
+	{% else %}
+	<h2 class="form-box__title">{{ t.confirmDeleteSubhead }}</h2>
+	<p>{{ t.confirmDeleteInfo(view.group.title) }}</p>
+	<p class="form__warning"><strong>{{ t.confirmDeleteWarn }}</strong></p>
+	<p class="form__buttons"><button type="submit" class="button button--primary" name="del_group_comply" value="1">{{ t.delete }}</button> <a class="button" href="{{ url('admin_groups.php') }}">{{ t.goBack }}</a></p>
+	{% endif %}
+</form>
+</div>
+</div>
+{% endblock %}

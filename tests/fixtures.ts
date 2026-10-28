@@ -49,6 +49,7 @@ import type { ReportTarget } from '../src/repositories/ReportRepository.ts';
 import type { NewVote } from '../src/repositories/ReputationRepository.ts';
 import type { PostLocation } from '../src/repositories/TopicRepository.ts';
 import type { ViewerRecord } from '../src/repositories/UserRepository.ts';
+import type { AdminGroup } from '../src/services/adminGroups.ts';
 import type { Ban } from '../src/services/bans.ts';
 import type { CensoredWord } from '../src/services/censor.ts';
 import type { GroupForumPermissionRow } from '../src/services/forumPermissions.ts';
@@ -375,6 +376,10 @@ export interface FakeData {
 	/** Administration des catégories et forums (admin_categories.php, admin_forums.php). */
 	forumAdmin?: { categories: AdminCategory[]; forums: AdminForum[]; permissions: GroupForumPermissionRow[] };
 	forumAdminLog?: string[];
+	/** Groupes d'utilisateurs (admin_groups.php). */
+	adminGroups?: AdminGroup[];
+	groupMembers?: Map<number, number>;
+	groupAdminLog?: string[];
 	/** Signalements listés par admin_reports.php (modifiés en place quand ils sont traités). */
 	reportList?: Report[];
 	/** Messagerie privée en mémoire (créée vide au besoin). */
@@ -720,6 +725,21 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			},
 		},
 		forumAdmin: fakeForumAdmin(data),
+		groupAdmin: {
+			listGroups: async () => data.adminGroups ?? [],
+			titleExists: async (title, exceptId) => (data.adminGroups ?? []).some((g) => g.title === title && g.id !== exceptId),
+			addGroup: async (settings, baseGroupId) => {
+				data.groupAdminLog = [...(data.groupAdminLog ?? []), `add ${settings.title} from ${baseGroupId}`];
+				return 9;
+			},
+			updateGroup: async (id, settings) => {
+				data.groupAdminLog = [...(data.groupAdminLog ?? []), `update ${id} ${JSON.stringify(settings)}`];
+			},
+			countMembers: async (id) => data.groupMembers?.get(id) ?? 0,
+			deleteGroup: async (id, moveTo) => {
+				data.groupAdminLog = [...(data.groupAdminLog ?? []), `delete ${id} -> ${moveTo}`];
+			},
+		},
 		configCache: {
 			invalidate: async () => {
 				data.configInvalidations = (data.configInvalidations ?? 0) + 1;

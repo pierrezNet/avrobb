@@ -23,6 +23,7 @@ import { ForumAdminRepository } from './repositories/ForumAdminRepository.ts';
 import { ForumRepository } from './repositories/ForumRepository.ts';
 import { GalleryFiles } from './repositories/GalleryFiles.ts';
 import { GalleryRepository } from './repositories/GalleryRepository.ts';
+import { GroupAdminRepository } from './repositories/GroupAdminRepository.ts';
 import { MailTemplateFiles } from './repositories/MailTemplateFiles.ts';
 import { MemberUploadFiles } from './repositories/MemberUploadFiles.ts';
 import { ModerationRepository } from './repositories/ModerationRepository.ts';
@@ -71,6 +72,7 @@ const app = await buildApp({
 	configStore,
 	configCache: configLoader,
 	forumAdmin: new ForumAdminRepository(db),
+	groupAdmin: new GroupAdminRepository(db),
 	users,
 	members: users,
 	credentials: users,

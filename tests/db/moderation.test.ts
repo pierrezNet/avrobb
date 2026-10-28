@@ -280,3 +280,42 @@ describe('ForumAdminRepository (admin_categories.php, admin_forums.php)', () => 
 		});
 	});
 });
+
+describe('GroupAdminRepository (admin_groups.php)', () => {
+	it('ajoute un groupe avec les permissions de sa base, le modifie et le supprime', async () => {
+		const { GroupAdminRepository } = await import('../../src/repositories/GroupAdminRepository.ts');
+		await inRollback(async (trx) => {
+			const store = new GroupAdminRepository(trx);
+			const groups = await store.listGroups();
+			expect(groups.map((g) => g.title)).toEqual(['Administrateurs', 'Modérateurs', 'Invités', 'Membres']);
+			const members = groups.find((g) => g.id === 4);
+			if (members === undefined) throw new Error('groupe 4 absent');
+			const settings = { title: 'Pilotes', userTitle: null, values: { ...members.values, g_post_flood: 30 } };
+			expect(await store.titleExists('Membres', null)).toBe(true);
+			expect(await store.titleExists('Membres', 4)).toBe(false);
+
+			const id = await store.addGroup(settings, 4);
+			expect(await trx.selectFrom('forum_perms').select(['forum_id', 'post_replies']).where('group_id', '=', id).execute()).toEqual([
+				{ forum_id: 2, post_replies: 0 },
+			]);
+			const created = await trx
+				.selectFrom('groups')
+				.select(['g_post_flood', 'g_pm', 'g_rep_enable'])
+				.where('g_id', '=', id)
+				.executeTakeFirst();
+			expect(created).toEqual({ g_post_flood: 30, g_pm: 1, g_rep_enable: 1 });
+
+			await store.updateGroup(id, { ...settings, title: 'Instructeurs', userTitle: 'Instructeur' });
+			await trx.updateTable('groups').set({ g_promote_next_group: id }).where('g_id', '=', 4).execute();
+			await trx.updateTable('users').set({ group_id: id }).where('id', '=', 3).execute();
+			expect(await store.countMembers(id)).toBe(1);
+
+			await store.deleteGroup(id, 4);
+			expect(await trx.selectFrom('users').select('group_id').where('id', '=', 3).executeTakeFirst()).toEqual({ group_id: 4 });
+			expect(await trx.selectFrom('forum_perms').select('forum_id').where('group_id', '=', id).execute()).toEqual([]);
+			expect(await trx.selectFrom('groups').select('g_promote_next_group').where('g_id', '=', 4).executeTakeFirst()).toEqual({
+				g_promote_next_group: 0,
+			});
+		});
+	});
+});

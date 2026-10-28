@@ -122,7 +122,9 @@ describe('GET /viewforum.php', () => {
 		expect(res.body).toContain('topic-row--sticky');
 		expect(res.body).toContain('<span class="badge">Fermée :</span>');
 		expect(res.body).toContain('<span class="badge">Déplacée :</span> <a href="viewtopic.php?id=40">');
-		expect(res.body).toContain('<span style="color: #00AA00; font-weight: bold">[Réglé]</span> Sujet 13');
+		expect(res.body).toContain(
+			'<span class="subject-tag" style="background-color: #00AA00; color: #1a1a1a">Réglé</span><span class="subject-tag-gap">&#160;</span>Sujet 13',
+		);
 		expect(res.body).toContain('<dd>1 500</dd>');
 		expect(res.body).toContain('href="post.php?fid=2"');
 		expect(res.body).not.toContain('misc.php?action=subscribe');

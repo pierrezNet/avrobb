@@ -109,7 +109,7 @@ export const post = {
 	/** Mod brouillon de PV (lang/French/draft.php). */
 	saveAsDraft: 'Enregistrer comme brouillon. Décocher pour poster le message.',
 	/** Boutons de préfixe du sujet (simulateur, autre) propres à PV. */
-	subjectPrefixes: 'Préfixe du sujet',
+	subjectPrefixes: 'Balise du sujet',
 	simulators: 'Simu :',
 	other: 'Autre :',
 	bbcode: 'BBCode :',

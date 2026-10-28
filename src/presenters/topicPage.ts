@@ -23,8 +23,9 @@ import {
 	type PostActionRights,
 	postActions,
 } from '../services/permissions.ts';
+import { type SubjectSegment, subjectSegments } from '../services/subjectTags.ts';
 import type { ToolbarSettings } from '../services/toolbar.ts';
-import { labelledSubject } from '../services/topicLabels.ts';
+import { labelledSubject, styleSubject } from '../services/topicLabels.ts';
 import { userTitle } from '../services/userTitle.ts';
 import { type Crumb, crumbs, type PaginationLink, paginationLinks } from './navigation.ts';
 import { bbcodeLabels, messageParserOptions } from './parserOptions.ts';
@@ -83,7 +84,8 @@ export interface PostView {
 
 export interface TopicPageView {
 	/** `subject` : sujet affiché, balises PV et censure comprises. */
-	topic: { id: number; subject: string; closed: boolean };
+	/** `subjectParts` : balises de tête en pastilles colorées (titre de la page). */
+	topic: { id: number; subject: string; subjectParts: SubjectSegment[]; closed: boolean };
 	crumbs: Crumb[];
 	pagination: PaginationLink[];
 	/** Lien « Répondre » ; null si le membre ne peut pas répondre. */
@@ -306,7 +308,7 @@ export function buildTopicPage(input: TopicPageInput): TopicPageView {
 	});
 
 	return {
-		topic: { id: topic.id, subject, closed: topic.closed },
+		topic: { id: topic.id, subject, subjectParts: subjectSegments(styleSubject(subject, input.labels), () => null), closed: topic.closed },
 		crumbs: crumbs(
 			{ label: lang.common.index, href: 'index.php' },
 			{ label: topic.forum.name, href: `viewforum.php?id=${topic.forum.id}` },

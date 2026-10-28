@@ -1,0 +1,9 @@
+{#- Sujet découpé en segments (services/subjectTags.ts) : pastilles de balises colorées, texte stylé
+    des balises PunBalise, texte simple. Couleurs et styles validés par le service. -#}
+{% macro subject(parts) -%}
+{%- for part in parts -%}
+{%- if part.tag %}<span class="subject-tag" style="background-color: {{ part.tag.background }}; color: {{ part.tag.foreground }}">{{ part.text }}</span><span class="subject-tag-gap">&#160;</span>
+{%- elif part.css %}<span style="{{ part.css }}">{{ part.text }}</span>
+{%- else %}{{ part.text }}{% endif -%}
+{%- endfor -%}
+{%- endmacro %}

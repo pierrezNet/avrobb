@@ -1,5 +1,6 @@
 {#- Lecture d'un sujet (viewtopic.php). Données : `view` (presenters/topicPage.ts). -#}
 {% extends "layout.njk" %}
+{% import "partials/subject.njk" as subjectParts %}
 {% import "partials/navigation.njk" as navigation %}
 {% import "partials/forms.njk" as forms %}
 {% import "partials/post.njk" as postView %}
@@ -23,7 +24,7 @@
 
 {% block main %}
 {{ navigation.breadcrumbs(view.crumbs, lang) }}
-<h1 class="page-title">{{ view.topic.subject }}</h1>
+<h1 class="page-title">{{ subjectParts.subject(view.topic.subjectParts) }}</h1>
 {{ topicBar(view, lang) }}
 
 <div class="post-list">

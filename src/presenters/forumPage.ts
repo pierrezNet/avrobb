@@ -9,21 +9,21 @@ import { type DateWords, formatTime, viewerTimeSettings } from '../services/date
 import { forumNumberFormat } from '../services/numberFormat.ts';
 import { pageCount } from '../services/pagination.ts';
 import { canPostTopic } from '../services/permissions.ts';
+import { type SubjectSegment, subjectSegments } from '../services/subjectTags.ts';
 import { labelCss, labelledSubject, styleSubject } from '../services/topicLabels.ts';
 import type { TrackedTopics } from '../services/trackedTopics.ts';
 import { type Crumb, crumbs, type PaginationLink, paginationLinks } from './navigation.ts';
 import { topicUrl } from './topicPage.ts';
 
-export interface SubjectPartView {
-	text: string;
-	/** Style CSS en ligne de la balise PV (valeurs validées), ou null pour du texte simple. */
-	css: string | null;
-}
+/** Segment de sujet : texte simple, texte stylé (balise PunBalise) ou pastille de balise colorée. */
+export type SubjectPartView = SubjectSegment;
 
 export interface TopicRowView {
 	id: number;
 	href: string;
 	subject: SubjectPartView[];
+	/** Sujet en texte brut (balises entre crochets), pour les libellés accessibles. */
+	subjectText: string;
 	poster: string;
 	sticky: boolean;
 	closed: boolean;
@@ -103,10 +103,10 @@ export function buildTopicRow(topic: TopicSummary, forumId: number, labels: read
 	return {
 		id: topic.id,
 		href: topicUrl(topic.movedTo ?? topic.id),
-		subject: styleSubject(subject, context.labelDefinitions).map((part) => ({
-			text: part.text,
-			css: part.style !== null ? labelCss(part.style) : null,
-		})),
+		subject: subjectSegments(styleSubject(subject, context.labelDefinitions), (part) =>
+			part.style !== null ? labelCss(part.style) : null,
+		),
+		subjectText: subject,
 		poster: topic.poster,
 		sticky: topic.sticky,
 		closed: topic.closed && !moved,

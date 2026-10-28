@@ -6,7 +6,7 @@
 <fieldset class="form__fieldset">
 	<legend class="form__legend">{{ legend }}</legend>
 	<div class="prefix-choices">
-		{% for c in items %}<label class="form__choice"><input type="checkbox" name="prefix[{{ c.prefix }}]" value="1"{% if c.checked %} checked{% endif %}> [{{ c.prefix }}]</label>{% endfor %}
+		{% for c in items %}<label class="form__choice"><input type="checkbox" name="prefix[{{ c.prefix }}]" value="1"{% if c.checked %} checked{% endif %}> <span class="subject-tag" style="background-color: {{ c.colors.background }}; color: {{ c.colors.foreground }}">{{ c.prefix }}</span></label>{% endfor %}
 	</div>
 </fieldset>
 {% endmacro %}

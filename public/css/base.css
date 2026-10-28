@@ -2241,3 +2241,24 @@ a.site-status__alert {
 	background: var(--color-accent);
 	color: #fff;
 }
+
+/* Balises en tête de sujet (« [MSFS] » affichée en pastille, services/subjectTags.ts) */
+.subject-tag {
+	display: inline-block;
+	padding: 0.05em 0.5em;
+	border-radius: 999px;
+	font-size: 0.8em;
+	font-weight: 600;
+	line-height: 1.5;
+	vertical-align: 0.1em;
+	text-decoration: none;
+	white-space: nowrap;
+}
+.subject-tag-button {
+	border-color: transparent;
+	border-radius: 999px;
+}
+/* Espace après une pastille : hors du soulignement du lien du sujet */
+.subject-tag-gap {
+	display: inline-block;
+}

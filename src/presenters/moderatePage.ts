@@ -64,7 +64,7 @@ export function buildModerateForum(input: {
 		formAction: `moderate.php?fid=${forum.id}`,
 		topics: input.topics.map((topic) => {
 			const row = buildTopicRow(topic, forum.id, input.topicLabels.get(topic.id) ?? [], input);
-			return { ...row, selectLabel: lang.moderate.selectTopic(row.subject.map((part) => part.text).join('')) };
+			return { ...row, selectLabel: lang.moderate.selectTopic(row.subjectText) };
 		}),
 		notice: input.notice,
 		errors: input.errors,

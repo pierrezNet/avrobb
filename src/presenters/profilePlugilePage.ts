@@ -94,7 +94,7 @@ export function buildSubscriptionsPage(
 		notice: input.notice,
 		topics: input.topics.map((topic) => {
 			const row = buildTopicRow(topic, topic.forumId, input.topicLabels.get(topic.id) ?? [], context);
-			return { ...row, selectLabel: lang.profile.selectTopic(row.subject.map((part) => part.text).join('')) };
+			return { ...row, selectLabel: lang.profile.selectTopic(row.subjectText) };
 		}),
 	};
 }

@@ -30,15 +30,15 @@ export const topic = {
 	reputationMinus: 'Réduction de renommée',
 
 	/** Préfixes du sujet (PV) : page propre à Node, ouverte depuis viewtopic. */
-	subjectPrefixes: 'Préfixes du sujet',
+	subjectPrefixes: 'Balises du sujet',
 	subjectPrefixesInfo:
-		'Cochez les préfixes à afficher devant le sujet de la discussion. Vous pouvez les changer à tout moment, même après le délai de modification de votre message.',
+		'Cochez les balises à afficher devant le sujet de la discussion. Vous pouvez les changer à tout moment, même après le délai de modification de votre message.',
 	simulators: 'Simulateur',
 	otherPrefixes: 'Autre',
 	currentSubject: 'Sujet actuel',
 	newSubject: 'Nouveau sujet',
 	savePrefixes: 'Enregistrer',
-	prefixesUpdated: 'Préfixes du sujet mis à jour.',
-	prefixesTooLong: 'Le sujet ne peut pas dépasser 70 caractères avec ces préfixes.',
+	prefixesUpdated: 'Balises du sujet mises à jour.',
+	prefixesTooLong: 'Le sujet ne peut pas dépasser 70 caractères avec ces balises.',
 	cancel: 'Annuler',
 };

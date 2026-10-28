@@ -162,7 +162,9 @@ describe('viewtopic : contenu propre à PV', () => {
 
 		const res = await app.inject('/viewtopic.php?id=10');
 		expect(res.body).toContain('<title>[Réglé] Panne de *** (Page 1) / Forum / Forum de test</title>');
-		expect(res.body).toContain('<h1 class="page-title">[Réglé] Panne de ***</h1>');
+		expect(res.body).toContain(
+			'<h1 class="page-title"><span class="subject-tag" style="background-color: #00AA00; color: #1a1a1a">Réglé</span><span class="subject-tag-gap">&#160;</span>Panne de ***</h1>',
+		);
 		expect(res.body).toContain('*** alors <span class="smiley" role="img" aria-label="smile">🙂</span>');
 		expect(res.body).toContain('<p class="post__usertitle">***</p>');
 		expect(res.body).not.toContain('zut');

@@ -71,7 +71,7 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
 - [x] Abonnements aux sujets et forums + notifications par e-mail
 - [x] Signalement d'un message (`misc.php?report`) et e-mail à un membre (`misc.php?email`)
 - [x] ~~Création et vote dans les sondages~~ : sans objet, `AP_Sondage` est un reste sans table ni affichage (voir lot 1) **(PV)**
-- [x] Préfixes du sujet (`[MSFS]`, `[FS-24]`… et `[Résolu]`, `[Réel]`, `[Video]`) : l'auteur peut toujours en ajouter ou en retirer sur sa discussion, **même après les 30 minutes** de modification du message (action dédiée qui ne touche qu'au sujet ; listes aujourd'hui en dur dans `post.php`/`edit.php` et `presenters/postPage.ts`) **(PV)** — page `topic_prefixes.php` (propre à Node), bouton « Préfixes du sujet » sur viewtopic pour l'auteur et les modérateurs
+- [x] Balises du sujet (« préfixes » : `[MSFS]`, `[FS-24]`… et `[Résolu]`, `[Réel]`, `[Video]`) : l'auteur peut toujours en ajouter ou en retirer sur sa discussion, **même après les 30 minutes** de modification du message (action dédiée qui ne touche qu'au sujet ; listes aujourd'hui en dur dans `post.php`/`edit.php` et `presenters/postPage.ts`) **(PV)** — page `topic_prefixes.php` (propre à Node), bouton « Préfixes du sujet » sur viewtopic pour l'auteur et les modérateurs
 
 ## Lot 4 — Profil (édition)
 
@@ -116,6 +116,9 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
 
 - [x] Mentions @membre : complètement des noms (`member_suggest.php`, `public/js/mentions.js`) dans les messages et les destinataires de la messagerie ; insertion d'un lien BBCode vers le profil
 - [ ] Mentions : prévenir le membre mentionné (message privé ou e-mail, à décider)
+
+- [x] Balises de sujet en pastilles colorées (sans crochets) dans les listes et les titres
+- [ ] Balises de sujet : couleurs réglables dans l'administration (aujourd'hui fixées dans `services/subjectTags.ts`)
 
 ## À décider (mis de côté)
 

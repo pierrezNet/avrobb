@@ -1,5 +1,6 @@
 {#- Modération d'un forum (moderate.php?fid=…). Données : `view` (presenters/moderatePage.ts). -#}
 {% extends "layout.njk" %}
+{% import "partials/subject.njk" as subjectParts %}
 {% import "partials/forms.njk" as forms %}
 {% import "partials/navigation.njk" as navigation %}
 {% import "partials/sideMenu.njk" as sideMenu %}
@@ -26,7 +27,7 @@
 						{%- if topic.closed %}<span class="badge">{{ lang.forum.closed }}</span> {% endif -%}
 						<a href="{{ url(topic.href) }}">
 							{%- if topic.newPostsUrl %}<strong>{% endif -%}
-							{%- for part in topic.subject %}{% if part.css %}<span style="{{ part.css }}">{{ part.text }}</span>{% else %}{{ part.text }}{% endif %}{% endfor -%}
+							{{- subjectParts.subject(topic.subject) -}}
 							{%- if topic.newPostsUrl %}</strong>{% endif -%}
 						</a>
 						<span class="forum-row__by"> {{ lang.moderate.by(topic.poster) }}</span>

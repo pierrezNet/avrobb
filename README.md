@@ -125,7 +125,7 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   restent sur le PHP.
 - Plugins encore servis par le PHP (redirection depuis `admin_loader.php`) : FluxToolBar et Mod
   Installer.
-- Préfixes du sujet (PV) : page `topic_prefixes.php`, propre à Node (le PHP n'a pas d'équivalent),
+- Balises du sujet (PV, « préfixes » dans le PHP) : page `topic_prefixes.php`, propre à Node (le PHP n'a pas d'équivalent),
   ouverte par un bouton de viewtopic pour l'auteur de la discussion et les modérateurs du forum ; les
   préfixes connus sont réécrits dans l'ordre des listes, séparés du titre par une espace.
 - Mentions de membres (ajout, propre à Node) : dans les zones de message (rédaction, réponse rapide,
@@ -133,6 +133,12 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   groupes qui voient la liste des membres) ; le choix insère `[url=<base>/profile.php?id=N]@Nom[/url]`,
   que le PHP affiche aussi comme un lien. Les champs de destinataires et de contacts de la messagerie
   complètent les noms de la même façon. Pas de notification au membre mentionné.
+- Balises en tête de sujet (`[MSFS]`, `[Résolu]`, `[BETA]`…, et les balises PunBalise des
+  modérateurs) affichées en pastilles colorées sans crochets dans les listes de sujets, la recherche et
+  le titre de viewtopic. Affichage seulement : le sujet enregistré garde ses crochets, que le PHP
+  affiche tels quels. Couleur fixe pour les balises proposées, couleur stable tirée du nom pour les
+  autres, couleur réglée dans PunBalise pour les balises des modérateurs (texte clair ou foncé selon
+  le fond).
 - Rédaction (`post.php`) : émojis conservés (le PHP remplaçait les caractères de 4 octets par « ? »,
   héritage d'une base en utf8 sur 3 octets) ; redirection immédiate vers le message ; boutons de
   préfixe du sujet en JavaScript et seulement pour une nouvelle discussion ; pas de réponse dans le

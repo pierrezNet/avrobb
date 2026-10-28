@@ -529,6 +529,7 @@ describe('viewtopic de bout en bout', () => {
 				exists: async () => false,
 				save: async () => undefined,
 				remove: async () => false,
+				listOwners: async () => [],
 				urlFor: () => '',
 			},
 			page: { lang: fr, dateWords: frDateWords, clock: () => NOW },

@@ -498,6 +498,7 @@ function fakeUploads(data: FakeData): UploadStore {
 			return true;
 		},
 		urlFor: (userId, name) => `http://php.test/img/members/${userId}/${encodeURIComponent(name)}`,
+		listOwners: async () => [...(data.memberFiles?.keys() ?? [])].sort((a, b) => a - b),
 	};
 }
 
@@ -860,6 +861,11 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			searchUsers: async (criteria, offset, limit) => {
 				data.userSearches = [...(data.userSearches ?? []), criteria];
 				return (data.adminUserRows ?? []).slice(offset, offset + limit);
+			},
+			findUsernames: async (ids) =>
+				new Map(data.users.filter((u) => ids.includes(u.viewer.id)).map((u) => [u.viewer.id, u.viewer.username])),
+			ensureUploadColumn: async () => {
+				data.userActionLog = [...(data.userActionLog ?? []), 'ensureUploadColumn'];
 			},
 			countPrivileged: async (ids) => {
 				const groups = ids.map((id) => data.users.find((u) => u.viewer.id === id)?.viewer.group);

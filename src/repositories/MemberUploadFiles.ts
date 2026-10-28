@@ -3,6 +3,7 @@
  * par elle. Les noms reçus sont réduits à leur basename() avant tout accès au disque.
  */
 
+import type { Dirent } from 'node:fs';
 import { mkdir, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { safeBaseName } from '../services/uploads.ts';
@@ -26,6 +27,8 @@ export interface UploadStore {
 	remove(userId: number, fileName: string): Promise<boolean>;
 	/** Adresse publique d'un fichier. */
 	urlFor(userId: number, fileName: string): string;
+	/** Membres qui ont un dossier d'envoi (img/members/<id>/), par identifiant croissant. */
+	listOwners(): Promise<number[]>;
 }
 
 export class MemberUploadFiles implements UploadStore {
@@ -80,6 +83,19 @@ export class MemberUploadFiles implements UploadStore {
 
 	urlFor(userId: number, fileName: string): string {
 		return `${this.legacyBaseUrl}/${MEMBER_UPLOADS_DIR}/${userId}/${encodeURIComponent(fileName)}`;
+	}
+
+	async listOwners(): Promise<number[]> {
+		let entries: Dirent[];
+		try {
+			entries = await readdir(path.join(this.legacyRoot, MEMBER_UPLOADS_DIR), { withFileTypes: true });
+		} catch {
+			return [];
+		}
+		return entries
+			.filter((entry) => entry.isDirectory() && /^\d{1,10}$/.test(entry.name))
+			.map((entry) => Number(entry.name))
+			.sort((a, b) => a - b);
 	}
 
 	#directory(userId: number): string {

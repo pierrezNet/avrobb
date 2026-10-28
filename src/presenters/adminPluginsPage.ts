@@ -4,6 +4,7 @@
 
 import type { Lang } from '../lang/fr/index.ts';
 import type { PremiumMember } from '../repositories/PremiumAdminRepository.ts';
+import { fileSize } from '../services/numberFormat.ts';
 
 /** Temps restant d'un membre PREMIUM, dans la plus grande unité non nulle, comme le plugin. */
 export function premiumRemaining(endsAt: number, now: number, lang: Lang): string {
@@ -26,4 +27,20 @@ export function buildPremiumMembers(members: readonly PremiumMember[], now: numb
 		groupTitle: member.groupTitle,
 		remaining: premiumRemaining(member.endsAt, now, lang),
 	}));
+}
+
+/** Fichiers des membres (plugin Uploadile) : nom sans extension, taille lisible, type. */
+export function buildUploadileFiles(
+	files: readonly { ownerId: number; owner: string; name: string; size: number; url: string; thumbnailUrl: string | null }[],
+) {
+	return files.map((file) => {
+		const dot = file.name.lastIndexOf('.');
+		return {
+			...file,
+			key: `${file.ownerId}/${file.name}`,
+			label: dot > 0 ? file.name.slice(0, dot) : file.name,
+			type: dot > 0 ? file.name.slice(dot + 1) : '',
+			sizeText: fileSize(file.size),
+		};
+	});
 }

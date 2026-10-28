@@ -5,7 +5,9 @@
  *
  * Portés : AMP_Gestion_utilisateurs.php (ajout d'utilisateur ; l'élagage, désactivé par PV — formulaire
  * sans bouton —, n'est pas repris), AP_Sondage.php, AP_Private_messaging.php, AP_Plugile.php, AP_Premium.php
- * (sans retour automatique au groupe initial à l'échéance : le PHP ne le faisait pas non plus).
+ * (sans retour automatique au groupe initial à l'échéance : le PHP ne le faisait pas non plus),
+ * AP_Uploadile.php (sans la désinstallation, qui supprime une colonne dont dépendent les pages, ni la
+ * régénération des miniatures, faute de bibliothèque d'images côté serveur).
  */
 
 import type { FastifyReply, FastifyRequest } from 'fastify';
@@ -13,16 +15,19 @@ import type { Mailer } from '../adapters/mailer.ts';
 import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage } from '../http/layout.ts';
 import { ADMIN_PLUGINS } from '../presenters/adminMenu.ts';
-import { buildPremiumMembers } from '../presenters/adminPluginsPage.ts';
+import { buildPremiumMembers, buildUploadileFiles } from '../presenters/adminPluginsPage.ts';
 import type { BanReader } from '../repositories/BanRepository.ts';
 import type { CensorReader } from '../repositories/CensorRepository.ts';
 import type { ConfigCache } from '../repositories/ConfigLoader.ts';
 import type { ConfigStore } from '../repositories/ConfigRepository.ts';
 import type { GroupAdminStore } from '../repositories/GroupAdminRepository.ts';
 import type { MailTemplateReader } from '../repositories/MailTemplateFiles.ts';
+import type { UploadStore } from '../repositories/MemberUploadFiles.ts';
 import type { PhpCacheStore } from '../repositories/PhpCacheFiles.ts';
 import type { PremiumAdminStore } from '../repositories/PremiumAdminRepository.ts';
+import type { ProfileStore } from '../repositories/ProfileRepository.ts';
 import type { RegistrationStore } from '../repositories/RegistrationRepository.ts';
+import type { UploadileAdminStore } from '../repositories/UserAdminRepository.ts';
 import { changedOptions } from '../services/adminOptions.ts';
 import { escapeHtml } from '../services/bbcode.ts';
 import { buildCensor } from '../services/censor.ts';
@@ -30,6 +35,7 @@ import { punHash } from '../services/legacySession.ts';
 import { fillTemplate, isValidEmail, randomPassword } from '../services/mail.ts';
 import { isAdmin, isAnyModerator } from '../services/permissions.ts';
 import { checkUsername, MIN_PASSWORD_LENGTH, normalizeUsername, usernameSkeleton } from '../services/registration.ts';
+import { isListedUpload } from '../services/uploads.ts';
 import { renderAdminPage } from './adminPage.ts';
 
 export interface AdminLoaderControllerDeps extends LayoutDeps {
@@ -44,6 +50,9 @@ export interface AdminLoaderControllerDeps extends LayoutDeps {
 	configCache: ConfigCache;
 	groupAdmin: GroupAdminStore;
 	premiumAdmin: PremiumAdminStore;
+	uploads: UploadStore;
+	userAdmin: UploadileAdminStore;
+	profileStore: Pick<ProfileStore, 'setUploadedBytes'>;
 }
 
 /** Plugins servis par Node ; les autres sont redirigés vers le PHP. */
@@ -53,9 +62,21 @@ const PORTED: ReadonlySet<string> = new Set([
 	'AP_Private_messaging.php',
 	'AP_Plugile.php',
 	'AP_Premium.php',
+	'AP_Uploadile.php',
 ]);
 
 const PLUGILE_KEYS = ['o_plugile_version', 'o_plugile_menu', 'o_plugile_menu_name'] as const;
+
+/** Réglages par défaut d'Uploadile (installation du plugin). */
+const UPLOADILE_DEFAULTS = {
+	o_uploadile_laws: 'jpg,jpeg,png,gif,swf,odt,ods,doc,xls,ppt,odp,mp3,pdf',
+	o_uploadile_thumb: '1',
+	o_uploadile_thumb_size: '100',
+	o_uploadile_limit_member: '2097152',
+	o_uploadile_limit_modo: '5242880',
+	o_uploadile_maxsize_member: '1258291',
+	o_uploadile_maxsize_modo: '1258291',
+} as const;
 
 /** Inverse de pun_htmlspecialchars() : le titre Plugile est stocké échappé, il est réaffiché tel que saisi. */
 function unescapeHtml(text: string): string {
@@ -115,6 +136,8 @@ export class AdminLoaderController {
 			}
 			case 'AP_Premium.php':
 				return this.#renderPremium(request, reply, [], done ?? null);
+			case 'AP_Uploadile.php':
+				return this.#renderUploadile(request, reply, done ?? null);
 			default:
 				return this.#renderUserManagement(request, reply, [], done === 'created' ? t.userManagement.created : null);
 		}
@@ -143,6 +166,8 @@ export class AdminLoaderController {
 				return this.#savePlugile(request, reply);
 			case 'AP_Premium.php':
 				return this.#savePremium(request, reply);
+			case 'AP_Uploadile.php':
+				return this.#saveUploadile(request, reply);
 			default:
 				return badRequest();
 		}
@@ -270,6 +295,96 @@ export class AdminLoaderController {
 			return done('removed');
 		}
 		return renderMessage(request, reply, this.deps, 400, lang.common.badRequest);
+	}
+
+	async #renderUploadile(request: FastifyRequest, reply: FastifyReply, done: string | null): Promise<FastifyReply> {
+		const t = this.deps.page.lang.adminPlugins.uploadile;
+		const config = request.board;
+		const values = await this.deps.configStore.loadValues();
+		const owners = await this.deps.uploads.listOwners();
+		const names = await this.deps.userAdmin.findUsernames(owners);
+		const files = [];
+		for (const owner of owners) {
+			const list = (await this.deps.uploads.list(owner)) ?? [];
+			const present = new Set(list.map((file) => file.name));
+			for (const file of list.filter((f) => isListedUpload(f.name, config.uploads)))
+				files.push({
+					ownerId: owner,
+					owner: names.get(owner) ?? String(owner),
+					name: file.name,
+					size: file.size,
+					url: this.deps.uploads.urlFor(owner, file.name),
+					thumbnailUrl:
+						config.uploads.thumbnails && present.has(`mini_${file.name}`) ? this.deps.uploads.urlFor(owner, `mini_${file.name}`) : null,
+				});
+		}
+		const notices: Record<string, string> = { installed: t.installed, updated: t.updated, deleted: t.deleted, error: t.deleteError };
+		return this.#renderSettings(request, reply, 'AP_Uploadile.php', 'admin_plugin_uploadile.njk', t.title, {
+			notice: notices[done ?? ''] ?? null,
+			settings: {
+				laws: values.get('o_uploadile_laws') ?? '',
+				thumb: values.get('o_uploadile_thumb') === '1',
+				thumbSize: values.get('o_uploadile_thumb_size') ?? '',
+				maxsizeMember: values.get('o_uploadile_maxsize_member') ?? '',
+				limitMember: values.get('o_uploadile_limit_member') ?? '',
+				maxsizeModo: values.get('o_uploadile_maxsize_modo') ?? '',
+				limitModo: values.get('o_uploadile_limit_modo') ?? '',
+			},
+			files: buildUploadileFiles(files),
+		});
+	}
+
+	async #saveUploadile(request: FastifyRequest<{ Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> {
+		const { body } = request;
+		const done = (name: string): FastifyReply => reply.redirect(`admin_loader.php?plugin=AP_Uploadile.php&done=${name}`, 303);
+		const positive = (name: string, fallback: number): string => {
+			const value = Number.parseInt(field(body, name), 10);
+			return String(value > 0 ? value : fallback);
+		};
+		if (field(body, 'installation') !== '') {
+			await this.deps.userAdmin.ensureUploadColumn();
+			await this.deps.configStore.replaceValues(new Map(Object.entries(UPLOADILE_DEFAULTS)));
+			await this.deps.configCache.invalidate();
+			return done('installed');
+		}
+		if (field(body, 'update') !== '') {
+			const laws = field(body, 'laws').replaceAll(' ', '');
+			await this.deps.configStore.replaceValues(
+				new Map([
+					['o_uploadile_laws', laws !== '' ? laws : UPLOADILE_DEFAULTS.o_uploadile_laws],
+					['o_uploadile_thumb', field(body, 'thumb') === '0' ? '0' : '1'],
+					['o_uploadile_thumb_size', positive('thumb_size', 100)],
+					['o_uploadile_limit_member', positive('limit_member', 2097152)],
+					['o_uploadile_limit_modo', positive('limit_modo', 5242880)],
+					['o_uploadile_maxsize_member', positive('maxsize_member', 1258291)],
+					['o_uploadile_maxsize_modo', positive('maxsize_modo', 1258291)],
+				]),
+			);
+			await this.deps.configCache.invalidate();
+			return done('updated');
+		}
+		if (field(body, 'supprimer') !== '') {
+			// Case « <membre>/<fichier> » : le fichier visé seulement (le PHP supprimait ce nom chez tous les membres).
+			const selected = Object.keys(body)
+				.map((name) => /^delete\[(\d{1,10})\/(.+)\]$/.exec(name))
+				.filter((match): match is RegExpExecArray => match !== null);
+			let failed = false;
+			const touched = new Set<number>();
+			for (const [, owner, file] of selected) {
+				if (owner === undefined || file === undefined) continue;
+				const id = Number(owner);
+				if (!(await this.deps.uploads.remove(id, file))) failed = true;
+				if (request.board.uploads.thumbnails) await this.deps.uploads.remove(id, `mini_${file}`);
+				touched.add(id);
+			}
+			for (const id of touched) {
+				const remaining = (await this.deps.uploads.list(id)) ?? [];
+				const used = remaining.filter((f) => isListedUpload(f.name, request.board.uploads)).reduce((sum, f) => sum + f.size, 0);
+				await this.deps.profileStore.setUploadedBytes(id, used);
+			}
+			return done(failed ? 'error' : 'deleted');
+		}
+		return renderMessage(request, reply, this.deps, 400, this.deps.page.lang.common.badRequest);
 	}
 
 	#renderSettings(

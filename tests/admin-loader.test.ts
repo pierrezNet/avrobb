@@ -167,3 +167,44 @@ describe('plugin Premium', () => {
 		expect(fake.premiumMembers).toBeUndefined();
 	});
 });
+
+describe('plugin Uploadile', () => {
+	const send = (server: FastifyInstance, fields: Record<string, string>) =>
+		server.inject({
+			method: 'POST',
+			url: '/admin_loader.php?plugin=AP_Uploadile.php',
+			headers: { cookie: cookies(2), 'content-type': 'application/x-www-form-urlencoded' },
+			payload: new URLSearchParams({ csrf_token: csrfToken(CSRF_SECRET, SEED, 2), ...fields }).toString(),
+		});
+
+	it('réglages, installation et suppression ciblée d’un fichier avec recalcul du quota', async () => {
+		const { server, fake } = await start();
+		fake.config = { ...fake.config, uploads: { ...boardConfig.uploads, extensions: ['png', 'pdf'], thumbnails: true } };
+		fake.memberFiles = new Map([
+			[
+				5,
+				[
+					{ name: 'plan.pdf', size: 3000, modified: NOW, data: Buffer.from('') },
+					{ name: 'vue.png', size: 2000, modified: NOW, data: Buffer.from('') },
+					{ name: 'mini_vue.png', size: 100, modified: NOW, data: Buffer.from('') },
+				],
+			],
+			[2, [{ name: 'vue.png', size: 500, modified: NOW, data: Buffer.from('') }]],
+		]);
+		const page = await get(server, 2, '/admin_loader.php?plugin=AP_Uploadile.php');
+		expect(page.body).toContain('name="delete[5/vue.png]"');
+		expect(page.body).toContain('mini_vue.png');
+		expect(page.body).not.toContain('name="delete[5/mini_vue.png]"');
+
+		await send(server, { supprimer: '1', 'delete[5/vue.png]': '1' });
+		expect(fake.memberFiles?.get(5)?.map((f) => f.name)).toEqual(['plan.pdf']);
+		expect(fake.memberFiles?.get(2)?.map((f) => f.name)).toEqual(['vue.png']);
+		expect(fake.uploadedBytes?.get(5)).toBe(3000);
+
+		await send(server, { update: '1', laws: 'png, jpg', thumb: '0', thumb_size: '-1' });
+		expect(fake.configValues?.get('o_uploadile_laws')).toBe('png,jpg');
+		expect(fake.configValues?.get('o_uploadile_thumb_size')).toBe('100');
+		await send(server, { installation: '1' });
+		expect(fake.userActionLog).toEqual(['ensureUploadColumn']);
+	});
+});

@@ -518,3 +518,17 @@ describe('PremiumAdminRepository (AP_Premium.php)', () => {
 		expect(await store.isInstalled()).toBe(false);
 	});
 });
+
+describe('UserAdminRepository (plugin Uploadile)', () => {
+	it('noms des membres ; colonne upload déjà présente sans erreur', async () => {
+		const { UserAdminRepository } = await import('../../src/repositories/UserAdminRepository.ts');
+		const store = new UserAdminRepository(db);
+		expect(await store.findUsernames([3, 5, 999])).toEqual(
+			new Map([
+				[3, 'Tessy'],
+				[5, 'MaxDUO'],
+			]),
+		);
+		await store.ensureUploadColumn();
+	});
+});

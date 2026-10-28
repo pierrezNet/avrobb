@@ -4,7 +4,7 @@
  * suppression, bannissement) avec les effets de bord du PHP.
  */
 
-import type { Expression, ExpressionBuilder, Kysely, SqlBool } from 'kysely';
+import { type Expression, type ExpressionBuilder, type Kysely, type SqlBool, sql } from 'kysely';
 import type { Db } from '../db/database.ts';
 import type { Database } from '../db/schema.ts';
 import { GroupId } from '../domain/models.ts';
@@ -115,6 +115,13 @@ export interface UserBan {
 	creatorId: number;
 }
 
+/** Plugin AP_Uploadile.php : noms des membres et colonne users.upload. */
+export interface UploadileAdminStore {
+	findUsernames(ids: readonly number[]): Promise<Map<number, string>>;
+	/** ALTER TABLE users ADD upload (installation du plugin), si la colonne manque. */
+	ensureUploadColumn(): Promise<void>;
+}
+
 export interface UserAdminWriter {
 	/** Nombre de comptes administrateurs, et de comptes d'un groupe de modérateurs, parmi `ids`. */
 	countPrivileged(ids: readonly number[]): Promise<{ admins: number; moderators: number }>;
@@ -153,7 +160,7 @@ async function removeFromModerators(trx: Kysely<Database>, ids: readonly number[
 	}
 }
 
-export class UserAdminRepository implements UserAdminReader, UserAdminWriter {
+export class UserAdminRepository implements UserAdminReader, UserAdminWriter, UploadileAdminStore {
 	constructor(private readonly db: Db) {}
 
 	async countIpStats(userId: number): Promise<number> {
@@ -327,5 +334,15 @@ export class UserAdminRepository implements UserAdminReader, UserAdminWriter {
 					})
 					.execute();
 		});
+	}
+
+	async findUsernames(ids: readonly number[]): Promise<Map<number, string>> {
+		if (ids.length === 0) return new Map();
+		const rows = await this.db.selectFrom('users').select(['id', 'username']).where('id', 'in', ids).execute();
+		return new Map(rows.map((row) => [row.id, row.username]));
+	}
+
+	async ensureUploadColumn(): Promise<void> {
+		await sql`ALTER TABLE ${sql.table('users')} ADD COLUMN IF NOT EXISTS upload INT(15) NOT NULL DEFAULT 0`.execute(this.db);
 	}
 }

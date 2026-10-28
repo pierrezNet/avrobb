@@ -2192,3 +2192,10 @@ a.site-status__alert {
 	color: var(--color-active);
 	font-weight: 600;
 }
+
+/* Miniature d'un fichier envoyé (plugin Uploadile) */
+.upload-thumb {
+	max-width: 6rem;
+	max-height: 6rem;
+	border-radius: 0.25rem;
+}

@@ -153,8 +153,9 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   numéro de version) ; plus de numéro de version FluxBB (pied de page, accueil, générateur des flux).
 - « Citer » ne reprend que le passage sélectionné dans le message, s'il y en a un
   (`public/js/quote-selection.js` ajoute `qtext=` au lien `post.php?tid=…&qid=…`, sous le nom de
-  l'auteur) ; sans sélection ni JavaScript, le message entier comme dans FluxBB. Le passage est du
-  texte brut (la mise en forme BBCode de la sélection n'est pas reprise).
+  l'auteur) ; sans sélection ni JavaScript, le message entier comme dans FluxBB. Le passage est
+  remis en BBCode d'après le HTML du message (gras, italique, souligné, barré, couleur, liens,
+  images, listes, code, alignements, spoilers…) ; une citation imbriquée perd le nom de son auteur.
 - Pas de flux Atom : `extern.php?type=atom` sert le flux RSS (les anciens abonnements continuent de
   fonctionner) ; l'option « Flux par défaut » ne propose plus que Aucun ou RSS, et l'ancien choix
   Atom (`o_feed_type` = 2, celui de PV) n'affiche plus de lien de flux. Pas de flux des discussions

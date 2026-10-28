@@ -77,6 +77,7 @@ export function toBoardConfig(values: ReadonlyMap<string, string>): BoardConfig 
 		announcement: flag('o_announcement') ? text('o_announcement_message') : null,
 		quickjump: flag('o_quickjump'),
 		feedType: FEED_TYPES[text('o_feed_type')] ?? 'none',
+		version: text('o_cur_version'),
 		shownVersion: flag('o_show_version') ? text('o_cur_version') : null,
 		privateMessagesEnabled: flag('o_pms_enabled'),
 		smilies: flag('o_smilies'),

@@ -2092,3 +2092,24 @@ a.site-status__alert {
 		gap: 1rem;
 	}
 }
+
+/* Listes de caractéristiques (administration : version, statistiques du serveur) */
+.info-list {
+	display: grid;
+	gap: 0.25rem 1rem;
+	margin: 0;
+}
+.info-list dt {
+	font-weight: bold;
+}
+.info-list dd {
+	margin: 0 0 0.5rem;
+}
+@media (min-width: 40rem) {
+	.info-list {
+		grid-template-columns: minmax(10rem, max-content) 1fr;
+	}
+	.info-list dd {
+		margin: 0;
+	}
+}

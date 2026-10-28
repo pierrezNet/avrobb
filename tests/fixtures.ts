@@ -243,6 +243,7 @@ export const boardConfig: BoardConfig = {
 	announcement: null,
 	quickjump: true,
 	feedType: 'atom',
+	version: '1.5.4',
 	shownVersion: null,
 	privateMessagesEnabled: false,
 	smilies: true,
@@ -733,6 +734,11 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 				);
 			},
 		},
+		adminStats: {
+			countActiveOnline: async () => 4,
+			databaseInfo: async () => ({ version: '11.4.2-MariaDB', rows: 12345, bytes: 3 * 1024 * 1024 }),
+		},
+		serverInfo: { loadAverage: () => [0.5, 0.25, 0.125], operatingSystem: () => 'linux 7.0', runtimeVersion: () => 'v24.0.0' },
 		hostResolver: { reverse: async (ip) => (ip === '192.0.2.5' ? 'pilote.example.test' : ip) },
 		premium: {
 			findExpiration: async (id) => data.premiumExpirations?.get(id) ?? null,

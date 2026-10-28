@@ -239,6 +239,8 @@ export interface BoardConfig {
 	announcement: string | null;
 	quickjump: boolean;
 	feedType: FeedType;
+	/** Version de FluxBB de la base (o_cur_version), affichée dans l'administration. */
+	version: string;
 	/** Version de FluxBB affichée dans « Propulsé par » ; null si o_show_version est désactivé. */
 	shownVersion: string | null;
 	privateMessagesEnabled: boolean;

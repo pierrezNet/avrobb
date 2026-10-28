@@ -67,6 +67,9 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   Consultation d'IP : résolution inverse limitée à 2 secondes.
 - Signalements (`admin_reports.php`) : bouton « Marquer comme traité » en POST avec jeton CSRF ;
   les 10 derniers signalements traités sont conservés, comme le PHP.
+- Accueil de l'administration : pas de vérification de mise à jour (`action=check_upgrade`, le
+  service de fluxbb.org n'existe plus). Statistiques du serveur : charge et visiteurs actifs pour
+  tous, environnement Node.js et base de données pour les administrateurs ; pas de `phpinfo()`.
 - Rédaction (`post.php`) : émojis conservés (le PHP remplaçait les caractères de 4 octets par « ? »,
   héritage d'une base en utf8 sur 3 octets) ; redirection immédiate vers le message ; boutons de
   préfixe du sujet en JavaScript et seulement pour une nouvelle discussion ; pas de réponse dans le

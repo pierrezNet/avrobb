@@ -5,10 +5,12 @@
  */
 
 import { afterAll, describe, expect, it } from 'vitest';
+import { NodeServerInfo } from '../../src/adapters/serverInfo.ts';
 import { buildApp } from '../../src/app.ts';
 import { createDatabase } from '../../src/db/database.ts';
 import { GroupId } from '../../src/domain/models.ts';
 import { fr, frDateWords } from '../../src/lang/fr/index.ts';
+import { AdminStatsRepository } from '../../src/repositories/AdminStatsRepository.ts';
 import { BanRepository } from '../../src/repositories/BanRepository.ts';
 import { CensorRepository } from '../../src/repositories/CensorRepository.ts';
 import { ConfigLoader } from '../../src/repositories/ConfigLoader.ts';
@@ -488,6 +490,8 @@ describe('viewtopic de bout en bout', () => {
 			contacts: new ContactRepository(db),
 			reportWriter: new ReportRepository(db),
 			reportStore: new ReportRepository(db),
+			adminStats: new AdminStatsRepository(db, 'fo_'),
+			serverInfo: new NodeServerInfo(),
 			toolbar: new ToolbarRepository(db),
 			forums: new ForumRepository(db),
 			reports: new ReportRepository(db),

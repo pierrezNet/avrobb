@@ -1,0 +1,28 @@
+{#- Accueil de l'administration (admin_index.php). Données : `view` (controllers/AdminIndexController.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/adminMenu.njk" as adminMenu %}
+
+{% block main %}
+<h1 class="page-title">{{ lang.admin.index }}</h1>
+<div class="side-layout">
+{{ adminMenu.menu(view.menu, lang) }}
+<div class="side-layout__content">
+<section class="form-box" aria-labelledby="admin-welcome">
+	<h2 id="admin-welcome" class="form-box__title">{{ lang.admin.forumAdminHead }}</h2>
+	<p>{{ lang.admin.welcome }}</p>
+	<ul>
+		{% for item in lang.admin.welcomeItems %}<li>{{ item }}</li>{% endfor %}
+	</ul>
+</section>
+<section class="form-box" aria-labelledby="admin-about">
+	<h2 id="admin-about" class="form-box__title">{{ lang.admin.aboutHead }}</h2>
+	<dl class="info-list">
+		<dt>{{ lang.admin.versionLabel }}</dt>
+		<dd>{{ view.version }}</dd>
+		<dt>{{ lang.admin.serverStatistics }}</dt>
+		<dd><a href="{{ url('admin_statistics.php') }}">{{ lang.admin.viewServerStatistics }}</a></dd>
+	</dl>
+</section>
+</div>
+</div>
+{% endblock %}

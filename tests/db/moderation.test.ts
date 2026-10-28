@@ -1,6 +1,6 @@
 /**
- * Modération sur une vraie base (ModerationRepository) : suppression et scission de messages,
- * déplacement, fusion, suppression, fermeture et épinglage de sujets, balises de PV, avec les
+ * Modération et administration sur une vraie base (ModerationRepository, signalements, statistiques) :
+ * suppression et scission de messages, déplacement, fusion, suppression, fermeture et épinglage de sujets, balises de PV, avec les
  * compteurs des sujets et des forums. Transactions annulées.
  *
  * Jeu de données : sujet 10 (forum 2) avec les messages 100 (ouverture), 101 (MaxDUO) et 102
@@ -184,5 +184,16 @@ describe('ReportRepository (traitement)', () => {
 			expect((await reports.listReports(true)).map((r) => r.zapped?.by?.username)).toEqual(['MaxDUO', 'admin']);
 			expect(await reports.hasPending()).toBe(false);
 		});
+	});
+});
+
+describe('AdminStatsRepository', () => {
+	it('compte les visiteurs actifs et mesure les tables du forum', async () => {
+		const { AdminStatsRepository } = await import('../../src/repositories/AdminStatsRepository.ts');
+		const stats = new AdminStatsRepository(db, 'fo_');
+		expect(await stats.countActiveOnline()).toBeGreaterThanOrEqual(0);
+		const info = await stats.databaseInfo();
+		expect(info.version).toMatch(/^\d+\.\d+/);
+		expect(info.bytes).toBeGreaterThan(0);
 	});
 });

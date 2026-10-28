@@ -1,0 +1,27 @@
+{#- Statistiques du serveur (admin_statistics.php). Données : `view` (controllers/AdminIndexController.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/adminMenu.njk" as adminMenu %}
+
+{% block main %}
+<h1 class="page-title">{{ lang.admin.serverStatistics }}</h1>
+<div class="side-layout">
+{{ adminMenu.menu(view.menu, lang) }}
+<div class="side-layout__content">
+<section class="form-box" aria-labelledby="admin-stats">
+	<h2 id="admin-stats" class="form-box__title">{{ lang.admin.serverStatistics }}</h2>
+	<dl class="info-list">
+		<dt>{{ lang.admin.serverLoadLabel }}</dt>
+		<dd>{{ view.load }}</dd>
+		{% if view.environment %}
+		<dt>{{ lang.admin.environmentLabel }}</dt>
+		<dd>{% for line in view.environment %}{% if not loop.first %}<br>{% endif %}{{ line }}{% endfor %}</dd>
+		{% endif %}
+		{% if view.database %}
+		<dt>{{ lang.admin.databaseLabel }}</dt>
+		<dd>{% for line in view.database %}{% if not loop.first %}<br>{% endif %}{{ line }}{% endfor %}</dd>
+		{% endif %}
+	</dl>
+</section>
+</div>
+</div>
+{% endblock %}

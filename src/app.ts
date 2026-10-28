@@ -10,6 +10,8 @@ import fastifyView from '@fastify/view';
 import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import nunjucks from 'nunjucks';
 import type { Mailer } from './adapters/mailer.ts';
+import type { ServerInfo } from './adapters/serverInfo.ts';
+import { AdminIndexController } from './controllers/AdminIndexController.ts';
 import { AdminReportsController, type AdminReportsQuery } from './controllers/AdminReportsController.ts';
 import { ContactController, type ContactQuery } from './controllers/ContactController.ts';
 import { DeleteController, type DeleteQuery } from './controllers/DeleteController.ts';
@@ -42,6 +44,7 @@ import { ensureCsrfToken, isValidCsrf } from './http/csrf.ts';
 import { type FormBody, registerFormParser } from './http/forms.ts';
 import { type LayoutDeps, renderBlock, renderMessage, renderMinimalMessage } from './http/layout.ts';
 import { checkAccess, purgeOnline, type SessionDeps, startSession } from './http/session.ts';
+import type { AdminStatsReader } from './repositories/AdminStatsRepository.ts';
 import type { CensorReader } from './repositories/CensorRepository.ts';
 import type { ConfigReader } from './repositories/ConfigLoader.ts';
 import type { ContactStore } from './repositories/ContactRepository.ts';
@@ -115,6 +118,9 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	reportWriter: ReportWriter;
 	/** Liste et traitement des signalements (admin_reports.php). */
 	reportStore: ReportStore;
+	/** Statistiques de l'administration (admin_statistics.php). */
+	adminStats: AdminStatsReader;
+	serverInfo: ServerInfo;
 	toolbar: ToolbarReader;
 	avatars: AvatarLocator;
 	avatarStore: AvatarStore;
@@ -140,7 +146,9 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 
 /** Pages déjà servies par Node ; les autres liens partent vers l'installation PHP. */
 const PORTED_PAGES = new Set([
+	'admin_index.php',
 	'admin_reports.php',
+	'admin_statistics.php',
 	'delete.php',
 	'draft_edit.php',
 	'draft_list.php',
@@ -317,6 +325,10 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 	const moderate = new ModerateController({ ...deps, trackCookieName });
 	app.get<{ Querystring: ModerateQuery }>('/moderate.php', { preHandler: authenticate }, moderate.show);
 	app.post<{ Querystring: ModerateQuery; Body: FormBody }>('/moderate.php', { preHandler: [authenticate, verifyCsrf] }, moderate.submit);
+
+	const adminIndex = new AdminIndexController(deps);
+	app.get('/admin_index.php', { preHandler: authenticate }, adminIndex.index);
+	app.get('/admin_statistics.php', { preHandler: authenticate }, adminIndex.statistics);
 
 	const adminReports = new AdminReportsController(deps);
 	app.get<{ Querystring: AdminReportsQuery }>('/admin_reports.php', { preHandler: authenticate }, adminReports.show);

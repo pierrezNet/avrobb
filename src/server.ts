@@ -6,10 +6,12 @@
 import path from 'node:path';
 import { DnsHostResolver } from './adapters/hostResolver.ts';
 import { NodeMailer } from './adapters/mailer.ts';
+import { NodeServerInfo } from './adapters/serverInfo.ts';
 import { buildApp } from './app.ts';
 import { loadConfig } from './config.ts';
 import { createDatabase } from './db/database.ts';
 import { fr, frDateWords } from './lang/fr/index.ts';
+import { AdminStatsRepository } from './repositories/AdminStatsRepository.ts';
 import { BanRepository } from './repositories/BanRepository.ts';
 import { CensorRepository } from './repositories/CensorRepository.ts';
 import { ConfigLoader } from './repositories/ConfigLoader.ts';
@@ -85,6 +87,8 @@ const app = await buildApp({
 	contacts: new ContactRepository(db),
 	reportWriter: reports,
 	reportStore: reports,
+	adminStats: new AdminStatsRepository(db, config.db.tablePrefix),
+	serverInfo: new NodeServerInfo(),
 	toolbar: new ToolbarRepository(db),
 	forums: new ForumRepository(db),
 	reports,

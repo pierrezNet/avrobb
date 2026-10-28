@@ -50,4 +50,33 @@ export const admin = {
 	na: 'N/A',
 	zappedSubhead: (date: string, by: string) => `Traité le ${date} par ${by}`,
 	noZappedReports: 'Aucun signalement traité pour le moment.',
+
+	// Accueil et statistiques (admin_index.php, admin_statistics.php)
+	serverStatistics: 'Statistiques du serveur',
+	forumAdminHead: 'Administration du forum',
+	welcome:
+		"Bienvenue dans le panneau d'administration du forum. À partir d'ici vous pouvez gérer les aspects vitaux du forum. Selon que vous êtes administrateur ou modérateur, vous pouvez",
+	welcomeItems: [
+		'Organiser les catégories et forums.',
+		'Définir les options et préférences pour chaque forum.',
+		'Gérer les permissions pour les utilisateurs et les invités.',
+		'Afficher les statistiques IP des utilisateurs.',
+		'Bannir des utilisateurs.',
+		'Censurer des mots.',
+		"Paramétrer les rangs d'utilisateurs.",
+		"Supprimer d'anciens messages.",
+		'Traiter les signalements de messages.',
+	],
+	aboutHead: 'Au sujet du forum',
+	versionLabel: 'Version de FluxBB (base de données)',
+	viewServerStatistics: 'Voir les statistiques du serveur',
+	serverLoadLabel: 'Charge du serveur',
+	serverLoadData: (load: string, online: number) => `${load} - ${online} utilisateur(s) en ligne`,
+	notAvailable: 'Non disponible',
+	environmentLabel: 'Environnement',
+	environmentOs: (os: string) => `Système d'exploitation\u00a0: ${os}`,
+	environmentRuntime: (version: string) => `Node.js\u00a0: ${version}`,
+	databaseLabel: 'Base de données',
+	databaseRows: (rows: string) => `Lignes\u00a0: ${rows}`,
+	databaseSize: (size: string) => `Taille\u00a0: ${size}`,
 };

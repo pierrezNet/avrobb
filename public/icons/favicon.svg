@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="titre">
+	<title id="titre">Pilote-Virtuel</title>
+	<defs>
+		<linearGradient id="fond" x1="0" y1="1" x2="1" y2="0">
+			<stop offset="0.1" stop-color="#1a293e"/>
+			<stop offset="1" stop-color="#44699c"/>
+		</linearGradient>
+	</defs>
+	<rect width="64" height="64" rx="14" fill="url(#fond)"/>
+	<path d="M10 54 L27 37" stroke="#e03131" stroke-width="4" stroke-linecap="round" opacity="0.9"/>
+	<g transform="rotate(45 32 32)">
+		<path fill="#fff" d="M32 7c2 0 3 2 3 5v12l18 10v5l-18-5v10l6 5v4l-9-3-9 3v-4l6-5V34l-18 5v-5l18-10V12c0-3 1-5 3-5z"/>
+	</g>
+</svg>

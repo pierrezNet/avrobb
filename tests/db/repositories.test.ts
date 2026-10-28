@@ -38,6 +38,7 @@ import { RegistrationRepository } from '../../src/repositories/RegistrationRepos
 import { ReportRepository } from '../../src/repositories/ReportRepository.ts';
 import { ReputationRepository } from '../../src/repositories/ReputationRepository.ts';
 import { SearchRepository } from '../../src/repositories/SearchRepository.ts';
+import { SitemapRepository } from '../../src/repositories/SitemapRepository.ts';
 import { StatsRepository } from '../../src/repositories/StatsRepository.ts';
 import { SubjectPrefixRepository } from '../../src/repositories/SubjectPrefixRepository.ts';
 import { SubscriptionRepository } from '../../src/repositories/SubscriptionRepository.ts';
@@ -537,6 +538,7 @@ describe('viewtopic de bout en bout', () => {
 			galleryFiles: { save: async (addedAt) => addedAt, delete: async () => undefined },
 			headerImages: { replace: async () => undefined, restore: async () => false, hasPrevious: async () => false },
 			homeActivity: new HomeActivityRepository(db),
+			sitemap: new SitemapRepository(db),
 			stopwords: { load: async () => new Set<string>() },
 			usersInfo: new UsersInfoLoader(new StatsRepository(db), null, () => NOW),
 			avatars: { urlFor: async () => null },

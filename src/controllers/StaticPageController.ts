@@ -30,7 +30,13 @@ export class StaticPageController {
 				reply,
 				this.deps,
 				'static_page.njk',
-				{ pageId: id, titleParts: [request.board.boardTitle, view.title], allowIndex: true, canonicalUrl: `${id}.php` },
+				{
+					pageId: id,
+					titleParts: [request.board.boardTitle, view.title],
+					allowIndex: true,
+					canonicalUrl: `${id}.php`,
+					description: view.intro,
+				},
 				view,
 			);
 		};

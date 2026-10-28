@@ -195,6 +195,13 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   pas d'intégration dans un autre site ; `nosniff`, `Referrer-Policy`, `Permissions-Policy`, HSTS
   en HTTPS (`TRUST_PROXY` derrière un proxy). Un script collé dans l'annonce ou les liens du menu
   par l'administrateur ne s'exécute plus.
+- Référencement (le PHP n'en faisait pas) : balise description par page (extrait censuré du premier
+  message d'une discussion, description du forum `o_board_desc` sinon), URL canonique absolue
+  (`o_base_url`), aperçu de partage Open Graph des pages indexables (première image de la
+  discussion, icône du forum sinon), `robots.txt` (formulaires et administration exclus) et
+  `sitemap.xml` (accueil, pages d'information, forums et discussions lisibles par un invité).
+- Icônes : favicon SVG, PNG de secours, icône d'écran d'accueil iOS et manifeste (`public/icons`,
+  `public/manifest.json`) ; `/favicon.ico` redirige vers la nouvelle icône.
 - Pas de flux Atom : `extern.php?type=atom` sert le flux RSS (les anciens abonnements continuent de
   fonctionner) ; l'option « Flux par défaut » ne propose plus que Aucun ou RSS, et l'ancien choix
   Atom (`o_feed_type` = 2, celui de PV) n'affiche plus de lien de flux. Pas de flux des discussions

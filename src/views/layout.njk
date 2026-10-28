@@ -9,10 +9,26 @@
 {% if layout.robotsNoIndex %}<meta name="robots" content="noindex, follow">
 {% endif %}
 {% if layout.canonicalUrl %}<link rel="canonical" href="{{ layout.canonicalUrl }}">
+{% endif %}{% if layout.meta.description %}<meta name="description" content="{{ layout.meta.description }}">
+{% endif %}
+{% if not layout.robotsNoIndex %}{#- Aperçu de partage (réseaux sociaux, messageries) des pages indexables. -#}
+<meta property="og:site_name" content="{{ layout.meta.siteName }}">
+<meta property="og:title" content="{{ layout.meta.title }}">
+<meta property="og:type" content="{{ layout.meta.type }}">
+<meta property="og:locale" content="fr_FR">
+{% if layout.meta.url %}<meta property="og:url" content="{{ layout.meta.url }}">
+{% endif %}{% if layout.meta.description %}<meta property="og:description" content="{{ layout.meta.description }}">
+{% endif %}<meta property="og:image" content="{{ layout.meta.image }}">
+<meta name="twitter:card" content="summary_large_image">
 {% endif %}
 {% if layout.feed %}<link rel="alternate" type="{{ layout.feed.mimeType }}" href="{{ url(layout.feed.href) }}" title="{{ layout.feed.label }}">
 {% endif %}
-<link rel="icon" href="{{ url('img/favicon.ico') }}">
+{#- Icônes AvroBB : SVG (nette à toutes les tailles), PNG de secours, écran d'accueil iOS et Android. -#}
+<link rel="icon" href="{{ asset('icons/favicon.svg') }}" type="image/svg+xml">
+<link rel="icon" href="{{ asset('icons/favicon-32.png') }}" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="{{ asset('icons/apple-touch-icon.png') }}">
+<link rel="manifest" href="{{ asset('manifest.json') }}">
+<meta name="theme-color" content="#1a293e">
 <link rel="stylesheet" href="{{ asset('css/base.css') }}">
 <link rel="stylesheet" href="{{ asset('css/themes/' ~ layout.theme ~ '.css') }}">
 {% if layout.memberSuggest %}<script src="{{ asset('js/mentions.js') }}" defer></script>{% endif %}

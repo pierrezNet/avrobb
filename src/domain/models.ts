@@ -205,6 +205,8 @@ export interface SubjectTag {
 
 export interface BoardConfig {
 	boardTitle: string;
+	/** o_board_desc : description du forum (balise description de l'accueil), HTML possible. */
+	boardDescription: string;
 	defaultStyle: string;
 	defaultPostsPerPage: number;
 	defaultTopicsPerPage: number;

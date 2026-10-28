@@ -105,6 +105,7 @@ export class ForumController {
 				footer: { kind: 'viewforum', forum, page },
 				allowIndex: true,
 				canonicalUrl: forumUrl(forum.id, page, age?.old ?? false),
+				description: lang.forum.metaDescription(forum.name, config.boardTitle),
 			},
 			view,
 		);

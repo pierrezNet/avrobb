@@ -48,6 +48,7 @@ import { ProfileController, type ProfileQuery } from './controllers/ProfileContr
 import { RegisterController, type RegisterQuery } from './controllers/RegisterController.ts';
 import { ReputationController, type ReputationQuery } from './controllers/ReputationController.ts';
 import { SearchController, type SearchQuery } from './controllers/SearchController.ts';
+import { SeoController } from './controllers/SeoController.ts';
 import { StaticPageController } from './controllers/StaticPageController.ts';
 import { StatsPageController } from './controllers/StatsPageController.ts';
 import { SubjectPrefixController, type SubjectPrefixQuery } from './controllers/SubjectPrefixController.ts';
@@ -90,6 +91,7 @@ import type { RegistrationStore } from './repositories/RegistrationRepository.ts
 import type { ReportStore, ReportWriter } from './repositories/ReportRepository.ts';
 import type { ReputationStore } from './repositories/ReputationRepository.ts';
 import type { SearchReader, SearchWriter } from './repositories/SearchRepository.ts';
+import type { SitemapReader } from './repositories/SitemapRepository.ts';
 import type { StatsReader } from './repositories/StatsRepository.ts';
 import type { StopwordsReader } from './repositories/StopwordsLoader.ts';
 import type { SubjectPrefixStore } from './repositories/SubjectPrefixRepository.ts';
@@ -179,6 +181,8 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	searchWriter: SearchWriter;
 	feeds: FeedReader;
 	gallery: GalleryStore;
+	/** Plan du site (sitemap.xml) : forums et discussions lisibles par un invité. */
+	sitemap: SitemapReader;
 	/** Activité de la semaine affichée à l'accueil (discussions, nouveaux membres, simulateurs). */
 	homeActivity: HomeActivityReader;
 	/** Logo et bannière de l'en-tête (fichiers de l'installation PHP), page Apparence. */
@@ -345,6 +349,12 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 	app.setNotFoundHandler({ preHandler: authenticate }, (request, reply) =>
 		renderMessage(request, reply, deps, 404, deps.page.lang.common.badRequest),
 	);
+
+	// Les navigateurs et les robots demandent /favicon.ico d'office : icône AvroBB (sans session).
+	app.get('/favicon.ico', (_request, reply) => reply.redirect(asset('icons/favicon-32.png'), 301));
+	const seo = new SeoController(deps);
+	app.get('/robots.txt', seo.robots);
+	app.get('/sitemap.xml', seo.sitemap);
 
 	const trackCookieName = `${deps.legacyCookie.name}_track`;
 	const index = new IndexController({ ...deps, trackCookieName });

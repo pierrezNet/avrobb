@@ -12,6 +12,7 @@ import { type DateWords, formatTime, viewerTimeSettings } from '../services/date
 import { headerImageHref } from '../services/headerImages.ts';
 import { logoutToken } from '../services/legacySession.ts';
 import { canSearch, canUsePrivateMessages, isAnyModerator, isForumModerator } from '../services/permissions.ts';
+import { plainExcerpt } from '../services/seo.ts';
 import { resolveTheme, type Theme } from '../services/themes.ts';
 import { labelText } from '../services/topicLabels.ts';
 
@@ -56,6 +57,23 @@ export interface PageOptions {
 	/** PUN_ALLOW_INDEX : sinon la page demande aux robots de ne pas l'indexer. */
 	allowIndex?: boolean;
 	canonicalUrl?: string | null;
+	/** Balise description et aperçu de partage ; à défaut, la description du forum. */
+	description?: string | null;
+	/** Image de l'aperçu de partage (adresse absolue) ; à défaut, l'icône du forum. */
+	image?: string | null;
+	/** og:type : « article » pour une discussion, « website » sinon. */
+	shareType?: 'website' | 'article';
+}
+
+/** Référencement et aperçu de partage (Open Graph) d'une page indexable. */
+export interface PageMeta {
+	description: string | null;
+	title: string;
+	siteName: string;
+	/** Adresse canonique absolue, ou null. */
+	url: string | null;
+	image: string;
+	type: 'website' | 'article';
 }
 
 export interface NavLink {
@@ -115,6 +133,7 @@ export interface LayoutView {
 	theme: Theme;
 	robotsNoIndex: boolean;
 	canonicalUrl: string | null;
+	meta: PageMeta;
 	nav: NavLink[];
 	status: StatusView | null;
 	quickSearches: QuickSearch[];
@@ -149,6 +168,9 @@ export interface LayoutInput {
 	pendingReports: boolean;
 	unreadPrivateMessages: number;
 }
+
+/** Image d'aperçu de partage par défaut : l'icône du forum (public/icons). */
+const SHARE_IMAGE = 'assets/icons/icon-512.png';
 
 /** generate_page_title() : parties inversées, « (Page N) » ajouté à la plus précise. */
 export function pageTitle(parts: readonly string[], pageNumber: number | null, lang: Lang): string {
@@ -352,6 +374,8 @@ function buildFooterLinks(lang: Lang, pageId: string): FooterLink[] {
 export function buildLayout(input: LayoutInput): LayoutView {
 	const { viewer, config, lang, options } = input;
 	const footer = options.footer ?? { kind: 'default' };
+	// Adresse canonique absolue (o_base_url) : les moteurs la préfèrent à une adresse relative.
+	const canonical = options.canonicalUrl ? `${config.baseUrl}/${options.canonicalUrl}` : null;
 
 	return {
 		lang,
@@ -361,7 +385,15 @@ export function buildLayout(input: LayoutInput): LayoutView {
 		// set_default_user() : un invité a toujours le thème par défaut du forum.
 		theme: resolveTheme(viewer.isGuest ? config.defaultStyle : viewer.style, config.defaultStyle),
 		robotsNoIndex: options.allowIndex !== true,
-		canonicalUrl: options.canonicalUrl ?? null,
+		canonicalUrl: canonical,
+		meta: {
+			description: options.description ?? plainExcerpt(config.boardDescription),
+			title: options.titleParts.at(-1) ?? config.boardTitle,
+			siteName: config.boardTitle,
+			url: canonical,
+			image: options.image ?? `${config.baseUrl}/${SHARE_IMAGE}`,
+			type: options.shareType ?? 'website',
+		},
 		nav: buildNav(input),
 		status: buildStatus(input),
 		quickSearches: buildQuickSearches(viewer, lang),
@@ -400,6 +432,7 @@ export function buildMinimalLayout(lang: Lang, title: string): LayoutView {
 		theme: 'Air',
 		robotsNoIndex: true,
 		canonicalUrl: null,
+		meta: { description: null, title, siteName: title, url: null, image: SHARE_IMAGE, type: 'website' },
 		nav: [link('navindex', 'index.php', lang.common.index, false)],
 		status: null,
 		quickSearches: [],

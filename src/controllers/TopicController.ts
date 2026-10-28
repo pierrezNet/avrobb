@@ -18,6 +18,7 @@ import type { AvatarLocator } from '../services/avatars.ts';
 import { buildCensor } from '../services/censor.ts';
 import { clampPage, pageCount } from '../services/pagination.ts';
 import { isForumModerator } from '../services/permissions.ts';
+import { firstImageUrl, plainExcerpt } from '../services/seo.ts';
 import { DEFAULT_TOOLBAR } from '../services/toolbar.ts';
 import { markRead, parseTrackedTopics, serializeTrackedTopics } from '../services/trackedTopics.ts';
 import { positiveInt } from './params.ts';
@@ -102,6 +103,8 @@ export class TopicController {
 
 		await this.recordVisit(request, reply, topic.id);
 
+		const censor = config.censoring ? buildCensor(censoredWords) : null;
+		const firstMessage = posts[0]?.message ?? '';
 		const view = buildTopicPage({
 			viewer,
 			config,
@@ -113,7 +116,7 @@ export class TopicController {
 			firstPosition: offset + 1,
 			avatars,
 			bannedUsernames,
-			censor: config.censoring ? buildCensor(censoredWords) : null,
+			censor,
 			toolbar: toolbar ?? DEFAULT_TOOLBAR,
 			lang,
 			dateWords: this.deps.page.dateWords,
@@ -133,6 +136,10 @@ export class TopicController {
 				footer: { kind: 'viewtopic', topic, page, labelDefinitions, appliedLabels: labels.get(topic.id) ?? [] },
 				allowIndex: true,
 				canonicalUrl: topicUrl(topic.id, page),
+				// Référencement : extrait du premier message de la page, et sa première image pour le partage.
+				description: plainExcerpt(censor !== null ? censor(firstMessage) : firstMessage),
+				image: firstImageUrl(posts.map((post) => post.message)),
+				shareType: 'article',
 			},
 			view,
 		);

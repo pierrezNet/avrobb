@@ -197,6 +197,7 @@ export function post(id: number, overrides: Partial<Post> = {}): Post {
 
 export const boardConfig: BoardConfig = {
 	boardTitle: 'Forum de test',
+	boardDescription: 'Le forum de <b>test</b>',
 	defaultPostsPerPage: 25,
 	defaultTopicsPerPage: 30,
 	showDot: false,
@@ -1181,6 +1182,10 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			deleteImage: async (id) => {
 				data.galleryImages = (data.galleryImages ?? []).filter((i) => i.id !== id);
 			},
+		},
+		sitemap: {
+			listForums: async () => (data.forumInfos ?? []).map((forum) => ({ id: forum.id, lastPost: 1_782_800_000 })),
+			listTopics: async (limit) => data.topics.slice(0, limit).map((topic) => ({ id: topic.id, lastPost: 1_782_800_000 })),
 		},
 		homeActivity: {
 			listHotTopics: async (_groupId, _since, limit) => (data.hotTopics ?? []).slice(0, limit),

@@ -183,7 +183,7 @@ describe('GET /viewforum.php', () => {
 		expect(old.body).toContain('viewtopic.php?id=23"');
 		expect(old.body).not.toContain('viewtopic.php?id=20"');
 		expect(old.body).toContain('href="viewforum.php?id=2">Discussions récentes (2)</a>');
-		expect(old.body).toContain('<link rel="canonical" href="viewforum.php?id=2&amp;old=1">');
+		expect(old.body).toContain('<link rel="canonical" href="http://forum.test/viewforum.php?id=2&amp;old=1">');
 	});
 
 	it('sans seuil ou sans ancienne discussion : pas de bouton', async () => {

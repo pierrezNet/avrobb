@@ -22,6 +22,7 @@ export function toBoardConfig(values: ReadonlyMap<string, string>): BoardConfig 
 
 	return {
 		boardTitle: text('o_board_title'),
+		boardDescription: text('o_board_desc'),
 		defaultStyle: text('o_default_style', 'Air'),
 		defaultPostsPerPage: Number(text('o_disp_posts_default', '25')) || 25,
 		defaultTopicsPerPage: Number(text('o_disp_topics_default', '30')) || 30,

@@ -11,6 +11,7 @@ export const forum = {
 	sticky: 'Épinglée :',
 	closed: 'Fermée :',
 	emptyForum: 'Le forum ne contient aucune discussion.',
+	metaDescription: (forum: string, board: string) => `Discussions du forum « ${forum} » sur ${board}.`,
 	// Discussions récentes et anciennes (AvroBB, réglées dans Maintenance)
 	oldTopics: (count: number) => `Anciennes discussions (${count})`,
 	recentTopics: (count: number) => `Discussions récentes (${count})`,

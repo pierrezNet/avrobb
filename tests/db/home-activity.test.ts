@@ -50,3 +50,18 @@ describe('HomeActivityRepository', () => {
 		expect(await activity.listActiveSubjects(GroupId.Guest, 1782800100)).not.toContain('Réservé à l’équipe');
 	});
 });
+
+describe('SitemapRepository', () => {
+	it('forums et discussions lisibles par un invité, sans redirections', async () => {
+		const { SitemapRepository } = await import('../../src/repositories/SitemapRepository.ts');
+		const sitemap = new SitemapRepository(db);
+		const forums = (await sitemap.listForums()).map((forum) => forum.id);
+		expect(forums).toContain(2);
+		expect(forums).not.toContain(3);
+		expect(forums).not.toContain(4);
+		const topics = (await sitemap.listTopics(10)).map((topic) => topic.id);
+		expect(topics).toContain(10);
+		expect(topics).not.toContain(11);
+		expect(topics).not.toContain(12);
+	});
+});

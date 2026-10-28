@@ -45,6 +45,7 @@ import { RegistrationRepository } from './repositories/RegistrationRepository.ts
 import { ReportRepository } from './repositories/ReportRepository.ts';
 import { ReputationRepository } from './repositories/ReputationRepository.ts';
 import { SearchRepository } from './repositories/SearchRepository.ts';
+import { SitemapRepository } from './repositories/SitemapRepository.ts';
 import { StatsRepository } from './repositories/StatsRepository.ts';
 import { StopwordsLoader } from './repositories/StopwordsLoader.ts';
 import { SubjectPrefixRepository } from './repositories/SubjectPrefixRepository.ts';
@@ -132,6 +133,7 @@ const app = await buildApp({
 	galleryFiles: new GalleryFiles(config.legacyRoot),
 	headerImages: new HeaderImageFiles(config.legacyRoot),
 	homeActivity: new HomeActivityRepository(db),
+	sitemap: new SitemapRepository(db),
 	stopwords: new StopwordsLoader(config.legacyRoot),
 	usersInfo: new UsersInfoLoader(stats, phpCache, clock),
 	avatars,

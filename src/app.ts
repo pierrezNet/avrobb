@@ -9,6 +9,7 @@ import fastifyStatic from '@fastify/static';
 import fastifyView from '@fastify/view';
 import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import nunjucks from 'nunjucks';
+import type { ImageProcessor } from './adapters/imageProcessor.ts';
 import type { Mailer } from './adapters/mailer.ts';
 import type { ServerInfo } from './adapters/serverInfo.ts';
 import { AdminBansController, type AdminBansQuery } from './controllers/AdminBansController.ts';
@@ -172,6 +173,8 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	avatarStore: AvatarStore;
 	/** Fichiers des membres (Uploadile) dans img/members/ de l'installation PHP. */
 	uploads: UploadStore;
+	/** Conversion des images envoyées en WebP (sharp). */
+	imageProcessor: ImageProcessor;
 	censorship: CensorStore;
 	topicLabels: TopicLabelReader;
 	stats: StatsReader;

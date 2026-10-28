@@ -9,6 +9,7 @@
  */
 
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { ImageProcessor } from '../adapters/imageProcessor.ts';
 import type { EditableProfile } from '../domain/models.ts';
 import { GroupId } from '../domain/models.ts';
 import { type FormBody, field } from '../http/forms.ts';
@@ -26,6 +27,7 @@ import { isProfile, loadEditableProfile, type ProfileAccessDeps, type ProfileQue
 import { UploadActions } from './uploadActions.ts';
 
 export interface PlugileControllerDeps extends LayoutDeps, ProfileAccessDeps {
+	imageProcessor: ImageProcessor;
 	censorship: CensorReader;
 	topicLabels: TopicLabelReader;
 	uploads: UploadStore;

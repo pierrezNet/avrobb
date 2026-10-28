@@ -122,19 +122,24 @@ export function datedFileName(fileName: string, now: number): string {
 	return `${pad(d.getUTCDate())}${pad(d.getUTCMonth() + 1)}${d.getUTCFullYear()}-${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}_${fileName}`;
 }
 
+/** Extensions d'images converties en WebP à l'envoi (services/imageVariants.ts). */
+const CONVERTED_IMAGES = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+
 /**
  * Fichier affiché dans la liste : extension permise (quelle que soit sa casse), ni caché (« # » en
- * tête), ni miniature (« mini_ »). Les extensions dangereuses ne sont jamais listées.
+ * tête), ni miniature (« mini_ »), ni variante mobile (« mobile_ »). Les extensions dangereuses ne
+ * sont jamais listées. Un .webp est listé dès qu'un format d'image est permis (images converties).
  */
 export function isListedUpload(fileName: string, settings: UploadSettings): boolean {
 	const dot = fileName.lastIndexOf('.');
 	const extension = dot >= 0 ? fileName.slice(dot + 1).toLowerCase() : '';
 	return (
 		dot > 0 &&
-		settings.extensions.includes(extension) &&
+		(settings.extensions.includes(extension) ||
+			(extension === 'webp' && settings.extensions.some((allowed) => CONVERTED_IMAGES.includes(allowed)))) &&
 		!DANGEROUS_EXTENSIONS.has(extension) &&
 		!fileName.startsWith('#') &&
-		fileName.split('_')[0] !== 'mini'
+		!['mini', 'mobile'].includes(fileName.split('_')[0] ?? '')
 	);
 }
 

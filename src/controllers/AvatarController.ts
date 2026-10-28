@@ -9,15 +9,17 @@
  */
 
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { ImageProcessor } from '../adapters/imageProcessor.ts';
 import type { FormBody } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { buildProfileMenu } from '../presenters/profileEditPage.ts';
 import type { AvatarStore } from '../services/avatars.ts';
-import { checkAvatar } from '../services/images.ts';
+import { checkAvatar, readImageInfo } from '../services/images.ts';
 import { fileSize, forumNumberFormat } from '../services/numberFormat.ts';
 import { isProfile, loadEditableProfile, type ProfileAccessDeps, type ProfileQuery } from './profileAccess.ts';
 
 export interface AvatarControllerDeps extends LayoutDeps, ProfileAccessDeps {
+	imageProcessor: ImageProcessor;
 	avatarStore: AvatarStore;
 }
 
@@ -32,18 +34,31 @@ export class AvatarController {
 	upload = async (request: AvatarRequest, reply: FastifyReply): Promise<FastifyReply> =>
 		this.withProfile(request, reply, async (id, username) => {
 			const config = request.board;
-			const file = request.uploads.get('req_file');
-			const checked = checkAvatar(file?.data ?? Buffer.alloc(0), {
-				maxBytes: config.avatarMaxBytes,
-				maxWidth: config.avatarMaxWidth,
-				maxHeight: config.avatarMaxHeight,
-			});
+			const limits = { maxBytes: config.avatarMaxBytes, maxWidth: config.avatarMaxWidth, maxHeight: config.avatarMaxHeight };
+			const data = await this.#fitAvatar(request.uploads.get('req_file')?.data ?? Buffer.alloc(0), limits);
+			const checked = checkAvatar(data, limits);
 			if ('error' in checked)
 				return this.renderUpload(request, reply, id, username, [this.deps.page.lang.profile.avatarError(checked.error, forumNumberFormat)]);
 
-			await this.deps.avatarStore.save(id, config.avatarsDir, checked.image.type, file?.data ?? Buffer.alloc(0));
+			await this.deps.avatarStore.save(id, config.avatarsDir, checked.image.type, data);
 			return reply.redirect(`profile.php?section=personality&id=${id}&updated=1`, 303);
 		});
+
+	/**
+	 * Image trop grande ou trop lourde : réduite automatiquement aux dimensions permises (le PHP la
+	 * refusait). Les autres cas (petite image, contenu qui n'est pas une image) passent tels quels aux contrôles.
+	 */
+	async #fitAvatar(data: Buffer, limits: { maxBytes: number; maxWidth: number; maxHeight: number }): Promise<Buffer> {
+		const info = readImageInfo(data);
+		if (info === null) return data;
+		if (info.width <= limits.maxWidth && info.height <= limits.maxHeight && data.length <= limits.maxBytes) return data;
+		const fitted = await this.deps.imageProcessor.avatar(data, info.type, {
+			width: limits.maxWidth,
+			height: limits.maxHeight,
+			maxBytes: limits.maxBytes,
+		});
+		return fitted?.data ?? data;
+	}
 
 	deleteForm = async (request: AvatarRequest, reply: FastifyReply): Promise<FastifyReply> =>
 		this.withProfile(request, reply, (id) => {

@@ -36,14 +36,11 @@ const png = Buffer.concat([
 ]);
 
 describe('règles de la galerie', () => {
-	it('titre, description, type lu dans le contenu, vignette vérifiée', () => {
-		const ok = validateGalleryUpload({ title: ' Vol ', description: 'Au [b]soleil[/b]', image: png, thumbnail: jpeg(150, 75) });
-		expect(ok).toMatchObject({ errors: [], title: 'Vol', extension: '.png' });
-		expect(ok.thumbnail).not.toBeNull();
-		// Vignette trop grande ou d'un autre type : l'image servira de vignette.
-		expect(validateGalleryUpload({ title: 'a', description: 'b', image: png, thumbnail: jpeg(300, 300) }).thumbnail).toBeNull();
-		expect(validateGalleryUpload({ title: 'a', description: 'b', image: png, thumbnail: png }).thumbnail).toBeNull();
-		expect(validateGalleryUpload({ title: '', description: '', image: Buffer.from('<?php'), thumbnail: null }).errors).toEqual([
+	it('titre, description, type lu dans le contenu', () => {
+		const ok = validateGalleryUpload({ title: ' Vol ', description: 'Au [b]soleil[/b]', image: png });
+		expect(ok).toMatchObject({ errors: [], title: 'Vol', imageOk: true });
+		expect(validateGalleryUpload({ title: 'a', description: 'b', image: jpeg(300, 300) }).imageOk).toBe(true);
+		expect(validateGalleryUpload({ title: '', description: '', image: Buffer.from('<?php') }).errors).toEqual([
 			'noTitle',
 			'noDescription',
 			'badType',
@@ -148,7 +145,7 @@ async function upload(
 }
 
 describe('POST /gallery.php', () => {
-	it('enregistre une image et sa vignette, puis redirige vers la galerie', async () => {
+	it('convertit en WebP (1024 px, vignette 150 px, variante mobile 640 px) et redirige', async () => {
 		const fake = data();
 		app = await buildApp(fakeDeps(fake));
 		const res = await upload(
@@ -158,13 +155,12 @@ describe('POST /gallery.php', () => {
 			{ titre: 'Vol de nuit', description: 'Au-dessus de Lyon' },
 			{
 				req_file: ['vol.png', png],
-				thumbnail: ['mini.jpg', jpeg(150, 75)],
 			},
 		);
 		expect(res.statusCode).toBe(303);
 		expect(res.headers.location).toBe('gallery.php?done=added');
-		expect(fake.galleryFileLog).toEqual([`save ${NOW}.png +mini`]);
-		expect(fake.galleryImages?.[0]).toMatchObject({ title: 'Vol de nuit', userId: 3, addedAt: NOW, extension: '.png' });
+		expect(fake.galleryFileLog).toEqual([`save ${NOW}.webp webp1024:${png.length} webp150:${png.length} webp640:${png.length}`]);
+		expect(fake.galleryImages?.[0]).toMatchObject({ title: 'Vol de nuit', userId: 3, addedAt: NOW, extension: '.webp' });
 	});
 
 	it('réaffiche le formulaire avec les erreurs', async () => {
@@ -190,12 +186,12 @@ describe('POST /gallery.php', () => {
 			},
 		);
 		expect(res.headers.location).toBe('gallery.php?info=pick&done=added');
-		expect(fake.galleryFileLog).toEqual([`save ${NOW}.png`]);
+		expect(fake.galleryFileLog).toEqual([`save ${NOW}.webp webp1024:${png.length} webp150:${png.length} webp640:${png.length}`]);
 
 		const picker = await get(app, 3, '/gallery.php?info=pick&done=added');
 		expect(picker.body).toContain('Votre image a été envoyée correctement.');
 		expect(picker.body).toContain(
-			`data-insert="[b]Cockpit[/b]\n[img]http://forum.test/img/gallery/${NOW}.png[/img]\nLe [b]tableau de bord[/b]"`,
+			`data-insert="[b]Cockpit[/b]\n[img]http://forum.test/img/gallery/${NOW}.webp[/img]\nLe [b]tableau de bord[/b]"`,
 		);
 		// Seules les images du membre sont proposées.
 		expect(picker.body).not.toContain('Image 2');

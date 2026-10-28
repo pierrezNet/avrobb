@@ -1,5 +1,4 @@
-{#- Formulaire d'envoi d'une image dans la galerie (gallery.php?info=new et sélecteur ?info=pick).
-    La vignette est calculée par public/js/gallery-thumbnail.js ; sans JavaScript, l'image en tient lieu. -#}
+{#- Formulaire d'envoi d'une image dans la galerie (gallery.php?info=new et sélecteur ?info=pick). -#}
 {% import "partials/forms.njk" as forms %}
 
 {% macro uploadForm(form, layout, lang) %}
@@ -18,7 +17,6 @@
 	<p class="form__field">
 		<label for="req_file">{{ lang.gallery.imageField }} <span class="form__required">{{ lang.gallery.required }}</span></label>
 		<input type="file" id="req_file" name="req_file" accept="image/jpeg,image/gif,image/png" required>
-		<input type="file" name="thumbnail" hidden tabindex="-1" aria-hidden="true">
 	</p>
 	<p class="form__buttons"><button type="submit" class="button button--primary" name="upload" value="1">{{ lang.gallery.upload }}</button></p>
 </form>

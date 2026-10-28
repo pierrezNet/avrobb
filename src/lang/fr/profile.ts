@@ -227,7 +227,7 @@ export const profile = {
 	file: 'Fichier',
 	upload: 'Envoyer',
 	avatarDesc: (width: number, height: number, bytes: string, size: string) =>
-		`Un avatar est une petite image qui sera affichée sous votre nom d'utilisateur dans vos messages. Il ne doit pas faire plus de ${width} x ${height} pixels et ${bytes} octets (${size}).`,
+		`Un avatar est une petite image qui sera affichée sous votre nom d'utilisateur dans vos messages. Une image plus grande est réduite automatiquement à ${width} × ${height} pixels et ${bytes} octets (${size}) au plus.`,
 	avatarError: avatarErrorText,
 	confirmDeleteAvatar: "Effacer l'avatar\u00a0?",
 	confirmDeleteAvatarInfo: 'Votre avatar actuel sera définitivement effacé.',

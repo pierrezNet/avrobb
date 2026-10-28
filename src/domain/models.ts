@@ -294,6 +294,8 @@ export interface UploadSettings {
 	moderatorMaxFileSize: number;
 	/** Miniatures « mini_<fichier> » affichées si elles existent (o_uploadile_thumb). */
 	thumbnails: boolean;
+	/** Plus grand côté des miniatures créées à l'envoi (o_uploadile_thumb_size). */
+	thumbnailSize: number;
 }
 
 /** Balise de sujet de PV (« [Réglé] »…), posée par les modérateurs. */
@@ -549,7 +551,8 @@ export interface SearchPost {
 	forumName: string;
 }
 
-export type GalleryExtension = '.jpg' | '.gif' | '.png';
+/** Extension des images de la galerie : .webp depuis AvroBB (conversion à l'envoi), les autres pour les anciennes. */
+export type GalleryExtension = '.jpg' | '.gif' | '.png' | '.webp';
 
 /** Image de la galerie de PV. */
 export interface GalleryImage {

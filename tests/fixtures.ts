@@ -274,6 +274,7 @@ export const boardConfig: BoardConfig = {
 		memberMaxFileSize: 200_000,
 		moderatorMaxFileSize: 1_000_000,
 		thumbnails: false,
+		thumbnailSize: 100,
 	},
 	baseUrl: 'http://forum.test',
 	indentSpaces: 4,
@@ -780,6 +781,23 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 				for (const { id, subject } of updates) data.subjectUpdates = [...(data.subjectUpdates ?? []), { topicId: id, subject }];
 			},
 		},
+		imageProcessor: {
+			// Image de test : « webp<côté>:<contenu> », dimensions fictives.
+			toWebp: async (input, maxSide) =>
+				input.subarray(0, 4).toString('latin1') === '\x89PNG' || input.subarray(0, 3).toString('latin1') === 'GIF'
+					? { data: Buffer.from(`webp${maxSide}:${input.length}`), width: maxSide, height: maxSide }
+					: null,
+			// Avatar réduit : en-tête PNG aux dimensions permises (lu par readImageInfo()).
+			avatar: async (_input, _type, limits) => {
+				const header = Buffer.alloc(33);
+				Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(header);
+				header.writeUInt32BE(13, 8);
+				header.write('IHDR', 12, 'latin1');
+				header.writeUInt32BE(limits.width, 16);
+				header.writeUInt32BE(limits.height, 20);
+				return { data: header, type: 'png' };
+			},
+		},
 		labelAdmin: {
 			listLabels: async () => data.labelRows ?? [],
 			findLabel: async (id) => (data.labelRows ?? []).find((label) => label.id === id) ?? null,
@@ -1206,8 +1224,9 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			},
 		},
 		galleryFiles: {
-			save: async (addedAt, extension, _image, thumbnail) => {
-				data.galleryFileLog = [...(data.galleryFileLog ?? []), `save ${addedAt}${extension}${thumbnail !== null ? ' +mini' : ''}`];
+			save: async (addedAt, extension, files) => {
+				const sizes = `${files.image.toString()} ${files.thumbnail.toString()} ${files.mobile.toString()}`;
+				data.galleryFileLog = [...(data.galleryFileLog ?? []), `save ${addedAt}${extension} ${sizes}`];
 				return addedAt;
 			},
 			delete: async (addedAt, extension) => {

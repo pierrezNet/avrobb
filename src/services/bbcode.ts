@@ -16,10 +16,14 @@
  * - [spoiler] devient un <details> (sans JavaScript), [acronym] un <abbr>, et les alignements des
  *   classes CSS plutôt que des styles en ligne ;
  * - dans un message, chaque retour à la ligne simple est suivi d'un espace vertical
- *   (<span class="bbcode-gap">) : une ligne tapée avec Entrée se lit comme un petit paragraphe.
+ *   (<span class="bbcode-gap">) : une ligne tapée avec Entrée se lit comme un petit paragraphe ;
+ * - une image envoyée sur le forum (WebP de img/members/ ou img/gallery/) est servie dans un
+ *   <picture> avec sa variante mobile pour les petits écrans ; toutes les images sont chargées à
+ *   la demande (loading="lazy").
  */
 
 import type { Censor } from './censor.ts';
+import { MOBILE_BREAKPOINT, mobileVariantUrl } from './imageVariants.ts';
 import { linkBareUrls } from './preparse.ts';
 import { doSmilies } from './smilies.ts';
 
@@ -136,6 +140,10 @@ function imgTag(url: string, alt: string | null, isSignature: boolean, options: 
 
 	if (!options.showImages) return `<a href="${url}" rel="nofollow">&lt;${options.labels.imageLink} - ${label}&gt;</a>`;
 	if (isSignature) return `<img class="sigimage" src="${url}" alt="${label}" loading="lazy" />`;
+	// Image envoyée sur le forum (WebP converti) : variante mobile servie aux petits écrans.
+	const mobile = mobileVariantUrl(url, options.baseUrl);
+	if (mobile !== null)
+		return `<span class="postimg"><picture><source media="(max-width: ${MOBILE_BREAKPOINT}px)" srcset="${mobile}" type="image/webp" /><img src="${url}" alt="${label}" loading="lazy" decoding="async" /></picture></span>`;
 	return `<span class="postimg"><img src="${url}" alt="${label}" loading="lazy" /></span>`;
 }
 

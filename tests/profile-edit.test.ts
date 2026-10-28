@@ -610,6 +610,11 @@ describe('profile.php : avatar', () => {
 		const bad = await postFile(server, fake, 3, '/profile.php?action=upload_avatar2&id=3', 'req_file', 'moi.png', Buffer.from('<?php'));
 		expect(bad.body).toContain('Ce type de fichier n&#39;est pas autorisé');
 		expect(fake.avatarLog).toHaveLength(1);
+
+		// Trop grande : réduite automatiquement au lieu d'être refusée.
+		const big = await postFile(server, fake, 3, '/profile.php?action=upload_avatar2&id=3', 'req_file', 'grand.png', png(800, 600));
+		expect(big.statusCode).toBe(303);
+		expect(fake.avatarLog).toEqual(['save 3.png', 'save 3.png']);
 	});
 
 	it("efface l'avatar après confirmation (POST)", async () => {

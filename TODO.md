@@ -115,7 +115,9 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
 ## Ajouts AvroBB
 
 - [x] Mentions @membre : complètement des noms (`member_suggest.php`, `public/js/mentions.js`) dans les messages et les destinataires de la messagerie ; insertion d'un lien BBCode vers le profil
-- [ ] Mentions : prévenir le membre mentionné (message privé ou e-mail, à décider)
+- [x] Images envoyées converties en WebP (1024 px), variante mobile (640 px) servie par `<picture>`, chargement à la demande
+- [x] Avatar recadré automatiquement aux dimensions permises
+- [ ] Mentions : prévenir le membre mentionné par message privé
 
 - [x] Balises de sujet en pastilles colorées (sans crochets) dans les listes et les titres
 - [x] Balises de sujet : balises inventées retirées et doublons supprimés à l'enregistrement, masqués à l'affichage

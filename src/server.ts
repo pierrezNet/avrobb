@@ -5,6 +5,7 @@
 
 import path from 'node:path';
 import { DnsHostResolver } from './adapters/hostResolver.ts';
+import { SharpImageProcessor } from './adapters/imageProcessor.ts';
 import { NodeMailer } from './adapters/mailer.ts';
 import { NodeServerInfo } from './adapters/serverInfo.ts';
 import { buildApp } from './app.ts';
@@ -85,6 +86,7 @@ const app = await buildApp({
 	smileyAdmin: new SmileyAdminRepository(db),
 	smileyImages: new SmileyImageFiles(config.legacyRoot),
 	labelAdmin: new LabelAdminRepository(db),
+	imageProcessor: new SharpImageProcessor(),
 	subjectPrefixes: new SubjectPrefixRepository(db),
 	memberSuggest: new MemberSuggestRepository(db),
 	groupAdmin: new GroupAdminRepository(db),

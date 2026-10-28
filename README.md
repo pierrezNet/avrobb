@@ -152,6 +152,16 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   Les anciens sujets ne sont pas réécrits, mais leurs balises inventées et doublons ne sont plus
   affichés par Node (le PHP les montre toujours). Les boutons du formulaire ajoutent une balise ou la
   retirent si elle y est déjà.
+- Images envoyées (fichiers Uploadile et galerie) : converties en WebP par sharp, plus grand côté
+  limité à 1024 px, avec une variante mobile de 640 px (`mobile_<fichier>`, masquée des listes et
+  supprimée avec l'image) et, pour la galerie ou si les miniatures Uploadile sont activées, une
+  vignette `mini_` calculée par le serveur (le navigateur ne la calcule plus). Les limites de poids
+  portent sur l'image convertie. Dans les messages, une image WebP du forum est servie dans un
+  `<picture>` qui donne la variante mobile aux écrans de 640 px au plus ; toutes les images sont
+  chargées à la demande (`loading="lazy"`, équivalent natif de bLazy, sans JavaScript).
+- Avatar : une image trop grande ou trop lourde est recadrée automatiquement aux dimensions permises
+  (centre d'intérêt de l'image), au lieu d'être refusée ; elle garde le format GIF, JPEG ou PNG, les
+  seuls que le PHP affiche, et passe en JPEG plus compressé si son poids dépasse encore la limite.
 - Rédaction (`post.php`) : émojis conservés (le PHP remplaçait les caractères de 4 octets par « ? »,
   héritage d'une base en utf8 sur 3 octets) ; redirection immédiate vers le message ; boutons de
   préfixe du sujet en JavaScript et seulement pour une nouvelle discussion ; pas de réponse dans le

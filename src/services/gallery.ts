@@ -7,37 +7,31 @@
  * bibliothèque d'images côté serveur ; sans JavaScript, l'image sert de vignette.
  */
 
-import { type GalleryExtension, type GalleryImage, GroupId, type Viewer } from '../domain/models.ts';
+import { type GalleryImage, GroupId, type Viewer } from '../domain/models.ts';
 import { readImageInfo } from './images.ts';
 import { punTrim } from './phpString.ts';
 
-/** Taille maximale d'une image ($max_size de gallery.php : 1,5 Mio). */
+/**
+ * Taille maximale d'une image enregistrée ($max_size de gallery.php : 1,5 Mio), après conversion en
+ * WebP : une photo plus lourde est acceptée puisqu'elle est réduite à 1024 px.
+ */
 export const GALLERY_MAX_BYTES = 1_572_864;
 /** Dimensions maximales d'une vignette ($largeur_max, $hauteur_max). */
 export const THUMBNAIL_MAX_SIDE = 150;
-const THUMBNAIL_MAX_BYTES = 102_400;
 export const GALLERY_TITLE_MAX = 40;
 export const GALLERY_DESCRIPTION_MAX = 2000;
 
 export type GalleryUploadError = 'noTitle' | 'titleTooLong' | 'noDescription' | 'descriptionTooLong' | 'noFile' | 'badType' | 'tooLarge';
 
-const EXTENSIONS = { jpg: '.jpg', gif: '.gif', png: '.png' } as const satisfies Record<string, GalleryExtension>;
-
 export interface ValidatedGalleryUpload {
 	errors: GalleryUploadError[];
 	title: string;
 	description: string;
-	extension: GalleryExtension | null;
-	/** Vignette retenue : JPEG d'au plus 150 px de côté ; null pour reprendre l'image. */
-	thumbnail: Buffer | null;
+	/** Image reconnue à son contenu (GIF, JPEG ou PNG), à convertir en WebP. */
+	imageOk: boolean;
 }
 
-export function validateGalleryUpload(input: {
-	title: string;
-	description: string;
-	image: Buffer | null;
-	thumbnail: Buffer | null;
-}): ValidatedGalleryUpload {
+export function validateGalleryUpload(input: { title: string; description: string; image: Buffer | null }): ValidatedGalleryUpload {
 	const errors: GalleryUploadError[] = [];
 	const title = punTrim(input.title);
 	const description = punTrim(input.description).replaceAll('\r\n', '\n');
@@ -46,26 +40,12 @@ export function validateGalleryUpload(input: {
 	if (description === '') errors.push('noDescription');
 	else if ([...description].length > GALLERY_DESCRIPTION_MAX) errors.push('descriptionTooLong');
 
-	let extension: GalleryExtension | null = null;
+	let imageOk = false;
 	if (input.image === null || input.image.length === 0) errors.push('noFile');
-	else {
-		const info = readImageInfo(input.image);
-		if (info === null) errors.push('badType');
-		else if (input.image.length > GALLERY_MAX_BYTES) errors.push('tooLarge');
-		else extension = EXTENSIONS[info.type];
-	}
+	else if (readImageInfo(input.image) === null) errors.push('badType');
+	else imageOk = true;
 
-	const thumbInfo = input.thumbnail !== null ? readImageInfo(input.thumbnail) : null;
-	const thumbnail =
-		input.thumbnail !== null &&
-		thumbInfo?.type === 'jpg' &&
-		thumbInfo.width <= THUMBNAIL_MAX_SIDE &&
-		thumbInfo.height <= THUMBNAIL_MAX_SIDE &&
-		input.thumbnail.length <= THUMBNAIL_MAX_BYTES
-			? input.thumbnail
-			: null;
-
-	return { errors, title, description, extension, thumbnail };
+	return { errors, title, description, imageOk };
 }
 
 /** Supprimer une image : son auteur, un administrateur ou le groupe des modérateurs. */

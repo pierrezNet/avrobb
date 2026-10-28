@@ -506,6 +506,7 @@ describe('viewtopic de bout en bout', () => {
 			premiumAdmin: new PremiumAdminRepository(db),
 			smileyAdmin: new SmileyAdminRepository(db),
 			labelAdmin: new LabelAdminRepository(db),
+			imageProcessor: { toWebp: async () => null, avatar: async () => null },
 			subjectPrefixes: new SubjectPrefixRepository(db),
 			memberSuggest: new MemberSuggestRepository(db),
 			smileyImages: { listImages: async () => [], deleteImage: async () => false, saveImage: async () => undefined },

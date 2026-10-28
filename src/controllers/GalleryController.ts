@@ -9,6 +9,7 @@
  */
 
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { ImageProcessor } from '../adapters/imageProcessor.ts';
 import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { buildGalleryPage, buildGalleryPicker, galleryUrl } from '../presenters/galleryPage.ts';
@@ -16,11 +17,13 @@ import type { CensorReader } from '../repositories/CensorRepository.ts';
 import type { GalleryFileStore } from '../repositories/GalleryFiles.ts';
 import type { GalleryStore } from '../repositories/GalleryRepository.ts';
 import { buildCensor } from '../services/censor.ts';
-import { canDeleteGalleryImage, validateGalleryUpload } from '../services/gallery.ts';
+import { canDeleteGalleryImage, GALLERY_MAX_BYTES, THUMBNAIL_MAX_SIDE, validateGalleryUpload } from '../services/gallery.ts';
+import { FULL_MAX_SIDE, MOBILE_MAX_SIDE } from '../services/imageVariants.ts';
 import { clampPage, pageCount } from '../services/pagination.ts';
 import { positiveInt } from './params.ts';
 
 export interface GalleryControllerDeps extends LayoutDeps {
+	imageProcessor: ImageProcessor;
 	gallery: GalleryStore;
 	galleryFiles: GalleryFileStore;
 	censorship: CensorReader;
@@ -130,27 +133,43 @@ export class GalleryController {
 			title: field(body, 'titre'),
 			description: field(body, 'description'),
 			image: request.uploads.get('req_file')?.data ?? null,
-			thumbnail: request.uploads.get('thumbnail')?.data ?? null,
 		});
-		const image = request.uploads.get('req_file')?.data;
-		if (result.errors.length > 0 || result.extension === null || image === undefined) {
+		const source = request.uploads.get('req_file')?.data;
+		// Conversion en WebP : image (1024 px), vignette (150 px) et variante mobile (640 px).
+		const converted = result.imageOk && source !== undefined ? await this.#convert(source) : null;
+		const errors = [...result.errors];
+		if (result.imageOk && converted === null) errors.push('badType');
+		else if (converted !== null && converted.image.length > GALLERY_MAX_BYTES) errors.push('tooLarge');
+		if (errors.length > 0 || converted === null) {
 			const form = {
 				title: field(body, 'titre'),
 				description: field(body, 'description'),
-				errors: result.errors.map((e) => lang.gallery.uploadError(e)),
+				errors: errors.map((e) => lang.gallery.uploadError(e)),
 			};
 			return fromPicker ? this.renderPicker(request, reply, form) : this.renderForm(request, reply, form);
 		}
 
-		const addedAt = await this.deps.galleryFiles.save(this.deps.page.clock(), result.extension, image, result.thumbnail);
+		const addedAt = await this.deps.galleryFiles.save(this.deps.page.clock(), '.webp', converted);
 		await this.deps.gallery.createImage({
 			title: result.title,
 			description: result.description,
 			userId: viewer.id,
 			addedAt,
-			extension: result.extension,
+			extension: '.webp',
 		});
 		return reply.redirect(fromPicker ? 'gallery.php?info=pick&done=added' : 'gallery.php?done=added', 303);
+	}
+
+	async #convert(source: Buffer): Promise<{ image: Buffer; thumbnail: Buffer; mobile: Buffer } | null> {
+		const processor = this.deps.imageProcessor;
+		const [image, thumbnail, mobile] = await Promise.all([
+			processor.toWebp(source, FULL_MAX_SIDE),
+			processor.toWebp(source, THUMBNAIL_MAX_SIDE),
+			processor.toWebp(source, MOBILE_MAX_SIDE),
+		]);
+		return image !== null && thumbnail !== null && mobile !== null
+			? { image: image.data, thumbnail: thumbnail.data, mobile: mobile.data }
+			: null;
 	}
 
 	/** Image désignée par ?id=, si le lecteur peut la supprimer ; sinon la réponse d'erreur. */

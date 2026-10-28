@@ -9,6 +9,7 @@
  */
 
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { ImageProcessor } from '../adapters/imageProcessor.ts';
 import type { FormBody } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { buildFileManager } from '../presenters/profilePlugilePage.ts';
@@ -18,6 +19,7 @@ import { uploadLimits } from '../services/uploads.ts';
 import { UploadActions, type UploadOwner } from './uploadActions.ts';
 
 export interface FileManagerControllerDeps extends LayoutDeps {
+	imageProcessor: ImageProcessor;
 	uploads: UploadStore;
 	profileStore: ProfileStore;
 }

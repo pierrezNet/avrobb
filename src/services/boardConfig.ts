@@ -102,6 +102,7 @@ export function toBoardConfig(values: ReadonlyMap<string, string>): BoardConfig 
 			memberMaxFileSize: int('o_uploadile_maxsize_member', 0),
 			moderatorMaxFileSize: int('o_uploadile_maxsize_modo', 0),
 			thumbnails: flag('o_uploadile_thumb'),
+			thumbnailSize: Math.max(16, int('o_uploadile_thumb_size', 100)),
 		},
 		baseUrl: text('o_base_url').replace(/\/$/, ''),
 		indentSpaces: Number(text('o_indent_num_spaces', '4')) || 0,

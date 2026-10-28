@@ -1,0 +1,25 @@
+{#- Étape de la reconstruction de l'index (admin_maintenance.php, action=rebuild). Données : `view` (controllers/AdminMaintenanceController.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/adminMenu.njk" as adminMenu %}
+{% import "partials/forms.njk" as forms %}
+
+{% block head %}<script src="{{ asset('js/auto-submit.js') }}" defer></script>{% endblock %}
+
+{% block main %}
+{% set t = lang.adminMaintenance %}
+<h1 class="page-title">{{ t.rebuilding }}</h1>
+<div class="side-layout">
+{{ adminMenu.menu(view.menu, lang) }}
+<div class="side-layout__content">
+<form class="form-box form" method="post" action="{{ url('admin_maintenance.php') }}" data-auto-submit>
+	{{ forms.csrf(layout) }}
+	<input type="hidden" name="action" value="rebuild">
+	<input type="hidden" name="i_per_page" value="{{ view.perPage }}">
+	<input type="hidden" name="i_start_at" value="{{ view.next }}">
+	<p>{{ t.rebuildingInfo }}</p>
+	<p role="status">{{ view.processed }}</p>
+	<p class="form__buttons"><button type="submit" class="button button--primary">{{ t.continue }}</button></p>
+</form>
+</div>
+</div>
+{% endblock %}

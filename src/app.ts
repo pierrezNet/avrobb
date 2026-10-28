@@ -16,6 +16,7 @@ import { AdminCensoringController, type AdminCensoringQuery } from './controller
 import { AdminGroupsController, type AdminGroupsQuery } from './controllers/AdminGroupsController.ts';
 import { AdminIndexController } from './controllers/AdminIndexController.ts';
 import { AdminLoaderController, type AdminLoaderQuery } from './controllers/AdminLoaderController.ts';
+import { AdminMaintenanceController, type AdminMaintenanceQuery } from './controllers/AdminMaintenanceController.ts';
 import { AdminOptionsController, type AdminOptionsQuery } from './controllers/AdminOptionsController.ts';
 import { AdminPermissionsController, type AdminPermissionsQuery } from './controllers/AdminPermissionsController.ts';
 import { AdminReportsController, type AdminReportsQuery } from './controllers/AdminReportsController.ts';
@@ -65,6 +66,7 @@ import type { GalleryFileStore } from './repositories/GalleryFiles.ts';
 import type { GalleryStore } from './repositories/GalleryRepository.ts';
 import type { GroupAdminStore } from './repositories/GroupAdminRepository.ts';
 import type { MailTemplateReader } from './repositories/MailTemplateFiles.ts';
+import type { MaintenanceStore } from './repositories/MaintenanceRepository.ts';
 import type { UploadStore } from './repositories/MemberUploadFiles.ts';
 import type { ModerationStore } from './repositories/ModerationRepository.ts';
 import type { PostEditStore } from './repositories/PostEditRepository.ts';
@@ -141,6 +143,8 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	configCache: ConfigCache;
 	/** Catégories et forums (admin_categories.php, admin_forums.php). */
 	forumAdmin: ForumAdminStore;
+	/** Reconstruction de l'index et élagage (admin_maintenance.php). */
+	maintenance: MaintenanceStore;
 	/** Groupes d'utilisateurs (admin_groups.php). */
 	groupAdmin: GroupAdminStore;
 	/** Recherche d'utilisateurs et d'adresses IP (admin_users.php). */
@@ -177,6 +181,7 @@ const PORTED_PAGES = new Set([
 	'admin_groups.php',
 	'admin_index.php',
 	'admin_loader.php',
+	'admin_maintenance.php',
 	'admin_options.php',
 	'admin_permissions.php',
 	'admin_reports.php',
@@ -412,6 +417,10 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 		{ preHandler: [authenticate, verifyCsrf] },
 		adminBans.submit,
 	);
+
+	const adminMaintenance = new AdminMaintenanceController(deps);
+	app.get<{ Querystring: AdminMaintenanceQuery }>('/admin_maintenance.php', { preHandler: authenticate }, adminMaintenance.show);
+	app.post<{ Body: FormBody }>('/admin_maintenance.php', { preHandler: [authenticate, verifyCsrf] }, adminMaintenance.submit);
 
 	const adminReports = new AdminReportsController(deps);
 	app.get<{ Querystring: AdminReportsQuery }>('/admin_reports.php', { preHandler: authenticate }, adminReports.show);

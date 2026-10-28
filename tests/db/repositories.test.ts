@@ -22,6 +22,7 @@ import { ForumAdminRepository } from '../../src/repositories/ForumAdminRepositor
 import { ForumRepository } from '../../src/repositories/ForumRepository.ts';
 import { GalleryRepository } from '../../src/repositories/GalleryRepository.ts';
 import { GroupAdminRepository } from '../../src/repositories/GroupAdminRepository.ts';
+import { MaintenanceRepository } from '../../src/repositories/MaintenanceRepository.ts';
 import { ModerationRepository } from '../../src/repositories/ModerationRepository.ts';
 import { OnlineRepository } from '../../src/repositories/OnlineRepository.ts';
 import { PostEditRepository } from '../../src/repositories/PostEditRepository.ts';
@@ -496,6 +497,7 @@ describe('viewtopic de bout en bout', () => {
 			adminStats: new AdminStatsRepository(db, 'fo_'),
 			configStore: new ConfigRepository(db),
 			forumAdmin: new ForumAdminRepository(db),
+			maintenance: new MaintenanceRepository(db),
 			groupAdmin: new GroupAdminRepository(db),
 			userAdmin: new UserAdminRepository(db),
 			banStore: new BanRepository(db),

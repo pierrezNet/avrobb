@@ -25,6 +25,7 @@ import { GalleryFiles } from './repositories/GalleryFiles.ts';
 import { GalleryRepository } from './repositories/GalleryRepository.ts';
 import { GroupAdminRepository } from './repositories/GroupAdminRepository.ts';
 import { MailTemplateFiles } from './repositories/MailTemplateFiles.ts';
+import { MaintenanceRepository } from './repositories/MaintenanceRepository.ts';
 import { MemberUploadFiles } from './repositories/MemberUploadFiles.ts';
 import { ModerationRepository } from './repositories/ModerationRepository.ts';
 import { OnlineRepository } from './repositories/OnlineRepository.ts';
@@ -74,6 +75,7 @@ const app = await buildApp({
 	configStore,
 	configCache: configLoader,
 	forumAdmin: new ForumAdminRepository(db),
+	maintenance: new MaintenanceRepository(db),
 	groupAdmin: new GroupAdminRepository(db),
 	userAdmin: new UserAdminRepository(db),
 	users,

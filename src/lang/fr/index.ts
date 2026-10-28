@@ -9,6 +9,7 @@ import { adminBans } from './adminBans.ts';
 import { adminCensoring } from './adminCensoring.ts';
 import { adminForums } from './adminForums.ts';
 import { adminGroups } from './adminGroups.ts';
+import { adminMaintenance } from './adminMaintenance.ts';
 import { adminOptions } from './adminOptions.ts';
 import { adminPermissions } from './adminPermissions.ts';
 import { adminPlugins } from './adminPlugins.ts';
@@ -61,6 +62,7 @@ export const fr = {
 	adminForums,
 	adminGroups,
 	adminUsers,
+	adminMaintenance,
 	adminOptions,
 	adminPlugins,
 	adminPermissions,

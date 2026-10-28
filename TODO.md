@@ -109,7 +109,7 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
 - [x] Catégories, forums, permissions par forum
 - [x] Groupes, utilisateurs (recherche, actions de masse), gestion utilisateurs (AMP) **(PV)**
 - [x] Bannissements, censure, rapports
-- [ ] Maintenance : reconstruction de l'index de recherche, vidage des caches, mode maintenance
+- [x] Maintenance : reconstruction de l'index de recherche, vidage des caches, mode maintenance
 - [ ] Plugins d'administration : balises, smileys, toolbar, premium, sondages, uploads, messagerie privée **(PV)**
 
 ## Lot 8 — Bascule et décommissionnement

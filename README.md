@@ -101,6 +101,10 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   devient « 0 » (le PHP le vidait) ; dates de recherche aux formats proposés (aaaa-mm-jj).
 - Censure (`admin_censoring.php`) : identique au PHP, avec jeton CSRF ; `cache_censoring.php` est
   supprimé après chaque modification.
+- Maintenance (`admin_maintenance.php`) : chaque lot de la reconstruction de l'index est envoyé en
+  POST avec jeton CSRF (le PHP enchaînait des GET qui écrivaient), un script enchaîne les étapes et
+  un bouton « Continuer » le remplace sans JavaScript ; l'élagage demande confirmation comme le PHP.
+  Ajout : « Vider les caches » supprime les fichiers `cache/cache_*.php`, que le PHP régénère.
 - Rédaction (`post.php`) : émojis conservés (le PHP remplaçait les caractères de 4 octets par « ? »,
   héritage d'une base en utf8 sur 3 octets) ; redirection immédiate vers le message ; boutons de
   préfixe du sujet en JavaScript et seulement pour une nouvelle discussion ; pas de réponse dans le

@@ -1,0 +1,56 @@
+{#- Maintenance du forum (admin_maintenance.php). Données : `view` (controllers/AdminMaintenanceController.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/adminMenu.njk" as adminMenu %}
+{% import "partials/forms.njk" as forms %}
+{% import "partials/sideMenu.njk" as sideMenu %}
+
+{% block main %}
+{% set t = lang.adminMaintenance %}
+<h1 class="page-title">{{ t.title }}</h1>
+<div class="side-layout">
+{{ adminMenu.menu(view.menu, lang) }}
+<div class="side-layout__content">
+{{ sideMenu.notice(view.notice) }}
+<form class="form-box form options-form" method="post" action="{{ url('admin_maintenance.php') }}">
+	{{ forms.csrf(layout) }}
+	<input type="hidden" name="action" value="rebuild">
+	<h2 class="form-box__title">{{ t.rebuildSubhead }}</h2>
+	<p class="form__help">{{ t.rebuildInfo }}</p>
+	<p class="form__field"><label for="i_per_page">{{ t.perCycle }}</label><input type="number" id="i_per_page" name="i_per_page" value="300" min="1" max="9999" inputmode="numeric" aria-describedby="i_per_page_help"><span id="i_per_page_help" class="form__help">{{ t.perCycleHelp }}</span></p>
+	<p class="form__field"><label for="i_start_at">{{ t.startingPost }}</label><input type="number" id="i_start_at" name="i_start_at" value="{{ view.firstPostId }}" min="0" inputmode="numeric" aria-describedby="i_start_at_help"><span id="i_start_at_help" class="form__help">{{ t.startingPostHelp }}</span></p>
+	<div class="form__field"><label class="form__choice"><input type="checkbox" name="i_empty_index" value="1" checked> {{ t.emptyIndex }}</label><span class="form__help">{{ t.emptyIndexHelp }}</span></div>
+	<p class="form__help">{{ t.rebuildCompletedInfo }}</p>
+	<p class="form__buttons"><button type="submit" class="button button--primary" name="rebuild_index" value="1">{{ t.rebuild }}</button></p>
+</form>
+<form class="form-box form options-form" method="post" action="{{ url('admin_maintenance.php') }}">
+	{{ forms.csrf(layout) }}
+	<input type="hidden" name="action" value="prune">
+	<h2 class="form-box__title">{{ t.pruneSubhead }}</h2>
+	<p class="form__field"><label for="req_prune_days">{{ t.daysOld }}</label><input type="number" id="req_prune_days" name="req_prune_days" min="0" max="999999" inputmode="numeric" required aria-describedby="req_prune_days_help"><span id="req_prune_days_help" class="form__help">{{ t.daysOldHelp }}</span></p>
+	<div class="form__field" role="radiogroup" aria-labelledby="label-prune_sticky" aria-describedby="help-prune_sticky">
+		<span id="label-prune_sticky" class="form__label">{{ t.pruneSticky }}</span>
+		<label class="form__choice"><input type="radio" name="prune_sticky" value="1" checked> {{ t.yes }}</label>
+		<label class="form__choice"><input type="radio" name="prune_sticky" value="0"> {{ t.no }}</label>
+		<span id="help-prune_sticky" class="form__help">{{ t.pruneStickyHelp }}</span>
+	</div>
+	<p class="form__field">
+		<label for="prune_from">{{ t.pruneFrom }}</label>
+		<select id="prune_from" name="prune_from" aria-describedby="prune_from_help">
+			<option value="all">{{ t.allForums }}</option>
+			{% for f in view.forums %}<option value="{{ f.id }}">{{ f.category }} — {{ f.name }}</option>{% endfor %}
+		</select>
+		<span id="prune_from_help" class="form__help">{{ t.pruneFromHelp }}</span>
+	</p>
+	<p class="form__warning">{{ t.pruneInfo }}</p>
+	<p class="form__buttons"><button type="submit" class="button button--primary" name="prune" value="1">{{ t.prune }}</button></p>
+</form>
+<form class="form-box form" method="post" action="{{ url('admin_maintenance.php') }}">
+	{{ forms.csrf(layout) }}
+	<input type="hidden" name="action" value="clear_cache">
+	<h2 class="form-box__title">{{ t.cacheSubhead }}</h2>
+	<p class="form__help">{{ t.cacheInfo }}</p>
+	<p class="form__buttons"><button type="submit" class="button button--primary">{{ t.clearCache }}</button></p>
+</form>
+</div>
+</div>
+{% endblock %}

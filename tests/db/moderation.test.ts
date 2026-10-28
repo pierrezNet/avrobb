@@ -437,3 +437,34 @@ describe('BanRepository (admin_bans.php)', () => {
 		});
 	});
 });
+
+describe('MaintenanceRepository (admin_maintenance.php)', () => {
+	// emptySearchIndex() n'est pas testé ici : son ALTER TABLE validerait la transaction de test.
+	it('lots de reconstruction et élagage', async () => {
+		const { MaintenanceRepository } = await import('../../src/repositories/MaintenanceRepository.ts');
+		const { indexWords } = await import('../../src/services/searchIndex.ts');
+		await inRollback(async (trx) => {
+			const store = new MaintenanceRepository(trx);
+			const first = await store.firstPostId();
+			const batch = await store.postsToIndex(first, 2);
+			expect(batch).toHaveLength(2);
+			expect(batch[0]?.subject).not.toBeNull();
+			await store.indexPost(100, indexWords('Planeur remorqué', 'Vol à voile', new Set()));
+			const words = await trx
+				.selectFrom('search_matches as m')
+				.innerJoin('search_words as w', 'w.id', 'm.word_id')
+				.select('w.word')
+				.where('m.post_id', '=', 100)
+				.execute();
+			expect(words.map((w) => w.word)).toEqual(expect.arrayContaining(['planeur', 'voile']));
+			expect(await store.nextPostId(batch[1]?.id ?? 0)).not.toBeNull();
+
+			expect(await store.countPrunable(1782800300, true, 2)).toBe(1);
+			expect(await store.countPrunable(1782800300, true, 4)).toBe(0);
+			await store.prune(1782800300, true, 2);
+			expect(await topicRow(trx, 10)).toBeUndefined();
+			expect(await topicRow(trx, 12)).toBeUndefined();
+			expect(await forumRow(trx, 2)).toMatchObject({ num_topics: 0, num_posts: 0 });
+		});
+	});
+});

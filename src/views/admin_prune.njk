@@ -1,0 +1,25 @@
+{#- Confirmation de l'élagage (admin_maintenance.php, action=prune). Données : `view` (controllers/AdminMaintenanceController.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/adminMenu.njk" as adminMenu %}
+{% import "partials/forms.njk" as forms %}
+
+{% block main %}
+{% set t = lang.adminMaintenance %}
+<h1 class="page-title">{{ t.pruneHead }}</h1>
+<div class="side-layout">
+{{ adminMenu.menu(view.menu, lang) }}
+<div class="side-layout__content">
+<form class="form-box form" method="post" action="{{ url('admin_maintenance.php') }}">
+	{{ forms.csrf(layout) }}
+	<input type="hidden" name="action" value="prune">
+	<input type="hidden" name="prune_days" value="{{ view.days }}">
+	<input type="hidden" name="prune_sticky" value="{{ '1' if view.withSticky else '0' }}">
+	<input type="hidden" name="prune_from" value="{{ view.from }}">
+	<h2 class="form-box__title">{{ t.confirmPruneSubhead }}</h2>
+	<p>{{ view.info }}</p>
+	<p class="form__warning"><strong>{{ t.confirmPruneWarn }}</strong></p>
+	<p class="form__buttons"><button type="submit" class="button button--primary" name="prune_comply" value="1">{{ t.prune }}</button> <a class="button" href="{{ url('admin_maintenance.php') }}">{{ t.goBack }}</a></p>
+</form>
+</div>
+</div>
+{% endblock %}

@@ -390,6 +390,9 @@ export interface FakeData {
 	userActionLog?: string[];
 	/** Écritures d'admin_bans.php. */
 	banLog?: string[];
+	/** admin_maintenance.php : actions consignées, discussions élagables. */
+	maintenanceLog?: string[];
+	prunableCount?: number;
 	/** Signalements listés par admin_reports.php (modifiés en place quand ils sont traités). */
 	reportList?: Report[];
 	/** Messagerie privée en mémoire (créée vide au besoin). */
@@ -735,6 +738,32 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			},
 		},
 		forumAdmin: fakeForumAdmin(data),
+		maintenance: {
+			firstPostId: async () => 100,
+			emptySearchIndex: async () => {
+				data.maintenanceLog = [...(data.maintenanceLog ?? []), 'empty'];
+			},
+			postsToIndex: async (startAt, limit) =>
+				[...data.posts.values()]
+					.flat()
+					.filter((p) => p.id >= startAt)
+					.sort((a, b) => a.id - b.id)
+					.slice(0, limit)
+					.map((p) => ({ id: p.id, message: p.message, subject: null })),
+			indexPost: async (postId) => {
+				data.maintenanceLog = [...(data.maintenanceLog ?? []), `index ${postId}`];
+			},
+			nextPostId: async (postId) =>
+				[...data.posts.values()]
+					.flat()
+					.map((p) => p.id)
+					.filter((id) => id > postId)
+					.sort((a, b) => a - b)[0] ?? null,
+			countPrunable: async () => data.prunableCount ?? 0,
+			prune: async (before, withSticky, forumId) => {
+				data.maintenanceLog = [...(data.maintenanceLog ?? []), `prune ${before} ${withSticky} ${forumId}`];
+			},
+		},
 		banStore: {
 			findBan: async (id) => {
 				const ban = (data.bans ?? []).find((b) => b.id === id);

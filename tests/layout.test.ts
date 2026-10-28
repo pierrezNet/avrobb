@@ -155,6 +155,20 @@ describe('rendu de la mise en page', () => {
 		expect(res.body).toMatch(/href="\/assets\/css\/themes\/Air\.css\?v=[0-9a-f]{10}"/);
 	});
 
+	it('MP non lus : pastille animée dans le menu (nombre et texte pour lecteurs d’écran)', async () => {
+		app = await buildApp(
+			fakeDeps({ users, topics: [], posts: new Map(), config: { privateMessagesEnabled: true }, unreadPrivateMessages: new Map([[5, 3]]) }),
+		);
+		const res = await app.inject({ url: '/index.php', headers: { cookie: cookie(5, 'hash-mod') } });
+		expect(res.body).toContain('<li id="navpm" class="site-nav__item has-news">');
+		expect(res.body).toContain('<span class="site-nav__count">3<span class="visually-hidden"> non lus</span></span>');
+		await app.close();
+		app = await buildApp(fakeDeps({ users, topics: [], posts: new Map(), config: { privateMessagesEnabled: true } }));
+		const none = await app.inject({ url: '/index.php', headers: { cookie: cookie(5, 'hash-mod') } });
+		expect(none.body).toContain('<li id="navpm" class="site-nav__item">');
+		expect(none.body).not.toContain('site-nav__count');
+	});
+
 	it('sert les feuilles de style sans interroger la base', async () => {
 		const deps = fakeDeps({ users, topics: [], posts: new Map() });
 		app = await buildApp({

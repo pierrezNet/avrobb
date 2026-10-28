@@ -20,6 +20,8 @@ export const common = {
 	banExpires: (date: string) => `Votre bannissement expire le ${date}.`,
 	banReason: "L'administrateur ou le modérateur qui vous a banni envoie le message suivant\u00a0:",
 	banContact: "Pour toute question, contactez l'administrateur",
+	/** Pastille du menu (MP) : nombre suivi de ce texte pour les lecteurs d'écran. */
+	unreadCount: 'non lus',
 	banReadOnly: 'Vous êtes banni(e) : vous pouvez lire le forum, mais plus y écrire.',
 	banWriteRefused: 'Vous êtes banni(e) : vous pouvez lire le forum, mais plus y écrire. Cette action vous est refusée.',
 

@@ -32,12 +32,12 @@
 			<nav aria-label="{{ lang.common.mainNav }}">
 				<ul class="site-nav__list">
 				{% for item in layout.nav %}
-					<li id="{{ item.id }}" class="site-nav__item{% if item.active %} is-active{% endif %}">
+					<li id="{{ item.id }}" class="site-nav__item{% if item.active %} is-active{% endif %}{% if item.count %} has-news{% endif %}">
 					{%- if item.trustedHtml -%}
 						{#- HTML saisi par l'administrateur (o_additional_navlinks), affiché tel quel comme dans header.php. -#}
 						{{ item.trustedHtml | safe }}
 					{%- else -%}
-						<a href="{{ url(item.href) }}">{% if item.count %}({{ item.count }}) {% endif %}{% if item.abbrTitle %}<abbr title="{{ item.abbrTitle }}">{{ item.label }}</abbr>{% else %}{{ item.label }}{% endif %}</a>
+						<a href="{{ url(item.href) }}">{% if item.abbrTitle %}<abbr title="{{ item.abbrTitle }}">{{ item.label }}</abbr>{% else %}{{ item.label }}{% endif %}{% if item.count %} <span class="site-nav__count">{{ item.count }}<span class="visually-hidden"> {{ lang.common.unreadCount }}</span></span>{% endif %}</a>
 					{%- endif -%}
 					</li>
 				{% endfor %}

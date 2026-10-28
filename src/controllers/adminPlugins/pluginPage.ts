@@ -17,10 +17,8 @@ import type { LabelAdminStore } from '../../repositories/LabelAdminRepository.ts
 import type { MailTemplateReader } from '../../repositories/MailTemplateFiles.ts';
 import type { UploadStore } from '../../repositories/MemberUploadFiles.ts';
 import type { PhpCacheStore } from '../../repositories/PhpCacheFiles.ts';
-import type { PremiumAdminStore } from '../../repositories/PremiumAdminRepository.ts';
 import type { ProfileStore } from '../../repositories/ProfileRepository.ts';
 import type { RegistrationStore } from '../../repositories/RegistrationRepository.ts';
-import type { SmileyAdminStore, SmileyImageStore } from '../../repositories/SmileyAdminRepository.ts';
 import type { SubjectPrefixStore } from '../../repositories/SubjectPrefixRepository.ts';
 import type { UploadileAdminStore } from '../../repositories/UserAdminRepository.ts';
 import { changedOptions } from '../../services/adminOptions.ts';
@@ -37,12 +35,9 @@ export interface AdminLoaderControllerDeps extends LayoutDeps {
 	configStore: ConfigStore;
 	configCache: ConfigCache;
 	groupAdmin: GroupAdminStore;
-	premiumAdmin: PremiumAdminStore;
 	uploads: UploadStore;
 	userAdmin: UploadileAdminStore;
 	profileStore: Pick<ProfileStore, 'setUploadedBytes'>;
-	smileyAdmin: SmileyAdminStore;
-	smileyImages: SmileyImageStore;
 	labelAdmin: LabelAdminStore;
 	subjectPrefixes: SubjectPrefixStore;
 }

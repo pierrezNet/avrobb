@@ -49,8 +49,7 @@ export interface MenuItem {
 
 export interface ProfileMenuView {
 	sections: MenuItem[];
-	/** Titre du bloc des plugiles (o_plugile_menu) ; null = à la suite des sections. */
-	plugilesTitle: string | null;
+	/** Plugiles (biographie, uploads, suivi), à la suite des sections (le réglage o_plugile_menu n'est pas repris). */
 	plugiles: MenuItem[];
 }
 
@@ -80,7 +79,7 @@ export function buildProfileMenu(viewer: Viewer, config: BoardConfig, userId: nu
 		label: labels[plugile.page],
 		active: plugile.page === active,
 	}));
-	return { sections, plugilesTitle: config.plugileMenuName, plugiles };
+	return { sections, plugiles };
 }
 
 export interface Link {

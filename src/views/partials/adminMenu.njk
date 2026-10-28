@@ -9,9 +9,5 @@
 	<h2 class="side-menu__title">{{ lang.admin.adminMenu }}</h2>
 	{{ sideMenu.menuList(menu.admin) }}
 	{% endif %}
-	{% if menu.plugins.length %}
-	<h2 class="side-menu__title">{{ lang.admin.pluginsMenu }}</h2>
-	{{ sideMenu.menuList(menu.plugins) }}
-	{% endif %}
 </nav>
 {% endmacro %}

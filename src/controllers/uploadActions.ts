@@ -70,10 +70,6 @@ export class UploadActions {
 		if (image !== null) {
 			const mobile = await this.deps.imageProcessor.toWebp(file.data, MOBILE_MAX_SIDE);
 			if (mobile !== null) await this.deps.uploads.save(owner.id, `${MOBILE_PREFIX}${fileName}`, mobile.data);
-			if (settings.thumbnails) {
-				const thumb = await this.deps.imageProcessor.toWebp(file.data, settings.thumbnailSize);
-				if (thumb !== null) await this.deps.uploads.save(owner.id, `mini_${fileName}`, thumb.data);
-			}
 		}
 		await this.deps.profileStore.setUploadedBytes(owner.id, owner.uploadedBytes + data.length);
 		return { notice: 'uploaded' };
@@ -88,7 +84,7 @@ export class UploadActions {
 			// Seuls les fichiers listés se suppriment (ni fichier caché, ni sous-dossier, ni miniature seule).
 			if (!isListedUpload(name, settings) || !(await this.deps.uploads.remove(owner.id, name))) failures += 1;
 			else {
-				// Vignette et variante mobile éventuelles partent avec le fichier.
+				// Variante mobile et ancienne miniature (Uploadile) éventuelles partent avec le fichier.
 				await this.deps.uploads.remove(owner.id, `mini_${name}`);
 				await this.deps.uploads.remove(owner.id, `${MOBILE_PREFIX}${name}`);
 			}

@@ -44,12 +44,10 @@ import type { ModerationStore } from '../src/repositories/ModerationRepository.t
 import type { OnlineWriter } from '../src/repositories/OnlineRepository.ts';
 import type { PostEditStore, PostUpdate } from '../src/repositories/PostEditRepository.ts';
 import type { NewReply, NewTopic, PostingStore } from '../src/repositories/PostingRepository.ts';
-import type { PremiumMember } from '../src/repositories/PremiumAdminRepository.ts';
 import type { ProfileStore } from '../src/repositories/ProfileRepository.ts';
 import type { NewUser } from '../src/repositories/RegistrationRepository.ts';
 import type { ReportTarget } from '../src/repositories/ReportRepository.ts';
 import type { NewVote } from '../src/repositories/ReputationRepository.ts';
-import type { SmileyRow } from '../src/repositories/SmileyAdminRepository.ts';
 import type { PostLocation } from '../src/repositories/TopicRepository.ts';
 import type { AdminUserRow, IpPoster, IpStat } from '../src/repositories/UserAdminRepository.ts';
 import type { ViewerRecord } from '../src/repositories/UserRepository.ts';
@@ -262,7 +260,6 @@ export const boardConfig: BoardConfig = {
 	signatureMaxLength: 400,
 	signatureMaxLines: 4,
 	signatureAllCaps: false,
-	plugileMenuName: null,
 	subjectTags: [...DEFAULT_SUBJECT_TAGS],
 	privateMessageNotification: false,
 	privateMessageMaxReceivers: 3,
@@ -273,8 +270,6 @@ export const boardConfig: BoardConfig = {
 		moderatorQuota: 5_000_000,
 		memberMaxFileSize: 200_000,
 		moderatorMaxFileSize: 1_000_000,
-		thumbnails: false,
-		thumbnailSize: 100,
 	},
 	baseUrl: 'http://forum.test',
 	indentSpaces: 4,
@@ -399,11 +394,7 @@ export interface FakeData {
 	/** admin_maintenance.php : actions consignées, discussions élagables. */
 	maintenanceLog?: string[];
 	prunableCount?: number;
-	/** Plugin AP_Premium.php : undefined si la table n'est pas installée. */
-	premiumMembers?: PremiumMember[];
 	/** Plugin AP_Smilies.php. */
-	smileyRows?: SmileyRow[];
-	smileyImageNames?: string[];
 	/** Plugin AP_Balises.php. */
 	labelRows?: LabelRow[];
 	/** Préfixes du sujet : sujets réécrits. */
@@ -810,54 +801,6 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			},
 			deleteLabel: async (id) => {
 				data.labelRows = (data.labelRows ?? []).filter((label) => label.id !== id);
-			},
-		},
-		smileyAdmin: {
-			listSmilies: async () => data.smileyRows ?? [],
-			updateSmilies: async (rows) => {
-				data.smileyRows = [...rows];
-			},
-			removeSmilies: async (ids) => {
-				data.smileyRows = (data.smileyRows ?? []).filter((row) => !ids.includes(row.id));
-			},
-			addSmiley: async (text, image) => {
-				data.smileyRows = [...(data.smileyRows ?? []), { id: 99, text, image, position: 0 }];
-			},
-		},
-		smileyImages: {
-			listImages: async () => data.smileyImageNames ?? [],
-			deleteImage: async (name) => {
-				data.smileyImageNames = (data.smileyImageNames ?? []).filter((n) => n !== name);
-				return true;
-			},
-			saveImage: async (base, extension) => {
-				data.smileyImageNames = [...(data.smileyImageNames ?? []), `${base}.${extension}`];
-			},
-		},
-		premiumAdmin: {
-			isInstalled: async () => data.premiumMembers !== undefined,
-			install: async () => {
-				data.premiumMembers = [];
-			},
-			uninstall: async () => {
-				delete data.premiumMembers;
-			},
-			listMembers: async () => data.premiumMembers ?? [],
-			listGroups: async () => [
-				{ id: 4, title: 'Membres' },
-				{ id: 6, title: 'Premium' },
-			],
-			addMember: async (email, groupId, _start, end) => {
-				if (!email.endsWith('@example.test')) return 'notFound';
-				if ((data.premiumMembers ?? []).some((m) => m.email === email)) return 'already';
-				data.premiumMembers = [
-					...(data.premiumMembers ?? []),
-					{ id: 9, username: 'Nouveau', email, groupTitle: String(groupId), endsAt: end },
-				];
-				return 'added';
-			},
-			removeMembers: async (ids) => {
-				data.premiumMembers = (data.premiumMembers ?? []).filter((m) => !ids.includes(m.id));
 			},
 		},
 		maintenance: {

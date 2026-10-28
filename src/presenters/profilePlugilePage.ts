@@ -9,6 +9,7 @@ import type { Lang } from '../lang/fr/index.ts';
 import { parseMessage } from '../services/bbcode.ts';
 import type { Censor } from '../services/censor.ts';
 import type { DateWords } from '../services/dateFormat.ts';
+import { MOBILE_PREFIX } from '../services/imageVariants.ts';
 import { fileSize } from '../services/numberFormat.ts';
 import { isListedUpload, type UploadLimits, usedPercent } from '../services/uploads.ts';
 import { buildTopicRow, type TopicRowView } from './forumPage.ts';
@@ -132,9 +133,8 @@ export interface StoredUpload {
 const IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp']);
 
 /**
- * Fichiers listés (ni cachés, ni miniatures), les plus récents d'abord (krsort() du PHP). Aperçu :
- * la miniature « mini_ » si elle existe, sinon l'image elle-même réduite (Node ne crée pas de
- * miniature).
+ * Fichiers listés (ni cachés, ni variantes), les plus récents d'abord (krsort() du PHP). Aperçu :
+ * la variante mobile (WebP 640 px) si elle existe, sinon l'image elle-même réduite.
  */
 function uploadFiles(files: readonly StoredUpload[] | null, config: BoardConfig): UploadFileView[] | null {
 	if (files === null) return null;
@@ -145,7 +145,7 @@ function uploadFiles(files: readonly StoredUpload[] | null, config: BoardConfig)
 		.toSorted((a, b) => b.modified - a.modified || (a.name < b.name ? 1 : -1))
 		.map((file) => {
 			const dot = file.name.lastIndexOf('.');
-			const thumbnail = settings.thumbnails ? byName.get(`mini_${file.name}`) : undefined;
+			const thumbnail = byName.get(`${MOBILE_PREFIX}${file.name}`);
 			return {
 				value: file.name,
 				name: file.name.slice(0, dot),

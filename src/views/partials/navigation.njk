@@ -11,6 +11,8 @@
 {% endmacro %}
 
 {% macro pagination(links, lang) %}
+{#- Une seule page : rien à afficher (FluxBB écrivait « Pages : 1 »). -#}
+{% if links.length > 1 %}
 <nav class="pagination" aria-label="{{ lang.common.pages }}">
 	<span class="pagination__label" aria-hidden="true">{{ lang.common.pages }}</span>
 	<ul>
@@ -31,4 +33,5 @@
 	{% endfor %}
 	</ul>
 </nav>
+{% endif %}
 {% endmacro %}

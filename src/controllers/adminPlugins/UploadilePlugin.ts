@@ -1,7 +1,7 @@
 /**
  * Plugin Uploadile (AP_Uploadile.php) : réglages et fichiers des membres. L'installation et la
- * désinstallation du mod (FluxBB) ne font pas partie d'AvroBB ; la régénération des miniatures non plus
- * (pas de bibliothèque d'images côté serveur).
+ * désinstallation du mod (FluxBB) ne font pas partie d'AvroBB, ni la miniaturisation : les images
+ * envoyées ont une variante mobile WebP, qui sert d'aperçu.
  */
 
 import type { FastifyReply, FastifyRequest } from 'fastify';
@@ -9,6 +9,7 @@ import { type FormBody, field } from '../../http/forms.ts';
 import { renderMessage } from '../../http/layout.ts';
 import { buildUploadileFiles } from '../../presenters/adminPluginsPage.ts';
 import { readUploadileSettings } from '../../services/adminPlugins.ts';
+import { MOBILE_PREFIX } from '../../services/imageVariants.ts';
 import { isListedUpload } from '../../services/uploads.ts';
 import { type AdminLoaderControllerDeps, type AdminLoaderQuery, type PluginHandler, renderPlugin } from './pluginPage.ts';
 
@@ -40,8 +41,10 @@ export class UploadilePlugin implements PluginHandler {
 					name: file.name,
 					size: file.size,
 					url: this.deps.uploads.urlFor(owner, file.name),
-					thumbnailUrl:
-						config.uploads.thumbnails && present.has(`mini_${file.name}`) ? this.deps.uploads.urlFor(owner, `mini_${file.name}`) : null,
+					// Aperçu : la variante mobile (WebP 640 px) si elle existe.
+					thumbnailUrl: present.has(`${MOBILE_PREFIX}${file.name}`)
+						? this.deps.uploads.urlFor(owner, `${MOBILE_PREFIX}${file.name}`)
+						: null,
 				});
 		}
 		const notices: Record<string, string> = { updated: t.updated, deleted: t.deleted, error: t.deleteError };
@@ -49,8 +52,6 @@ export class UploadilePlugin implements PluginHandler {
 			notice: notices[done ?? ''] ?? null,
 			settings: {
 				laws: values.get('o_uploadile_laws') ?? '',
-				thumb: values.get('o_uploadile_thumb') === '1',
-				thumbSize: values.get('o_uploadile_thumb_size') ?? '',
 				maxsizeMember: values.get('o_uploadile_maxsize_member') ?? '',
 				limitMember: values.get('o_uploadile_limit_member') ?? '',
 				maxsizeModo: values.get('o_uploadile_maxsize_modo') ?? '',
@@ -79,7 +80,8 @@ export class UploadilePlugin implements PluginHandler {
 				if (owner === undefined || file === undefined) continue;
 				const id = Number(owner);
 				if (!(await this.deps.uploads.remove(id, file))) failed = true;
-				if (request.board.uploads.thumbnails) await this.deps.uploads.remove(id, `mini_${file}`);
+				await this.deps.uploads.remove(id, `${MOBILE_PREFIX}${file}`);
+				await this.deps.uploads.remove(id, `mini_${file}`);
 				touched.add(id);
 			}
 			for (const id of touched) {

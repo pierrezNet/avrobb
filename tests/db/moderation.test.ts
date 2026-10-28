@@ -495,30 +495,6 @@ describe('plugins (config et groupes)', () => {
 	});
 });
 
-describe('PremiumAdminRepository (AP_Premium.php)', () => {
-	// CREATE et DROP TABLE valident implicitement : pas de transaction annulée ici, la table est supprimée à la fin.
-	it('installe la table, promeut puis rétablit un membre, désinstalle', async () => {
-		const { PremiumAdminRepository } = await import('../../src/repositories/PremiumAdminRepository.ts');
-		const store = new PremiumAdminRepository(db);
-		expect(await store.isInstalled()).toBe(false);
-		await store.install();
-		try {
-			expect(await store.isInstalled()).toBe(true);
-			expect(await store.addMember('nobody@example.test', 2, 1, 2)).toBe('notFound');
-			expect(await store.addMember('tessy@example.test', 2, 1782900000, 1783000000)).toBe('added');
-			expect(await store.addMember('tessy@example.test', 2, 1, 2)).toBe('already');
-			expect(await store.listMembers()).toEqual([
-				{ id: 3, username: 'Tessy', email: 'tessy@example.test', groupTitle: 'Modérateurs', endsAt: 1783000000 },
-			]);
-			expect(await db.selectFrom('users').select('group_id').where('id', '=', 3).executeTakeFirst()).toEqual({ group_id: 2 });
-		} finally {
-			await store.uninstall();
-		}
-		expect(await db.selectFrom('users').select('group_id').where('id', '=', 3).executeTakeFirst()).toEqual({ group_id: 4 });
-		expect(await store.isInstalled()).toBe(false);
-	});
-});
-
 describe('UserAdminRepository (plugin Uploadile)', () => {
 	it('noms des membres', async () => {
 		const { UserAdminRepository } = await import('../../src/repositories/UserAdminRepository.ts');
@@ -529,28 +505,6 @@ describe('UserAdminRepository (plugin Uploadile)', () => {
 				[5, 'MaxDUO'],
 			]),
 		);
-	});
-});
-
-describe('SmileyAdminRepository (AP_Smilies.php)', () => {
-	it('ajoute, modifie et retire des smileys', async () => {
-		const { SmileyAdminRepository } = await import('../../src/repositories/SmileyAdminRepository.ts');
-		await inRollback(async (trx) => {
-			const store = new SmileyAdminRepository(trx);
-			const before = await store.listSmilies();
-			await store.addSmiley(':)', 'smile.png');
-			const added = (await store.listSmilies()).find((row) => row.text === ':)');
-			if (added === undefined) throw new Error('smiley absent');
-			await store.updateSmilies([{ ...added, text: ':-)', position: 7 }]);
-			expect((await store.listSmilies()).find((row) => row.id === added.id)).toEqual({
-				id: added.id,
-				text: ':-)',
-				image: 'smile.png',
-				position: 7,
-			});
-			await store.removeSmilies([added.id]);
-			expect(await store.listSmilies()).toEqual(before);
-		});
 	});
 });
 

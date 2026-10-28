@@ -263,14 +263,16 @@ function buildQuickSearches(viewer: Viewer, lang: Lang): QuickSearch[] {
 	return searches;
 }
 
-/** Liens de flux de footer.php (et <link rel="alternate"> de l'en-tête). */
+/**
+ * Liens de flux de footer.php (et <link rel="alternate"> de l'en-tête) : forum et discussion. AvroBB
+ * ne propose plus le flux des discussions actives à l'accueil (extern.php le sert toujours).
+ */
 function buildFeed(footer: FooterContext, config: BoardConfig, lang: Lang): FeedLink | null {
-	if (config.feedType === 'none' || footer.kind === 'default') return null;
+	if (config.feedType === 'none' || footer.kind === 'default' || footer.kind === 'index') return null;
 
 	const t = lang.common;
 	const rss = config.feedType === 'rss';
 	const labels = {
-		index: rss ? t.rssActiveTopicsFeed : t.atomActiveTopicsFeed,
 		viewforum: rss ? t.rssForumFeed : t.atomForumFeed,
 		viewtopic: rss ? t.rssTopicFeed : t.atomTopicFeed,
 	};

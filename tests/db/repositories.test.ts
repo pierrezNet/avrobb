@@ -30,7 +30,6 @@ import { OnlineRepository } from '../../src/repositories/OnlineRepository.ts';
 import { PostEditRepository } from '../../src/repositories/PostEditRepository.ts';
 import { PostingRepository } from '../../src/repositories/PostingRepository.ts';
 import { PostRepository } from '../../src/repositories/PostRepository.ts';
-import { PremiumAdminRepository } from '../../src/repositories/PremiumAdminRepository.ts';
 import { PremiumRepository } from '../../src/repositories/PremiumRepository.ts';
 import { PrivateContactRepository } from '../../src/repositories/PrivateContactRepository.ts';
 import { PrivateMessageRepository } from '../../src/repositories/PrivateMessageRepository.ts';
@@ -39,7 +38,6 @@ import { RegistrationRepository } from '../../src/repositories/RegistrationRepos
 import { ReportRepository } from '../../src/repositories/ReportRepository.ts';
 import { ReputationRepository } from '../../src/repositories/ReputationRepository.ts';
 import { SearchRepository } from '../../src/repositories/SearchRepository.ts';
-import { SmileyAdminRepository } from '../../src/repositories/SmileyAdminRepository.ts';
 import { StatsRepository } from '../../src/repositories/StatsRepository.ts';
 import { SubjectPrefixRepository } from '../../src/repositories/SubjectPrefixRepository.ts';
 import { SubscriptionRepository } from '../../src/repositories/SubscriptionRepository.ts';
@@ -503,13 +501,10 @@ describe('viewtopic de bout en bout', () => {
 			configStore: new ConfigRepository(db),
 			forumAdmin: new ForumAdminRepository(db),
 			maintenance: new MaintenanceRepository(db),
-			premiumAdmin: new PremiumAdminRepository(db),
-			smileyAdmin: new SmileyAdminRepository(db),
 			labelAdmin: new LabelAdminRepository(db),
 			imageProcessor: { toWebp: async () => null, avatar: async () => null },
 			subjectPrefixes: new SubjectPrefixRepository(db),
 			memberSuggest: new MemberSuggestRepository(db),
-			smileyImages: { listImages: async () => [], deleteImage: async () => false, saveImage: async () => undefined },
 			groupAdmin: new GroupAdminRepository(db),
 			userAdmin: new UserAdminRepository(db),
 			banStore: new BanRepository(db),

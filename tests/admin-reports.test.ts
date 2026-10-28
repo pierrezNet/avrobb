@@ -8,7 +8,7 @@ import { buildApp } from '../src/app.ts';
 import { GroupId, type Report } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
 import { fr } from '../src/lang/fr/index.ts';
-import { buildAdminMenu, pluginLabel } from '../src/presenters/adminMenu.ts';
+import { buildAdminMenu } from '../src/presenters/adminMenu.ts';
 import { buildLegacyCookie } from '../src/services/legacySession.ts';
 import { boardConfig, type FakeData, fakeDeps, group, guest, NOW, viewer } from './fixtures.ts';
 
@@ -33,16 +33,24 @@ const report = (id: number, overrides: Partial<Report> = {}): Report => ({
 });
 
 describe('menu de l’administration', () => {
-	it('modérateur : menu de modération et plugins AMP ; administrateur : tout', () => {
+	it('modérateur : menu de modération et ajout de membre (AMP_) ; administrateur : tout, sans menu des plugins', () => {
 		const forMod = buildAdminMenu(mod, boardConfig, 'reports', fr);
-		expect(forMod.moderator.map((i) => i.href)).toEqual(['admin_index.php', 'admin_users.php', 'admin_reports.php']);
+		expect(forMod.moderator.map((i) => i.label)).toEqual(['Accueil', 'Utilisateurs', 'Ajouter un membre', 'Signalements']);
 		expect(forMod.admin).toBeNull();
-		expect(forMod.plugins.map((i) => i.label)).toEqual(['Gestion utilisateurs']);
 		const forAdmin = buildAdminMenu(admin, boardConfig, 'index', fr);
 		expect(forAdmin.moderator.map((i) => i.href)).toContain('admin_bans.php');
-		expect(forAdmin.admin).toHaveLength(7);
-		expect(forAdmin.plugins).toHaveLength(8);
-		expect(pluginLabel('AP_Private_messaging.php')).toBe('Private messaging');
+		expect(forAdmin.admin?.map((i) => i.label)).toEqual([
+			'Options',
+			'Permissions',
+			'Catégories',
+			'Forums',
+			"Groupes d'utilisateurs",
+			'Censure',
+			'Balises',
+			'Messagerie privée',
+			'Fichiers des membres',
+			'Maintenance',
+		]);
 	});
 });
 

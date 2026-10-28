@@ -126,11 +126,13 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
 - [ ] Balises de sujet : nettoyer en base les anciens sujets (balises inventées, doublons), pour que le PHP les affiche aussi proprement
 - [x] Balises de sujet : liste et couleurs réglables dans l'administration (page Balises, clé `o_subject_tags`), renommage reporté dans les sujets
 
+- [x] Administration sans « Menu des plugins » : pages propres à PV intégrées au menu ; FluxToolBar, Plugile, Smilies, AP_Premium et la miniaturisation Uploadile retirés ; pas de flux des discussions actives ; pagination discrète
+- [ ] **Éditeur WYSIWYG** avec bouton « Source BBCode », basé sur **SCEditor** (MIT, mode source BBCode natif) : le BBCode reste le format enregistré (compatibilité PHP, index de recherche) ; amélioration progressive du champ actuel (sans JS : BBCode) ; déclarer les balises PV (spoiler, vidéo, alignements, cartes de la galerie, mentions…), brancher la popin galerie, les mentions et les émojis ; thèmes ; tests aller-retour BBCode → éditeur → BBCode ; la prévisualisation serveur reste la référence. Estimation : 2 à 3 jours
 - [x] Ménage « projet à part » : Sondage (sans objet) et Mod Installer retirés ; plus d'installation/désinstallation de mods (PunBalise, Plugile, Uploadile) ; options sans effet retirées (GZip, formats de date et d'heure, langue par défaut, numéro de version) ; plus de version FluxBB (pied de page, accueil de l'administration, flux)
 
 ## À décider (mis de côté)
 
-- [ ] Plugin FluxToolBar (`AP_FluxToolBar.php`) : encore utile ? Il règle la barre d'outils BBCode (tables `toolbar_conf`/`toolbar_tags`, vides en local). Encore servi par le PHP ; à porter avec un export de production, ou à abandonner
+- [x] Plugin FluxToolBar (`AP_FluxToolBar.php`) : abandonné (la barre d'outils est définie par AvroBB ; les tables `toolbar_conf`/`toolbar_tags` restent lues si elles sont remplies)
 
 ## Lot 8 — Bascule et décommissionnement
 

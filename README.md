@@ -91,8 +91,11 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   libres (« yesterday ») ; date d'expiration d'un bannissement au format aaaa-mm-jj seulement ; pas de
   lien JavaScript « Tout sélectionner ». Changer de groupe, supprimer et bannir passent par les mêmes
   étapes de confirmation que le PHP, avec jeton CSRF.
-- Plugins (`admin_loader.php`) : Node sert les plugins portés et redirige les autres vers
-  `LEGACY_BASE_URL`. « Gestion d'utilisateur » (AMP) : seul l'ajout est repris (l'élagage était
+- Pages propres à PV (`admin_loader.php?plugin=…`, mêmes URL que le PHP) : AvroBB n'a pas de
+  système de plugins, elles figurent dans le menu d'administration comme les autres pages (plus de
+  « Menu des plugins ») : Ajouter un membre (AMP, aussi pour les modérateurs), Balises, Messagerie
+  privée, Fichiers des membres. Un ancien plugin abandonné renvoie une erreur 400. « Ajouter un
+  membre » (AMP_Gestion_utilisateurs) : seul l'ajout est repris (l'élagage était
   désactivé par PV : formulaire sans bouton) ; mot de passe de 6 caractères au moins comme ailleurs
   dans Node (4 dans le plugin) ; erreurs réaffichées dans le formulaire ; e-mails d'alerte et de
   bienvenue tirés des modèles du PHP.
@@ -105,29 +108,31 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   POST avec jeton CSRF (le PHP enchaînait des GET qui écrivaient), un script enchaîne les étapes et
   un bouton « Continuer » le remplace sans JavaScript ; l'élagage demande confirmation comme le PHP.
   Ajout : « Vider les caches » supprime les fichiers `cache/cache_*.php`, que le PHP régénère.
-- Plugins Messagerie privée et Plugile : mêmes réglages que le PHP, avec jeton CSRF ; seules les clés
-  modifiées sont écrites. Plugile : plus d'installation ni de désinstallation du mod.
-- Plugin Premium (`AP_Premium.php`, table `premium` distincte de la boutique `apremium`) : table
-  créée en InnoDB (MyISAM dans le PHP) ; erreurs réaffichées dans la page ; pas de retour automatique
-  au groupe initial à l'échéance, comme dans le PHP malgré sa description.
-- Plugin Uploadile : réglages comme le PHP ; la suppression vise le fichier d'un
-  membre précis (le PHP supprimait le même nom chez tous les membres) et recalcule son espace utilisé ;
-  ni installation ni désinstallation du mod, ni régénération des
-  miniatures (pas de bibliothèque d'images côté serveur, les miniatures sont faites par le navigateur).
-- Plugin Smilies : gère la table `smilies` et les images du PHP (les pages Node affichent des
-  émojis) ; type d'image lu dans son contenu ; nom de fichier limité à lettres, chiffres, « _ » et
-  « - » ; erreurs réaffichées dans la page.
+- Messagerie privée : mêmes réglages que le PHP, avec jeton CSRF ; seules les clés modifiées sont
+  écrites.
+- Fichiers des membres (Uploadile) : réglages comme le PHP, sans la miniaturisation
+  (`o_uploadile_thumb*` n'est plus ni lu ni écrit : une image envoyée a une variante mobile WebP, qui
+  sert d'aperçu) ; la suppression vise le fichier d'un membre précis (le PHP supprimait le même nom
+  chez tous les membres), emporte variante mobile et ancienne miniature, et recalcule l'espace utilisé.
 - Plugin PunBalise (`AP_Balises.php`) : ajout, édition et suppression des balises (avec la colonne
   `bal<id>` de `balises_modo`, hors transaction car l'ALTER TABLE valide implicitement) ; le nom d'une
   balise se modifie (le PHP le figeait), sans doublon nom et type ; sélecteur de couleur natif du navigateur ; couleur
   vérifiée (#RRGGBB) avant affichage. L'installation, la mise à jour et la désinstallation du mod
   restent sur le PHP.
-- Plugins encore servis par le PHP (redirection depuis `admin_loader.php`) : FluxToolBar (à décider).
 - AvroBB est un projet à part, apparenté à FluxBB : ce qui ne lui sert pas est retiré. Plugins Sondage
-  (sans objet dans PV) et Mod Installer (il modifie les fichiers PHP) absents ; plus d'installation
+  (sans objet dans PV) et Mod Installer (il modifie les fichiers PHP) absents, ainsi que FluxToolBar
+  (la barre d'outils est définie par AvroBB), Plugile (il ne réglait que le titre d'un bloc du menu
+  du profil : les plugiles suivent désormais les sections), Smilies (même le PHP n'affiche plus les
+  images de la table `smilies` : 18 codes en dur, rendus en émojis par Node) et AP_Premium
+  (promotion temporaire dans un groupe ; sa table `premium` n'a jamais été installée sur PV, le
+  Premium réel est `premium.php` avec ses codes) ; plus d'installation
   ni de désinstallation de mods (PunBalise, Plugile, Uploadile) ; options sans effet retirées du
   formulaire et jamais écrites (compression GZip, formats de date et d'heure, langue par défaut,
   numéro de version) ; plus de numéro de version FluxBB (pied de page, accueil, générateur des flux).
+- Pas de flux des discussions actives à l'accueil (lien et `<link rel="alternate">`) ; les flux de
+  forum et de discussion restent, et `extern.php` sert toujours le flux général.
+- Pagination discrète (liens simples, page courante soulignée) et masquée quand il n'y a qu'une
+  page (FluxBB affichait « Pages : 1 »).
 - Page Balises de l'administration : balises du sujet (nom, groupe simulateur ou autre, couleur de
   fond, ordre ; renommer une balise la renomme dans les sujets existants, sans refaire l'index de
   recherche) et balises de modération, toutes en pastilles. Liste des balises du sujet enregistrée

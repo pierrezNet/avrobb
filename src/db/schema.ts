@@ -251,20 +251,6 @@ export interface SmiliesTable {
 }
 
 /**
- * Membres promus par le plugin AP_Premium.php (table créée par le plugin, absente tant qu'il n'est pas
- * installé ; `id` est l'identifiant du membre).
- */
-export interface PremiumMembersTable {
-	id: number;
-	group_id_initial: number;
-	group_id_premium: number;
-	username: string;
-	email: string;
-	start_premium: number;
-	end_premium: number;
-}
-
-/**
  * Premium de PV (premium.php) : tables sans préfixe, hors de TABLE_NAMES. Expiration au format
  * date SQL ; « 2036-01-01 » signifie « à vie ».
  */
@@ -414,7 +400,6 @@ export interface Database {
 	messages: MessagesTable;
 	online: OnlineTable;
 	posts: PostsTable;
-	premium: PremiumMembersTable;
 	reports: ReportsTable;
 	reputation: ReputationTable;
 	search_cache: SearchCacheTable;
@@ -446,7 +431,6 @@ export const TABLE_NAMES: readonly (keyof Database)[] = [
 	'messages',
 	'online',
 	'posts',
-	'premium',
 	'reports',
 	'reputation',
 	'search_cache',

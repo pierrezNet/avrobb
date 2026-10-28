@@ -261,8 +261,6 @@ export interface BoardConfig {
 	signatureMaxLength: number;
 	signatureMaxLines: number;
 	signatureAllCaps: boolean;
-	/** Plugiles du profil dans un bloc de menu à part, sous ce titre (o_plugile_menu_name) ; null sinon. */
-	plugileMenuName: string | null;
 	/** Balises du sujet proposées (o_subject_tags, propre à AvroBB ; liste par défaut si absente). */
 	subjectTags: SubjectTag[];
 	/** Alerte par e-mail des nouveaux MP proposée aux membres (o_pms_notification). */
@@ -292,10 +290,6 @@ export interface UploadSettings {
 	moderatorQuota: number;
 	memberMaxFileSize: number;
 	moderatorMaxFileSize: number;
-	/** Miniatures « mini_<fichier> » affichées si elles existent (o_uploadile_thumb). */
-	thumbnails: boolean;
-	/** Plus grand côté des miniatures créées à l'envoi (o_uploadile_thumb_size). */
-	thumbnailSize: number;
 }
 
 /** Balise de sujet de PV (« [Réglé] »…), posée par les modérateurs. */

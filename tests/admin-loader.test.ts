@@ -51,13 +51,11 @@ function post(server: FastifyInstance, userId: number, fields: Record<string, st
 }
 
 describe('admin_loader.php', () => {
-	it('droits : AMP_ pour les modérateurs, AP_ pour les administrateurs ; non portés vers le PHP', async () => {
+	it('droits : AMP_ pour les modérateurs, AP_ pour les administrateurs', async () => {
 		const { server } = await start();
 		expect((await get(server, 5, PLUGIN)).statusCode).toBe(200);
 		expect((await get(server, 5, '/admin_loader.php?plugin=AP_Balises.php')).statusCode).toBe(403);
 		expect((await get(server, 2, '/admin_loader.php?plugin=../config.php')).statusCode).toBe(400);
-		const legacy = await get(server, 2, '/admin_loader.php?plugin=AP_FluxToolBar.php');
-		expect(legacy.headers.location).toBe('http://php.test/admin_loader.php?plugin=AP_FluxToolBar.php');
 	});
 
 	it("ajout d'utilisateur : contrôles, compte, alerte et mot de passe envoyé", async () => {
@@ -91,11 +89,21 @@ describe('plugins de réglages', () => {
 		return { server, fake };
 	}
 
-	it('Sondage et Mod Installer ne font pas partie d’AvroBB', async () => {
+	it('Sondage, Mod Installer, FluxToolBar, Plugile, Premium et Smilies ne font pas partie d’AvroBB', async () => {
 		const { server } = await withConfig({});
-		expect((await get(server, 2, '/admin_loader.php?plugin=AP_Sondage.php')).statusCode).toBe(400);
-		expect((await get(server, 2, '/admin_loader.php?plugin=AP_Mod_Installer.php')).statusCode).toBe(400);
-		expect((await get(server, 2, '/admin_index.php')).body).not.toContain('AP_Sondage.php');
+		for (const plugin of [
+			'AP_Sondage.php',
+			'AP_Mod_Installer.php',
+			'AP_FluxToolBar.php',
+			'AP_Plugile.php',
+			'AP_Premium.php',
+			'AP_Smilies.php',
+		]) {
+			expect((await get(server, 2, `/admin_loader.php?plugin=${plugin}`)).statusCode).toBe(400);
+		}
+		const index = (await get(server, 2, '/admin_index.php')).body;
+		expect(index).not.toContain('AP_Sondage.php');
+		expect(index).not.toContain('Menu des plugins');
 	});
 
 	it('messagerie privée : options, destinataires (+1 comme le PHP) et droits des groupes', async () => {
@@ -119,48 +127,6 @@ describe('plugins de réglages', () => {
 		]);
 		expect(fake.groupAdminLog).toEqual(['pm 4 false 50']);
 	});
-
-	it('Plugile : réglage du menu seulement, plus d’installation de mod', async () => {
-		const { server, fake } = await withConfig({ o_plugile_menu: '1', o_plugile_menu_name: 'Extras' });
-		const page = await get(server, 2, '/admin_loader.php?plugin=AP_Plugile.php');
-		expect(page.body).not.toContain('name="update"');
-		expect(page.body).not.toContain('name="delete"');
-		await send(server, 'AP_Plugile.php', { saveconfig: '1', menu: '0', plugile_menu_name: 'Mes <fichiers>' });
-		expect(fake.configValues?.get('o_plugile_menu_name')).toBe('Mes &lt;fichiers&gt;');
-		expect((await get(server, 2, '/admin_loader.php?plugin=AP_Plugile.php')).body).toContain('value="Mes &lt;fichiers&gt;"');
-		expect((await send(server, 'AP_Plugile.php', { delete: '1' })).statusCode).toBe(400);
-		expect(fake.configLog).toEqual(['replace o_plugile_menu,o_plugile_menu_name']);
-	});
-});
-
-describe('plugin Premium', () => {
-	const send = (server: FastifyInstance, fields: Record<string, string>) =>
-		server.inject({
-			method: 'POST',
-			url: '/admin_loader.php?plugin=AP_Premium.php',
-			headers: { cookie: cookies(2), 'content-type': 'application/x-www-form-urlencoded' },
-			payload: new URLSearchParams({ csrf_token: csrfToken(CSRF_SECRET, SEED, 2), ...fields }).toString(),
-		});
-
-	it('installation, ajout, temps restant, retrait et désinstallation', async () => {
-		const { server, fake } = await start();
-		expect((await get(server, 2, '/admin_loader.php?plugin=AP_Premium.php')).body).toContain('name="install"');
-		await send(server, { install: '1' });
-		const page = await get(server, 2, '/admin_loader.php?plugin=AP_Premium.php');
-		expect(page.body).toContain('<option value="6" selected>Premium</option>');
-		expect((await send(server, { add_user: '1', courriel: 'x@example.test', group_id_premium: '6', end_premium: 'dix' })).statusCode).toBe(
-			400,
-		);
-		expect((await send(server, { add_user: '1', courriel: 'x@ailleurs.test', group_id_premium: '6', end_premium: '3' })).body).toContain(
-			'Aucun membre',
-		);
-		await send(server, { add_user: '1', courriel: 'X@example.test', group_id_premium: '6', end_premium: '3' });
-		expect((await get(server, 2, '/admin_loader.php?plugin=AP_Premium.php')).body).toContain('3 jour(s)');
-		await send(server, { delete_user: '1', 'delete_prem[9]': '1' });
-		expect(fake.premiumMembers).toEqual([]);
-		await send(server, { cancel: '1' });
-		expect(fake.premiumMembers).toBeUndefined();
-	});
 });
 
 describe('plugin Uploadile', () => {
@@ -174,108 +140,34 @@ describe('plugin Uploadile', () => {
 
 	it('réglages et suppression ciblée d’un fichier avec recalcul du quota', async () => {
 		const { server, fake } = await start();
-		fake.config = { ...fake.config, uploads: { ...boardConfig.uploads, extensions: ['png', 'pdf'], thumbnails: true } };
+		fake.config = { ...fake.config, uploads: { ...boardConfig.uploads, extensions: ['png', 'pdf'] } };
 		fake.memberFiles = new Map([
 			[
 				5,
 				[
 					{ name: 'plan.pdf', size: 3000, modified: NOW, data: Buffer.from('') },
 					{ name: 'vue.png', size: 2000, modified: NOW, data: Buffer.from('') },
-					{ name: 'mini_vue.png', size: 100, modified: NOW, data: Buffer.from('') },
+					{ name: 'mobile_vue.png', size: 100, modified: NOW, data: Buffer.from('') },
 				],
 			],
 			[2, [{ name: 'vue.png', size: 500, modified: NOW, data: Buffer.from('') }]],
 		]);
 		const page = await get(server, 2, '/admin_loader.php?plugin=AP_Uploadile.php');
 		expect(page.body).toContain('name="delete[5/vue.png]"');
-		expect(page.body).toContain('mini_vue.png');
-		expect(page.body).not.toContain('name="delete[5/mini_vue.png]"');
+		expect(page.body).toContain('mobile_vue.png');
+		expect(page.body).not.toContain('name="delete[5/mobile_vue.png]"');
+		expect(page.body).not.toContain('miniaturisation');
 
 		await send(server, { supprimer: '1', 'delete[5/vue.png]': '1' });
 		expect(fake.memberFiles?.get(5)?.map((f) => f.name)).toEqual(['plan.pdf']);
 		expect(fake.memberFiles?.get(2)?.map((f) => f.name)).toEqual(['vue.png']);
 		expect(fake.uploadedBytes?.get(5)).toBe(3000);
 
-		await send(server, { update: '1', laws: 'png, jpg', thumb: '0', thumb_size: '-1' });
+		await send(server, { update: '1', laws: 'png, jpg', limit_member: '-1' });
 		expect(fake.configValues?.get('o_uploadile_laws')).toBe('png,jpg');
-		expect(fake.configValues?.get('o_uploadile_thumb_size')).toBe('100');
+		expect(fake.configValues?.get('o_uploadile_limit_member')).toBe('2097152');
+		expect(fake.configValues?.has('o_uploadile_thumb')).toBe(false);
 		expect((await send(server, { installation: '1' })).statusCode).toBe(400);
-	});
-});
-
-describe('plugin Smilies', () => {
-	const send = (server: FastifyInstance, fields: Record<string, string>) =>
-		server.inject({
-			method: 'POST',
-			url: '/admin_loader.php?plugin=AP_Smilies.php',
-			headers: { cookie: cookies(2), 'content-type': 'application/x-www-form-urlencoded' },
-			payload: new URLSearchParams({ csrf_token: csrfToken(CSRF_SECRET, SEED, 2), ...fields }).toString(),
-		});
-
-	it('modification, codes uniques, retrait, ajout et images utilisées protégées', async () => {
-		const { server, fake } = await start();
-		fake.smileyRows = [
-			{ id: 1, text: ':)', image: 'smile.png', position: 0 },
-			{ id: 2, text: ':(', image: 'sad.png', position: 1 },
-		];
-		fake.smileyImageNames = ['sad.png', 'smile.png', 'wink.png'];
-		const page = await get(server, 2, '/admin_loader.php?plugin=AP_Smilies.php');
-		expect(page.body).toContain('<option value="smile.png" selected>smile.png</option>');
-		const dup = await send(server, { reord: '1', 'smilies_code[1]': ':)', 'smilies_code[2]': ':)' });
-		expect(dup.body).toContain('Impossible de dupliquer le code :)');
-		await send(server, {
-			reord: '1',
-			'smilies_code[1]': ':-)',
-			'smilies_img[1]': 'wink.png',
-			'smilies_order[1]': '3',
-			'smilies_code[2]': ':(',
-		});
-		expect(fake.smileyRows[0]).toEqual({ id: 1, text: ':-)', image: 'wink.png', position: 3 });
-		expect((await send(server, { delete: '1', 'del_smilies[wink.png]': '1' })).body).toContain('utilisées : wink.png');
-		await send(server, { delete: '1', 'del_smilies[smile.png]': '1' });
-		expect(fake.smileyImageNames).toEqual(['sad.png', 'wink.png']);
-		await send(server, { remove: '1', 'rem_smilies[2]': '1' });
-		expect((await send(server, { add_smiley: '1', smiley_code: ':-)', smiley_image: 'sad.png' })).body).toContain(
-			'Le code texte existe déjà.',
-		);
-		await send(server, { add_smiley: '1', smiley_code: ';)', smiley_image: 'sad.png' });
-		expect(fake.smileyRows?.map((row) => row.text)).toEqual([':-)', ';)']);
-	});
-});
-
-describe('plugin Smilies : envoi d’image', () => {
-	const png = (width: number, height: number): Buffer => {
-		const data = Buffer.alloc(33);
-		Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(data);
-		data.writeUInt32BE(13, 8);
-		data.write('IHDR', 12, 'latin1');
-		data.writeUInt32BE(width, 16);
-		data.writeUInt32BE(height, 20);
-		return data;
-	};
-	async function upload(server: FastifyInstance, name: string, content: Buffer) {
-		const form = new FormData();
-		form.append('csrf_token', csrfToken(CSRF_SECRET, SEED, 2));
-		form.append('add_image', '1');
-		form.append('req_file', new Blob([new Uint8Array(content)]), name);
-		const request = new Request('http://x/', { method: 'POST', body: form });
-		return server.inject({
-			method: 'POST',
-			url: '/admin_loader.php?plugin=AP_Smilies.php',
-			headers: { cookie: cookies(2), 'content-type': request.headers.get('content-type') ?? '' },
-			payload: Buffer.from(await request.arrayBuffer()),
-		});
-	}
-
-	it('type lu dans le contenu, 20 × 20 au plus, nom sûr', async () => {
-		const { server, fake } = await start();
-		expect((await upload(server, 'grand.png', png(40, 40))).body).toContain('20 × 20 pixels');
-		expect((await upload(server, 'faux.png', Buffer.from('<?php'))).body).toContain('n&#39;est pas autorisé');
-		expect((await upload(server, '../../evil.png', png(20, 20))).statusCode).toBe(303);
-		expect((await upload(server, 'clin d oeil.png', png(20, 20))).statusCode).toBe(400);
-		const ok = await upload(server, 'clin.gif', png(16, 16));
-		expect(ok.headers.location).toBe('admin_loader.php?plugin=AP_Smilies.php&done=uploaded');
-		expect(fake.smileyImageNames).toEqual(['evil.png', 'clin.png']);
 	});
 });
 

@@ -77,7 +77,6 @@ import type { ModerationStore } from './repositories/ModerationRepository.ts';
 import type { PostEditStore } from './repositories/PostEditRepository.ts';
 import type { PostingStore } from './repositories/PostingRepository.ts';
 import type { PostReader } from './repositories/PostRepository.ts';
-import type { PremiumAdminStore } from './repositories/PremiumAdminRepository.ts';
 import type { PremiumStore } from './repositories/PremiumRepository.ts';
 import type { PrivateContactStore, SendingListStore } from './repositories/PrivateContactRepository.ts';
 import type { PrivateMessageStore } from './repositories/PrivateMessageRepository.ts';
@@ -86,7 +85,6 @@ import type { RegistrationStore } from './repositories/RegistrationRepository.ts
 import type { ReportStore, ReportWriter } from './repositories/ReportRepository.ts';
 import type { ReputationStore } from './repositories/ReputationRepository.ts';
 import type { SearchReader, SearchWriter } from './repositories/SearchRepository.ts';
-import type { SmileyAdminStore, SmileyImageStore } from './repositories/SmileyAdminRepository.ts';
 import type { StatsReader } from './repositories/StatsRepository.ts';
 import type { StopwordsReader } from './repositories/StopwordsLoader.ts';
 import type { SubjectPrefixStore } from './repositories/SubjectPrefixRepository.ts';
@@ -153,11 +151,6 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	forumAdmin: ForumAdminStore;
 	/** Reconstruction de l'index et élagage (admin_maintenance.php). */
 	maintenance: MaintenanceStore;
-	/** Plugin AP_Premium.php (table premium). */
-	premiumAdmin: PremiumAdminStore;
-	/** Plugin AP_Smilies.php : table smilies et images du PHP. */
-	smileyAdmin: SmileyAdminStore;
-	smileyImages: SmileyImageStore;
 	/** Plugin AP_Balises.php (mod PunBalise). */
 	labelAdmin: LabelAdminStore;
 	/** Préfixes du sujet (topic_prefixes.php, page propre à Node). */

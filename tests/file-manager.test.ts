@@ -9,7 +9,7 @@ import { buildApp } from '../src/app.ts';
 import { GroupId, type UserProfile } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
 import { buildLegacyCookie } from '../src/services/legacySession.ts';
-import { boardConfig, type FakeData, fakeDeps, guest, NOW, viewer } from './fixtures.ts';
+import { type FakeData, fakeDeps, guest, NOW, viewer } from './fixtures.ts';
 
 const SEED = 'graine-de-test';
 const CSRF_SECRET = 'd'.repeat(64);
@@ -109,9 +109,8 @@ describe('gestionnaire.php', () => {
 		expect(fake.memberFiles?.get(3)?.map((f) => f.name)).not.toContain('plan.zip');
 	});
 
-	it('une image envoyée devient du WebP, avec sa variante mobile et sa vignette ; tout part à la suppression', async () => {
+	it('une image envoyée devient du WebP, avec sa variante mobile (aperçu) ; tout part à la suppression', async () => {
 		const fake = data();
-		fake.config = { uploads: { ...boardConfig.uploads, thumbnails: true, thumbnailSize: 100 } };
 		app = await buildApp(fakeDeps(fake));
 		const pngImage = Buffer.concat([
 			Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13]),
@@ -135,14 +134,15 @@ describe('gestionnaire.php', () => {
 		const saved = names.find((name) => name.endsWith('.webp') && !name.startsWith('mobile_') && !name.startsWith('mini_')) ?? '';
 		expect(saved).toMatch(/^Grande.*photo\.webp$/);
 		expect(names).toContain(`mobile_${saved}`);
-		expect(names).toContain(`mini_${saved}`);
+		expect(names).not.toContain(`mini_${saved}`);
 		const stored = fake.memberFiles?.get(3)?.find((f) => f.name === saved);
 		expect(stored?.data?.toString()).toBe(`webp1024:${pngImage.length}`);
 		// L'espace occupé compte l'image enregistrée seulement.
 		expect(fake.uploadedBytes?.get(3)).toBe(1500 + `webp1024:${pngImage.length}`.length);
 
 		const listing = await app.inject({ url: '/gestionnaire.php', headers: { cookie } });
-		expect(listing.body).not.toContain(`mobile_${saved}`);
+		expect(listing.body).not.toContain(`value="mobile_${saved}"`);
+		expect(listing.body).toContain(`/mobile_${saved}"`);
 
 		const body = new URLSearchParams({ csrf_token: csrfToken(CSRF_SECRET, SEED, 3), supprimer: '1', delete: saved });
 		await app.inject({

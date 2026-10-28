@@ -98,8 +98,6 @@ export const common = {
 	poweredBy: 'Propulsé par',
 
 	// Flux (extern.php)
-	rssActiveTopicsFeed: 'Flux RSS des discussions actives',
-	atomActiveTopicsFeed: 'Flux Atom des discussions actives',
 	rssForumFeed: 'Flux RSS du forum',
 	atomForumFeed: 'Flux Atom du forum',
 	rssTopicFeed: 'Flux RSS de la discussion',

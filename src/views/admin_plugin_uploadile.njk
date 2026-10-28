@@ -22,12 +22,6 @@
 	<fieldset class="form__fieldset">
 		<legend class="form__legend">{{ t.legend }}</legend>
 		<p class="form__field"><label for="laws">{{ t.laws }}</label><input type="text" id="laws" name="laws" value="{{ c.laws }}" aria-describedby="laws_help"><span id="laws_help" class="form__help">{{ t.lawsHelp }}</span></p>
-		<div class="form__field" role="radiogroup" aria-labelledby="label-thumb">
-			<span id="label-thumb" class="form__label">{{ t.thumb }}</span>
-			<label class="form__choice"><input type="radio" name="thumb" value="1"{% if c.thumb %} checked{% endif %}> {{ t.yes }}</label>
-			<label class="form__choice"><input type="radio" name="thumb" value="0"{% if not c.thumb %} checked{% endif %}> {{ t.no }}</label>
-		</div>
-		<p class="form__field"><label for="thumb_size">{{ t.thumbSize }}</label><input type="number" id="thumb_size" name="thumb_size" value="{{ c.thumbSize }}" min="1" inputmode="numeric"></p>
 		<p class="form__field"><label for="maxsize_member">{{ t.maxsizeMember }}</label><input type="number" id="maxsize_member" name="maxsize_member" value="{{ c.maxsizeMember }}" min="1" inputmode="numeric"></p>
 		<p class="form__field"><label for="limit_member">{{ t.limitMember }}</label><input type="number" id="limit_member" name="limit_member" value="{{ c.limitMember }}" min="1" inputmode="numeric"></p>
 		<p class="form__field"><label for="maxsize_modo">{{ t.maxsizeModo }}</label><input type="number" id="maxsize_modo" name="maxsize_modo" value="{{ c.maxsizeModo }}" min="1" inputmode="numeric"></p>

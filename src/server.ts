@@ -36,7 +36,6 @@ import { PhpCacheFiles } from './repositories/PhpCacheFiles.ts';
 import { PostEditRepository } from './repositories/PostEditRepository.ts';
 import { PostingRepository } from './repositories/PostingRepository.ts';
 import { PostRepository } from './repositories/PostRepository.ts';
-import { PremiumAdminRepository } from './repositories/PremiumAdminRepository.ts';
 import { PremiumRepository } from './repositories/PremiumRepository.ts';
 import { PrivateContactRepository } from './repositories/PrivateContactRepository.ts';
 import { PrivateMessageRepository } from './repositories/PrivateMessageRepository.ts';
@@ -45,7 +44,6 @@ import { RegistrationRepository } from './repositories/RegistrationRepository.ts
 import { ReportRepository } from './repositories/ReportRepository.ts';
 import { ReputationRepository } from './repositories/ReputationRepository.ts';
 import { SearchRepository } from './repositories/SearchRepository.ts';
-import { SmileyAdminRepository, SmileyImageFiles } from './repositories/SmileyAdminRepository.ts';
 import { StatsRepository } from './repositories/StatsRepository.ts';
 import { StopwordsLoader } from './repositories/StopwordsLoader.ts';
 import { SubjectPrefixRepository } from './repositories/SubjectPrefixRepository.ts';
@@ -82,9 +80,6 @@ const app = await buildApp({
 	configCache: configLoader,
 	forumAdmin: new ForumAdminRepository(db),
 	maintenance: new MaintenanceRepository(db),
-	premiumAdmin: new PremiumAdminRepository(db),
-	smileyAdmin: new SmileyAdminRepository(db),
-	smileyImages: new SmileyImageFiles(config.legacyRoot),
 	labelAdmin: new LabelAdminRepository(db),
 	imageProcessor: new SharpImageProcessor(),
 	subjectPrefixes: new SubjectPrefixRepository(db),

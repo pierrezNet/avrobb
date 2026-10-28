@@ -3,12 +3,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import {
-	readGroupPrivateMessageRights,
-	readPrivateMessageSettings,
-	readUploadileSettings,
-	unescapeHtml,
-} from '../src/services/adminPlugins.ts';
+import { readGroupPrivateMessageRights, readPrivateMessageSettings, readUploadileSettings } from '../src/services/adminPlugins.ts';
 
 const reader = (values: Record<string, string>) => (name: string) => values[name] ?? '';
 
@@ -26,15 +21,11 @@ describe('plugins', () => {
 	});
 
 	it('Uploadile : valeurs non positives remplacées par les défauts, extensions sans espaces', () => {
-		const settings = readUploadileSettings(reader({ laws: 'png, jpg', thumb: '0', thumb_size: '0', limit_member: '500' }));
+		const settings = readUploadileSettings(reader({ laws: 'png, jpg', thumb: '0', limit_member: '500' }));
 		expect(settings.get('o_uploadile_laws')).toBe('png,jpg');
-		expect(settings.get('o_uploadile_thumb')).toBe('0');
-		expect(settings.get('o_uploadile_thumb_size')).toBe('100');
+		// La miniaturisation n'est plus réglable.
+		expect(settings.has('o_uploadile_thumb')).toBe(false);
 		expect(settings.get('o_uploadile_limit_member')).toBe('500');
 		expect(settings.get('o_uploadile_limit_modo')).toBe('5242880');
-	});
-
-	it('Plugile : titre stocké échappé réaffiché tel que saisi', () => {
-		expect(unescapeHtml('A &amp; B &lt;i&gt; &quot;x&quot; l&#039;y')).toBe('A & B <i> "x" l\'y');
 	});
 });

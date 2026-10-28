@@ -2,3 +2,6 @@ node_modules/
 .env
 screenshots/
 mail-outbox/
+
+# Synthèse personnelle des améliorations par rapport au PHP (tenue à jour, non versionnée)
+AMELIORATIONS.md

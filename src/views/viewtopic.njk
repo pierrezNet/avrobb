@@ -20,7 +20,7 @@
 </div>
 {% endmacro %}
 
-{% block head %}{% if view.quickPost and view.quickPost.toolbar %}<script src="{{ asset('js/toolbar.js') }}" defer></script>{% endif %}{% endblock %}
+{% block head %}{% if view.quickPost and view.quickPost.toolbar %}<script src="{{ asset('js/toolbar.js') }}" defer></script>{% endif %}<script src="{{ asset('js/quote-selection.js') }}" defer></script>{% endblock %}
 
 {% block main %}
 {{ navigation.breadcrumbs(view.crumbs, lang) }}

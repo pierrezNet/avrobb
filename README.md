@@ -151,6 +151,10 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   ni de désinstallation de mods (PunBalise, Plugile, Uploadile) ; options sans effet retirées du
   formulaire et jamais écrites (compression GZip, formats de date et d'heure, langue par défaut,
   numéro de version) ; plus de numéro de version FluxBB (pied de page, accueil, générateur des flux).
+- « Citer » ne reprend que le passage sélectionné dans le message, s'il y en a un
+  (`public/js/quote-selection.js` ajoute `qtext=` au lien `post.php?tid=…&qid=…`, sous le nom de
+  l'auteur) ; sans sélection ni JavaScript, le message entier comme dans FluxBB. Le passage est du
+  texte brut (la mise en forme BBCode de la sélection n'est pas reprise).
 - Pas de flux Atom : `extern.php?type=atom` sert le flux RSS (les anciens abonnements continuent de
   fonctionner) ; l'option « Flux par défaut » ne propose plus que Aucun ou RSS, et l'ancien choix
   Atom (`o_feed_type` = 2, celui de PV) n'affiche plus de lien de flux. Pas de flux des discussions

@@ -53,10 +53,15 @@ export interface PostControllerDeps extends LayoutDeps {
 	topics: MentionNotifierDeps['topics'];
 }
 
+/** Longueur maximale d'un passage cité par sélection. */
+const QUOTE_SELECTION_MAX = 5000;
+
 export interface PostQuery {
 	tid?: string;
 	fid?: string;
 	qid?: string;
+	/** Passage sélectionné du message cité (public/js/quote-selection.js) ; sinon tout le message. */
+	qtext?: string;
 	action?: string;
 	brouillon?: string;
 	/** Brouillon à reprendre (post.php?brouillon&id=…). */
@@ -80,7 +85,7 @@ export class PostController {
 
 		let message = '';
 		if (request.query.qid !== undefined && target.topic !== null) {
-			const quoted = await this.quote(request.query.qid, target.topic.id, request.board, censor);
+			const quoted = await this.quote(request.query.qid, target.topic.id, request.board, censor, request.query.qtext);
 			if (quoted === null) return renderMessage(request, reply, this.deps, 404, this.deps.page.lang.common.badRequest);
 			message = quoted;
 		}
@@ -303,12 +308,23 @@ export class PostController {
 		return this.deps.registrations.findSimilarUsername(normalized, usernameSkeleton(normalized));
 	}
 
-	/** Texte de la citation (post.php?qid=…), ou null si le message n'est pas dans ce sujet. */
-	private async quote(rawQid: string, topicId: number, config: BoardConfig, censor: Censor | null): Promise<string | null> {
+	/**
+	 * Texte de la citation (post.php?qid=…), ou null si le message n'est pas dans ce sujet. Avec
+	 * `qtext` (texte sélectionné dans la page, AvroBB), seul ce passage est cité, sous le nom de
+	 * l'auteur du message ; il n'est que proposé dans le champ, que le membre peut de toute façon modifier.
+	 */
+	private async quote(
+		rawQid: string,
+		topicId: number,
+		config: BoardConfig,
+		censor: Censor | null,
+		selection?: string,
+	): Promise<string | null> {
 		const qid = positiveInt(rawQid);
 		const quoted = qid > 0 ? await this.deps.posting.findQuote(qid, topicId) : null;
 		if (quoted === null) return null;
-		return quoteText(quoted.poster, quoted.message, {
+		const passage = quotedSelection(selection);
+		return quoteText(quoted.poster, passage ?? quoted.message, {
 			bbcode: config.bbcode,
 			indentSpaces: config.indentSpaces,
 			censor,
@@ -462,4 +478,10 @@ export class PostController {
 			}
 		}
 	}
+}
+
+/** Passage sélectionné (?qtext=) : texte nettoyé et borné, ou null s'il n'y en a pas. */
+function quotedSelection(raw: string | undefined): string | null {
+	const text = (raw ?? '').replaceAll('\r\n', '\n').trim();
+	return text !== '' ? [...text].slice(0, QUOTE_SELECTION_MAX).join('') : null;
 }

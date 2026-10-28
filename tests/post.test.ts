@@ -252,6 +252,17 @@ describe('GET /post.php', () => {
 		expect((await app.inject({ url: '/post.php?tid=10&qid=999', headers: { cookie: memberCookie } })).statusCode).toBe(404);
 	});
 
+	it('cite seulement le passage sélectionné (qtext), sous le nom de l’auteur du message', async () => {
+		app = await buildApp(fakeDeps(data()));
+		const res = await app.inject({ url: '/post.php?tid=10&qid=100&qtext=%20Premier%20<b>%20', headers: { cookie: memberCookie } });
+		expect(res.body).toContain('>[quote=Tessy]Premier &lt;b&gt;[/quote]\n</textarea>');
+		// Sélection vide : message entier ; message d'un autre sujet : refusé.
+		expect((await app.inject({ url: '/post.php?tid=10&qid=100&qtext=', headers: { cookie: memberCookie } })).body).toContain(
+			'[quote=Tessy]Premier http://a.fr/i.png[/quote]',
+		);
+		expect((await app.inject({ url: '/post.php?tid=10&qid=999&qtext=x', headers: { cookie: memberCookie } })).statusCode).toBe(404);
+	});
+
 	it('refuse les demandes invalides et les écritures interdites', async () => {
 		app = await buildApp(fakeDeps(data()));
 		const status = async (url: string, cookie = memberCookie) => (await app?.inject({ url, headers: { cookie } }))?.statusCode;

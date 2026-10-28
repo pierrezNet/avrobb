@@ -83,8 +83,20 @@ describe('GET /viewtopic.php', () => {
 		expect(res.body).toContain('<strong aria-current="page">2</strong>');
 		expect(res.body).toContain('href="viewforum.php?id=1"');
 		expect(res.body).toContain('href="profile.php?id=3"');
-		expect(res.body).toContain('href="post.php?tid=20"');
+		expect(res.body).toContain('action="post.php?action=post&amp;tid=20"');
 		expect(res.body).toContain('href="viewtopic.php?id=20"');
+	});
+
+	it('pas de bouton « Répondre » quand le formulaire de réponse est en bas de page', async () => {
+		app = await buildApp(fakeDeps(data()));
+		const withForm = await app.inject({ url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(3, 'hash-tessy') } });
+		expect(withForm.body).toContain('id="quickpostform"');
+		expect(withForm.body).not.toContain('href="post.php?tid=10"');
+		await app.close();
+		app = await buildApp(fakeDeps(data({ config: { posting: { ...boardConfig.posting, quickpost: false } } })));
+		const withoutForm = await app.inject({ url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(3, 'hash-tessy') } });
+		expect(withoutForm.body).not.toContain('id="quickpostform"');
+		expect(withoutForm.body).toContain('href="post.php?tid=10"');
 	});
 });
 

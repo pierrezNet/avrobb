@@ -88,7 +88,7 @@ export interface TopicPageView {
 	topic: { id: number; subject: string; subjectParts: SubjectSegment[]; closed: boolean };
 	crumbs: Crumb[];
 	pagination: PaginationLink[];
-	/** Lien « Répondre » ; null si le membre ne peut pas répondre. */
+	/** Lien « Répondre » ; null si le membre ne peut pas répondre ou si le formulaire de réponse est en bas de page. */
 	replyUrl: string | null;
 	/** Préfixes du sujet (PV) : auteur de la discussion et modérateurs. */
 	prefixesUrl: string | null;
@@ -307,6 +307,7 @@ export function buildTopicPage(input: TopicPageInput): TopicPageView {
 		};
 	});
 
+	const reply = quickPost(input);
 	return {
 		topic: {
 			id: topic.id,
@@ -320,10 +321,11 @@ export function buildTopicPage(input: TopicPageInput): TopicPageView {
 			{ label: subject, href: topicUrl(topic.id) },
 		),
 		pagination: paginationLinks(input.numPages, input.page, (page) => topicUrl(topic.id, page)),
-		replyUrl: canReply(viewer, topic) ? `post.php?tid=${topic.id}` : null,
+		// Bouton « Répondre » seulement sans formulaire de réponse en bas de page (AvroBB).
+		replyUrl: reply === null && canReply(viewer, topic) ? `post.php?tid=${topic.id}` : null,
 		prefixesUrl: canEditSubjectPrefixes(viewer, topic) ? `topic_prefixes.php?id=${topic.id}` : null,
 		posts,
-		quickPost: quickPost(input),
+		quickPost: reply,
 		subscription:
 			!viewer.isGuest && config.topicSubscriptions
 				? {

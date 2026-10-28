@@ -29,7 +29,7 @@ export interface GalleryStore extends GalleryReader {
 }
 
 /** L'extension sert à construire une URL : seules les valeurs connues passent. */
-const isGalleryExtension = (ext: string): ext is GalleryExtension => ext === '.jpg' || ext === '.gif' || ext === '.png';
+const isGalleryExtension = (ext: string): ext is GalleryExtension => ext === '.jpg' || ext === '.gif' || ext === '.png' || ext === '.webp';
 
 export class GalleryRepository implements GalleryStore {
 	constructor(private readonly db: Db) {}

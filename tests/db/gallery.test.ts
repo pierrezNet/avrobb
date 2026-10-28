@@ -28,6 +28,21 @@ async function inRollback(body: (trx: Kysely<Database>) => Promise<void>): Promi
 }
 
 describe('GalleryRepository', () => {
+	it('une image WebP (conversion à l’envoi) est listée et retrouvée', async () => {
+		await inRollback(async (trx) => {
+			const gallery = new GalleryRepository(trx);
+			const id = await gallery.createImage({
+				title: 'Peinture',
+				description: 'Livrée',
+				userId: 3,
+				addedAt: 1_793_184_348,
+				extension: '.webp',
+			});
+			expect((await gallery.listImages(0, 50, 3)).map((image) => image.id)).toContain(id);
+			expect(await gallery.findImage(id)).toMatchObject({ id, extension: '.webp' });
+		});
+	});
+
 	it('ajoute, filtre par membre, retrouve et supprime une image', async () => {
 		await inRollback(async (trx) => {
 			const gallery = new GalleryRepository(trx);

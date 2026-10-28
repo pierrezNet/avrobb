@@ -1,0 +1,23 @@
+{#- Plugin Easy Poll + (admin_loader.php?plugin=AP_Sondage.php). Données : `view` (controllers/AdminLoaderController.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/adminMenu.njk" as adminMenu %}
+{% import "partials/forms.njk" as forms %}
+{% import "partials/sideMenu.njk" as sideMenu %}
+
+{% block main %}
+{% set t = lang.adminPlugins.poll %}
+<h1 class="page-title">{{ t.title }}</h1>
+<div class="side-layout">
+{{ adminMenu.menu(view.menu, lang) }}
+<div class="side-layout__content">
+{{ sideMenu.notice(view.notice) }}
+<form class="form-box form" method="post" action="{{ url(view.formAction) }}">
+	{{ forms.csrf(layout) }}
+	<p class="form__help">{{ t.intro }}</p>
+	<h2 class="form-box__title">{{ t.options }}</h2>
+	<p class="form__field"><label for="max_options">{{ t.maxOptions }}</label><input type="number" id="max_options" name="max_options" value="{{ view.maxOptions }}" min="0" max="99" inputmode="numeric" aria-describedby="max_options_help"><span id="max_options_help" class="form__help">{{ t.maxOptionsHelp }}</span></p>
+	<p class="form__buttons"><button type="submit" class="button button--primary" name="form_sent" value="1">{{ t.save }}</button></p>
+</form>
+</div>
+</div>
+{% endblock %}

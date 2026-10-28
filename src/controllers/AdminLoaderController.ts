@@ -4,7 +4,7 @@
  * administrateurs, AMP_ aussi pour les modérateurs.
  *
  * Portés : AMP_Gestion_utilisateurs.php (ajout d'utilisateur ; l'élagage, désactivé par PV — formulaire
- * sans bouton —, n'est pas repris).
+ * sans bouton —, n'est pas repris), AP_Sondage.php, AP_Private_messaging.php, AP_Plugile.php.
  */
 
 import type { FastifyReply, FastifyRequest } from 'fastify';
@@ -14,9 +14,14 @@ import { type LayoutDeps, renderMessage } from '../http/layout.ts';
 import { ADMIN_PLUGINS } from '../presenters/adminMenu.ts';
 import type { BanReader } from '../repositories/BanRepository.ts';
 import type { CensorReader } from '../repositories/CensorRepository.ts';
+import type { ConfigCache } from '../repositories/ConfigLoader.ts';
+import type { ConfigStore } from '../repositories/ConfigRepository.ts';
+import type { GroupAdminStore } from '../repositories/GroupAdminRepository.ts';
 import type { MailTemplateReader } from '../repositories/MailTemplateFiles.ts';
 import type { PhpCacheStore } from '../repositories/PhpCacheFiles.ts';
 import type { RegistrationStore } from '../repositories/RegistrationRepository.ts';
+import { changedOptions } from '../services/adminOptions.ts';
+import { escapeHtml } from '../services/bbcode.ts';
 import { buildCensor } from '../services/censor.ts';
 import { punHash } from '../services/legacySession.ts';
 import { fillTemplate, isValidEmail, randomPassword } from '../services/mail.ts';
@@ -32,6 +37,24 @@ export interface AdminLoaderControllerDeps extends LayoutDeps {
 	mailer: Mailer;
 	phpCache: PhpCacheStore | null;
 	legacyBaseUrl: string;
+	configStore: ConfigStore;
+	configCache: ConfigCache;
+	groupAdmin: GroupAdminStore;
+}
+
+/** Plugins servis par Node ; les autres sont redirigés vers le PHP. */
+const PORTED: ReadonlySet<string> = new Set([
+	'AMP_Gestion_utilisateurs.php',
+	'AP_Sondage.php',
+	'AP_Private_messaging.php',
+	'AP_Plugile.php',
+]);
+
+const PLUGILE_KEYS = ['o_plugile_version', 'o_plugile_menu', 'o_plugile_menu_name'] as const;
+
+/** Inverse de pun_htmlspecialchars() : le titre Plugile est stocké échappé, il est réaffiché tel que saisi. */
+function unescapeHtml(text: string): string {
+	return text.replace(/&(amp|lt|gt|quot|#0?39);/g, (_, entity: string) => ({ amp: '&', lt: '<', gt: '>', quot: '"' })[entity] ?? "'");
 }
 
 export interface AdminLoaderQuery {
@@ -49,9 +72,45 @@ export class AdminLoaderController {
 	show = async (request: FastifyRequest<{ Querystring: AdminLoaderQuery }>, reply: FastifyReply): Promise<FastifyReply> => {
 		const plugin = await this.#plugin(request, reply);
 		if (typeof plugin !== 'string') return plugin;
-		if (plugin !== 'AMP_Gestion_utilisateurs.php') return this.#toLegacy(request, reply);
-		const done = request.query.done === 'created' ? this.deps.page.lang.adminPlugins.userManagement.created : null;
-		return this.#renderUserManagement(request, reply, [], done);
+		if (!PORTED.has(plugin)) return this.#toLegacy(request, reply);
+		const t = this.deps.page.lang.adminPlugins;
+		const done = request.query.done;
+		switch (plugin) {
+			case 'AP_Sondage.php':
+				return this.#renderSettings(request, reply, plugin, 'admin_plugin_poll.njk', t.poll.title, {
+					notice: done === 'saved' ? t.poll.saved : null,
+					maxOptions: (await this.deps.configStore.loadValues()).get('poll_max_fields') ?? '',
+				});
+			case 'AP_Private_messaging.php': {
+				const values = await this.deps.configStore.loadValues();
+				return this.#renderSettings(request, reply, plugin, 'admin_plugin_pms.njk', t.privateMessages.title, {
+					notice: done === 'saved' ? t.privateMessages.saved : null,
+					enabled: values.get('o_pms_enabled') === '1',
+					notification: values.get('o_pms_notification') === '1',
+					// Le PHP enregistre le nombre saisi plus un (l'expéditeur compte parmi les destinataires).
+					maxReceivers: Number(values.get('o_pms_max_receiver') ?? '1') - 1,
+					groups: await this.deps.groupAdmin.listPrivateMessageRights(),
+				});
+			}
+			case 'AP_Plugile.php': {
+				const values = await this.deps.configStore.loadValues();
+				const notices: Record<string, string> = {
+					installed: t.plugile.installed,
+					reinstalled: t.plugile.reinstalled,
+					uninstalled: t.plugile.uninstalled,
+					saved: t.plugile.saved,
+				};
+				return this.#renderSettings(request, reply, plugin, 'admin_plugin_plugile.njk', t.plugile.title, {
+					notice: notices[done ?? ''] ?? null,
+					installed: values.has('o_plugile_version'),
+					version: values.get('o_plugile_version') ?? '',
+					separateMenu: values.get('o_plugile_menu') === '1',
+					menuName: unescapeHtml(values.get('o_plugile_menu_name') ?? ''),
+				});
+			}
+			default:
+				return this.#renderUserManagement(request, reply, [], done === 'created' ? t.userManagement.created : null);
+		}
 	};
 
 	submit = async (
@@ -60,10 +119,103 @@ export class AdminLoaderController {
 	): Promise<FastifyReply> => {
 		const plugin = await this.#plugin(request, reply);
 		if (typeof plugin !== 'string') return plugin;
-		if (plugin !== 'AMP_Gestion_utilisateurs.php' || field(request.body, 'add_user') === '')
-			return renderMessage(request, reply, this.deps, 400, this.deps.page.lang.common.badRequest);
-		return this.#addUser(request, reply);
+		const { body } = request;
+		const badRequest = (): Promise<FastifyReply> => renderMessage(request, reply, this.deps, 400, this.deps.page.lang.common.badRequest);
+		const back = (done: string): FastifyReply => reply.redirect(`admin_loader.php?plugin=${plugin}&done=${done}`, 303);
+		switch (plugin) {
+			case 'AMP_Gestion_utilisateurs.php':
+				return field(body, 'add_user') !== '' ? this.#addUser(request, reply) : badRequest();
+			case 'AP_Sondage.php': {
+				const max = Number.parseInt(field(body, 'max_options').trim(), 10);
+				await this.#saveConfig(new Map([['poll_max_fields', String(Number.isNaN(max) ? 0 : max)]]));
+				return back('saved');
+			}
+			case 'AP_Private_messaging.php':
+				return this.#savePrivateMessages(request, reply);
+			case 'AP_Plugile.php':
+				return this.#savePlugile(request, reply);
+			default:
+				return badRequest();
+		}
 	};
+
+	/** Écrit les clés modifiées de config et invalide les caches (generate_config_cache()). */
+	async #saveConfig(values: ReadonlyMap<string, string>): Promise<void> {
+		const changes = changedOptions(await this.deps.configStore.loadValues(), values);
+		if (changes.size === 0) return;
+		await this.deps.configStore.updateValues(changes);
+		await this.deps.configCache.invalidate();
+	}
+
+	async #savePrivateMessages(request: FastifyRequest<{ Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> {
+		const { body } = request;
+		const receivers = Number.parseInt(field(body, 'form[pms_max_receiver]').trim(), 10);
+		await this.#saveConfig(
+			new Map([
+				['o_pms_enabled', field(body, 'form[pms_enabled]') === '1' ? '1' : '0'],
+				['o_pms_notification', field(body, 'form[pms_notification]') === '1' ? '1' : '0'],
+				['o_pms_max_receiver', String((Number.isNaN(receivers) ? 0 : Math.max(0, receivers)) + 1)],
+			]),
+		);
+		for (const group of await this.deps.groupAdmin.listPrivateMessageRights()) {
+			const allowed = field(body, `allow[${group.id}]`);
+			const limit = field(body, `limit[${group.id}]`);
+			if (allowed === '' && limit === '') continue;
+			const parsedLimit = Number.parseInt(limit, 10);
+			await this.deps.groupAdmin.setPrivateMessageRights(
+				group.id,
+				allowed === '1',
+				Number.isNaN(parsedLimit) ? 0 : Math.max(0, parsedLimit),
+			);
+		}
+		return reply.redirect('admin_loader.php?plugin=AP_Private_messaging.php&done=saved', 303);
+	}
+
+	async #savePlugile(request: FastifyRequest<{ Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> {
+		const { body } = request;
+		const store = this.deps.configStore;
+		const installed = (await store.loadValues()).has('o_plugile_version');
+		const done = (name: string): FastifyReply => reply.redirect(`admin_loader.php?plugin=AP_Plugile.php&done=${name}`, 303);
+		if (field(body, 'update') !== '') {
+			await store.replaceValues(new Map([...PLUGILE_KEYS].map((key, i) => [key, ['2.0', '1', 'Plugile'][i] ?? ''])));
+			await this.deps.configCache.invalidate();
+			return done(installed ? 'reinstalled' : 'installed');
+		}
+		if (field(body, 'delete') !== '') {
+			await store.deleteValues(PLUGILE_KEYS);
+			await this.deps.configCache.invalidate();
+			return done('uninstalled');
+		}
+		if (field(body, 'saveconfig') !== '' && installed) {
+			// Le PHP enregistre le titre déjà échappé (pun_htmlspecialchars()), tel qu'il l'affiche.
+			await store.replaceValues(
+				new Map([
+					['o_plugile_menu', String(Number.parseInt(field(body, 'menu'), 10) || 0)],
+					['o_plugile_menu_name', escapeHtml(field(body, 'plugile_menu_name'))],
+				]),
+			);
+			await this.deps.configCache.invalidate();
+			return done('saved');
+		}
+		return renderMessage(request, reply, this.deps, 400, this.deps.page.lang.common.badRequest);
+	}
+
+	#renderSettings(
+		request: FastifyRequest,
+		reply: FastifyReply,
+		plugin: Plugin,
+		template: string,
+		title: string,
+		view: object,
+	): Promise<FastifyReply> {
+		return renderAdminPage(
+			request,
+			reply,
+			this.deps,
+			{ active: plugin, template, title },
+			{ ...view, formAction: `admin_loader.php?plugin=${plugin}` },
+		);
+	}
 
 	/** Contrôles d'admin_loader.php ; renvoie le nom du plugin, ou la réponse d'erreur. */
 	async #plugin(request: FastifyRequest<{ Querystring: AdminLoaderQuery }>, reply: FastifyReply): Promise<Plugin | FastifyReply> {

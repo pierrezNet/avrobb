@@ -71,3 +71,69 @@ describe('admin_loader.php', () => {
 		expect(fake.sentMails?.map((mail) => mail.to)).toEqual(['admin@example.test', 'np@example.test']);
 	});
 });
+
+describe('plugins de réglages', () => {
+	const send = (server: FastifyInstance, plugin: string, fields: Record<string, string>) =>
+		server.inject({
+			method: 'POST',
+			url: `/admin_loader.php?plugin=${plugin}`,
+			headers: { cookie: cookies(2), 'content-type': 'application/x-www-form-urlencoded' },
+			payload: new URLSearchParams({ csrf_token: csrfToken(CSRF_SECRET, SEED, 2), ...fields }).toString(),
+		});
+
+	async function withConfig(values: Record<string, string>) {
+		const { server, fake } = await start();
+		fake.configValues = new Map(Object.entries(values));
+		fake.adminGroups = [
+			{ id: 1, title: 'Administrateurs', userTitle: '', values: {} as never },
+			{ id: 4, title: 'Membres', userTitle: '', values: {} as never },
+		];
+		return { server, fake };
+	}
+
+	it('sondages : nombre d’options', async () => {
+		const { server, fake } = await withConfig({ poll_max_fields: '5' });
+		expect((await get(server, 2, '/admin_loader.php?plugin=AP_Sondage.php')).body).toContain('name="max_options" value="5"');
+		await send(server, 'AP_Sondage.php', { form_sent: '1', max_options: ' 8 ' });
+		expect(fake.configUpdates).toEqual([new Map([['poll_max_fields', '8']])]);
+	});
+
+	it('messagerie privée : options, destinataires (+1 comme le PHP) et droits des groupes', async () => {
+		const { server, fake } = await withConfig({ o_pms_enabled: '1', o_pms_notification: '0', o_pms_max_receiver: '5' });
+		const page = await get(server, 2, '/admin_loader.php?plugin=AP_Private_messaging.php');
+		expect(page.body).toContain('name="form[pms_max_receiver]" value="4"');
+		expect(page.body).toContain('name="limit[4]" value="20"');
+		expect(page.body).not.toContain('name="limit[1]"');
+		await send(server, 'AP_Private_messaging.php', {
+			'form[pms_enabled]': '1',
+			'form[pms_notification]': '1',
+			'form[pms_max_receiver]': '9',
+			'allow[4]': '0',
+			'limit[4]': '50',
+		});
+		expect(fake.configUpdates).toEqual([
+			new Map([
+				['o_pms_notification', '1'],
+				['o_pms_max_receiver', '10'],
+			]),
+		]);
+		expect(fake.groupAdminLog).toEqual(['pm 4 false 50']);
+	});
+
+	it('Plugile : installation, configuration, désinstallation', async () => {
+		const { server, fake } = await withConfig({});
+		expect((await get(server, 2, '/admin_loader.php?plugin=AP_Plugile.php')).body).toContain('Plugile n&#39;est pas installé.');
+		expect((await send(server, 'AP_Plugile.php', { update: '1' })).headers.location).toBe(
+			'admin_loader.php?plugin=AP_Plugile.php&done=installed',
+		);
+		await send(server, 'AP_Plugile.php', { saveconfig: '1', menu: '0', plugile_menu_name: 'Mes <fichiers>' });
+		expect(fake.configValues?.get('o_plugile_menu_name')).toBe('Mes &lt;fichiers&gt;');
+		expect((await get(server, 2, '/admin_loader.php?plugin=AP_Plugile.php')).body).toContain('value="Mes &lt;fichiers&gt;"');
+		await send(server, 'AP_Plugile.php', { delete: '1' });
+		expect(fake.configLog).toEqual([
+			'replace o_plugile_version,o_plugile_menu,o_plugile_menu_name',
+			'replace o_plugile_menu,o_plugile_menu_name',
+			'delete o_plugile_version,o_plugile_menu,o_plugile_menu_name',
+		]);
+	});
+});

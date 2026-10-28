@@ -468,3 +468,29 @@ describe('MaintenanceRepository (admin_maintenance.php)', () => {
 		});
 	});
 });
+
+describe('plugins (config et groupes)', () => {
+	it('REPLACE et suppression de clés, droits de messagerie des groupes', async () => {
+		const { ConfigRepository } = await import('../../src/repositories/ConfigRepository.ts');
+		const { GroupAdminRepository } = await import('../../src/repositories/GroupAdminRepository.ts');
+		await inRollback(async (trx) => {
+			const config = new ConfigRepository(trx);
+			await config.replaceValues(
+				new Map([
+					['o_plugile_menu', '1'],
+					['o_board_title', 'Remplacé'],
+				]),
+			);
+			let values = await config.loadValues();
+			expect([values.get('o_plugile_menu'), values.get('o_board_title')]).toEqual(['1', 'Remplacé']);
+			await config.deleteValues(['o_plugile_menu']);
+			values = await config.loadValues();
+			expect(values.has('o_plugile_menu')).toBe(false);
+
+			const groups = new GroupAdminRepository(trx);
+			expect((await groups.listPrivateMessageRights()).map((g) => g.id)).toEqual([2, 4]);
+			await groups.setPrivateMessageRights(4, false, 50);
+			expect((await groups.listPrivateMessageRights()).find((g) => g.id === 4)).toMatchObject({ allowed: false, limit: 50 });
+		});
+	});
+});

@@ -4,6 +4,7 @@
  */
 
 import type { Db } from '../db/database.ts';
+import { GroupId } from '../domain/models.ts';
 import { type AdminGroup, GROUP_FLAG_COLUMNS, GROUP_FLOOD_COLUMNS, type GroupColumn, type GroupSettings } from '../services/adminGroups.ts';
 import { inTransaction } from './transactions.ts';
 
@@ -17,6 +18,9 @@ export interface GroupAdminStore {
 	countMembers(id: number): Promise<number>;
 	/** Supprime le groupe (membres déplacés vers `moveTo` s'il est donné), ses permissions et les promotions vers lui. */
 	deleteGroup(id: number, moveTo: number | null): Promise<void>;
+	/** Droits de messagerie privée (g_pm, g_pm_limit) des groupes autres qu'administrateurs et invités. */
+	listPrivateMessageRights(): Promise<{ id: number; title: string; allowed: boolean; limit: number }[]>;
+	setPrivateMessageRights(id: number, allowed: boolean, limit: number): Promise<void>;
 }
 
 const COLUMNS: readonly GroupColumn[] = ['g_promote_min_posts', 'g_promote_next_group', ...GROUP_FLAG_COLUMNS, ...GROUP_FLOOD_COLUMNS];
@@ -84,5 +88,23 @@ export class GroupAdminRepository implements GroupAdminStore {
 			await trx.deleteFrom('forum_perms').where('group_id', '=', id).execute();
 			await trx.updateTable('groups').set({ g_promote_next_group: 0 }).where('g_promote_next_group', '=', id).execute();
 		});
+	}
+
+	async listPrivateMessageRights(): Promise<{ id: number; title: string; allowed: boolean; limit: number }[]> {
+		const rows = await this.db
+			.selectFrom('groups')
+			.select(['g_id', 'g_title', 'g_pm', 'g_pm_limit'])
+			.where('g_id', 'not in', [GroupId.Admin, GroupId.Guest])
+			.orderBy('g_id')
+			.execute();
+		return rows.map((row) => ({ id: row.g_id, title: row.g_title, allowed: row.g_pm === 1, limit: row.g_pm_limit }));
+	}
+
+	async setPrivateMessageRights(id: number, allowed: boolean, limit: number): Promise<void> {
+		await this.db
+			.updateTable('groups')
+			.set({ g_pm: allowed ? 1 : 0, g_pm_limit: limit })
+			.where('g_id', '=', id)
+			.execute();
 	}
 }

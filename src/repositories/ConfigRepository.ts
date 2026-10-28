@@ -13,6 +13,10 @@ export interface ConfigSource {
 export interface ConfigStore extends ConfigSource {
 	/** Met à jour des clés existantes (null : NULL), comme la boucle UPDATE d'admin_options.php. */
 	updateValues(changes: ReadonlyMap<string, string | null>): Promise<void>;
+	/** REPLACE INTO config : crée ou remplace des clés (installation d'un mod). */
+	replaceValues(values: ReadonlyMap<string, string>): Promise<void>;
+	/** Supprime des clés (désinstallation d'un mod). */
+	deleteValues(names: readonly string[]): Promise<void>;
 }
 
 export class ConfigRepository implements ConfigStore {
@@ -30,5 +34,16 @@ export class ConfigRepository implements ConfigStore {
 				await trx.updateTable('config').set({ conf_value: value }).where('conf_name', '=', name).execute();
 			}
 		});
+	}
+
+	async replaceValues(values: ReadonlyMap<string, string>): Promise<void> {
+		await inTransaction(this.db, async (trx) => {
+			for (const [name, value] of values)
+				await trx.insertInto('config').values({ conf_name: name, conf_value: value }).onDuplicateKeyUpdate({ conf_value: value }).execute();
+		});
+	}
+
+	async deleteValues(names: readonly string[]): Promise<void> {
+		if (names.length > 0) await this.db.deleteFrom('config').where('conf_name', 'in', names).execute();
 	}
 }

@@ -1,0 +1,44 @@
+{#- Plugin de messagerie privée (admin_loader.php?plugin=AP_Private_messaging.php). Données : `view` (controllers/AdminLoaderController.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/adminMenu.njk" as adminMenu %}
+{% import "partials/forms.njk" as forms %}
+{% import "partials/sideMenu.njk" as sideMenu %}
+
+{% macro yesno(name, checked, label, help, t) %}
+<div class="form__field" role="radiogroup" aria-label="{{ label }}">
+	<span class="form__label">{{ label }}</span>
+	<label class="form__choice"><input type="radio" name="{{ name }}" value="1"{% if checked %} checked{% endif %}> {{ t.yes }}</label>
+	<label class="form__choice"><input type="radio" name="{{ name }}" value="0"{% if not checked %} checked{% endif %}> {{ t.no }}</label>
+	{% if help %}<span class="form__help">{{ help }}</span>{% endif %}
+</div>
+{% endmacro %}
+
+{% block main %}
+{% set t = lang.adminPlugins.privateMessages %}
+<h1 class="page-title">{{ t.title }}</h1>
+<div class="side-layout">
+{{ adminMenu.menu(view.menu, lang) }}
+<div class="side-layout__content">
+{{ sideMenu.notice(view.notice) }}
+<form class="form-box form options-form" method="post" action="{{ url(view.formAction) }}">
+	{{ forms.csrf(layout) }}
+	<p class="form__help">{{ t.intro }}</p>
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ t.settings }}</legend>
+		{{ yesno('form[pms_enabled]', view.enabled, t.enabled, t.enabledHelp, t) }}
+		{{ yesno('form[pms_notification]', view.notification, t.notification, t.notificationHelp, t) }}
+		<p class="form__field"><label for="pms_max_receiver">{{ t.maxReceivers }}</label><input type="number" id="pms_max_receiver" name="form[pms_max_receiver]" value="{{ view.maxReceivers }}" min="0" max="99999" inputmode="numeric" aria-describedby="pms_max_receiver_help"><span id="pms_max_receiver_help" class="form__help">{{ t.maxReceiversHelp }}</span></p>
+	</fieldset>
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ t.permissions }}</legend>
+		<p class="form__help">{{ t.permissionsInfo }}</p>
+		{% for g in view.groups %}
+		{{ yesno('allow[' + g.id + ']', g.allowed, t.allowGroup(g.title), null, t) }}
+		<p class="form__field"><label for="limit-{{ g.id }}">{{ t.limit(g.title) }}</label><input type="number" id="limit-{{ g.id }}" name="limit[{{ g.id }}]" value="{{ g.limit }}" min="0" inputmode="numeric"></p>
+		{% endfor %}
+	</fieldset>
+	<p class="form__buttons"><button type="submit" class="button button--primary" name="save" value="1">{{ t.save }}</button></p>
+</form>
+</div>
+</div>
+{% endblock %}

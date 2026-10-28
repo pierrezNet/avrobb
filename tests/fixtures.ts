@@ -375,6 +375,7 @@ export interface FakeData {
 	configValues?: Map<string, string>;
 	configUpdates?: ReadonlyMap<string, string | null>[];
 	configInvalidations?: number;
+	configLog?: string[];
 	/** Administration des catégories et forums (admin_categories.php, admin_forums.php). */
 	forumAdmin?: { categories: AdminCategory[]; forums: AdminForum[]; permissions: GroupForumPermissionRow[] };
 	forumAdminLog?: string[];
@@ -736,6 +737,15 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 				data.configUpdates = [...(data.configUpdates ?? []), changes];
 				for (const [name, value] of changes) data.configValues?.set(name, value ?? '');
 			},
+			replaceValues: async (values) => {
+				data.configValues ??= new Map();
+				for (const [name, value] of values) data.configValues.set(name, value);
+				data.configLog = [...(data.configLog ?? []), `replace ${[...values.keys()].join(',')}`];
+			},
+			deleteValues: async (names) => {
+				for (const name of names) data.configValues?.delete(name);
+				data.configLog = [...(data.configLog ?? []), `delete ${names.join(',')}`];
+			},
 		},
 		forumAdmin: fakeForumAdmin(data),
 		maintenance: {
@@ -856,6 +866,13 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			countMembers: async (id) => data.groupMembers?.get(id) ?? 0,
 			deleteGroup: async (id, moveTo) => {
 				data.groupAdminLog = [...(data.groupAdminLog ?? []), `delete ${id} -> ${moveTo}`];
+			},
+			listPrivateMessageRights: async () =>
+				(data.adminGroups ?? [])
+					.filter((g) => g.id !== GroupId.Admin && g.id !== GroupId.Guest)
+					.map((g) => ({ id: g.id, title: g.title, allowed: true, limit: 20 })),
+			setPrivateMessageRights: async (id, allowed, limit) => {
+				data.groupAdminLog = [...(data.groupAdminLog ?? []), `pm ${id} ${allowed} ${limit}`];
 			},
 		},
 		configCache: {

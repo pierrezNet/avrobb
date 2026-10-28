@@ -274,6 +274,10 @@ abbr[title] {
 	padding: 0.25rem 0;
 }
 
+.site-status__info a {
+	padding: 0;
+}
+
 .site-status__alert,
 a.site-status__alert {
 	font-weight: 700;

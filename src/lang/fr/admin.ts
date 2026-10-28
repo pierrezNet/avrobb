@@ -13,6 +13,7 @@ export const admin = {
 	users: 'Utilisateurs',
 	userGroups: "Groupes d'utilisateurs",
 	options: 'Options',
+	appearance: 'Apparence',
 	permissions: 'Permissions',
 	censoring: 'Censure',
 	bans: 'Bannissements',

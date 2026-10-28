@@ -230,6 +230,8 @@ export interface BoardConfig {
 	 * quittent la liste d'un forum pour sa page « Anciennes discussions » ; 0 = toutes dans la liste.
 	 */
 	coldTopicDays: number;
+	/** Version du logo et de la bannière (AvroBB, o_header_version) : change à chaque remplacement. */
+	headerVersion: number;
 	/** Durée d'une visite (o_timeout_visit) et délai d'inactivité de la liste des présents (o_timeout_online), en secondes. */
 	timeoutVisit: number;
 	timeoutOnline: number;

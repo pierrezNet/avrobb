@@ -1,7 +1,8 @@
 /**
  * Conversion des images envoyées (bibliothèque sharp) : WebP, orientation EXIF appliquée, plus grand
  * côté limité, jamais agrandie. Les GIF animés restent animés. Avatars : recadrés aux dimensions
- * permises, dans un format que le PHP sait afficher (GIF, JPEG, PNG).
+ * permises, dans un format que le PHP sait afficher (GIF, JPEG, PNG). Logo et bannière du forum :
+ * réduits dans un cadre, au format du fichier qu'ils remplacent (PNG, JPEG).
  */
 
 import sharp from 'sharp';
@@ -28,12 +29,33 @@ export interface ImageProcessor {
 		type: ImageType,
 		limits: { width: number; height: number; maxBytes: number },
 	): Promise<{ data: Buffer; type: ImageType } | null>;
+	/**
+	 * Image réduite pour tenir dans `maxWidth` × `maxHeight` (jamais agrandie), en PNG (transparence
+	 * gardée) ou en JPEG ; null si le contenu n'est pas une image lisible.
+	 */
+	fit(data: Buffer, options: { format: 'png' | 'jpeg'; maxWidth: number; maxHeight: number }): Promise<ProcessedImage | null>;
 }
 
 /** Qualité WebP : bon compromis poids / netteté pour des captures d'écran et des photos. */
 const QUALITY = 80;
 
 export class SharpImageProcessor implements ImageProcessor {
+	async fit(data: Buffer, options: { format: 'png' | 'jpeg'; maxWidth: number; maxHeight: number }): Promise<ProcessedImage | null> {
+		try {
+			const resized = sharp(data, { limitInputPixels: 50_000_000 })
+				.rotate()
+				.resize({ width: options.maxWidth, height: options.maxHeight, fit: 'inside', withoutEnlargement: true });
+			const encoded =
+				options.format === 'png'
+					? resized.png({ compressionLevel: 9 })
+					: resized.flatten({ background: '#ffffff' }).jpeg({ quality: 82, mozjpeg: true });
+			const { data: output, info } = await encoded.toBuffer({ resolveWithObject: true });
+			return { data: output, width: info.width, height: info.height };
+		} catch {
+			return null;
+		}
+	}
+
 	async toWebp(data: Buffer, maxSide: number): Promise<ProcessedImage | null> {
 		try {
 			const { data: output, info } = await sharp(data, { animated: true, limitInputPixels: 50_000_000 })

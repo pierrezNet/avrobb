@@ -1967,8 +1967,37 @@ a.site-status__alert {
 		padding: 0 1rem;
 	}
 
+	/*
+	 * Grand écran : la bannière de PV (page Apparence) sur 124 px de haut, logo en bas à gauche, puis
+	 * le menu sur une ligne en dessous, comme l'en-tête du PHP (#brddesc). Le dégradé reste dessous
+	 * si l'image manque.
+	 */
 	.site-header__bar {
-		border-radius: 0 0 0.5rem 0.5rem;
+		flex-wrap: wrap;
+		gap: 0;
+		padding: 0;
+		border-radius: 1rem 1rem 0.5rem 0.5rem;
+		overflow: hidden;
+	}
+
+	.site-header__logo {
+		display: flex;
+		flex: 1 0 100%;
+		align-items: flex-end;
+		min-height: 7.75rem;
+		padding: 0 0.5rem;
+		background:
+			var(--header-banner, none) center / cover no-repeat,
+			linear-gradient(90deg, var(--color-header-bg) 12%, var(--color-accent) 75%);
+	}
+
+	.site-header__logo img {
+		width: 18.75rem;
+	}
+
+	.site-nav {
+		flex: 1 0 100%;
+		padding: 0.25rem 0.5rem;
 	}
 }
 
@@ -2456,4 +2485,35 @@ a.site-status__alert {
 .bbcode-toolbar__menu button:focus-visible {
 	background: var(--color-accent);
 	color: #fff;
+}
+
+/* ---------- Apparence (administration) ---------- */
+
+.appearance-image__preview {
+	margin: 0 0 0.75rem;
+}
+
+.appearance-image__preview img {
+	display: block;
+	max-width: 100%;
+	height: auto;
+}
+
+/* Logo clair : aperçu sur le fond de l'en-tête. */
+.appearance-image__preview--logo {
+	display: inline-block;
+	padding: 0.75rem;
+	border-radius: 0.5rem;
+	background: linear-gradient(90deg, var(--color-header-bg) 12%, var(--color-accent) 75%);
+}
+
+.appearance-image__preview--logo img {
+	max-height: 4.8125rem;
+}
+
+.appearance-image__preview--banner img {
+	width: 100%;
+	max-height: 7.75rem;
+	object-fit: cover;
+	border-radius: 0.5rem;
 }

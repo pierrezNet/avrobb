@@ -5,6 +5,7 @@
 
 import type { DateWords } from '../../services/dateFormat.ts';
 import { admin } from './admin.ts';
+import { adminAppearance } from './adminAppearance.ts';
 import { adminBans } from './adminBans.ts';
 import { adminCensoring } from './adminCensoring.ts';
 import { adminForums } from './adminForums.ts';
@@ -62,6 +63,7 @@ export const fr = {
 	adminForums,
 	adminGroups,
 	adminUsers,
+	adminAppearance,
 	adminMaintenance,
 	adminOptions,
 	adminPlugins,

@@ -12,6 +12,7 @@ import nunjucks from 'nunjucks';
 import type { ImageProcessor } from './adapters/imageProcessor.ts';
 import type { Mailer } from './adapters/mailer.ts';
 import type { ServerInfo } from './adapters/serverInfo.ts';
+import { AdminAppearanceController, type AdminAppearanceQuery } from './controllers/AdminAppearanceController.ts';
 import { AdminBansController, type AdminBansQuery } from './controllers/AdminBansController.ts';
 import { AdminCensoringController, type AdminCensoringQuery } from './controllers/AdminCensoringController.ts';
 import { AdminGroupsController, type AdminGroupsQuery } from './controllers/AdminGroupsController.ts';
@@ -68,6 +69,7 @@ import type { ForumAdminStore } from './repositories/ForumAdminRepository.ts';
 import type { GalleryFileStore } from './repositories/GalleryFiles.ts';
 import type { GalleryStore } from './repositories/GalleryRepository.ts';
 import type { GroupAdminStore } from './repositories/GroupAdminRepository.ts';
+import type { HeaderImageStore } from './repositories/HeaderImageFiles.ts';
 import type { LabelAdminStore } from './repositories/LabelAdminRepository.ts';
 import type { MailTemplateReader } from './repositories/MailTemplateFiles.ts';
 import type { MaintenanceStore } from './repositories/MaintenanceRepository.ts';
@@ -176,6 +178,8 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	searchWriter: SearchWriter;
 	feeds: FeedReader;
 	gallery: GalleryStore;
+	/** Logo et bannière de l'en-tête (fichiers de l'installation PHP), page Apparence. */
+	headerImages: HeaderImageStore;
 	/** Fichiers de la galerie (img/gallery/ de l'installation PHP). */
 	galleryFiles: GalleryFileStore;
 	stopwords: StopwordsReader;
@@ -204,6 +208,7 @@ const LEGACY_IMAGE_PATH = /\.(?:gif|jpe?g|png|webp|ico)$/i;
 
 /** Pages déjà servies par Node ; les autres liens partent vers l'installation PHP. */
 const PORTED_PAGES = new Set([
+	'admin_appearance.php',
 	'admin_bans.php',
 	'admin_categories.php',
 	'admin_censoring.php',
@@ -456,6 +461,10 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 		{ preHandler: [authenticate, verifyCsrf] },
 		adminLoader.submit,
 	);
+
+	const adminAppearance = new AdminAppearanceController(deps);
+	app.get<{ Querystring: AdminAppearanceQuery }>('/admin_appearance.php', { preHandler: authenticate }, adminAppearance.show);
+	app.post<{ Body: FormBody }>('/admin_appearance.php', { preHandler: [authenticate, verifyCsrf] }, adminAppearance.submit);
 
 	const adminCensoring = new AdminCensoringController(deps);
 	app.get<{ Querystring: AdminCensoringQuery }>('/admin_censoring.php', { preHandler: authenticate }, adminCensoring.show);

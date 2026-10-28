@@ -1,0 +1,41 @@
+{#- Apparence : logo et bannière (admin_appearance.php). Données : `view` (controllers/AdminAppearanceController.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/adminMenu.njk" as adminMenu %}
+{% import "partials/forms.njk" as forms %}
+{% import "partials/sideMenu.njk" as sideMenu %}
+
+{% block main %}
+{% set t = lang.adminAppearance %}
+<h1 class="page-title">{{ t.title }}</h1>
+<div class="side-layout">
+{{ adminMenu.menu(view.menu, lang) }}
+<div class="side-layout__content">
+{{ sideMenu.notice(view.notice) }}
+{{ forms.errors(lang.profile.formErrors, lang.profile.formErrorsInfo, view.errors) }}
+<p class="page-intro">{{ t.intro }}</p>
+{% for image in view.images %}
+<section class="form-box form appearance-image" id="{{ image.kind }}" aria-labelledby="{{ image.kind }}-title">
+	<h2 class="form-box__title" id="{{ image.kind }}-title">{{ image.title }}</h2>
+	<p class="form__help">{{ image.help }}</p>
+	<figure class="appearance-image__preview appearance-image__preview--{{ image.kind }}">
+		<img src="{{ url(image.href) }}" alt="{{ t.current }} : {{ image.title }}">
+	</figure>
+	<form method="post" enctype="multipart/form-data" action="{{ url(view.formAction) }}">
+		{{ forms.csrf(layout) }}
+		<input type="hidden" name="kind" value="{{ image.kind }}">
+		<p class="form__field"><label for="image-{{ image.kind }}">{{ t.file }}</label><input type="file" id="image-{{ image.kind }}" name="image" accept="image/png,image/jpeg,image/gif,image/webp" required></p>
+		<p class="form__buttons"><button type="submit" class="button button--primary">{{ t.send }}</button></p>
+	</form>
+	{% if image.canRestore %}
+	<form method="post" action="{{ url(view.formAction) }}">
+		{{ forms.csrf(layout) }}
+		<input type="hidden" name="kind" value="{{ image.kind }}">
+		<input type="hidden" name="action" value="restore">
+		<p class="form__buttons"><button type="submit" class="button">{{ t.restore }}</button></p>
+	</form>
+	{% endif %}
+</section>
+{% endfor %}
+</div>
+</div>
+{% endblock %}

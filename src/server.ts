@@ -25,6 +25,7 @@ import { ForumRepository } from './repositories/ForumRepository.ts';
 import { GalleryFiles } from './repositories/GalleryFiles.ts';
 import { GalleryRepository } from './repositories/GalleryRepository.ts';
 import { GroupAdminRepository } from './repositories/GroupAdminRepository.ts';
+import { HeaderImageFiles } from './repositories/HeaderImageFiles.ts';
 import { LabelAdminRepository } from './repositories/LabelAdminRepository.ts';
 import { MailTemplateFiles } from './repositories/MailTemplateFiles.ts';
 import { MaintenanceRepository } from './repositories/MaintenanceRepository.ts';
@@ -130,6 +131,7 @@ const app = await buildApp({
 	feeds: new FeedRepository(db),
 	gallery: new GalleryRepository(db),
 	galleryFiles: new GalleryFiles(config.legacyRoot),
+	headerImages: new HeaderImageFiles(config.legacyRoot),
 	stopwords: new StopwordsLoader(config.legacyRoot),
 	usersInfo: new UsersInfoLoader(stats, phpCache, clock),
 	avatars,

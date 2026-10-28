@@ -41,6 +41,7 @@ describe('menu de l’administration', () => {
 		expect(forAdmin.moderator.map((i) => i.href)).toContain('admin_bans.php');
 		expect(forAdmin.admin?.map((i) => i.label)).toEqual([
 			'Options',
+			'Apparence',
 			'Permissions',
 			'Catégories',
 			'Forums',

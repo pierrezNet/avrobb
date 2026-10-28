@@ -225,6 +225,7 @@ export const boardConfig: BoardConfig = {
 	maintenance: false,
 	maintenanceMessage: 'Le forum est fermé pour <b>maintenance</b>.',
 	coldTopicDays: 0,
+	headerVersion: 0,
 	timeoutVisit: 1800,
 	timeoutOnline: 300,
 	adminEmail: 'admin@forum.test',
@@ -320,6 +321,9 @@ export interface FakeData {
 	galleryImages?: GalleryImage[];
 	/** Fichiers de la galerie enregistrés ou effacés. */
 	galleryFileLog?: string[];
+	/** Logo et bannière : journal des écritures, images précédentes disponibles. */
+	headerImageLog?: string[];
+	headerImagePrevious?: Set<string>;
 	recentTopics?: RecentTopic[];
 	online?: OnlineVisitor[];
 	bans?: Ban[];
@@ -797,6 +801,11 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 				header.writeUInt32BE(limits.height, 20);
 				return { data: header, type: 'png' };
 			},
+			// Logo, bannière : « png|jpeg<largeur>x<hauteur>:<taille> » pour une image PNG ou GIF de test.
+			fit: async (input, options) =>
+				input.subarray(0, 4).toString('latin1') === '\x89PNG' || input.subarray(0, 3).toString('latin1') === 'GIF'
+					? { data: Buffer.from(`${options.format}${options.maxWidth}x${options.maxHeight}:${input.length}`), width: 1, height: 1 }
+					: null,
 		},
 		labelAdmin: {
 			listLabels: async () => data.labelRows ?? [],
@@ -1178,6 +1187,18 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			deleteImage: async (id) => {
 				data.galleryImages = (data.galleryImages ?? []).filter((i) => i.id !== id);
 			},
+		},
+		headerImages: {
+			replace: async (kind, image) => {
+				data.headerImageLog = [...(data.headerImageLog ?? []), `replace ${kind} ${image.toString()}`];
+				data.headerImagePrevious = new Set([...(data.headerImagePrevious ?? []), kind]);
+			},
+			restore: async (kind) => {
+				if (!data.headerImagePrevious?.has(kind)) return false;
+				data.headerImageLog = [...(data.headerImageLog ?? []), `restore ${kind}`];
+				return true;
+			},
+			hasPrevious: async (kind) => data.headerImagePrevious?.has(kind) ?? false,
 		},
 		galleryFiles: {
 			save: async (addedAt, extension, files) => {

@@ -23,9 +23,10 @@
 
 <div id="pun{{ layout.pageId }}" class="page theme-{{ layout.theme }}">
 
-<header class="site-header" id="brdheader">
+{#- Bannière (page Apparence) en propriété CSS : affichée sur grand écran seulement (base.css). -#}
+<header class="site-header" id="brdheader" style="--header-banner: url('{{ url(layout.header.bannerHref) }}')">
 	<div class="site-header__bar">
-		<a class="site-header__logo" href="{{ url('index.php') }}"><img src="{{ url('img/logo.png') }}" alt="{{ layout.boardTitle }}" width="301" height="77"></a>
+		<a class="site-header__logo" href="{{ url('index.php') }}"><img src="{{ url(layout.header.logoHref) }}" alt="{{ layout.boardTitle }}" width="301" height="77"></a>
 		<details class="site-nav" id="brdmenu">
 			<summary class="site-nav__toggle">{{ lang.common.menu }}</summary>
 			<nav aria-label="{{ lang.common.mainNav }}">

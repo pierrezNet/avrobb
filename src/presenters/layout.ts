@@ -9,6 +9,7 @@
 import type { BoardConfig, ForumCategory, Topic, TopicLabel, Viewer } from '../domain/models.ts';
 import type { Lang } from '../lang/fr/index.ts';
 import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
+import { headerImageHref } from '../services/headerImages.ts';
 import { logoutToken } from '../services/legacySession.ts';
 import { canSearch, canUsePrivateMessages, isAnyModerator, isForumModerator } from '../services/permissions.ts';
 import { resolveTheme, type Theme } from '../services/themes.ts';
@@ -126,6 +127,8 @@ export interface LayoutView {
 	 * null si le lecteur ne peut pas consulter la liste des membres.
 	 */
 	memberSuggest: { profileBase: string } | null;
+	/** Logo et bannière de l'en-tête (page Apparence), adresses versionnées. */
+	header: { logoHref: string; bannerHref: string };
 	/** Visiteur banni : il lit le forum mais n'écrit plus (bandeau sous l'en-tête). */
 	ban: { expires: string | null; reason: string | null } | null;
 }
@@ -373,6 +376,7 @@ export function buildLayout(input: LayoutInput): LayoutView {
 		modControls: buildModControls(footer, viewer, lang),
 		quickjump: buildQuickjump(input.forums, footer),
 		csrfToken: input.csrfToken,
+		header: { logoHref: headerImageHref('logo', config.headerVersion), bannerHref: headerImageHref('banner', config.headerVersion) },
 		memberSuggest: !viewer.isGuest && viewer.group.canViewUsers ? { profileBase: `${config.baseUrl}/profile.php?id=` } : null,
 		// Bandeau pour les membres seulement : un invité banni par son adresse IP n'écrit déjà presque
 		// rien (ses envois restent refusés), le message ne ferait que l'intriguer.
@@ -410,6 +414,7 @@ export function buildMinimalLayout(lang: Lang, title: string): LayoutView {
 		modControls: [],
 		quickjump: null,
 		csrfToken: '',
+		header: { logoHref: headerImageHref('logo', 0), bannerHref: headerImageHref('banner', 0) },
 		memberSuggest: null,
 		ban: null,
 	};

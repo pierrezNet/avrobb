@@ -123,6 +123,13 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   non plus dans les Options, avec un aperçu de la page vue par les membres
   (`admin_maintenance.php?preview=1`) ; l'alerte « mode maintenance activé » de l'en-tête y mène.
   Un message vide reprend le texte par défaut sans désactiver le mode.
+- Apparence (`admin_appearance.php`, page propre à AvroBB, administrateurs) : remplacement du logo
+  et de la bannière. Les images remplacent les fichiers du PHP (`img/logo.png`,
+  `style/imports/img/banner.jpg`), pour que les deux forums affichent les mêmes ; type lu dans le
+  contenu, réduction et réencodage par sharp (PNG pour le logo, JPEG pour la bannière) ; l'image
+  précédente est gardée (`*.previous.*`) et peut être rétablie ; `o_header_version` (clé AvroBB)
+  versionne les adresses pour contourner les caches. Sur grand écran, la bannière est affichée
+  derrière le logo, menu en dessous, comme l'en-tête du PHP.
 - Messagerie privée : mêmes réglages que le PHP, avec jeton CSRF ; seules les clés modifiées sont
   écrites.
 - Fichiers des membres (Uploadile) : réglages comme le PHP, sans la miniaturisation

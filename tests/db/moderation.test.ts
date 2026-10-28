@@ -386,9 +386,26 @@ describe('UserAdminRepository (actions groupées)', () => {
 			const bans = await trx
 				.selectFrom('bans')
 				.select(['username', 'ip', 'email', 'message', 'ban_creator'])
-				.where('username', '=', 'MaxDUO')
+				.where('message', '=', 'Spam')
 				.execute();
 			expect(bans).toEqual([{ username: 'MaxDUO', ip: '192.0.2.5', email: 'max@example.test', message: 'Spam', ban_creator: 2 }]);
+		});
+	});
+});
+
+describe('CensorRepository (admin_censoring.php)', () => {
+	it('ajoute, modifie et supprime un mot', async () => {
+		const { CensorRepository } = await import('../../src/repositories/CensorRepository.ts');
+		await inRollback(async (trx) => {
+			const store = new CensorRepository(trx);
+			const before = await store.listEntries();
+			await store.addWord({ searchFor: 'zut', replaceWith: '***' });
+			const entry = (await store.listEntries()).at(-1);
+			if (entry === undefined) throw new Error('mot absent');
+			await store.updateWord(entry.id, { searchFor: 'zut*', replaceWith: '!' });
+			expect((await store.listWords()).at(-1)).toEqual({ searchFor: 'zut*', replaceWith: '!' });
+			await store.removeWord(entry.id);
+			expect(await store.listEntries()).toEqual(before);
 		});
 	});
 });

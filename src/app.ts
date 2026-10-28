@@ -11,6 +11,7 @@ import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply, ty
 import nunjucks from 'nunjucks';
 import type { Mailer } from './adapters/mailer.ts';
 import type { ServerInfo } from './adapters/serverInfo.ts';
+import { AdminCensoringController, type AdminCensoringQuery } from './controllers/AdminCensoringController.ts';
 import { AdminGroupsController, type AdminGroupsQuery } from './controllers/AdminGroupsController.ts';
 import { AdminIndexController } from './controllers/AdminIndexController.ts';
 import { AdminLoaderController, type AdminLoaderQuery } from './controllers/AdminLoaderController.ts';
@@ -51,7 +52,7 @@ import { type FormBody, registerFormParser } from './http/forms.ts';
 import { type LayoutDeps, renderBlock, renderMessage, renderMinimalMessage } from './http/layout.ts';
 import { checkAccess, purgeOnline, type SessionDeps, startSession } from './http/session.ts';
 import type { AdminStatsReader } from './repositories/AdminStatsRepository.ts';
-import type { CensorReader } from './repositories/CensorRepository.ts';
+import type { CensorStore } from './repositories/CensorRepository.ts';
 import type { ConfigCache, ConfigReader } from './repositories/ConfigLoader.ts';
 import type { ConfigStore } from './repositories/ConfigRepository.ts';
 import type { ContactStore } from './repositories/ContactRepository.ts';
@@ -145,7 +146,7 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	avatarStore: AvatarStore;
 	/** Fichiers des membres (Uploadile) dans img/members/ de l'installation PHP. */
 	uploads: UploadStore;
-	censorship: CensorReader;
+	censorship: CensorStore;
 	topicLabels: TopicLabelReader;
 	stats: StatsReader;
 	search: SearchReader;
@@ -166,6 +167,7 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 /** Pages déjà servies par Node ; les autres liens partent vers l'installation PHP. */
 const PORTED_PAGES = new Set([
 	'admin_categories.php',
+	'admin_censoring.php',
 	'admin_forums.php',
 	'admin_groups.php',
 	'admin_index.php',
@@ -393,6 +395,10 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 		{ preHandler: [authenticate, verifyCsrf] },
 		adminLoader.submit,
 	);
+
+	const adminCensoring = new AdminCensoringController(deps);
+	app.get<{ Querystring: AdminCensoringQuery }>('/admin_censoring.php', { preHandler: authenticate }, adminCensoring.show);
+	app.post<{ Body: FormBody }>('/admin_censoring.php', { preHandler: [authenticate, verifyCsrf] }, adminCensoring.submit);
 
 	const adminReports = new AdminReportsController(deps);
 	app.get<{ Querystring: AdminReportsQuery }>('/admin_reports.php', { preHandler: authenticate }, adminReports.show);

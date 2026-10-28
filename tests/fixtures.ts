@@ -1042,7 +1042,19 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 		},
 		online: fakeOnline(data.online ?? []),
 		phpCache: null,
-		censorship: { listWords: async () => data.censoredWords ?? [] },
+		censorship: {
+			listWords: async () => data.censoredWords ?? [],
+			listEntries: async () => (data.censoredWords ?? []).map((word, index) => ({ id: index + 1, ...word })),
+			addWord: async (word) => {
+				data.censoredWords = [...(data.censoredWords ?? []), word];
+			},
+			updateWord: async (id, word) => {
+				data.censoredWords = (data.censoredWords ?? []).map((current, index) => (index + 1 === id ? word : current));
+			},
+			removeWord: async (id) => {
+				data.censoredWords = (data.censoredWords ?? []).filter((_, index) => index + 1 !== id);
+			},
+		},
 		topicLabels: {
 			listForTopics: async (ids) => new Map([...(data.topicLabels ?? [])].filter(([id]) => ids.includes(id))),
 			listDefinitions: async () => data.labelDefinitions ?? [],

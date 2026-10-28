@@ -1,0 +1,44 @@
+{#- Mots censurés (admin_censoring.php). Données : `view` (controllers/AdminCensoringController.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/adminMenu.njk" as adminMenu %}
+{% import "partials/forms.njk" as forms %}
+{% import "partials/sideMenu.njk" as sideMenu %}
+
+{% block main %}
+{% set t = lang.adminCensoring %}
+<h1 class="page-title">{{ t.title }}</h1>
+<div class="side-layout">
+{{ adminMenu.menu(view.menu, lang) }}
+<div class="side-layout__content">
+{{ sideMenu.notice(view.notice) }}
+{{ forms.errors(lang.profile.formErrors, lang.profile.formErrorsInfo, view.errors) }}
+<form id="censoring" class="form-box form" method="post" action="{{ url('admin_censoring.php') }}">
+	{{ forms.csrf(layout) }}
+	<h2 class="form-box__title">{{ t.addWordSubhead }}</h2>
+	<p class="form__help">{{ t.addWordInfo }}</p>
+	<p><strong>{{ t.enabled if view.enabled else t.disabled }} <a href="{{ url('admin_options.php#censoring') }}">{{ t.options }}</a>.</strong></p>
+	<ul class="admin-rows">
+		<li class="admin-rows__item">
+			<p class="form__field admin-rows__main"><label for="new_search_for">{{ t.censoredWord }}</label><input type="text" id="new_search_for" name="new_search_for" maxlength="60"></p>
+			<p class="form__field admin-rows__main"><label for="new_replace_with">{{ t.replacement }}</label><input type="text" id="new_replace_with" name="new_replace_with" maxlength="60"></p>
+			<button type="submit" class="button button--primary" name="add_word" value="1">{{ t.add }}</button>
+		</li>
+	</ul>
+	<h2 class="form-box__title">{{ t.editRemoveSubhead }}</h2>
+	{% if view.words.length %}
+	<ul class="admin-rows">
+		{% for w in view.words %}
+		<li class="admin-rows__item">
+			<p class="form__field admin-rows__main"><label for="search_for-{{ w.id }}">{{ t.censoredWord }}</label><input type="text" id="search_for-{{ w.id }}" name="search_for[{{ w.id }}]" value="{{ w.searchFor }}" maxlength="60"></p>
+			<p class="form__field admin-rows__main"><label for="replace_with-{{ w.id }}">{{ t.replacement }}</label><input type="text" id="replace_with-{{ w.id }}" name="replace_with[{{ w.id }}]" value="{{ w.replaceWith }}" maxlength="60"></p>
+			<span class="form__buttons"><button type="submit" class="button" name="update[{{ w.id }}]" value="1">{{ t.update }}</button> <button type="submit" class="button" name="remove[{{ w.id }}]" value="1">{{ t.remove }}</button></span>
+		</li>
+		{% endfor %}
+	</ul>
+	{% else %}
+	<p>{{ t.noWords }}</p>
+	{% endif %}
+</form>
+</div>
+</div>
+{% endblock %}

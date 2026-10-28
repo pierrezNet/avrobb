@@ -20,6 +20,11 @@ export const common = {
 	banExpires: (date: string) => `Votre bannissement expire le ${date}.`,
 	banReason: "L'administrateur ou le modérateur qui vous a banni envoie le message suivant\u00a0:",
 	banContact: "Pour toute question, contactez l'administrateur",
+	// Pied de page : pages d'information (AvroBB)
+	footerNav: 'Informations',
+	footerTerms: 'Termes et règles',
+	footerPrivacy: 'Politique de confidentialité',
+	footerHelp: 'Aide',
 	/** Pastille du menu (MP) : nombre suivi de ce texte pour les lecteurs d'écran. */
 	unreadCount: 'non lus',
 	banReadOnly: 'Vous êtes banni(e) : vous pouvez lire le forum, mais plus y écrire.',
@@ -87,8 +92,6 @@ export const common = {
 	boardFooter: 'Pied de page des forums',
 	/** « Mod controls » de lang/French/topic.php et forum.php. */
 	modControls: 'Modération',
-	jumpTo: 'Atteindre',
-	go: 'Aller',
 	moderateTopic: 'Modérer la discussion',
 	moveTopic: 'Déplacer la discussion',
 	openTopic: 'Ouvrir la discussion',

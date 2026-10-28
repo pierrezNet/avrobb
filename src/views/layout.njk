@@ -108,21 +108,11 @@
 	</nav>
 	{% endif %}
 	<div class="site-footer__nav">
-		{% if layout.quickjump %}
-		<form id="qjump" class="quickjump" method="get" action="{{ url('viewforum.php') }}">
-			<label for="qjump-select">{{ lang.common.jumpTo }}</label>
-			<select id="qjump-select" name="id">
-			{% for category in layout.quickjump.categories %}
-				<optgroup label="{{ category.name }}">
-				{% for forum in category.forums %}
-					<option value="{{ forum.id }}"{% if forum.selected %} selected{% endif %}>{{ forum.label }}</option>
-				{% endfor %}
-				</optgroup>
-			{% endfor %}
-			</select>
-			<button type="submit" class="button">{{ lang.common.go }}</button>
-		</form>
-		{% endif %}
+		<nav class="footer-links" aria-label="{{ lang.common.footerNav }}">
+			<ul>
+			{% for link in layout.footerLinks %}<li><a href="{{ url(link.href) }}"{% if link.active %} aria-current="page"{% endif %}>{{ link.label }}</a></li>{% endfor %}
+			</ul>
+		</nav>
 		<div class="site-footer__info">
 			{% if layout.feed %}<p class="feed-link feed-link--{{ layout.feed.cssClass }}" id="feedlinks"><a href="{{ url(layout.feed.href) }}">{{ layout.feed.label }}</a></p>{% endif %}
 			<p id="poweredby">{{ lang.common.poweredBy }} <a href="https://github.com/pierrezNet/">AvroBB</a></p>

@@ -35,10 +35,9 @@ export interface LayoutDeps {
 export async function loadLayout(request: FastifyRequest, deps: LayoutDeps, options: PageOptions): Promise<LayoutView> {
 	const { viewer, board: config } = request;
 
-	const [pendingReports, unreadPrivateMessages, forums] = await Promise.all([
+	const [pendingReports, unreadPrivateMessages] = await Promise.all([
 		isAnyModerator(viewer) && config.reportsByBoard ? deps.reports.hasPending() : false,
 		canUsePrivateMessages(viewer, config) ? deps.privateMessages.countUnread(viewer.id) : 0,
-		config.quickjump && viewer.group.canReadBoard ? deps.forums.listReadable(viewer.group.id) : null,
 	]);
 
 	return buildLayout({
@@ -52,7 +51,6 @@ export async function loadLayout(request: FastifyRequest, deps: LayoutDeps, opti
 		options,
 		pendingReports,
 		unreadPrivateMessages,
-		forums,
 	});
 }
 

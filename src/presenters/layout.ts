@@ -6,7 +6,7 @@
  * src/http/layout.ts, et seulement quand ils servent.
  */
 
-import type { BoardConfig, ForumCategory, Topic, TopicLabel, Viewer } from '../domain/models.ts';
+import type { BoardConfig, Topic, TopicLabel, Viewer } from '../domain/models.ts';
 import type { Lang } from '../lang/fr/index.ts';
 import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
 import { headerImageHref } from '../services/headerImages.ts';
@@ -100,8 +100,11 @@ export interface FeedLink {
 	cssClass: 'rss';
 }
 
-export interface QuickjumpView {
-	categories: { name: string; forums: { id: number; label: string; selected: boolean }[] }[];
+/** Lien du pied de page (pages d'information d'AvroBB). */
+export interface FooterLink {
+	href: string;
+	label: string;
+	active: boolean;
 }
 
 export interface LayoutView {
@@ -119,7 +122,8 @@ export interface LayoutView {
 	announcementHtml: string | null;
 	feed: FeedLink | null;
 	modControls: ModControl[];
-	quickjump: QuickjumpView | null;
+	/** Pages d'information (termes, confidentialité, aide), à la place de la liste « Atteindre ». */
+	footerLinks: FooterLink[];
 	/** Jeton CSRF à placer dans les formulaires POST (partials/forms.njk). */
 	csrfToken: string;
 	/**
@@ -144,8 +148,6 @@ export interface LayoutInput {
 	options: PageOptions;
 	pendingReports: boolean;
 	unreadPrivateMessages: number;
-	/** null si la liste « Atteindre » n'est pas affichée. */
-	forums: readonly ForumCategory[] | null;
 }
 
 /** generate_page_title() : parties inversées, « (Page N) » ajouté à la plus précise. */
@@ -333,27 +335,17 @@ function buildModControls(footer: FooterContext, viewer: Viewer, lang: Lang): Mo
 	];
 }
 
-function currentForumId(footer: FooterContext): number {
-	if (footer.kind === 'viewforum') return footer.forum.id;
-	if (footer.kind === 'viewtopic') return footer.topic.forum.id;
-	return 0;
-}
-
-function buildQuickjump(forums: readonly ForumCategory[] | null, footer: FooterContext): QuickjumpView | null {
-	if (forums === null || forums.length === 0) return null;
-
-	const selectedId = currentForumId(footer);
-
-	return {
-		categories: forums.map((category) => ({
-			name: category.name,
-			forums: category.forums.map((forum) => ({
-				id: forum.id,
-				label: forum.isRedirect ? `${forum.name} >>>` : forum.name,
-				selected: forum.id === selectedId,
-			})),
-		})),
-	};
+/**
+ * Pied de page : termes et règles, confidentialité, aide (pages statiques d'AvroBB). La liste
+ * « Atteindre » de FluxBB n'est pas reprise.
+ */
+function buildFooterLinks(lang: Lang, pageId: string): FooterLink[] {
+	const t = lang.common;
+	return [
+		{ href: 'terms.php', label: t.footerTerms, active: pageId === 'terms' },
+		{ href: 'privacy.php', label: t.footerPrivacy, active: pageId === 'privacy' },
+		{ href: 'faq.php', label: t.footerHelp, active: pageId === 'faq' },
+	];
 }
 
 export function buildLayout(input: LayoutInput): LayoutView {
@@ -375,7 +367,7 @@ export function buildLayout(input: LayoutInput): LayoutView {
 		announcementHtml: viewer.group.canReadBoard ? config.announcement : null,
 		feed: buildFeed(footer, config, lang),
 		modControls: buildModControls(footer, viewer, lang),
-		quickjump: buildQuickjump(input.forums, footer),
+		footerLinks: buildFooterLinks(lang, options.pageId),
 		csrfToken: input.csrfToken,
 		header: { logoHref: headerImageHref('logo', config.headerVersion), bannerHref: headerImageHref('banner', config.headerVersion) },
 		memberSuggest: !viewer.isGuest && viewer.group.canViewUsers ? { profileBase: `${config.baseUrl}/profile.php?id=` } : null,
@@ -413,7 +405,7 @@ export function buildMinimalLayout(lang: Lang, title: string): LayoutView {
 		announcementHtml: null,
 		feed: null,
 		modControls: [],
-		quickjump: null,
+		footerLinks: buildFooterLinks(lang, 'message'),
 		csrfToken: '',
 		header: { logoHref: headerImageHref('logo', 0), bannerHref: headerImageHref('banner', 0) },
 		memberSuggest: null,

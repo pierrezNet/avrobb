@@ -48,6 +48,7 @@ import { ProfileController, type ProfileQuery } from './controllers/ProfileContr
 import { RegisterController, type RegisterQuery } from './controllers/RegisterController.ts';
 import { ReputationController, type ReputationQuery } from './controllers/ReputationController.ts';
 import { SearchController, type SearchQuery } from './controllers/SearchController.ts';
+import { StaticPageController } from './controllers/StaticPageController.ts';
 import { SubjectPrefixController, type SubjectPrefixQuery } from './controllers/SubjectPrefixController.ts';
 import { TopicController, type TopicQuery } from './controllers/TopicController.ts';
 import { UserlistController, type UserlistParams } from './controllers/UserlistController.ts';
@@ -209,6 +210,9 @@ const LEGACY_IMAGE_PATH = /\.(?:gif|jpe?g|png|webp|ico)$/i;
 /** Pages déjà servies par Node ; les autres liens partent vers l'installation PHP. */
 const PORTED_PAGES = new Set([
 	'admin_appearance.php',
+	'faq.php',
+	'privacy.php',
+	'terms.php',
 	'admin_bans.php',
 	'admin_categories.php',
 	'admin_censoring.php',
@@ -461,6 +465,13 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 		{ preHandler: [authenticate, verifyCsrf] },
 		adminLoader.submit,
 	);
+
+	// Pages d'information : même en mode maintenance ou sans droit de lecture du forum.
+	const staticPages = new StaticPageController(deps);
+	const infoSession = session({ allowDuringMaintenance: true });
+	app.get('/terms.php', { preHandler: infoSession }, staticPages.show('terms'));
+	app.get('/privacy.php', { preHandler: infoSession }, staticPages.show('privacy'));
+	app.get('/faq.php', { preHandler: infoSession }, staticPages.show('faq'));
 
 	const adminAppearance = new AdminAppearanceController(deps);
 	app.get<{ Querystring: AdminAppearanceQuery }>('/admin_appearance.php', { preHandler: authenticate }, adminAppearance.show);

@@ -126,6 +126,8 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
 - [ ] Balises de sujet : nettoyer en base les anciens sujets (balises inventées, doublons), pour que le PHP les affiche aussi proprement
 - [x] Balises de sujet : liste et couleurs réglables dans l'administration (page Balises, clé `o_subject_tags`), renommage reporté dans les sujets
 
+- [x] Pied de page : pages Termes et règles, Politique de confidentialité, Aide (à la place de « Atteindre »)
+- [ ] Pages d'information : faire relire les textes (responsable du traitement, hébergeur et mentions légales à compléter)
 - [x] Bannière de PV sur grand écran ; page Apparence (logo et bannière remplaçables, retour à l'image précédente)
 - [x] Bannissement en lecture seule : le banni lit le forum mais n'écrit plus (bandeau, écritures refusées)
 - [x] Contenu chaud / froid : l'élagage est remplacé par un seuil « Discussions anciennes » (Maintenance) et une page « Anciennes discussions » par forum

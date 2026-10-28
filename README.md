@@ -156,6 +156,11 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   l'auteur) ; sans sélection ni JavaScript, le message entier comme dans FluxBB. Le passage est
   remis en BBCode d'après le HTML du message (gras, italique, souligné, barré, couleur, liens,
   images, listes, code, alignements, spoilers…) ; une citation imbriquée perd le nom de son auteur.
+- Pied de page : plus de liste « Atteindre » (`o_quickjump` n'a plus d'effet côté Node) ; à la
+  place, trois pages d'information propres à AvroBB, présentées comme les forums d'une catégorie et
+  sans formulaire : Termes et règles (`terms.php`), Politique de confidentialité (`privacy.php`),
+  Aide (`faq.php`). Textes dans `src/lang/fr/staticPages.ts` ; lisibles en mode maintenance et sans
+  droit de lecture du forum.
 - Pas de flux Atom : `extern.php?type=atom` sert le flux RSS (les anciens abonnements continuent de
   fonctionner) ; l'option « Flux par défaut » ne propose plus que Aucun ou RSS, et l'ancien choix
   Atom (`o_feed_type` = 2, celui de PV) n'affiche plus de lien de flux. Pas de flux des discussions

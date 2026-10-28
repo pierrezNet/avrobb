@@ -569,7 +569,9 @@ describe('viewtopic de bout en bout', () => {
 		expect(res.body).toContain('themes/GreenDark.css');
 		expect(res.body).toContain('id="p101"');
 		expect(res.body).not.toContain('id="p100"');
-		expect(res.body).toContain('(2) <abbr title="Messages privés">MP</abbr>');
+		expect(res.body).toContain(
+			'<abbr title="Messages privés">MP</abbr> <span class="site-nav__count">2<span class="visually-hidden"> non lus</span></span>',
+		);
 		expect(res.body).toContain('Boîtes de messages privés pleines à 25');
 		// forum_perms : les membres ne peuvent pas répondre dans le forum 2.
 		expect(res.body).not.toContain('post.php?tid=10"');

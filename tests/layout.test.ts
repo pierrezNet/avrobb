@@ -9,7 +9,7 @@ import { GroupId } from '../src/domain/models.ts';
 import { fr, frDateWords } from '../src/lang/fr/index.ts';
 import { buildLayout, type LayoutInput, pageTitle } from '../src/presenters/layout.ts';
 import { forumHmac, logoutToken } from '../src/services/legacySession.ts';
-import { boardConfig, fakeDeps, forumCategories, group, guest, NOW, topic, viewer } from './fixtures.ts';
+import { boardConfig, fakeDeps, group, guest, NOW, topic, viewer } from './fixtures.ts';
 
 const mod = viewer({ id: 5, username: 'MaxDUO', group: group({ id: GroupId.Moderator, isModerator: true }) });
 
@@ -25,7 +25,6 @@ function input(overrides: Partial<LayoutInput> = {}): LayoutInput {
 		options: { pageId: 'test', titleParts: ['Forum', 'Page'] },
 		pendingReports: false,
 		unreadPrivateMessages: 0,
-		forums: null,
 		...overrides,
 	};
 }
@@ -107,16 +106,16 @@ describe('buildLayout', () => {
 		);
 	});
 
-	it('pied de viewtopic : flux, quickjump sur le forum courant, modération du forum', () => {
+	it('pied de viewtopic : flux, pages d’information, modération du forum', () => {
 		const modTopic = topic({ id: 10, closed: true, forum: { id: 2, name: 'F', moderators: new Map([['MaxDUO', 5]]) } });
 		const options = { pageId: 'viewtopic', titleParts: [], footer: { kind: 'viewtopic' as const, topic: modTopic, page: 1 } };
 
-		const layout = buildLayout(input({ viewer: mod, options, forums: forumCategories }));
+		const layout = buildLayout(input({ viewer: mod, options }));
 		expect(layout.feed).toMatchObject({ href: 'extern.php?action=feed&tid=10&type=rss', mimeType: 'application/rss+xml' });
-		expect(layout.quickjump?.categories[1]?.forums[0]).toEqual({ id: 2, label: 'Captures & Vidéos', selected: true });
+		expect(layout.footerLinks.map((l) => l.href)).toEqual(['terms.php', 'privacy.php', 'faq.php']);
 		expect(layout.modControls.map((c) => c.href)).toContain('moderate.php?fid=2&open=10');
 
-		expect(buildLayout(input({ options, forums: forumCategories })).modControls).toEqual([]);
+		expect(buildLayout(input({ options })).modControls).toEqual([]);
 		const otherMod = viewer({ id: 6, username: 'Autre', group: group({ id: GroupId.Moderator, isModerator: true }) });
 		expect(buildLayout(input({ viewer: otherMod, options })).modControls).toEqual([]);
 	});
@@ -142,14 +141,15 @@ describe('rendu de la mise en page', () => {
 		return `punbb_cookie=${userId}|${forumHmac(hash, 'graine-de-test_password_hash')}|${expires}|${forumHmac(`${userId}|${expires}`, 'graine-de-test_cookie_hash')}`;
 	};
 
-	it("affiche l'annonce, le quickjump, les signalements et le thème", async () => {
+	it("affiche l'annonce, les pages d'information, les signalements et le thème", async () => {
 		const config = { announcement: '<b>Maintenance dimanche</b>' };
 		app = await buildApp(fakeDeps({ users, topics: [], posts: new Map(), config, pendingReports: true }));
 
 		const res = await app.inject({ url: '/nimporte.php', headers: { cookie: cookie(5, 'hash-mod') } });
 		expect(res.statusCode).toBe(404);
 		expect(res.body).toContain('<b>Maintenance dimanche</b>');
-		expect(res.body).toContain('<optgroup label="Ateliers">');
+		expect(res.body).not.toContain('id="qjump"');
+		expect(res.body).toContain('<a href="privacy.php">Politique de confidentialité</a>');
 		expect(res.body).toContain('href="admin_reports.php"');
 		expect(res.body).toMatch(/href="\/assets\/css\/themes\/Air\.css\?v=[0-9a-f]{10}"/);
 	});

@@ -1630,24 +1630,52 @@ a.site-status__alert {
 	gap: 1rem;
 }
 
-.quickjump {
+/* Pages d'information (termes, confidentialité, aide) à la place de la liste « Atteindre ». */
+.footer-links ul {
 	display: flex;
 	flex-wrap: wrap;
+	gap: 0 1.25rem;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.footer-links a {
+	display: inline-flex;
 	align-items: center;
-	gap: 0.5rem;
-}
-
-.quickjump label {
-	flex-basis: 100%;
-	font-weight: 600;
-}
-
-.quickjump select {
-	flex: 1 1 12rem;
-	min-width: 0;
-	max-width: 100%;
 	min-height: 2.75rem;
-	font: inherit;
+}
+
+.footer-links a[aria-current="page"] {
+	font-weight: 700;
+}
+
+/* Pages d'information : rubriques en pleine largeur (pas de colonnes de statistiques). */
+.static-page .forum-row {
+	display: block;
+}
+
+.static-page .forum-row__name {
+	margin-bottom: 0.375rem;
+}
+
+.static-page .forum-row__main p {
+	max-width: 75ch;
+	margin: 0 0 0.5rem;
+}
+
+.static-page__links {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0 1.25rem;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.static-page__updated {
+	margin-top: 0.75rem;
+	font-size: 0.875rem;
 }
 
 .site-footer__info p {
@@ -1889,16 +1917,8 @@ a.site-status__alert {
 
 	.site-footer__nav {
 		flex-direction: row;
-		align-items: flex-end;
+		align-items: center;
 		justify-content: space-between;
-	}
-
-	.quickjump {
-		flex-wrap: nowrap;
-	}
-
-	.quickjump label {
-		flex-basis: auto;
 	}
 
 	.site-footer__info {
@@ -2214,9 +2234,9 @@ a.site-status__alert {
 }
 
 .button--small {
-	min-height: 2.75rem;
-	padding: 0.25rem 0.625rem;
-	font-size: 0.875rem;
+	min-height: 1.2rem;
+	padding: 0.2rem 0.75rem;
+	font-size: 0.8rem;
 }
 
 .bbcode-status {

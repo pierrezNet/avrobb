@@ -1,0 +1,37 @@
+{#- Page d'information (terms.php, privacy.php, faq.php) : rubriques présentées comme les forums d'une catégorie. Données : `view` (presenters/staticPage.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/navigation.njk" as navigation %}
+
+{% block main %}
+{{ navigation.breadcrumbs(view.crumbs, lang) }}
+<h1 class="page-title">{{ view.title }}</h1>
+<p class="page-intro">{{ view.intro }}</p>
+
+<section class="category static-page" aria-labelledby="static-title">
+	<h2 class="category__title" id="static-title">{{ view.title }}</h2>
+	<ul class="forum-list">
+	{% for section in view.sections %}
+		<li class="forum-row static-page__section" id="{{ section.anchor }}">
+			<div class="forum-row__main">
+				<h3 class="forum-row__name">{{ section.title }}</h3>
+				{% for paragraph in section.paragraphs %}<p>{{ paragraph }}</p>{% endfor %}
+				{% if section.links %}
+				<ul class="static-page__links">
+					{% for link in section.links %}<li><a href="{{ url(link.href) }}">{{ link.label }}</a></li>{% endfor %}
+				</ul>
+				{% endif %}
+			</div>
+		</li>
+	{% endfor %}
+	{% if view.contact %}
+		<li class="forum-row static-page__section" id="contact">
+			<div class="forum-row__main">
+				<h3 class="forum-row__name">{{ view.contact.title }}</h3>
+				<p>{{ view.contact.text }} <a href="mailto:{{ view.contact.email }}">{{ view.contact.email }}</a></p>
+			</div>
+		</li>
+	{% endif %}
+	</ul>
+</section>
+<p class="page-intro static-page__updated">{{ view.updated }}</p>
+{% endblock %}

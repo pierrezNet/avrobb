@@ -32,6 +32,7 @@ import { profile } from './profile.ts';
 import { register } from './register.ts';
 import { reputation } from './reputation.ts';
 import { search } from './search.ts';
+import { staticPages } from './staticPages.ts';
 import { toolbar } from './toolbar.ts';
 import { topic } from './topic.ts';
 import { userlist } from './userlist.ts';
@@ -45,6 +46,7 @@ export const fr = {
 	profile,
 	help,
 	search,
+	staticPages,
 	gallery,
 	login,
 	misc,

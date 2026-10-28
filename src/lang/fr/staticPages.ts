@@ -102,7 +102,6 @@ export const staticPages = {
 				title: 'Cookies',
 				paragraphs: [
 					'Le forum dépose uniquement des cookies nécessaires à son fonctionnement : votre session de connexion, un jeton de sécurité contre les envois de formulaires frauduleux, et le suivi des discussions déjà lues. Ils ne servent à aucun suivi publicitaire et ne demandent donc pas de consentement.',
-					'La page Premium charge la boutique d’un prestataire de paiement, qui peut déposer ses propres cookies : reportez-vous à sa politique de confidentialité.',
 				],
 			},
 			{

@@ -53,3 +53,25 @@ describe('pages d’information', () => {
 		expect((await app.inject('/terms.php')).statusCode).toBe(200);
 	});
 });
+
+describe('stats.php', () => {
+	it('totaux, dernier inscrit et présents, lien dans le pied de page', async () => {
+		app = await buildApp(
+			fakeDeps({
+				users: [{ viewer: guest, passwordHash: '' }],
+				topics: [],
+				posts: new Map(),
+				online: [
+					{ userId: 3, ident: 'Tessy' },
+					{ userId: 1, ident: '192.0.2.1' },
+				],
+			}),
+		);
+		const res = await app.inject('/stats.php');
+		expect(res.statusCode).toBe(200);
+		expect(res.body).toContain('<h1 class="page-title">Statistiques</h1>');
+		expect(res.body).toContain('Nombre total de messages');
+		expect(res.body).toContain('Membres en ligne');
+		expect(res.body).toContain('<a href="stats.php" aria-current="page">Statistiques</a>');
+	});
+});

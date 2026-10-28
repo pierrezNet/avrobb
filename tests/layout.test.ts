@@ -112,7 +112,7 @@ describe('buildLayout', () => {
 
 		const layout = buildLayout(input({ viewer: mod, options }));
 		expect(layout.feed).toMatchObject({ href: 'extern.php?action=feed&tid=10&type=rss', mimeType: 'application/rss+xml' });
-		expect(layout.footerLinks.map((l) => l.href)).toEqual(['terms.php', 'privacy.php', 'faq.php']);
+		expect(layout.footerLinks.map((l) => l.href)).toEqual(['terms.php', 'privacy.php', 'faq.php', 'stats.php']);
 		expect(layout.modControls.map((c) => c.href)).toContain('moderate.php?fid=2&open=10');
 
 		expect(buildLayout(input({ options })).modControls).toEqual([]);

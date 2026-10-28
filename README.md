@@ -168,6 +168,13 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
 - Nouvelle discussion sans balise de simulateur : le formulaire est réaffiché avec un avertissement
   (saisie conservée) ; un second « Valider » publie tel quel (`no_tag_ok`), pour les rares sujets
   qui ne concernent aucun simulateur. Pas d'avertissement pour un brouillon ni pour une réponse.
+- Accueil : le bloc « Informations sur les forums » est remplacé par l'activité de la semaine
+  (7 jours glissants) : « En ce moment » (membres en ligne avec avatar ou initiale, nombre d'invités),
+  « Bienvenue à » (inscrits de la semaine), « Ça discute cette semaine » (4 discussions les plus
+  commentées, en cartes avec la dernière image publiée, variante mobile si c'est une image du
+  forum), « Simulateurs de la semaine » (discussions actives par balise de simulateur). Les totaux
+  sont sur la page Statistiques (`stats.php`, pied de page). « Marquer toutes les discussions comme
+  lues » n'apparaît que s'il reste des nouveaux messages.
 - Pas de flux Atom : `extern.php?type=atom` sert le flux RSS (les anciens abonnements continuent de
   fonctionner) ; l'option « Flux par défaut » ne propose plus que Aucun ou RSS, et l'ancien choix
   Atom (`o_feed_type` = 2, celui de PV) n'affiche plus de lien de flux. Pas de flux des discussions
@@ -276,8 +283,8 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   identifiants écrits en dur) ; la ligne `apremium` n'est créée qu'à l'activation d'un code (le PHP
   l'écrivait à chaque visite) ; activation en POST avec jeton CSRF, code refusé signalé ; un code
   prolonge un compte encore actif à partir de son expiration (le PHP repartait du jour). Tables
-  `apremium`, `acodes15`, `acodes365` sans préfixe, reconstituées pour les tests. Boutique
-  Digiseller chargée par `public/js/premium-shop.js` (même script que le PHP, hors de la page).
+  `apremium`, `acodes15`, `acodes365` sans préfixe, reconstituées pour les tests. Pas de
+  boutique Digiseller (le PHP chargeait son script) : la page sert seulement à activer un code.
 - Galerie : recherche dans le titre et la description (`?q=`, conservée par la pagination et le filtre « Mes images », page non indexée) ; informations visibles sous chaque vignette (le PHP les montrait au survol, inaccessible
   au clavier et au toucher), vignette collée en haut de la tuile ; filtre « Mes images » (`?mine=1`).
   Envoi : PNG accepté en plus du JPEG et du GIF, type lu dans le contenu ; vignette (150 px, JPEG)

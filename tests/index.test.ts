@@ -91,7 +91,7 @@ let app: FastifyInstance | undefined;
 afterEach(async () => app?.close());
 
 describe('GET /index.php', () => {
-	it('liste catégories et forums, échappés, avec statistiques et membres en ligne', async () => {
+	it('liste catégories et forums, échappés, avec l’activité de la semaine', async () => {
 		app = await buildApp(
 			fakeDeps({
 				users,
@@ -103,6 +103,13 @@ describe('GET /index.php', () => {
 					{ userId: 1, ident: '192.0.2.1' },
 					{ userId: 1, ident: '192.0.2.2' },
 				],
+				hotTopics: [
+					{ id: 10, subject: '[MSFS] Vol <de nuit>', recentPosts: 5, numReplies: 9, lastPostAt: 0 },
+					{ id: 11, subject: 'Sans image', recentPosts: 1, numReplies: 1, lastPostAt: 0 },
+				],
+				hotTopicImages: new Map([[10, 'Voyez [img]http://forum.test/img/gallery/42.webp[/img] et [img]javascript:x[/img]']]),
+				newMembers: [{ id: 8, username: 'Nouveau', registered: 0 }],
+				activeSubjects: ['[MSFS] A', '[MSFS][X-Plane] B', 'C', '[X-Plane] D', '[MSFS] E'],
 			}),
 		);
 
@@ -116,9 +123,19 @@ describe('GET /index.php', () => {
 		expect(res.body).toContain('<dd>12.3 k</dd>');
 		expect(res.body).toContain('- - -');
 		expect(res.body).toContain('Jamais');
-		expect(res.body).toContain('Nombre total de messages : <strong>56 789</strong>');
-		expect(res.body).toContain('Invités en ligne : <strong>2</strong>');
-		expect(res.body).toContain('<a href="profile.php?id=6">valdefsx</a>');
+		// Les totaux sont sur la page Statistiques ; en ligne : avatars (ou initiale) et invités.
+		expect(res.body).not.toContain('Nombre total de messages');
+		expect(res.body).toContain('<span class="online-avatars__initial" aria-hidden="true">T</span>');
+		expect(res.body).toContain('+ 2 invités');
+		// Discussions de la semaine : dernière image (variante mobile), pastilles, activité.
+		expect(res.body).toContain('src="http://forum.test/img/gallery/mobile_42.webp"');
+		expect(res.body).toContain('Vol &lt;de nuit&gt;');
+		expect(res.body).toContain('5 messages cette semaine');
+		expect(res.body).toContain('hot-topics__image--none');
+		// Simulateurs : MSFS 3, X-Plane 2 (C sans balise ignoré).
+		expect(res.body).toMatch(/MSFS<\/span>\s*<span class="sim-shares__bar"[^>]*><span style="width: 60%/);
+		expect(res.body).toContain('X-Plane : 2 discussions');
+		expect(res.body).toContain('<a href="profile.php?id=8">Nouveau</a>');
 		expect(res.body).not.toContain('Nouveaux messages');
 		expect(res.body).not.toContain('misc.php?action=markread');
 		// L'index est porté : ses liens restent locaux.

@@ -345,6 +345,7 @@ function buildFooterLinks(lang: Lang, pageId: string): FooterLink[] {
 		{ href: 'terms.php', label: t.footerTerms, active: pageId === 'terms' },
 		{ href: 'privacy.php', label: t.footerPrivacy, active: pageId === 'privacy' },
 		{ href: 'faq.php', label: t.footerHelp, active: pageId === 'faq' },
+		{ href: 'stats.php', label: t.footerStats, active: pageId === 'stats' },
 	];
 }
 

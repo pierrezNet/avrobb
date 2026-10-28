@@ -1,13 +1,20 @@
 /**
- * Modèle de vue de l'index (index.php) : catégories et forums, statistiques, membres en ligne.
- * Fonction pure : les données sont chargées par IndexController.
+ * Modèle de vue de l'index (index.php) : catégories et forums, puis l'activité de la semaine
+ * (AvroBB, à la place du bloc « Informations sur les forums ») : membres en ligne avec leur avatar,
+ * discussions les plus commentées avec leur dernière image, nouveaux membres, simulateurs les plus
+ * discutés. Les totaux sont sur la page Statistiques. Fonction pure : données chargées par IndexController.
  */
 
-import type { BoardConfig, IndexCategory, OnlineVisitor, RecentTopic, UsersInfo, Viewer } from '../domain/models.ts';
+import type { BoardConfig, IndexCategory, OnlineVisitor, RecentTopic, Viewer } from '../domain/models.ts';
 import type { Lang } from '../lang/fr/index.ts';
+import type { HotTopic, NewMember } from '../repositories/HomeActivityRepository.ts';
 import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
-import { forumNumberFormat, niceNumber } from '../services/numberFormat.ts';
+import { lastImageUrl, simulatorShares } from '../services/homeActivity.ts';
+import { mobileVariantUrl } from '../services/imageVariants.ts';
+import { niceNumber } from '../services/numberFormat.ts';
+import { readableOn, type SubjectSegment, subjectSegments } from '../services/subjectTags.ts';
 import { forumHasNewPosts, type TrackedTopics } from '../services/trackedTopics.ts';
+import { topicUrl } from './topicPage.ts';
 
 export interface PersonLink {
 	label: string;
@@ -37,9 +44,26 @@ export interface IndexPageView {
 	categories: { id: number; name: string; forums: ForumRowView[] }[];
 	/** Lien « Marquer toutes les discussions comme lues » (membres seulement). */
 	markReadUrl: string | null;
-	stats: { totalUsers: string; totalTopics: string; totalPosts: string; newestUser: PersonLink | null };
-	/** Membres et invités en ligne ; null si o_users_online est désactivé. */
-	online: { users: PersonLink[]; numUsers: string; numGuests: string } | null;
+	/** Membres en ligne (avatar ou initiale) et nombre d'invités ; null si o_users_online est désactivé. */
+	online: { users: OnlineMemberView[]; guests: string | null } | null;
+	/** Discussions les plus commentées de la semaine, avec leur dernière image. */
+	hotTopics: HotTopicView[];
+	newMembers: PersonLink[];
+	/** Simulateurs les plus discutés de la semaine (balises des discussions actives). */
+	simulators: { name: string; count: number; percent: number; background: string; foreground: string; label: string }[];
+}
+
+export interface OnlineMemberView extends PersonLink {
+	avatarUrl: string | null;
+	initial: string;
+}
+
+export interface HotTopicView {
+	href: string;
+	subject: SubjectSegment[];
+	subjectText: string;
+	imageUrl: string | null;
+	activity: string;
 }
 
 export interface IndexPageInput {
@@ -49,10 +73,15 @@ export interface IndexPageInput {
 	/** Sujets lisibles mis à jour depuis la dernière visite (vide pour un invité). */
 	recentTopics: readonly RecentTopic[];
 	tracked: TrackedTopics;
-	usersInfo: UsersInfo;
-	totals: { topics: number; posts: number };
 	/** null si o_users_online est désactivé. */
 	online: readonly OnlineVisitor[] | null;
+	/** Avatar des membres en ligne, par identifiant (absent ou null : initiale). */
+	avatars: ReadonlyMap<number, string | null>;
+	hotTopics: readonly HotTopic[];
+	/** Dernier message avec image de chaque discussion de `hotTopics` (BBCode brut). */
+	hotTopicImages: ReadonlyMap<number, string>;
+	newMembers: readonly NewMember[];
+	activeSubjects: readonly string[];
 	lang: Lang;
 	dateWords: DateWords;
 	now: number;
@@ -98,24 +127,45 @@ export function buildIndexPage(input: IndexPageInput): IndexPageView {
 
 	const onlineUsers = input.online?.filter((visitor) => visitor.userId > 1) ?? [];
 	const numGuests = (input.online?.length ?? 0) - onlineUsers.length;
-	const newest = input.usersInfo.newestUser;
+	const t = lang.index;
+	const { config } = input;
 
 	return {
 		categories,
-		markReadUrl: viewer.isGuest ? null : 'misc.php?action=markread',
-		stats: {
-			totalUsers: forumNumberFormat(input.usersInfo.totalUsers),
-			totalTopics: forumNumberFormat(input.totals.topics),
-			totalPosts: forumNumberFormat(input.totals.posts),
-			newestUser: newest !== null ? person(newest.id, newest.username) : null,
-		},
+		// Rien à marquer comme lu : pas de lien (AvroBB).
+		markReadUrl:
+			!viewer.isGuest && categories.some((category) => category.forums.some((forum) => forum.newPostsUrl !== null))
+				? 'misc.php?action=markread'
+				: null,
 		online:
 			input.online !== null
 				? {
-						users: onlineUsers.map((visitor) => person(visitor.userId, visitor.ident)),
-						numUsers: forumNumberFormat(onlineUsers.length),
-						numGuests: forumNumberFormat(numGuests),
+						users: onlineUsers.map((visitor) => ({
+							...person(visitor.userId, visitor.ident),
+							avatarUrl: input.avatars.get(visitor.userId) ?? null,
+							initial: [...visitor.ident][0]?.toUpperCase() ?? '?',
+						})),
+						guests: numGuests > 0 ? t.guestsOnlineCount(numGuests) : null,
 					}
 				: null,
+		hotTopics: input.hotTopics.map((topic) => {
+			const image = lastImageUrl(input.hotTopicImages.get(topic.id) ?? '');
+			return {
+				href: topicUrl(topic.id),
+				subject: subjectSegments([{ text: topic.subject, style: null }], () => null, config.subjectTags),
+				subjectText: topic.subject,
+				// Variante mobile (640 px) des images du forum : plus légère pour une vignette.
+				imageUrl: image !== null ? (mobileVariantUrl(image, config.baseUrl) ?? image) : null,
+				activity: t.weekPosts(topic.recentPosts),
+			};
+		}),
+		newMembers: input.newMembers.map((member) => person(member.id, member.username)),
+		simulators: simulatorShares(input.activeSubjects, config.subjectTags).map((share) => ({
+			name: share.tag.name,
+			count: share.count,
+			percent: share.percent,
+			...readableOn(share.tag.color),
+			label: t.simulatorShare(share.tag.name, share.count),
+		})),
 	};
 }

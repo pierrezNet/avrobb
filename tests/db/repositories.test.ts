@@ -22,6 +22,7 @@ import { ForumAdminRepository } from '../../src/repositories/ForumAdminRepositor
 import { ForumRepository } from '../../src/repositories/ForumRepository.ts';
 import { GalleryRepository } from '../../src/repositories/GalleryRepository.ts';
 import { GroupAdminRepository } from '../../src/repositories/GroupAdminRepository.ts';
+import { HomeActivityRepository } from '../../src/repositories/HomeActivityRepository.ts';
 import { LabelAdminRepository } from '../../src/repositories/LabelAdminRepository.ts';
 import { MaintenanceRepository } from '../../src/repositories/MaintenanceRepository.ts';
 import { MemberSuggestRepository } from '../../src/repositories/MemberSuggestRepository.ts';
@@ -537,6 +538,7 @@ describe('viewtopic de bout en bout', () => {
 			gallery: new GalleryRepository(db),
 			galleryFiles: { save: async (addedAt) => addedAt, delete: async () => undefined },
 			headerImages: { replace: async () => undefined, restore: async () => false, hasPrevious: async () => false },
+			homeActivity: new HomeActivityRepository(db),
 			stopwords: { load: async () => new Set<string>() },
 			usersInfo: new UsersInfoLoader(new StatsRepository(db), null, () => NOW),
 			avatars: { urlFor: async () => null },

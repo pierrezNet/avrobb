@@ -67,12 +67,12 @@ describe('premium.php', () => {
 		expect((await app.inject('/premium.php')).statusCode).toBe(403);
 	});
 
-	it('compte inactif : formulaire de code et boutique', async () => {
+	it('compte inactif : formulaire de code, sans boutique', async () => {
 		app = await buildApp(fakeDeps(data()));
 		const res = await app.inject({ url: '/premium.php', headers: { cookie } });
 		expect(res.body).toContain('Votre compte premium est inactif.');
 		expect(res.body).toContain('name="code"');
-		expect(res.body).toContain('digiseller-buy-standalone');
+		expect(res.body).not.toContain('digiseller');
 	});
 
 	it('active un code une seule fois', async () => {

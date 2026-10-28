@@ -25,6 +25,7 @@ export const common = {
 	footerTerms: 'Termes et règles',
 	footerPrivacy: 'Politique de confidentialité',
 	footerHelp: 'Aide',
+	footerStats: 'Statistiques',
 	/** Pastille du menu (MP) : nombre suivi de ce texte pour les lecteurs d'écran. */
 	unreadCount: 'non lus',
 	banReadOnly: 'Vous êtes banni(e) : vous pouvez lire le forum, mais plus y écrire.',

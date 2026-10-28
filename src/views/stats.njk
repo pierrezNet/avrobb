@@ -1,0 +1,24 @@
+{#- Statistiques du forum (stats.php), présentées comme une page d'information. Données : `view` (presenters/statsPage.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/navigation.njk" as navigation %}
+{% import "partials/people.njk" as people %}
+
+{% block main %}
+{{ navigation.breadcrumbs(view.crumbs, lang) }}
+<h1 class="page-title">{{ view.title }}</h1>
+<section class="category static-page" aria-labelledby="stats-title">
+	<h2 class="category__title" id="stats-title">{{ view.title }}</h2>
+	<ul class="forum-list">
+	{% for group in view.groups %}
+		<li class="forum-row static-page__section">
+			<div class="forum-row__main">
+				<h3 class="forum-row__name">{{ group.title }}</h3>
+				<dl class="stats-list">
+				{% for row in group.rows %}<div><dt>{{ row.label }}</dt> <dd>{% if row.person %}{{ people.person(row.person) }}{% else %}<strong>{{ row.value }}</strong>{% endif %}</dd></div>{% endfor %}
+				</dl>
+			</div>
+		</li>
+	{% endfor %}
+	</ul>
+</section>
+{% endblock %}

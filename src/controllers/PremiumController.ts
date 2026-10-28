@@ -51,7 +51,6 @@ export class PremiumController {
 				thanks: state === 'active' ? lang.premium.thanksActive : state === 'lifetime' ? lang.premium.thanksLifetime : null,
 				// Prolonger un compte actif est permis ; l'achat n'est proposé qu'à un compte inactif, comme le PHP.
 				codeForm: state !== 'lifetime' ? { legend: state === 'active' ? lang.premium.extend : lang.premium.activate } : null,
-				showShop: state === 'inactive',
 				notice: request.query.done === 'activated' ? lang.premium.activated : null,
 				errors,
 			},

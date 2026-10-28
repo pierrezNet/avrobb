@@ -50,6 +50,7 @@ import { RegisterController, type RegisterQuery } from './controllers/RegisterCo
 import { ReputationController, type ReputationQuery } from './controllers/ReputationController.ts';
 import { SearchController, type SearchQuery } from './controllers/SearchController.ts';
 import { StaticPageController } from './controllers/StaticPageController.ts';
+import { StatsPageController } from './controllers/StatsPageController.ts';
 import { SubjectPrefixController, type SubjectPrefixQuery } from './controllers/SubjectPrefixController.ts';
 import { TopicController, type TopicQuery } from './controllers/TopicController.ts';
 import { UserlistController, type UserlistParams } from './controllers/UserlistController.ts';
@@ -72,6 +73,7 @@ import type { GalleryFileStore } from './repositories/GalleryFiles.ts';
 import type { GalleryStore } from './repositories/GalleryRepository.ts';
 import type { GroupAdminStore } from './repositories/GroupAdminRepository.ts';
 import type { HeaderImageStore } from './repositories/HeaderImageFiles.ts';
+import type { HomeActivityReader } from './repositories/HomeActivityRepository.ts';
 import type { LabelAdminStore } from './repositories/LabelAdminRepository.ts';
 import type { MailTemplateReader } from './repositories/MailTemplateFiles.ts';
 import type { MaintenanceStore } from './repositories/MaintenanceRepository.ts';
@@ -180,6 +182,8 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	searchWriter: SearchWriter;
 	feeds: FeedReader;
 	gallery: GalleryStore;
+	/** Activité de la semaine affichée à l'accueil (discussions, nouveaux membres, simulateurs). */
+	homeActivity: HomeActivityReader;
 	/** Logo et bannière de l'en-tête (fichiers de l'installation PHP), page Apparence. */
 	headerImages: HeaderImageStore;
 	/** Fichiers de la galerie (img/gallery/ de l'installation PHP). */
@@ -212,6 +216,7 @@ const LEGACY_IMAGE_PATH = /\.(?:gif|jpe?g|png|webp|ico)$/i;
 const PORTED_PAGES = new Set([
 	'admin_appearance.php',
 	'faq.php',
+	'stats.php',
 	'privacy.php',
 	'terms.php',
 	'admin_bans.php',
@@ -474,6 +479,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 	app.get('/terms.php', { preHandler: infoSession }, staticPages.show('terms'));
 	app.get('/privacy.php', { preHandler: infoSession }, staticPages.show('privacy'));
 	app.get('/faq.php', { preHandler: infoSession }, staticPages.show('faq'));
+	app.get('/stats.php', { preHandler: authenticate }, new StatsPageController(deps).show);
 
 	const adminPages = new AdminPagesController(deps);
 	app.get<{ Querystring: AdminPagesQuery }>('/admin_pages.php', { preHandler: authenticate }, adminPages.show);

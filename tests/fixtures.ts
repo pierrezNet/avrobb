@@ -39,6 +39,7 @@ import { fr, frDateWords } from '../src/lang/fr/index.ts';
 import type { Recipient, SenderLimits } from '../src/repositories/ContactRepository.ts';
 import type { DraftStore, NewDraft } from '../src/repositories/DraftRepository.ts';
 import type { AdminCategory, AdminForum, ForumAdminStore } from '../src/repositories/ForumAdminRepository.ts';
+import type { HotTopic, NewMember } from '../src/repositories/HomeActivityRepository.ts';
 import type { LabelRow } from '../src/repositories/LabelAdminRepository.ts';
 import type { StoredFile, UploadStore } from '../src/repositories/MemberUploadFiles.ts';
 import type { ModerationStore } from '../src/repositories/ModerationRepository.ts';
@@ -322,6 +323,11 @@ export interface FakeData {
 	galleryImages?: GalleryImage[];
 	/** Fichiers de la galerie enregistrés ou effacés. */
 	galleryFileLog?: string[];
+	/** Activité de la semaine de l'accueil (HomeActivityReader). */
+	hotTopics?: HotTopic[];
+	hotTopicImages?: Map<number, string>;
+	newMembers?: NewMember[];
+	activeSubjects?: string[];
 	/** Logo et bannière : journal des écritures, images précédentes disponibles. */
 	headerImageLog?: string[];
 	headerImagePrevious?: Set<string>;
@@ -1188,6 +1194,12 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			deleteImage: async (id) => {
 				data.galleryImages = (data.galleryImages ?? []).filter((i) => i.id !== id);
 			},
+		},
+		homeActivity: {
+			listHotTopics: async (_groupId, _since, limit) => (data.hotTopics ?? []).slice(0, limit),
+			findLatestImageMessages: async (ids) => new Map([...(data.hotTopicImages ?? [])].filter(([id]) => ids.includes(id))),
+			listNewMembers: async (_since, limit) => (data.newMembers ?? []).slice(0, limit),
+			listActiveSubjects: async () => data.activeSubjects ?? [],
 		},
 		headerImages: {
 			replace: async (kind, image) => {

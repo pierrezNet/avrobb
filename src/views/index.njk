@@ -2,6 +2,7 @@
 {% extends "layout.njk" %}
 {% import "partials/people.njk" as people %}
 {% import "partials/actions.njk" as actions %}
+{% import "partials/subject.njk" as subjectParts %}
 
 {% block main %}
 <h1 class="visually-hidden">{{ layout.boardTitle }}</h1>
@@ -50,26 +51,69 @@
 <div class="page-bar">{{ actions.postButton(layout, view.markReadUrl, lang.index.markAllAsRead) }}</div>
 {% endif %}
 
-<section class="board-stats" id="brdstats" aria-labelledby="brdstats-title">
-	<h2 class="board-stats__title" id="brdstats-title">{{ lang.index.boardInfo }}</h2>
-	<div class="board-stats__columns">
-		<dl class="board-stats__list">
-			<dt>{{ lang.index.boardStats }}</dt>
-			<dd>{{ lang.index.totalUsers }} <strong>{{ view.stats.totalUsers }}</strong></dd>
-			<dd>{{ lang.index.totalTopics }} <strong>{{ view.stats.totalTopics }}</strong></dd>
-			<dd>{{ lang.index.totalPosts }} <strong>{{ view.stats.totalPosts }}</strong></dd>
-		</dl>
-		<dl class="board-stats__list">
-			<dt>{{ lang.index.userInfo }}</dt>
-			{% if view.stats.newestUser %}<dd>{{ lang.index.newestUser }} {{ people.person(view.stats.newestUser) }}</dd>{% endif %}
-			{% if view.online %}
-			<dd>{{ lang.index.usersOnline }} <strong>{{ view.online.numUsers }}</strong></dd>
-			<dd>{{ lang.index.guestsOnline }} <strong>{{ view.online.numGuests }}</strong></dd>
-			{% endif %}
-		</dl>
-	</div>
-	{% if view.online and view.online.users.length %}
-	<p class="board-stats__online" id="onlinelist"><strong>{{ lang.index.online }}</strong> {% for user in view.online.users %}{{ people.person(user) }}{% if not loop.last %}, {% endif %}{% endfor %}</p>
+{#- Activité de la semaine (AvroBB), à la place de « Informations sur les forums ». -#}
+<div class="home-activity">
+<div class="home-row">
+{% if view.online %}
+<section class="home-block home-block--online" id="onlinelist" aria-labelledby="online-title">
+	<h2 class="home-block__title" id="online-title">{{ lang.index.nowOnline }}</h2>
+	{% if view.online.users.length or view.online.guests %}
+	<ul class="online-avatars">
+		{% for user in view.online.users %}
+		<li>{% if user.href %}<a href="{{ url(user.href) }}" title="{{ user.label }}">{% else %}<span title="{{ user.label }}">{% endif %}
+			{%- if user.avatarUrl %}<img src="{{ user.avatarUrl }}" alt="" loading="lazy">{% else %}<span class="online-avatars__initial" aria-hidden="true">{{ user.initial }}</span>{% endif -%}
+			<span class="online-avatars__name">{{ user.label }}</span>
+		{%- if user.href %}</a>{% else %}</span>{% endif %}</li>
+		{% endfor %}
+		{% if view.online.guests %}<li class="online-avatars__guests">{{ view.online.guests }}</li>{% endif %}
+	</ul>
+	{% else %}
+	<p class="home-block__empty">{{ lang.index.nobodyOnline }}</p>
 	{% endif %}
 </section>
+{% endif %}
+
+{% if view.newMembers.length %}
+<section class="home-block home-block--welcome" aria-labelledby="welcome-title">
+	<h2 class="home-block__title" id="welcome-title">{{ lang.index.newMembers }}</h2>
+	<p class="home-block__people">{% for member in view.newMembers %}{{ people.person(member) }}{% if not loop.last %}, {% endif %}{% endfor %}</p>
+	<p class="home-block__hint">{{ lang.index.newMembersInfo }}</p>
+</section>
+{% endif %}
+</div>
+
+<section class="home-block home-block--hot" aria-labelledby="hot-title">
+	<h2 class="home-block__title" id="hot-title">{{ lang.index.hotTopics }}</h2>
+	{% if view.hotTopics.length %}
+	<ul class="hot-topics">
+		{% for topic in view.hotTopics %}
+		<li class="hot-topics__item">
+			<a class="hot-topics__card" href="{{ url(topic.href) }}">
+				{% if topic.imageUrl %}<img class="hot-topics__image" src="{{ topic.imageUrl }}" alt="" loading="lazy">{% else %}<span class="hot-topics__image hot-topics__image--none" aria-hidden="true"></span>{% endif %}
+				<span class="hot-topics__subject">{{ subjectParts.subject(topic.subject) }}</span>
+				<span class="hot-topics__activity">{{ topic.activity }}</span>
+			</a>
+		</li>
+		{% endfor %}
+	</ul>
+	{% else %}
+	<p class="home-block__empty">{{ lang.index.noHotTopics }}</p>
+	{% endif %}
+</section>
+
+{% if view.simulators.length %}
+<section class="home-block home-block--sims" aria-labelledby="sims-title">
+	<h2 class="home-block__title" id="sims-title">{{ lang.index.simulators }}</h2>
+	<ul class="sim-shares">
+		{% for sim in view.simulators %}
+		<li class="sim-shares__row">
+			<span class="subject-tag" style="background-color: {{ sim.background }}; color: {{ sim.foreground }}">{{ sim.name }}</span>
+			<span class="sim-shares__bar" aria-hidden="true"><span style="width: {{ sim.percent }}%; background-color: {{ sim.background }}"></span></span>
+			<span class="sim-shares__count"><span class="visually-hidden">{{ sim.label }}</span><span aria-hidden="true">{{ sim.count }}</span></span>
+		</li>
+		{% endfor %}
+	</ul>
+</section>
+{% endif %}
+</div>
 {% endblock %}

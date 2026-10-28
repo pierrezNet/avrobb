@@ -3,8 +3,6 @@
 {% import "partials/forms.njk" as forms %}
 {% import "partials/sideMenu.njk" as sideMenu %}
 
-{% block head %}{% if view.showShop %}<script src="{{ asset('js/premium-shop.js') }}" defer></script>{% endif %}{% endblock %}
-
 {% block main %}
 <h1 class="page-title">{{ lang.premium.title }}</h1>
 {{ sideMenu.notice(view.notice) }}
@@ -19,7 +17,6 @@
 <form class="form-box form" method="post" action="{{ url('premium.php') }}">
 	{{ forms.csrf(layout) }}
 	<h2 class="form-box__title">{{ view.codeForm.legend }}</h2>
-	{% if view.showShop %}<p>{{ lang.premium.haveCode }}</p>{% endif %}
 	<p class="form__field">
 		<label for="premium-code">{{ lang.premium.codeLabel }}</label>
 		<input type="text" id="premium-code" name="code" placeholder="{{ lang.premium.codePlaceholder }}" maxlength="64" required autocomplete="off" spellcheck="false">
@@ -28,13 +25,4 @@
 </form>
 {% endif %}
 
-{% if view.showShop %}
-<section class="form-box premium-shop" aria-labelledby="premium-buy">
-	<h2 class="form-box__title" id="premium-buy">{{ lang.premium.buy }}</h2>
-	<ul>{% for price in lang.premium.prices %}<li>{{ price }}</li>{% endfor %}</ul>
-	{#- Boutons de paiement de la boutique Digiseller de PV, repris tels quels de premium.php. #}
-	<div class="digiseller-buy-standalone" data-id="4928461" data-owner="1271" data-lang="" data-img="1" data-img-size="50" data-name="1" data-price="1" data-no-price="0"></div>
-	<div class="digiseller-buy-standalone" data-id="4931862" data-owner="1271" data-lang="" data-img="1" data-img-size="50" data-name="1" data-price="1" data-no-price="0"></div>
-</section>
-{% endif %}
 {% endblock %}

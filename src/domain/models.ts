@@ -177,6 +177,24 @@ export interface Post {
 export type FeedType = 'none' | 'rss';
 
 /** Réglages du forum (table config) utiles à l'affichage. */
+/** Pages d'information d'AvroBB (pied de page). */
+export type StaticPageId = 'terms' | 'privacy' | 'faq';
+
+/** Rubrique d'une page d'information : titre, paragraphes, liens éventuels. */
+export interface StaticSection {
+	title: string;
+	paragraphs: string[];
+	links?: { label: string; href: string }[];
+}
+
+/** Contenu d'une page d'information ; `updatedAt` : dernière modification dans l'administration. */
+export interface StaticPageContent {
+	title: string;
+	intro: string;
+	sections: StaticSection[];
+	updatedAt: number | null;
+}
+
 /** Balise du sujet (« [MSFS] »…) proposée aux auteurs, avec la couleur de fond de sa pastille. */
 export interface SubjectTag {
 	name: string;
@@ -232,6 +250,8 @@ export interface BoardConfig {
 	coldTopicDays: number;
 	/** Version du logo et de la bannière (AvroBB, o_header_version) : change à chaque remplacement. */
 	headerVersion: number;
+	/** Pages d'information modifiées dans l'administration (o_page_*) ; absente = texte par défaut. */
+	staticPages: Partial<Record<StaticPageId, StaticPageContent>>;
 	/** Durée d'une visite (o_timeout_visit) et délai d'inactivité de la liste des présents (o_timeout_online), en secondes. */
 	timeoutVisit: number;
 	timeoutOnline: number;

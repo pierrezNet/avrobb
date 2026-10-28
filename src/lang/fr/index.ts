@@ -12,6 +12,7 @@ import { adminForums } from './adminForums.ts';
 import { adminGroups } from './adminGroups.ts';
 import { adminMaintenance } from './adminMaintenance.ts';
 import { adminOptions } from './adminOptions.ts';
+import { adminPages } from './adminPages.ts';
 import { adminPermissions } from './adminPermissions.ts';
 import { adminPlugins } from './adminPlugins.ts';
 import { adminUsers } from './adminUsers.ts';
@@ -66,6 +67,7 @@ export const fr = {
 	adminGroups,
 	adminUsers,
 	adminAppearance,
+	adminPages,
 	adminMaintenance,
 	adminOptions,
 	adminPlugins,

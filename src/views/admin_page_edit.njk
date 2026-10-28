@@ -1,0 +1,34 @@
+{#- Modification d'une page d'information (admin_pages.php?page=…). Données : `view` (controllers/AdminPagesController.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/adminMenu.njk" as adminMenu %}
+{% import "partials/forms.njk" as forms %}
+{% import "partials/sideMenu.njk" as sideMenu %}
+
+{% block main %}
+{% set t = lang.adminPages %}
+<h1 class="page-title">{{ view.heading }}</h1>
+<div class="side-layout">
+{{ adminMenu.menu(view.menu, lang) }}
+<div class="side-layout__content">
+{{ sideMenu.notice(view.notice) }}
+{{ forms.errors(lang.profile.formErrors, lang.profile.formErrorsInfo, view.errors) }}
+<p class="page-intro"><a href="{{ url(view.backHref) }}">{{ t.title }}</a> · <a href="{{ url(view.viewHref) }}" target="_blank" rel="noopener">{{ t.view }}</a></p>
+<form class="form-box form" method="post" action="{{ url('admin_pages.php') }}">
+	{{ forms.csrf(layout) }}
+	<input type="hidden" name="page" value="{{ view.id }}">
+	<p class="form__field"><label for="page-title">{{ t.pageTitle }}</label><input type="text" id="page-title" name="title" value="{{ view.form.title }}" maxlength="80" required></p>
+	<p class="form__field"><label for="page-intro">{{ t.pageIntro }}</label><textarea id="page-intro" name="intro" rows="3" maxlength="1000" aria-describedby="page-intro-help">{{ view.form.intro }}</textarea><span id="page-intro-help" class="form__help">{{ t.pageIntroHelp }}</span></p>
+	<p class="form__field"><label for="page-body">{{ t.body }}</label><textarea id="page-body" name="body" rows="24" maxlength="30000" required aria-describedby="page-body-help" spellcheck="true">{{ view.form.body }}</textarea><span id="page-body-help" class="form__help">{{ t.bodyHelp }}</span></p>
+	<p class="form__buttons"><button type="submit" class="button button--primary" name="save" value="1">{{ t.save }}</button></p>
+</form>
+{% if view.customized %}
+<form class="form-box form" method="post" action="{{ url('admin_pages.php') }}">
+	{{ forms.csrf(layout) }}
+	<input type="hidden" name="page" value="{{ view.id }}">
+	<p class="form__help">{{ t.resetHelp }}</p>
+	<p class="form__buttons"><button type="submit" class="button" name="reset" value="1">{{ t.reset }}</button></p>
+</form>
+{% endif %}
+</div>
+</div>
+{% endblock %}

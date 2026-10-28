@@ -14,6 +14,7 @@ export const admin = {
 	userGroups: "Groupes d'utilisateurs",
 	options: 'Options',
 	appearance: 'Apparence',
+	pages: "Pages d'information",
 	permissions: 'Permissions',
 	censoring: 'Censure',
 	bans: 'Bannissements',

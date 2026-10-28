@@ -1,0 +1,24 @@
+{#- Pages d'information (admin_pages.php) : liste. Données : `view` (controllers/AdminPagesController.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/adminMenu.njk" as adminMenu %}
+{% import "partials/sideMenu.njk" as sideMenu %}
+
+{% block main %}
+{% set t = lang.adminPages %}
+<h1 class="page-title">{{ t.title }}</h1>
+<div class="side-layout">
+{{ adminMenu.menu(view.menu, lang) }}
+<div class="side-layout__content">
+{{ sideMenu.notice(view.notice) }}
+<p class="page-intro">{{ t.intro }}</p>
+<ul class="admin-rows">
+	{% for page in view.pages %}
+	<li class="admin-rows__item">
+		<p class="admin-rows__main"><strong>{{ page.title }}</strong><br>{{ page.status }}</p>
+		<p class="admin-rows__actions"><a class="button button--small" href="{{ url(page.editHref) }}">{{ t.edit }}</a> <a href="{{ url(page.viewHref) }}">{{ t.view }}</a></p>
+	</li>
+	{% endfor %}
+</ul>
+</div>
+</div>
+{% endblock %}

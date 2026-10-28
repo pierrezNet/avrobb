@@ -159,8 +159,12 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
 - Pied de page : plus de liste « Atteindre » (`o_quickjump` n'a plus d'effet côté Node) ; à la
   place, trois pages d'information propres à AvroBB, présentées comme les forums d'une catégorie et
   sans formulaire : Termes et règles (`terms.php`), Politique de confidentialité (`privacy.php`),
-  Aide (`faq.php`). Textes dans `src/lang/fr/staticPages.ts` ; lisibles en mode maintenance et sans
-  droit de lecture du forum.
+  Aide (`faq.php`). Textes par défaut dans `src/lang/fr/staticPages.ts`, modifiables dans
+  Administration → Pages d'information (`admin_pages.php`) : titre, introduction et contenu au
+  balisage simple (« ## » rubrique, ligne vide paragraphe, « [Libellé](adresse) » lien vers une page
+  du forum ou http(s)), enregistrés en JSON dans `config` (`o_page_<page>`, clés AvroBB), texte
+  toujours échappé ; retour possible au texte par défaut. Lisibles en mode maintenance et sans droit
+  de lecture du forum.
 - Nouvelle discussion sans balise de simulateur : le formulaire est réaffiché avec un avertissement
   (saisie conservée) ; un second « Valider » publie tel quel (`no_tag_ok`), pour les rares sujets
   qui ne concernent aucun simulateur. Pas d'avertissement pour un brouillon ni pour une réponse.

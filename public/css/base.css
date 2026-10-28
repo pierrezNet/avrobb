@@ -917,6 +917,8 @@ a.site-status__alert {
 
 .badge--new {
 	margin-left: 0.25rem;
+	color: var(--color-active);
+	text-decoration: none;
 	border-color: var(--color-active);
 	font-size: 0.75rem;
 	font-weight: 700;

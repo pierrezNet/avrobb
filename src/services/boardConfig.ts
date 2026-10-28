@@ -5,6 +5,7 @@
  */
 
 import type { BoardConfig, FeedType } from '../domain/models.ts';
+import { parseStaticPage, STATIC_PAGE_IDS, staticPageKey } from './staticPageConfig.ts';
 import { parseSubjectTags, SUBJECT_TAGS_KEY } from './subjectTagConfig.ts';
 
 /** o_feed_type : 1 = RSS ; l'ancien choix Atom (2) ne publie plus de lien de flux. */
@@ -52,6 +53,12 @@ export function toBoardConfig(values: ReadonlyMap<string, string>): BoardConfig 
 		maintenanceMessage: text('o_maintenance_message'),
 		coldTopicDays: int('o_cold_topic_days', 0),
 		headerVersion: int('o_header_version', 0),
+		staticPages: Object.fromEntries(
+			STATIC_PAGE_IDS.flatMap((id) => {
+				const page = parseStaticPage(values.get(staticPageKey(id)));
+				return page !== null ? [[id, page]] : [];
+			}),
+		),
 		timeoutVisit: Number(text('o_timeout_visit', '1800')) || 1800,
 		timeoutOnline: Number(text('o_timeout_online', '300')) || 300,
 		adminEmail: text('o_admin_email'),

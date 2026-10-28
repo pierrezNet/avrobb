@@ -1,6 +1,7 @@
 /**
  * Pages d'information d'AvroBB (pied de page) : termes et règles (terms.php), politique de
- * confidentialité (privacy.php) et aide (faq.php). Textes dans src/lang/fr/staticPages.ts ;
+ * confidentialité (privacy.php) et aide (faq.php). Textes modifiables dans l'administration
+ * (admin_pages.php), par défaut ceux de src/lang/fr/staticPages.ts ;
  * accessibles à tous, même sans le droit de lire le forum.
  */
 
@@ -14,7 +15,16 @@ export class StaticPageController {
 	show =
 		(id: StaticPageId) =>
 		(request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply> => {
-			const view = buildStaticPage(id, this.deps.page.lang, request.board.adminEmail);
+			const { lang, dateWords, clock } = this.deps.page;
+			const view = buildStaticPage({
+				id,
+				saved: request.board.staticPages[id],
+				adminEmail: request.board.adminEmail,
+				viewer: request.viewer,
+				lang,
+				dateWords,
+				now: clock(),
+			});
 			return renderPage(
 				request,
 				reply,

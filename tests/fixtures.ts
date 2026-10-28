@@ -226,6 +226,7 @@ export const boardConfig: BoardConfig = {
 	maintenanceMessage: 'Le forum est fermé pour <b>maintenance</b>.',
 	coldTopicDays: 0,
 	headerVersion: 0,
+	staticPages: {},
 	timeoutVisit: 1800,
 	timeoutOnline: 300,
 	adminEmail: 'admin@forum.test',

@@ -24,6 +24,7 @@ export type AdminPage =
 	| 'reports'
 	| 'options'
 	| 'appearance'
+	| 'pages'
 	| 'permissions'
 	| 'categories'
 	| 'forums'
@@ -55,6 +56,7 @@ export function buildAdminMenu(viewer: Viewer, config: BoardConfig, active: Admi
 			? [
 					item('options', 'admin_options.php', t.options),
 					item('appearance', 'admin_appearance.php', t.appearance),
+					item('pages', 'admin_pages.php', t.pages),
 					item('permissions', 'admin_permissions.php', t.permissions),
 					item('categories', 'admin_categories.php', t.categories),
 					item('forums', 'admin_forums.php', t.forums),

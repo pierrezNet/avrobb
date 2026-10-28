@@ -42,6 +42,7 @@ describe('menu de l’administration', () => {
 		expect(forAdmin.admin?.map((i) => i.label)).toEqual([
 			'Options',
 			'Apparence',
+			"Pages d'information",
 			'Permissions',
 			'Catégories',
 			'Forums',

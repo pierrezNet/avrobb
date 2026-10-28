@@ -1,15 +1,13 @@
 /**
  * Pages d'information d'AvroBB (pied de page) : termes et règles, politique de confidentialité, aide.
  * Chaque page est une suite de rubriques (titre et paragraphes), affichées comme les forums d'une
- * catégorie. Les liens d'une rubrique pointent vers les pages du forum.
+ * catégorie. Les liens d'une rubrique pointent vers les pages du forum. Ce sont les textes par
+ * défaut : l'administration (admin_pages.php) peut les remplacer (services/staticPageConfig.ts).
  */
 
-export interface StaticSection {
-	title: string;
-	paragraphs: string[];
-	links?: { label: string; href: string }[];
-}
+import type { StaticSection } from '../../domain/models.ts';
 
+/** Textes par défaut d'une page (avant toute modification dans l'administration). */
 export interface StaticPage {
 	title: string;
 	intro: string;
@@ -18,6 +16,7 @@ export interface StaticPage {
 
 export const staticPages = {
 	updated: 'Dernière mise à jour : octobre 2026.',
+	updatedOn: (date: string) => `Dernière mise à jour : ${date}.`,
 	contactTitle: 'Nous contacter',
 	contactText: "Pour toute question sur cette page, écrivez à l'administrateur :",
 

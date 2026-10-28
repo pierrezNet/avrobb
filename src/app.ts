@@ -20,6 +20,7 @@ import { AdminIndexController } from './controllers/AdminIndexController.ts';
 import { AdminLoaderController, type AdminLoaderQuery } from './controllers/AdminLoaderController.ts';
 import { AdminMaintenanceController, type AdminMaintenanceQuery } from './controllers/AdminMaintenanceController.ts';
 import { AdminOptionsController, type AdminOptionsQuery } from './controllers/AdminOptionsController.ts';
+import { AdminPagesController, type AdminPagesQuery } from './controllers/AdminPagesController.ts';
 import { AdminPermissionsController, type AdminPermissionsQuery } from './controllers/AdminPermissionsController.ts';
 import { AdminReportsController, type AdminReportsQuery } from './controllers/AdminReportsController.ts';
 import { AdminUsersController, type AdminUsersQuery } from './controllers/AdminUsersController.ts';
@@ -214,6 +215,7 @@ const PORTED_PAGES = new Set([
 	'privacy.php',
 	'terms.php',
 	'admin_bans.php',
+	'admin_pages.php',
 	'admin_categories.php',
 	'admin_censoring.php',
 	'admin_forums.php',
@@ -472,6 +474,10 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 	app.get('/terms.php', { preHandler: infoSession }, staticPages.show('terms'));
 	app.get('/privacy.php', { preHandler: infoSession }, staticPages.show('privacy'));
 	app.get('/faq.php', { preHandler: infoSession }, staticPages.show('faq'));
+
+	const adminPages = new AdminPagesController(deps);
+	app.get<{ Querystring: AdminPagesQuery }>('/admin_pages.php', { preHandler: authenticate }, adminPages.show);
+	app.post<{ Body: FormBody }>('/admin_pages.php', { preHandler: [authenticate, verifyCsrf] }, adminPages.submit);
 
 	const adminAppearance = new AdminAppearanceController(deps);
 	app.get<{ Querystring: AdminAppearanceQuery }>('/admin_appearance.php', { preHandler: authenticate }, adminAppearance.show);

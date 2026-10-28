@@ -190,6 +190,11 @@ describe('session à chaque requête', () => {
 		expect(posted.body).toContain('Cette action vous est refusée.');
 
 		// Les administrateurs ne sont jamais bloqués.
+		// Invité de la même adresse IP : banni aussi (envois refusés), mais sans bandeau.
+		const forGuest = await app.inject({ url: '/index.php' });
+		expect(forGuest.statusCode).toBe(200);
+		expect(forGuest.body).not.toContain('ban-notice');
+
 		const forAdmin = await app.inject({ url: '/index.php', headers: { cookie: cookieFor(2, 'hash-admin') } });
 		expect(forAdmin.statusCode).toBe(200);
 		expect(forAdmin.body).not.toContain('ban-notice');

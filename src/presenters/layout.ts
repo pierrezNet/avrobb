@@ -374,8 +374,10 @@ export function buildLayout(input: LayoutInput): LayoutView {
 		quickjump: buildQuickjump(input.forums, footer),
 		csrfToken: input.csrfToken,
 		memberSuggest: !viewer.isGuest && viewer.group.canViewUsers ? { profileBase: `${config.baseUrl}/profile.php?id=` } : null,
+		// Bandeau pour les membres seulement : un invité banni par son adresse IP n'écrit déjà presque
+		// rien (ses envois restent refusés), le message ne ferait que l'intriguer.
 		ban:
-			viewer.ban !== null
+			viewer.ban !== null && !viewer.isGuest
 				? {
 						expires:
 							viewer.ban.expire !== null

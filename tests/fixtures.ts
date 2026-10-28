@@ -48,12 +48,14 @@ import type { NewUser } from '../src/repositories/RegistrationRepository.ts';
 import type { ReportTarget } from '../src/repositories/ReportRepository.ts';
 import type { NewVote } from '../src/repositories/ReputationRepository.ts';
 import type { PostLocation } from '../src/repositories/TopicRepository.ts';
+import type { AdminUserRow, IpPoster, IpStat } from '../src/repositories/UserAdminRepository.ts';
 import type { ViewerRecord } from '../src/repositories/UserRepository.ts';
 import type { AdminGroup } from '../src/services/adminGroups.ts';
 import type { Ban } from '../src/services/bans.ts';
 import type { CensoredWord } from '../src/services/censor.ts';
 import type { GroupForumPermissionRow } from '../src/services/forumPermissions.ts';
 import type { MailMessage } from '../src/services/mail.ts';
+import type { UserSearchCriteria } from '../src/services/userSearch.ts';
 import { fakePrivateContacts, fakePrivateMessageStore, type PmData, pmData } from './fakePrivateMessages.ts';
 
 export const NOW = 1_782_900_000;
@@ -380,6 +382,11 @@ export interface FakeData {
 	adminGroups?: AdminGroup[];
 	groupMembers?: Map<number, number>;
 	groupAdminLog?: string[];
+	/** admin_users.php : IP par membre, auteurs par IP, résultats et critères de recherche reçus. */
+	ipStats?: Map<number, IpStat[]>;
+	ipPosters?: Map<string, IpPoster[]>;
+	adminUserRows?: AdminUserRow[];
+	userSearches?: UserSearchCriteria[];
 	/** Signalements listés par admin_reports.php (modifiés en place quand ils sont traités). */
 	reportList?: Report[];
 	/** Messagerie privée en mémoire (créée vide au besoin). */
@@ -725,6 +732,17 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			},
 		},
 		forumAdmin: fakeForumAdmin(data),
+		userAdmin: {
+			countIpStats: async (userId) => (data.ipStats?.get(userId) ?? []).length,
+			listIpStats: async (userId, offset, limit) => (data.ipStats?.get(userId) ?? []).slice(offset, offset + limit),
+			countIpPosters: async (ip) => (data.ipPosters?.get(ip) ?? []).length,
+			listIpPosters: async (ip, offset, limit) => (data.ipPosters?.get(ip) ?? []).slice(offset, offset + limit),
+			countUsers: async () => (data.adminUserRows ?? []).length,
+			searchUsers: async (criteria, offset, limit) => {
+				data.userSearches = [...(data.userSearches ?? []), criteria];
+				return (data.adminUserRows ?? []).slice(offset, offset + limit);
+			},
+		},
 		groupAdmin: {
 			listGroups: async () => data.adminGroups ?? [],
 			titleExists: async (title, exceptId) => (data.adminGroups ?? []).some((g) => g.title === title && g.id !== exceptId),

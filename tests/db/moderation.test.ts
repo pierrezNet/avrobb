@@ -319,3 +319,33 @@ describe('GroupAdminRepository (admin_groups.php)', () => {
 		});
 	});
 });
+
+describe('UserAdminRepository (admin_users.php)', () => {
+	it('IP d’un membre, membres d’une IP et recherche multicritère', async () => {
+		const { UserAdminRepository } = await import('../../src/repositories/UserAdminRepository.ts');
+		const store = new UserAdminRepository(db);
+		const stats = await store.listIpStats(5, 0, 50);
+		expect(stats.map((s) => s.ip)).toContain('192.0.2.5');
+		expect(await store.countIpStats(5)).toBe(stats.length);
+		const posters = await store.listIpPosters('192.0.2.5', 0, 50);
+		expect(posters.map((p) => [p.poster, p.user?.username])).toContainEqual(['MaxDUO', 'MaxDUO']);
+		expect(await store.countIpPosters('203.0.113.99')).toBe(0);
+
+		const base = {
+			patterns: {},
+			postsGreater: null,
+			postsLess: null,
+			dates: {},
+			group: -1,
+			orderBy: 'username' as const,
+			descending: false,
+		};
+		const all = await store.searchUsers(base, 0, 50);
+		expect(all.map((u) => u.id)).not.toContain(1);
+		expect(await store.countUsers(base)).toBe(all.length);
+		const found = await store.searchUsers({ ...base, patterns: { username: 'tes%' }, group: 4 }, 0, 50);
+		expect(found.map((u) => u.username)).toEqual(['Tessy']);
+		const sorted = await store.searchUsers({ ...base, orderBy: 'num_posts', descending: true }, 0, 1);
+		expect(sorted).toHaveLength(1);
+	});
+});

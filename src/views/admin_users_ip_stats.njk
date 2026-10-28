@@ -1,0 +1,30 @@
+{#- Adresses IP d'un membre (admin_users.php?ip_stats=…). Données : `view` (presenters/adminUsersPage.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/adminMenu.njk" as adminMenu %}
+{% import "partials/navigation.njk" as nav %}
+
+{% block main %}
+{% set t = lang.adminUsers %}
+<h1 class="page-title">{{ t.resultsHead }}</h1>
+<div class="side-layout">
+{{ adminMenu.menu(view.menu, lang) }}
+<div class="side-layout__content">
+{{ nav.pagination(view.pagination, lang) }}
+<section class="form-box">
+	{% if view.rows.length %}
+	<ul class="admin-rows">
+		{% for row in view.rows %}
+		<li class="admin-rows__item">
+			<p class="admin-rows__main"><a href="{{ url(row.hostHref) }}"><strong>{{ row.ip }}</strong></a><br>{{ t.lastUsed }}&#160;: {{ row.lastUsed }} · {{ t.timesFound }}&#160;: {{ row.timesFound }}</p>
+			<a href="{{ url(row.moreHref) }}">{{ t.findMore }}</a>
+		</li>
+		{% endfor %}
+	</ul>
+	{% else %}
+	<p>{{ t.noPosts }}</p>
+	{% endif %}
+</section>
+{{ nav.pagination(view.pagination, lang) }}
+</div>
+</div>
+{% endblock %}

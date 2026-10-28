@@ -2186,3 +2186,9 @@ a.site-status__alert {
 	font-style: normal;
 	font-size: 0.875rem;
 }
+
+/* Mise en garde dans le texte (compte non vérifié…) */
+.text-warning {
+	color: var(--color-active);
+	font-weight: 600;
+}

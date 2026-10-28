@@ -16,6 +16,7 @@ import { AdminIndexController } from './controllers/AdminIndexController.ts';
 import { AdminOptionsController, type AdminOptionsQuery } from './controllers/AdminOptionsController.ts';
 import { AdminPermissionsController, type AdminPermissionsQuery } from './controllers/AdminPermissionsController.ts';
 import { AdminReportsController, type AdminReportsQuery } from './controllers/AdminReportsController.ts';
+import { AdminUsersController, type AdminUsersQuery } from './controllers/AdminUsersController.ts';
 import { ContactController, type ContactQuery } from './controllers/ContactController.ts';
 import { DeleteController, type DeleteQuery } from './controllers/DeleteController.ts';
 import { DraftController, type DraftQuery } from './controllers/DraftController.ts';
@@ -79,6 +80,7 @@ import type { SubscriptionStore } from './repositories/SubscriptionRepository.ts
 import type { ToolbarReader } from './repositories/ToolbarRepository.ts';
 import type { TopicLabelReader } from './repositories/TopicLabelRepository.ts';
 import type { TopicReader, TopicWriter } from './repositories/TopicRepository.ts';
+import type { UserAdminReader } from './repositories/UserAdminRepository.ts';
 import type { CredentialsStore, MemberListReader, PasswordResetStore, ProfileReader } from './repositories/UserRepository.ts';
 import type { UsersInfoReader } from './repositories/UsersInfoLoader.ts';
 import type { AvatarLocator, AvatarStore } from './services/avatars.ts';
@@ -135,6 +137,8 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	forumAdmin: ForumAdminStore;
 	/** Groupes d'utilisateurs (admin_groups.php). */
 	groupAdmin: GroupAdminStore;
+	/** Recherche d'utilisateurs et d'adresses IP (admin_users.php). */
+	userAdmin: UserAdminReader;
 	toolbar: ToolbarReader;
 	avatars: AvatarLocator;
 	avatarStore: AvatarStore;
@@ -167,6 +171,7 @@ const PORTED_PAGES = new Set([
 	'admin_options.php',
 	'admin_permissions.php',
 	'admin_reports.php',
+	'admin_users.php',
 	'admin_statistics.php',
 	'delete.php',
 	'draft_edit.php',
@@ -374,6 +379,9 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 		{ preHandler: [authenticate, verifyCsrf] },
 		adminGroups.submit,
 	);
+
+	const adminUsers = new AdminUsersController(deps);
+	app.get<{ Querystring: AdminUsersQuery }>('/admin_users.php', { preHandler: authenticate }, adminUsers.show);
 
 	const adminReports = new AdminReportsController(deps);
 	app.get<{ Querystring: AdminReportsQuery }>('/admin_reports.php', { preHandler: authenticate }, adminReports.show);

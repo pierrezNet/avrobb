@@ -40,6 +40,7 @@ import { SubscriptionRepository } from '../../src/repositories/SubscriptionRepos
 import { ToolbarRepository } from '../../src/repositories/ToolbarRepository.ts';
 import { TopicLabelRepository } from '../../src/repositories/TopicLabelRepository.ts';
 import { TopicRepository } from '../../src/repositories/TopicRepository.ts';
+import { UserAdminRepository } from '../../src/repositories/UserAdminRepository.ts';
 import { UserRepository } from '../../src/repositories/UserRepository.ts';
 import { UsersInfoLoader } from '../../src/repositories/UsersInfoLoader.ts';
 import { forumHmac } from '../../src/services/legacySession.ts';
@@ -496,6 +497,7 @@ describe('viewtopic de bout en bout', () => {
 			configStore: new ConfigRepository(db),
 			forumAdmin: new ForumAdminRepository(db),
 			groupAdmin: new GroupAdminRepository(db),
+			userAdmin: new UserAdminRepository(db),
 			configCache: { invalidate: async () => {} },
 			serverInfo: new NodeServerInfo(),
 			toolbar: new ToolbarRepository(db),

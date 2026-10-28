@@ -1,0 +1,50 @@
+{#- Recherche d'utilisateurs et d'IP (admin_users.php). Données : `view` (presenters/adminUsersPage.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/adminMenu.njk" as adminMenu %}
+
+{% block main %}
+{% set t = lang.adminUsers %}
+<h1 class="page-title">{{ t.title }}</h1>
+<div class="side-layout">
+{{ adminMenu.menu(view.menu, lang) }}
+<div class="side-layout__content">
+<form id="find_user" class="form-box form" method="get" action="{{ url('admin_users.php') }}">
+	<h2 class="form-box__title">{{ t.userSearchHead }}</h2>
+	<p class="form__help">{{ t.userSearchInfo }}</p>
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ t.userSearchSubhead }}</legend>
+		{% for f in view.fields %}
+		<p class="form__field"><label for="{{ f.name }}">{{ f.label }}</label><input type="text" id="{{ f.name }}" name="{{ f.name }}" maxlength="100"></p>
+		{% endfor %}
+		<p class="form__field"><label for="posts_greater">{{ t.postsGreater }}</label><input type="number" id="posts_greater" name="posts_greater" min="0" inputmode="numeric"></p>
+		<p class="form__field"><label for="posts_less">{{ t.postsLess }}</label><input type="number" id="posts_less" name="posts_less" min="0" inputmode="numeric"></p>
+		{% for d in view.dates %}
+		<p class="form__field"><label for="{{ d.name }}">{{ d.label }} <span class="form__required">{{ t.dateHelp }}</span></label><input type="text" id="{{ d.name }}" name="{{ d.name }}" maxlength="19" autocomplete="off"></p>
+		{% endfor %}
+		<p class="form__field">
+			<label for="order_by">{{ t.orderBy }}</label>
+			<select id="order_by" name="order_by">{% for o in view.orders %}<option value="{{ o.value }}">{{ o.label }}</option>{% endfor %}</select>
+		</p>
+		<p class="form__field">
+			<label for="direction">{{ t.direction }}</label>
+			<select id="direction" name="direction"><option value="ASC">{{ t.ascending }}</option><option value="DESC">{{ t.descending }}</option></select>
+		</p>
+		<p class="form__field">
+			<label for="user_group">{{ t.userGroup }}</label>
+			<select id="user_group" name="user_group">{% for g in view.groups %}<option value="{{ g.value }}">{{ g.label }}</option>{% endfor %}</select>
+		</p>
+	</fieldset>
+	<p class="form__buttons"><button type="submit" class="button button--primary" name="find_user" value="">{{ t.submitSearch }}</button></p>
+</form>
+<form class="form-box form" method="get" action="{{ url('admin_users.php') }}">
+	<h2 class="form-box__title">{{ t.ipSearchHead }}</h2>
+	<p class="form__field">
+		<label for="show_users">{{ t.ipAddress }}</label>
+		<input type="text" id="show_users" name="show_users" maxlength="39" aria-describedby="show_users_help" autocomplete="off" spellcheck="false">
+		<span id="show_users_help" class="form__help">{{ t.ipAddressHelp }}</span>
+	</p>
+	<p class="form__buttons"><button type="submit" class="button button--primary">{{ t.findIp }}</button></p>
+</form>
+</div>
+</div>
+{% endblock %}

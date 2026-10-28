@@ -46,6 +46,7 @@ import { SubscriptionRepository } from './repositories/SubscriptionRepository.ts
 import { ToolbarRepository } from './repositories/ToolbarRepository.ts';
 import { TopicLabelRepository } from './repositories/TopicLabelRepository.ts';
 import { TopicRepository } from './repositories/TopicRepository.ts';
+import { UserAdminRepository } from './repositories/UserAdminRepository.ts';
 import { UserRepository } from './repositories/UserRepository.ts';
 import { UsersInfoLoader } from './repositories/UsersInfoLoader.ts';
 import { FileAvatarLocator } from './services/avatars.ts';
@@ -73,6 +74,7 @@ const app = await buildApp({
 	configCache: configLoader,
 	forumAdmin: new ForumAdminRepository(db),
 	groupAdmin: new GroupAdminRepository(db),
+	userAdmin: new UserAdminRepository(db),
 	users,
 	members: users,
 	credentials: users,

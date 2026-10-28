@@ -1,0 +1,38 @@
+{#- Résultats d'admin_users.php (find_user, show_users). Données : `view` (presenters/adminUsersPage.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/adminMenu.njk" as adminMenu %}
+{% import "partials/navigation.njk" as nav %}
+
+{% block main %}
+{% set t = lang.adminUsers %}
+<h1 class="page-title">{{ t.resultsHead }}</h1>
+<div class="side-layout">
+{{ adminMenu.menu(view.menu, lang) }}
+<div class="side-layout__content">
+{{ nav.pagination(view.pagination, lang) }}
+<section class="form-box">
+	{% if view.rows.length %}
+	<ul class="admin-rows">
+		{% for row in view.rows %}
+		<li class="admin-rows__item">
+			{% if row.guest %}
+			<p class="admin-rows__main"><strong>{{ row.poster }}</strong> — {{ t.guest }}</p>
+			{% else %}
+			{% set u = row.user %}
+			<p class="admin-rows__main">
+				<a href="{{ url(u.profileHref) }}"><strong>{{ u.username }}</strong></a> — {% if u.unverified %}<span class="text-warning">{{ u.title }}</span>{% else %}{{ u.title }}{% endif %}<br>
+				<a href="mailto:{{ u.email }}">{{ u.email }}</a> · {{ t.posts }}&#160;: {{ u.posts }}{% if u.adminNote %} · {{ t.adminNote }}&#160;: {{ u.adminNote }}{% endif %}
+			</p>
+			<p><a href="{{ url(u.ipStatsHref) }}">{{ t.viewIp }}</a> · <a href="{{ url(u.postsHref) }}">{{ t.showPosts }}</a></p>
+			{% endif %}
+		</li>
+		{% endfor %}
+	</ul>
+	{% else %}
+	<p>{{ view.emptyText }}</p>
+	{% endif %}
+</section>
+{{ nav.pagination(view.pagination, lang) }}
+</div>
+</div>
+{% endblock %}

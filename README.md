@@ -123,6 +123,8 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   balise n'est pas modifiable, comme le PHP ; sélecteur de couleur natif du navigateur ; couleur
   vérifiée (#RRGGBB) avant affichage. L'installation, la mise à jour et la désinstallation du mod
   restent sur le PHP.
+- Plugins encore servis par le PHP (redirection depuis `admin_loader.php`) : FluxToolBar et Mod
+  Installer.
 - Rédaction (`post.php`) : émojis conservés (le PHP remplaçait les caractères de 4 octets par « ? »,
   héritage d'une base en utf8 sur 3 octets) ; redirection immédiate vers le message ; boutons de
   préfixe du sujet en JavaScript et seulement pour une nouvelle discussion ; pas de réponse dans le

@@ -110,7 +110,9 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
 - [x] Groupes, utilisateurs (recherche, actions de masse), gestion utilisateurs (AMP) **(PV)**
 - [x] Bannissements, censure, rapports
 - [x] Maintenance : reconstruction de l'index de recherche, vidage des caches, mode maintenance
-- [ ] Plugins d'administration : balises, smileys, toolbar, premium, sondages, uploads, messagerie privée **(PV)**
+- [x] Plugins d'administration : balises, smileys, premium, sondages, uploads, messagerie privée, Plugile, gestion d'utilisateur **(PV)**
+- [ ] Plugin FluxToolBar (`AP_FluxToolBar.php`) : encore servi par le PHP (tables `toolbar_conf`/`toolbar_tags` vides en local, impossible à vérifier) ; à porter avec un export de production
+- [ ] Plugin Mod Installer : reste sur le PHP (il modifie les fichiers PHP) ; à retirer avec l'arrêt du PHP
 
 ## Lot 8 — Bascule et décommissionnement
 

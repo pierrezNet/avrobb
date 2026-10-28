@@ -1,0 +1,53 @@
+/**
+ * Textes communs de l'administration et des signalements. Source : lang/French/admin_common.php et
+ * admin_reports.php. Les textes des autres pages d'administration sont dans des fichiers dédiés.
+ */
+
+export const admin = {
+	admin: 'Administration',
+	moderatorMenu: 'Menu de modération',
+	adminMenu: "Menu d'administration",
+	pluginsMenu: 'Menu des plugins',
+	index: 'Accueil',
+	categories: 'Catégories',
+	forums: 'Forums',
+	users: 'Utilisateurs',
+	userGroups: "Groupes d'utilisateurs",
+	options: 'Options',
+	permissions: 'Permissions',
+	censoring: 'Censure',
+	bans: 'Bannissements',
+	maintenance: 'Maintenance',
+	reports: 'Signalements',
+	goBack: 'Retour',
+	delete: 'Supprimer',
+	update: 'Mettre à jour',
+	add: 'Ajouter',
+	edit: 'Modifier',
+	remove: 'Supprimer',
+	yes: 'Oui',
+	no: 'Non',
+	saveChanges: 'Enregistrer les modifications',
+	save: 'Enregistrer',
+	action: 'Action',
+	none: 'Aucune',
+	errorsTitle: 'Erreurs',
+	errorsInfo: 'Les erreurs suivantes doivent être corrigées :',
+	saved: 'Modifications enregistrées.',
+
+	// Signalements (admin_reports.php)
+	reportZapped: 'Signalement traité.',
+	newReportsHead: 'Nouveaux signalements',
+	deletedUser: 'Utilisateur supprimé',
+	deleted: 'Supprimé',
+	postId: (id: number) => `Message n°${id}`,
+	reportSubhead: (date: string) => `Signalé : ${date}`,
+	reportedBy: 'Signalé par',
+	reason: 'Motif',
+	zap: 'Marquer comme traité',
+	noNewReports: "Aucun nouveau signalement pour l'instant.",
+	last10Head: '10 derniers signalements traités',
+	na: 'N/A',
+	zappedSubhead: (date: string, by: string) => `Traité le ${date} par ${by}`,
+	noZappedReports: 'Aucun signalement traité pour le moment.',
+};

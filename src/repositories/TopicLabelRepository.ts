@@ -55,6 +55,7 @@ export class TopicLabelRepository implements TopicLabelReader {
 			bold: row.gras === 1,
 			italic: row.ital === 1,
 			underline: row.souli === 1,
+			moderatorVisible: row.affich === 1,
 		}));
 	}
 }

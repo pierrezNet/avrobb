@@ -134,7 +134,16 @@ describe('gestion des erreurs', () => {
 });
 
 describe('viewtopic : contenu propre à PV', () => {
-	const label = { id: 1, name: 'Réglé', style: 'brackets' as const, color: '#00AA00', bold: true, italic: false, underline: false };
+	const label = {
+		id: 1,
+		name: 'Réglé',
+		style: 'brackets' as const,
+		color: '#00AA00',
+		bold: true,
+		italic: false,
+		underline: false,
+		moderatorVisible: true,
+	};
 
 	it('préfixe le sujet de ses balises et applique la censure partout', async () => {
 		app = await buildApp(

@@ -9,6 +9,7 @@ import {
 	type EditableProfile,
 	type ForumCategory,
 	type ForumInfo,
+	type ForumTarget,
 	type GalleryImage,
 	type Group,
 	GroupId,
@@ -16,11 +17,13 @@ import {
 	type MemberFilter,
 	type MemberSort,
 	type MemberSummary,
+	type ModeratedTopic,
 	type OnlineVisitor,
 	type Post,
 	type PostingTarget,
 	type ProfileChanges,
 	type RecentTopic,
+	type Report,
 	type ReputationTarget,
 	type ReputationVote,
 	type SubscribedTopic,
@@ -35,6 +38,7 @@ import { fr, frDateWords } from '../src/lang/fr/index.ts';
 import type { Recipient, SenderLimits } from '../src/repositories/ContactRepository.ts';
 import type { DraftStore, NewDraft } from '../src/repositories/DraftRepository.ts';
 import type { StoredFile, UploadStore } from '../src/repositories/MemberUploadFiles.ts';
+import type { ModerationStore } from '../src/repositories/ModerationRepository.ts';
 import type { OnlineWriter } from '../src/repositories/OnlineRepository.ts';
 import type { PostEditStore, PostUpdate } from '../src/repositories/PostEditRepository.ts';
 import type { NewReply, NewTopic, PostingStore } from '../src/repositories/PostingRepository.ts';
@@ -357,6 +361,12 @@ export interface FakeData {
 	/** Premium : expiration par membre, codes libres par table. */
 	premiumExpirations?: Map<number, string>;
 	premiumCodes?: { table: 'acodes15' | 'acodes365'; code: string; used: number }[];
+	/** Modération : sujets modérables, forums de destination, actions consignées. */
+	moderatedTopics?: ModeratedTopic[];
+	targetForums?: ForumTarget[];
+	moderationLog?: string[];
+	/** Signalements listés par admin_reports.php (modifiés en place quand ils sont traités). */
+	reportList?: Report[];
 	/** Messagerie privée en mémoire (créée vide au besoin). */
 	pm?: PmData;
 }
@@ -600,6 +610,57 @@ function fakePosting(data: FakeData): PostingStore {
 	};
 }
 
+/** Modération en mémoire : chaque action est consignée dans `data.moderationLog`. */
+function fakeModeration(data: FakeData): ModerationStore {
+	const log = (entry: string): void => {
+		data.moderationLog = [...(data.moderationLog ?? []), entry];
+	};
+	const topicsOf = (forumId: number) => data.forumTopics?.get(forumId) ?? [];
+	const inForum = (forumId: number, ids: readonly number[]) =>
+		ids.length > 0 && ids.every((id) => topicsOf(forumId).some((t) => t.id === id));
+	return {
+		findTopic: async (topicId, forumId) => data.moderatedTopics?.find((t) => t.id === topicId && t.forum.id === forumId) ?? null,
+		listTargetForums: async () => data.targetForums ?? [],
+		findPostIp: async (postId) => [...data.posts.values()].flat().find((p) => p.id === postId)?.posterIp ?? null,
+		deletePosts: async (topic, postIds, allowAdmin) => {
+			if (postIds.includes(topic.firstPostId)) return false;
+			const posts = data.posts.get(topic.id) ?? [];
+			if (!allowAdmin && posts.some((p) => postIds.includes(p.id) && p.author?.groupId === GroupId.Admin)) return false;
+			log(`deletePosts ${topic.id} ${postIds.join(',')}`);
+			return true;
+		},
+		splitPosts: async (topic, postIds, target, subject) => {
+			if (postIds.includes(topic.firstPostId) || !(data.targetForums ?? []).some((f) => f.forumId === target)) return null;
+			log(`split ${topic.id} ${postIds.join(',')} -> ${target} ${subject}`);
+			return 999;
+		},
+		moveTopics: async (forumId, ids, target, withRedirect) => {
+			if (!inForum(forumId, ids) || target === forumId || !(data.targetForums ?? []).some((f) => f.forumId === target)) return false;
+			log(`move ${ids.join(',')} -> ${target}${withRedirect ? ' +redirect' : ''}`);
+			return true;
+		},
+		mergeTopics: async (forumId, ids, withRedirect) => {
+			if (ids.length < 2 || !inForum(forumId, ids)) return null;
+			log(`merge ${ids.join(',')}${withRedirect ? ' +redirect' : ''}`);
+			return Math.min(...ids);
+		},
+		deleteTopics: async (forumId, ids) => {
+			if (!inForum(forumId, ids)) return 'invalid';
+			log(`deleteTopics ${ids.join(',')}`);
+			return 'deleted';
+		},
+		setClosed: async (_forumId, ids, closed) => log(`${closed ? 'close' : 'open'} ${ids.join(',')}`),
+		setSticky: async (forumId, id, sticky) => {
+			log(`${sticky ? 'stick' : 'unstick'} ${id}`);
+			return inForum(forumId, [id]);
+		},
+		setTopicLabel: async (forumId, id, label, on) => {
+			log(`${on ? 'balise' : 'nobalise'} ${label} ${id}`);
+			return inForum(forumId, [id]);
+		},
+	};
+}
+
 export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppDeps {
 	data.pm ??= pmData();
 	const contactsAndLists = fakePrivateContacts(data.pm);
@@ -663,6 +724,16 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 		profiles: { findProfile: async (id) => data.profiles?.find((p) => p.id === id) ?? null },
 		profileStore: fakeProfileStore(data),
 		privateMessageStore: fakePrivateMessageStore(data.pm),
+		moderation: fakeModeration(data),
+		reportStore: {
+			listReports: async (zapped) => (data.reportList ?? []).filter((r) => (r.zapped !== null) === zapped),
+			zap: async (id, userId, now) => {
+				data.reportList = (data.reportList ?? []).map((r) =>
+					r.id === id && r.zapped === null ? { ...r, zapped: { at: now, by: { id: userId, username: 'modo' } } } : r,
+				);
+			},
+		},
+		hostResolver: { reverse: async (ip) => (ip === '192.0.2.5' ? 'pilote.example.test' : ip) },
 		premium: {
 			findExpiration: async (id) => data.premiumExpirations?.get(id) ?? null,
 			redeemCode: async (userId, table, code, expiration) => {

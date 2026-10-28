@@ -1,0 +1,188 @@
+/**
+ * Modération sur une vraie base (ModerationRepository) : suppression et scission de messages,
+ * déplacement, fusion, suppression, fermeture et épinglage de sujets, balises de PV, avec les
+ * compteurs des sujets et des forums. Transactions annulées.
+ *
+ * Jeu de données : sujet 10 (forum 2) avec les messages 100 (ouverture), 101 (MaxDUO) et 102
+ * (admin) ; sujet 12 (forum 1) : lien de redirection vers le 10 ; sujet 11 dans le forum 3.
+ */
+
+import type { Kysely } from 'kysely';
+import { afterAll, describe, expect, it } from 'vitest';
+import { createDatabase } from '../../src/db/database.ts';
+import type { Database } from '../../src/db/schema.ts';
+import type { ModeratedTopic } from '../../src/domain/models.ts';
+import { ModerationRepository } from '../../src/repositories/ModerationRepository.ts';
+import { testDbConfig } from './testDatabase.ts';
+
+const db = createDatabase(testDbConfig());
+afterAll(async () => db.destroy());
+
+class Rollback extends Error {}
+
+async function inRollback(body: (trx: Kysely<Database>) => Promise<void>): Promise<void> {
+	await db
+		.transaction()
+		.execute(async (trx) => {
+			await body(trx);
+			throw new Rollback();
+		})
+		.catch((error: unknown) => {
+			if (!(error instanceof Rollback)) throw error;
+		});
+}
+
+const topic10: ModeratedTopic = {
+	id: 10,
+	subject: 'Postez un « vintage »',
+	numReplies: 2,
+	firstPostId: 100,
+	forum: { id: 2, name: 'Captures' },
+};
+
+const topicRow = (trx: Kysely<Database>, id: number) =>
+	trx
+		.selectFrom('topics')
+		.select(['forum_id', 'num_replies', 'last_post_id', 'moved_to', 'closed', 'sticky'])
+		.where('id', '=', id)
+		.executeTakeFirst();
+const forumRow = (trx: Kysely<Database>, id: number) =>
+	trx.selectFrom('forums').select(['num_topics', 'num_posts', 'last_post_id']).where('id', '=', id).executeTakeFirstOrThrow();
+
+describe('ModerationRepository', () => {
+	it('lit un sujet du forum et les forums de destination', async () => {
+		const store = new ModerationRepository(db);
+		expect(await store.findTopic(10, 2, 4)).toEqual({ ...topic10, forum: { id: 2, name: "Captures d'écran & Vidéos" } });
+		expect(await store.findTopic(10, 1, 4)).toBeNull();
+		// Forum 3 illisible pour les invités.
+		expect(await store.findTopic(11, 3, 3)).toBeNull();
+		expect((await store.listTargetForums(4)).map((forum) => forum.forumId)).toEqual([2, 1, 3]);
+		expect(await store.findPostIp(101)).toBe('192.0.2.5');
+	});
+
+	it('supprime des réponses, jamais le premier message, et refuse celles d’un administrateur', async () => {
+		await inRollback(async (trx) => {
+			const store = new ModerationRepository(trx);
+			expect(await store.deletePosts(topic10, [100, 101], true)).toBe(false);
+			expect(await store.deletePosts(topic10, [102], false)).toBe(false);
+			expect(await store.deletePosts(topic10, [101, 102], true)).toBe(true);
+			expect(await topicRow(trx, 10)).toMatchObject({ num_replies: 0, last_post_id: 100 });
+			expect(await forumRow(trx, 2)).toMatchObject({ num_topics: 1, num_posts: 1, last_post_id: 100 });
+			const matches = await trx.selectFrom('search_matches').select('post_id').where('post_id', '=', 101).execute();
+			expect(matches).toEqual([]);
+		});
+	});
+
+	it('scinde des réponses dans un nouveau sujet, abonnements compris', async () => {
+		await inRollback(async (trx) => {
+			const store = new ModerationRepository(trx);
+			expect(await store.splitPosts(topic10, [101], 4, 'Hors sujet', 4)).toBeNull();
+			const newId = await store.splitPosts(topic10, [101, 102], 1, 'Scindé', 4);
+			expect(newId).not.toBeNull();
+			expect(await topicRow(trx, newId ?? 0)).toMatchObject({ forum_id: 1, num_replies: 1, last_post_id: 102 });
+			expect(await topicRow(trx, 10)).toMatchObject({ num_replies: 0, last_post_id: 100 });
+			const subscribed = await trx
+				.selectFrom('topic_subscriptions')
+				.select('user_id')
+				.where('topic_id', '=', newId ?? 0)
+				.execute();
+			expect(subscribed).toEqual([{ user_id: 3 }]);
+			expect(await forumRow(trx, 1)).toMatchObject({ num_topics: 3, last_post_id: 102 });
+		});
+	});
+
+	it('déplace un sujet avec un lien de redirection, et supprime le lien devenu inutile', async () => {
+		await inRollback(async (trx) => {
+			const store = new ModerationRepository(trx);
+			expect(await store.moveTopics(2, [10], 2, true, 4)).toBe(false);
+			// Le forum 1 contient déjà un lien vers le sujet 10 : il disparaît, un autre est créé dans le forum 2.
+			expect(await store.moveTopics(2, [10], 1, true, 4)).toBe(true);
+			expect(await topicRow(trx, 10)).toMatchObject({ forum_id: 1 });
+			expect(await topicRow(trx, 12)).toBeUndefined();
+			const redirect = await trx.selectFrom('topics').select(['forum_id']).where('moved_to', '=', 10).execute();
+			expect(redirect).toEqual([{ forum_id: 2 }]);
+			expect(await forumRow(trx, 2)).toMatchObject({ num_topics: 1, num_posts: 1, last_post_id: null });
+		});
+	});
+
+	it('fusionne dans le sujet le plus ancien et recalcule ses compteurs', async () => {
+		await inRollback(async (trx) => {
+			const created = await trx
+				.insertInto('topics')
+				.values({ poster: 'Tessy', subject: 'Doublon', posted: 1782800300, last_post: 1782800300, sticky: 0, forum_id: 2 })
+				.executeTakeFirstOrThrow();
+			const duplicate = Number(created.insertId);
+			await trx
+				.insertInto('posts')
+				.values({
+					poster: 'Tessy',
+					poster_id: 3,
+					poster_ip: '',
+					poster_email: null,
+					message: 'Encore',
+					hide_smilies: 0,
+					posted: 1782800300,
+					topic_id: duplicate,
+				})
+				.execute();
+			const store = new ModerationRepository(trx);
+			expect(await store.mergeTopics(2, [duplicate], false)).toBeNull();
+			expect(await store.mergeTopics(2, [10, duplicate], true)).toBe(10);
+			expect(await topicRow(trx, 10)).toMatchObject({ num_replies: 3 });
+			expect(await topicRow(trx, duplicate)).toMatchObject({ moved_to: 10 });
+		});
+	});
+
+	it('supprime des sujets, sauf ceux où un administrateur a écrit pour un modérateur', async () => {
+		await inRollback(async (trx) => {
+			const store = new ModerationRepository(trx);
+			expect(await store.deleteTopics(2, [10], false)).toBe('adminPosts');
+			expect(await store.deleteTopics(1, [10], true)).toBe('invalid');
+			expect(await store.deleteTopics(2, [10], true)).toBe('deleted');
+			expect(await topicRow(trx, 10)).toBeUndefined();
+			expect(await topicRow(trx, 12)).toBeUndefined();
+			expect(await forumRow(trx, 2)).toMatchObject({ num_topics: 0, num_posts: 0 });
+		});
+	});
+
+	it('ferme, épingle et pose les balises de PV', async () => {
+		await inRollback(async (trx) => {
+			const store = new ModerationRepository(trx);
+			await store.setClosed(2, [10, 11], true);
+			expect(await topicRow(trx, 10)).toMatchObject({ closed: 1 });
+			expect(await topicRow(trx, 11)).toMatchObject({ closed: 0 });
+			expect(await store.setSticky(2, 10, true)).toBe(true);
+			expect(await topicRow(trx, 10)).toMatchObject({ sticky: 1 });
+
+			expect(await store.setTopicLabel(2, 10, 1, false)).toBe(true);
+			expect(await store.setTopicLabel(2, 10, 99, true)).toBe(false);
+			// Sujet 13 (forum 1) sans ligne balises_modo : elle est créée.
+			expect(await store.setTopicLabel(1, 13, 3, true)).toBe(true);
+			const rows = await trx.selectFrom('balises_modo').selectAll().where('npost', 'in', ['10', '13']).orderBy('npost').execute();
+			expect(rows).toEqual([
+				{ npost: '10', bal1: 0, bal2: 1, bal3: 0 },
+				{ npost: '13', bal1: 0, bal2: 0, bal3: 1 },
+			]);
+		});
+	});
+});
+
+describe('ReportRepository (traitement)', () => {
+	it('liste les signalements et en marque un comme traité', async () => {
+		const { ReportRepository } = await import('../../src/repositories/ReportRepository.ts');
+		await inRollback(async (trx) => {
+			const reports = new ReportRepository(trx);
+			const pending = await reports.listReports(false);
+			expect(pending.map((r) => [r.message, r.reporter?.username, r.postId, r.topic?.subject])).toEqual([
+				['Doublon', 'Tessy', 102, 'Postez un « vintage »'],
+			]);
+			const zapped = await reports.listReports(true);
+			expect(zapped[0]?.zapped).toEqual({ at: 1782800400, by: { id: 2, username: 'admin' } });
+
+			await reports.zap(pending[0]?.id ?? 0, 5, 1782900000);
+			expect(await reports.listReports(false)).toEqual([]);
+			expect((await reports.listReports(true)).map((r) => r.zapped?.by?.username)).toEqual(['MaxDUO', 'admin']);
+			expect(await reports.hasPending()).toBe(false);
+		});
+	});
+});

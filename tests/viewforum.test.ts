@@ -10,7 +10,16 @@ import { forumHmac } from '../src/services/legacySession.ts';
 import { labelCss, styleSubject } from '../src/services/topicLabels.ts';
 import { fakeDeps, group, guest, NOW, viewer } from './fixtures.ts';
 
-const solved: TopicLabel = { id: 1, name: 'Réglé', style: 'brackets', color: '#00AA00', bold: true, italic: false, underline: false };
+const solved: TopicLabel = {
+	id: 1,
+	name: 'Réglé',
+	style: 'brackets',
+	color: '#00AA00',
+	bold: true,
+	italic: false,
+	underline: false,
+	moderatorVisible: true,
+};
 const pending: TopicLabel = {
 	id: 2,
 	name: 'En cours',
@@ -19,6 +28,7 @@ const pending: TopicLabel = {
 	bold: false,
 	italic: true,
 	underline: false,
+	moderatorVisible: true,
 };
 
 describe('styleSubject (balises.php)', () => {

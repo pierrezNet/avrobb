@@ -16,6 +16,8 @@ export interface BalisesTable {
 	position: number;
 	/** 0 = [nom], 1 = *nom*, 2 = #nom#. */
 	baltype: number;
+	/** 1 : balise proposée aux modérateurs dans le pied de viewtopic (mod PunBalise 2.6). */
+	affich: number;
 }
 
 /**

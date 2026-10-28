@@ -18,6 +18,7 @@ import { DraftRepository } from '../../src/repositories/DraftRepository.ts';
 import { FeedRepository } from '../../src/repositories/FeedRepository.ts';
 import { ForumRepository } from '../../src/repositories/ForumRepository.ts';
 import { GalleryRepository } from '../../src/repositories/GalleryRepository.ts';
+import { ModerationRepository } from '../../src/repositories/ModerationRepository.ts';
 import { OnlineRepository } from '../../src/repositories/OnlineRepository.ts';
 import { PostEditRepository } from '../../src/repositories/PostEditRepository.ts';
 import { PostingRepository } from '../../src/repositories/PostingRepository.ts';
@@ -481,9 +482,12 @@ describe('viewtopic de bout en bout', () => {
 			subscriptions: new SubscriptionRepository(db),
 			reputation: new ReputationRepository(db),
 			premium: new PremiumRepository(db),
+			moderation: new ModerationRepository(db),
+			hostResolver: { reverse: async (ip) => ip },
 			searchWriter: new SearchRepository(db),
 			contacts: new ContactRepository(db),
 			reportWriter: new ReportRepository(db),
+			reportStore: new ReportRepository(db),
 			toolbar: new ToolbarRepository(db),
 			forums: new ForumRepository(db),
 			reports: new ReportRepository(db),

@@ -57,7 +57,16 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
 - Site web du profil : préfixé de `http://` s'il n'a pas de schéma (le PHP laissait passer `javascript:`).
 - Textes en français seulement.
 - Liens de modération du pied de page affichés : PV les masque visuellement (`sr-only`) sans autre accès.
-- Balises PV réservées aux modérateurs (`balises_modo`) absentes du pied de viewtopic → lot Modération.
+  Fermer, épingler et poser ou retirer une balise de PV (`balises_modo`) passent par un bouton POST
+  avec jeton CSRF (le PHP écrivait sur un lien GET, vérifié par le seul Referer) ; un ancien lien
+  GET mène à une confirmation.
+- Modération (`moderate.php`) : toutes les actions en POST avec jeton CSRF ; le premier message
+  d'un sujet n'est jamais supprimé ni scindé, même par une requête forgée ; un modérateur ne peut
+  pas supprimer un sujet ou un message où un administrateur a écrit ; les erreurs s'affichent dans
+  la page ; « Laisser un lien de redirection » proposé coché pour un sujet seul, comme le PHP.
+  Consultation d'IP : résolution inverse limitée à 2 secondes.
+- Signalements (`admin_reports.php`) : bouton « Marquer comme traité » en POST avec jeton CSRF ;
+  les 10 derniers signalements traités sont conservés, comme le PHP.
 - Rédaction (`post.php`) : émojis conservés (le PHP remplaçait les caractères de 4 octets par « ? »,
   héritage d'une base en utf8 sur 3 octets) ; redirection immédiate vers le message ; boutons de
   préfixe du sujet en JavaScript et seulement pour une nouvelle discussion ; pas de réponse dans le

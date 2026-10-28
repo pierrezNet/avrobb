@@ -1,0 +1,36 @@
+{#- Confirmation ou choix d'une action de modération (moderate.php). Données : `view` (ModerateController). -#}
+{% extends "layout.njk" %}
+{% import "partials/forms.njk" as forms %}
+
+{% block main %}
+<h1 class="page-title">{{ view.title }}</h1>
+{{ forms.errors(lang.moderate.errorsTitle, lang.moderate.errorsInfo, view.errors) }}
+<form class="form-box form" method="post" action="{{ url(view.action) }}">
+	{{ forms.csrf(layout) }}
+	{% for field in view.hidden %}<input type="hidden" name="{{ field.name }}" value="{{ field.value }}">{% endfor %}
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ view.legend }}</legend>
+		{% if view.subject !== null %}
+		<p class="form__field">
+			<label for="new_subject">{{ lang.moderate.newSubject }} <span class="form__required">{{ lang.post.required }}</span></label>
+			<input type="text" id="new_subject" name="new_subject" value="{{ view.subject }}" maxlength="70" required>
+		</p>
+		{% endif %}
+		{% if view.forums %}
+		<p class="form__field">
+			<label for="move_to_forum">{{ lang.moderate.moveTo }}</label>
+			<select id="move_to_forum" name="move_to_forum">
+			{% for category in view.forums.categories %}
+				<optgroup label="{{ category.name }}">
+				{% for forum in category.forums %}<option value="{{ forum.id }}"{% if forum.selected %} selected{% endif %}>{{ forum.name }}</option>{% endfor %}
+				</optgroup>
+			{% endfor %}
+			</select>
+		</p>
+		{% endif %}
+		{% if view.redirect %}<p class="form__check"><label><input type="checkbox" name="with_redirect" value="1"{% if view.redirect.checked %} checked{% endif %}> {{ lang.moderate.leaveRedirect }}</label></p>{% endif %}
+		{% if view.text %}<p>{{ view.text }}</p>{% endif %}
+	</fieldset>
+	<p class="form__buttons"><button type="submit" class="button button--primary" name="{{ view.submit.name }}" value="1">{{ view.submit.label }}</button> <a href="{{ url(view.backUrl) }}">{{ lang.common.goBack }}</a></p>
+</form>
+{% endblock %}

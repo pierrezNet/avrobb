@@ -1,0 +1,50 @@
+{#- Modération des messages d'un sujet (moderate.php?fid=…&tid=…). Données : `view` (presenters/moderatePage.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/forms.njk" as forms %}
+{% import "partials/navigation.njk" as navigation %}
+{% import "partials/people.njk" as people %}
+
+{% block main %}
+{{ navigation.breadcrumbs(view.crumbs, lang) }}
+<h1 class="page-title">{{ view.topic.subject }}</h1>
+{{ forms.errors(lang.moderate.errorsTitle, lang.moderate.errorsInfo, view.errors) }}
+<div class="page-bar">{{ navigation.pagination(view.pagination, lang) }}</div>
+
+<form method="post" action="{{ url(view.formAction) }}">
+	{{ forms.csrf(layout) }}
+	<div class="post-list">
+	{% for post in view.posts %}
+	<article id="p{{ post.id }}" class="post" aria-labelledby="p{{ post.id }}-title">
+		<h2 class="post__meta" id="p{{ post.id }}-title">
+			<a class="post__date" href="{{ url(post.permalink) }}">{{ post.postedAt }}</a>
+			<span class="post__number">#{{ post.number }}</span>
+		</h2>
+		<div class="post__author">
+			<div class="post__identity">
+				<p class="post__username">{{ people.person(post.poster) }}</p>
+				<p class="post__usertitle">{{ post.userTitle }}</p>
+			</div>
+		</div>
+		<div class="post__content">
+			{#- HTML produit par parseMessage() : échappé par construction (services/bbcode.ts). #}
+			<div class="post__message bbcode">{{ post.messageHtml | safe }}</div>
+			{% if post.edited %}<p class="post__edited"><em>{{ lang.moderate.lastEdit }} {{ post.edited.by }} ({{ post.edited.at }})</em></p>{% endif %}
+		</div>
+		<footer class="post__footer">
+			{% if post.selectable %}
+			<p class="topic-row__select"><label><input type="checkbox" name="posts" value="{{ post.id }}"> <span class="visually-hidden">{{ post.selectLabel }}</span><span aria-hidden="true">{{ lang.moderate.select }}</span></label></p>
+			{% else %}
+			<p>{{ lang.moderate.cannotSelectFirst }}</p>
+			{% endif %}
+		</footer>
+	</article>
+	{% endfor %}
+	</div>
+	<p class="bulk-actions">
+		<button type="submit" class="button" name="split_posts" value="1"{% if not view.hasReplies %} disabled{% endif %}>{{ lang.moderate.split }}</button>
+		<button type="submit" class="button" name="delete_posts" value="1"{% if not view.hasReplies %} disabled{% endif %}>{{ lang.moderate.delete }}</button>
+	</p>
+</form>
+<div class="page-bar">{{ navigation.pagination(view.pagination, lang) }}</div>
+{{ navigation.breadcrumbs(view.crumbs, lang) }}
+{% endblock %}

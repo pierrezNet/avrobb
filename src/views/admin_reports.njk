@@ -1,0 +1,39 @@
+{#- Signalements (admin_reports.php). Données : `view` (presenters/adminReportsPage.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/adminMenu.njk" as adminMenu %}
+{% import "partials/forms.njk" as forms %}
+{% import "partials/people.njk" as people %}
+{% import "partials/sideMenu.njk" as sideMenu %}
+
+{% macro report(item, lang, layout, zappable) %}
+<article class="form-box report">
+	<h3 class="form-box__title">{{ item.heading }}</h3>
+	<p>{{ lang.admin.reportedBy }} {{ people.person(item.reporter) }}</p>
+	<p class="report__location">{% for place in item.location %}{% if not loop.first %} » {% endif %}{{ people.person(place) }}{% endfor %}</p>
+	<p><strong>{{ lang.admin.reason }}</strong>&#160;: {% for line in item.reasonLines %}{% if not loop.first %}<br>{% endif %}{{ line }}{% endfor %}</p>
+	{% if zappable %}
+	<form method="post" action="{{ url('admin_reports.php') }}">
+		{{ forms.csrf(layout) }}
+		<button type="submit" class="button" name="zap_id" value="{{ item.id }}">{{ lang.admin.zap }}</button>
+	</form>
+	{% endif %}
+</article>
+{% endmacro %}
+
+{% block main %}
+<h1 class="page-title">{{ lang.admin.reports }}</h1>
+<div class="side-layout">
+{{ adminMenu.menu(view.menu, lang) }}
+<div class="side-layout__content">
+{{ sideMenu.notice(view.notice) }}
+<section aria-labelledby="new-reports">
+	<h2 id="new-reports">{{ lang.admin.newReportsHead }}</h2>
+	{% for item in view.pending %}{{ report(item, lang, layout, true) }}{% else %}<p class="form-box">{{ lang.admin.noNewReports }}</p>{% endfor %}
+</section>
+<section aria-labelledby="zapped-reports">
+	<h2 id="zapped-reports">{{ lang.admin.last10Head }}</h2>
+	{% for item in view.zapped %}{{ report(item, lang, layout, false) }}{% else %}<p class="form-box">{{ lang.admin.noZappedReports }}</p>{% endfor %}
+</section>
+</div>
+</div>
+{% endblock %}

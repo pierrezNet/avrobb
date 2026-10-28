@@ -92,6 +92,9 @@ export const common = {
 	unstickTopic: 'Détacher la discussion',
 	stickTopic: 'Épingler la discussion',
 	moderateForum: 'Modérer le forum',
+	/** Balises de PV du pied de viewtopic (footer.php). */
+	addLabel: (label: string) => `Ajouter ${label}`,
+	removeLabel: (label: string) => `Supprimer ${label}`,
 	poweredBy: 'Propulsé par',
 
 	// Flux (extern.php)

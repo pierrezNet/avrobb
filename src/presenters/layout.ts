@@ -6,22 +6,42 @@
  * src/http/layout.ts, et seulement quand ils servent.
  */
 
-import type { BoardConfig, ForumCategory, Topic, Viewer } from '../domain/models.ts';
+import type { BoardConfig, ForumCategory, Topic, TopicLabel, Viewer } from '../domain/models.ts';
 import type { Lang } from '../lang/fr/index.ts';
 import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
 import { logoutToken } from '../services/legacySession.ts';
 import { canSearch, canUsePrivateMessages, isAnyModerator, isForumModerator } from '../services/permissions.ts';
 import { resolveTheme, type Theme } from '../services/themes.ts';
+import { labelText } from '../services/topicLabels.ts';
 
 /** Onglet du menu principal mis en évidence (PUN_ACTIVE_PAGE). */
-export type NavId = 'index' | 'userlist' | 'rules' | 'search' | 'gallery' | 'drafts' | 'register' | 'login' | 'profile' | 'pm' | 'none';
+export type NavId =
+	| 'index'
+	| 'userlist'
+	| 'rules'
+	| 'search'
+	| 'gallery'
+	| 'drafts'
+	| 'register'
+	| 'login'
+	| 'profile'
+	| 'pm'
+	| 'admin'
+	| 'none';
 
 /** Pied de page propre à certaines pages ($footer_style de footer.php). */
 export type FooterContext =
 	| { kind: 'default' }
 	| { kind: 'index' }
 	| { kind: 'viewforum'; forum: { id: number; moderators: ReadonlyMap<string, number> }; page: number }
-	| { kind: 'viewtopic'; topic: Topic; page: number };
+	| {
+			kind: 'viewtopic';
+			topic: Topic;
+			page: number;
+			/** Balises de PV proposées aux modérateurs (balises.affich) et balises posées sur le sujet. */
+			labelDefinitions?: readonly TopicLabel[];
+			appliedLabels?: readonly TopicLabel[];
+	  };
 
 export interface PageOptions {
 	/** Suffixe de l'identifiant du conteneur (« pun<pageId> »), comme basename($_SERVER['PHP_SELF']). */
@@ -97,7 +117,7 @@ export interface LayoutView {
 	/** HTML saisi par l'administrateur (o_announcement_message), affiché tel quel comme en PHP. */
 	announcementHtml: string | null;
 	feed: FeedLink | null;
-	modControls: { href: string; label: string }[];
+	modControls: ModControl[];
 	quickjump: QuickjumpView | null;
 	poweredByVersion: string | null;
 	/** Jeton CSRF à placer dans les formulaires POST (partials/forms.njk). */
@@ -260,30 +280,50 @@ function buildFeed(footer: FooterContext, config: BoardConfig, lang: Lang): Feed
 	};
 }
 
+/** Lien de modération du pied de page ; `post` : action qui écrit, envoyée par un formulaire POST. */
+export interface ModControl {
+	href: string;
+	label: string;
+	post: boolean;
+}
+
 /**
- * Liens de modération du pied de page (#modcontrols). Les ajouts/retraits de balises PV
- * (balises_modo) viendront avec le lot Modération.
+ * Liens de modération du pied de page (#modcontrols), dont l'ajout et le retrait des balises de
+ * PV (balises_modo). Écart assumé : fermer, épingler ou baliser passe par un bouton POST avec
+ * jeton CSRF (le PHP écrivait sur un lien GET, vérifié par le seul Referer).
  */
-function buildModControls(footer: FooterContext, viewer: Viewer, lang: Lang): { href: string; label: string }[] {
+function buildModControls(footer: FooterContext, viewer: Viewer, lang: Lang): ModControl[] {
 	const t = lang.common;
 
 	if (footer.kind === 'viewforum' && isForumModerator(viewer, footer.forum))
-		return [{ href: `moderate.php?fid=${footer.forum.id}&p=${footer.page}`, label: t.moderateForum }];
+		return [{ href: `moderate.php?fid=${footer.forum.id}&p=${footer.page}`, label: t.moderateForum, post: false }];
 
 	if (footer.kind !== 'viewtopic' || !isForumModerator(viewer, footer.topic.forum)) return [];
 
 	const { topic, page } = footer;
 	const fid = topic.forum.id;
+	const applied = new Set((footer.appliedLabels ?? []).map((label) => label.id));
+	const labels = (footer.labelDefinitions ?? [])
+		.filter((label) => label.moderatorVisible)
+		.map((label): ModControl => {
+			const on = applied.has(label.id);
+			return {
+				href: `moderate.php?fid=${fid}&${on ? 'nobalise' : 'balise'}=${label.id}&npost=${topic.id}`,
+				label: on ? t.removeLabel(labelText(label)) : t.addLabel(labelText(label)),
+				post: true,
+			};
+		});
 
 	return [
-		{ href: `moderate.php?fid=${fid}&tid=${topic.id}&p=${page}`, label: t.moderateTopic },
-		{ href: `moderate.php?fid=${fid}&move_topics=${topic.id}`, label: t.moveTopic },
+		{ href: `moderate.php?fid=${fid}&tid=${topic.id}&p=${page}`, label: t.moderateTopic, post: false },
+		{ href: `moderate.php?fid=${fid}&move_topics=${topic.id}`, label: t.moveTopic, post: false },
 		topic.closed
-			? { href: `moderate.php?fid=${fid}&open=${topic.id}`, label: t.openTopic }
-			: { href: `moderate.php?fid=${fid}&close=${topic.id}`, label: t.closeTopic },
+			? { href: `moderate.php?fid=${fid}&open=${topic.id}`, label: t.openTopic, post: true }
+			: { href: `moderate.php?fid=${fid}&close=${topic.id}`, label: t.closeTopic, post: true },
 		topic.sticky
-			? { href: `moderate.php?fid=${fid}&unstick=${topic.id}`, label: t.unstickTopic }
-			: { href: `moderate.php?fid=${fid}&stick=${topic.id}`, label: t.stickTopic },
+			? { href: `moderate.php?fid=${fid}&unstick=${topic.id}`, label: t.unstickTopic, post: true }
+			: { href: `moderate.php?fid=${fid}&stick=${topic.id}`, label: t.stickTopic, post: true },
+		...labels,
 	];
 }
 

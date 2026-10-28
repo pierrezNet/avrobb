@@ -1,0 +1,17 @@
+{#- Menu de l'administration (generate_admin_menu()). Données : `menu` (presenters/adminMenu.ts). -#}
+{% import "partials/sideMenu.njk" as sideMenu %}
+
+{% macro menu(menu, lang) %}
+<nav class="side-menu" aria-label="{{ lang.admin.admin }}">
+	<h2 class="side-menu__title">{{ lang.admin.moderatorMenu }}</h2>
+	{{ sideMenu.menuList(menu.moderator) }}
+	{% if menu.admin %}
+	<h2 class="side-menu__title">{{ lang.admin.adminMenu }}</h2>
+	{{ sideMenu.menuList(menu.admin) }}
+	{% endif %}
+	{% if menu.plugins.length %}
+	<h2 class="side-menu__title">{{ lang.admin.pluginsMenu }}</h2>
+	{{ sideMenu.menuList(menu.plugins) }}
+	{% endif %}
+</nav>
+{% endmacro %}

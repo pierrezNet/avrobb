@@ -97,10 +97,10 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
 
 ## Lot 6 — Modération
 
-- [ ] `moderate.php` : fermer/ouvrir, épingler, déplacer, fusionner, scinder, suppression multiple
-- [ ] Consultation d'IP (`get_host`)
-- [ ] Traitement des signalements
-- [ ] Balises réservées aux modérateurs (`balises_modo`) **(PV)**
+- [x] `moderate.php` : fermer/ouvrir, épingler, déplacer, fusionner, scinder, suppression multiple (actions en POST, anciens liens GET confirmés)
+- [x] Consultation d'IP (`get_host`)
+- [x] Traitement des signalements (`admin_reports.php`, premier écran de l'administration avec son menu)
+- [x] Balises réservées aux modérateurs (`balises_modo`) **(PV)** — dans le pied de viewtopic, en POST
 
 ## Lot 7 — Administration
 

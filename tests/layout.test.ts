@@ -151,7 +151,7 @@ describe('rendu de la mise en page', () => {
 		expect(res.statusCode).toBe(404);
 		expect(res.body).toContain('<b>Maintenance dimanche</b>');
 		expect(res.body).toContain('<optgroup label="Ateliers">');
-		expect(res.body).toContain('href="http://php.test/admin_reports.php"');
+		expect(res.body).toContain('href="admin_reports.php"');
 		expect(res.body).toMatch(/href="\/assets\/css\/themes\/Air\.css\?v=[0-9a-f]{10}"/);
 	});
 

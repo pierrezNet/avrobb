@@ -4,6 +4,7 @@
  */
 
 import path from 'node:path';
+import { DnsHostResolver } from './adapters/hostResolver.ts';
 import { NodeMailer } from './adapters/mailer.ts';
 import { buildApp } from './app.ts';
 import { loadConfig } from './config.ts';
@@ -21,6 +22,7 @@ import { GalleryFiles } from './repositories/GalleryFiles.ts';
 import { GalleryRepository } from './repositories/GalleryRepository.ts';
 import { MailTemplateFiles } from './repositories/MailTemplateFiles.ts';
 import { MemberUploadFiles } from './repositories/MemberUploadFiles.ts';
+import { ModerationRepository } from './repositories/ModerationRepository.ts';
 import { OnlineRepository } from './repositories/OnlineRepository.ts';
 import { PhpCacheFiles } from './repositories/PhpCacheFiles.ts';
 import { PostEditRepository } from './repositories/PostEditRepository.ts';
@@ -78,8 +80,11 @@ const app = await buildApp({
 	subscriptions: new SubscriptionRepository(db),
 	reputation: new ReputationRepository(db),
 	premium: new PremiumRepository(db),
+	moderation: new ModerationRepository(db),
+	hostResolver: new DnsHostResolver(),
 	contacts: new ContactRepository(db),
 	reportWriter: reports,
+	reportStore: reports,
 	toolbar: new ToolbarRepository(db),
 	forums: new ForumRepository(db),
 	reports,

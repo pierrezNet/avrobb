@@ -1,0 +1,63 @@
+{#- Modération d'un forum (moderate.php?fid=…). Données : `view` (presenters/moderatePage.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/forms.njk" as forms %}
+{% import "partials/navigation.njk" as navigation %}
+{% import "partials/sideMenu.njk" as sideMenu %}
+
+{% block main %}
+{{ navigation.breadcrumbs(view.crumbs, lang) }}
+<h1 class="page-title">{{ lang.moderate.moderate }} : {{ view.forum.name }}</h1>
+{{ sideMenu.notice(view.notice) }}
+{{ forms.errors(lang.moderate.errorsTitle, lang.moderate.errorsInfo, view.errors) }}
+<div class="page-bar">{{ navigation.pagination(view.pagination, lang) }}</div>
+
+<form method="post" action="{{ url(view.formAction) }}">
+	{{ forms.csrf(layout) }}
+	<section class="category" aria-labelledby="mod-title">
+		<h2 class="category__title" id="mod-title">{{ view.forum.name }}</h2>
+		{% if view.topics.length %}
+		<ul class="forum-list">
+		{% for topic in view.topics %}
+			<li class="forum-row topic-row topic-row--selectable{% if topic.sticky %} topic-row--sticky{% endif %}{% if topic.newPostsUrl %} forum-row--new{% endif %}{% if topic.closed %} topic-row--closed{% endif %}">
+				<div class="forum-row__main">
+					<h3 class="forum-row__name topic-row__subject">
+						{%- if topic.sticky %}<span class="badge">{{ lang.forum.sticky }}</span> {% endif -%}
+						{%- if topic.moved %}<span class="badge">{{ lang.forum.moved }}</span> {% endif -%}
+						{%- if topic.closed %}<span class="badge">{{ lang.forum.closed }}</span> {% endif -%}
+						<a href="{{ url(topic.href) }}">
+							{%- if topic.newPostsUrl %}<strong>{% endif -%}
+							{%- for part in topic.subject %}{% if part.css %}<span style="{{ part.css }}">{{ part.text }}</span>{% else %}{{ part.text }}{% endif %}{% endfor -%}
+							{%- if topic.newPostsUrl %}</strong>{% endif -%}
+						</a>
+						<span class="forum-row__by"> {{ lang.moderate.by(topic.poster) }}</span>
+					</h3>
+				</div>
+				<dl class="forum-row__stats">
+					<div class="forum-row__count"><dt>{{ lang.moderate.replies }}</dt> <dd>{{ topic.replies }}</dd></div>
+					<div class="forum-row__count"><dt>{{ lang.moderate.views }}</dt> <dd>{{ topic.views }}</dd></div>
+					<div class="forum-row__last">
+						<dt>{{ lang.moderate.lastPost }}</dt>
+						<dd>{% if topic.lastPost %}<a href="{{ url(topic.lastPost.href) }}">{{ topic.lastPost.at }}</a> <span class="forum-row__by">{{ lang.moderate.by(topic.lastPost.by) }}</span>{% else %}- - -{% endif %}</dd>
+					</div>
+				</dl>
+				<p class="topic-row__select"><label><input type="checkbox" name="topics" value="{{ topic.id }}"> <span class="visually-hidden">{{ topic.selectLabel }}</span><span aria-hidden="true">{{ lang.moderate.select }}</span></label></p>
+			</li>
+		{% endfor %}
+		</ul>
+		{% else %}
+		<p class="forum-row">{{ lang.moderate.empty }}</p>
+		{% endif %}
+	</section>
+	{% if view.topics.length %}
+	<p class="bulk-actions">
+		<button type="submit" class="button" name="move_topics" value="1">{{ lang.moderate.move }}</button>
+		<button type="submit" class="button" name="delete_topics" value="1">{{ lang.moderate.delete }}</button>
+		<button type="submit" class="button" name="merge_topics" value="1">{{ lang.moderate.merge }}</button>
+		<button type="submit" class="button" name="open" value="1">{{ lang.moderate.open }}</button>
+		<button type="submit" class="button" name="close" value="1">{{ lang.moderate.close }}</button>
+	</p>
+	{% endif %}
+</form>
+<div class="page-bar">{{ navigation.pagination(view.pagination, lang) }}</div>
+{{ navigation.breadcrumbs(view.crumbs, lang) }}
+{% endblock %}

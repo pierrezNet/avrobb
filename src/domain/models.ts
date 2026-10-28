@@ -296,6 +296,8 @@ export interface TopicLabel {
 	bold: boolean;
 	italic: boolean;
 	underline: boolean;
+	/** Proposée aux modérateurs dans le pied de viewtopic (balises.affich). */
+	moderatorVisible: boolean;
 }
 
 /** Forum proposé dans la liste « Atteindre » du pied de page. */
@@ -698,4 +700,33 @@ export interface ReputationTarget {
 	authorId: number;
 	authorName: string;
 	authorReputationEnabled: boolean;
+}
+
+/** Sujet à modérer (moderate.php?fid=…&tid=…). */
+export interface ModeratedTopic {
+	id: number;
+	subject: string;
+	numReplies: number;
+	firstPostId: number;
+	forum: { id: number; name: string };
+}
+
+/** Forum où l'on peut déplacer ou scinder des sujets, rangé par catégorie. */
+export interface ForumTarget {
+	categoryId: number;
+	categoryName: string;
+	forumId: number;
+	forumName: string;
+}
+
+/** Signalement de message (table reports), avec ce qui reste de sa cible. */
+export interface Report {
+	id: number;
+	created: number;
+	message: string;
+	reporter: { id: number; username: string } | null;
+	forum: { id: number; name: string } | null;
+	topic: { id: number; subject: string } | null;
+	postId: number | null;
+	zapped: { at: number; by: { id: number; username: string } | null } | null;
 }

@@ -4,6 +4,7 @@
  */
 
 import type { DateWords } from '../../services/dateFormat.ts';
+import { admin } from './admin.ts';
 import { common } from './common.ts';
 import { deletePage } from './delete.ts';
 import { drafts } from './drafts.ts';
@@ -13,6 +14,7 @@ import { help } from './help.ts';
 import { indexPage } from './indexPage.ts';
 import { login } from './login.ts';
 import { misc } from './misc.ts';
+import { moderate } from './moderate.ts';
 import { pms } from './pms.ts';
 import { post } from './post.ts';
 import { premium } from './premium.ts';
@@ -44,6 +46,8 @@ export const fr = {
 	drafts,
 	reputation,
 	premium,
+	moderate,
+	admin,
 };
 
 export const frDateWords: DateWords = {

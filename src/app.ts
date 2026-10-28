@@ -10,6 +10,7 @@ import fastifyView from '@fastify/view';
 import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import nunjucks from 'nunjucks';
 import type { Mailer } from './adapters/mailer.ts';
+import { AdminReportsController, type AdminReportsQuery } from './controllers/AdminReportsController.ts';
 import { ContactController, type ContactQuery } from './controllers/ContactController.ts';
 import { DeleteController, type DeleteQuery } from './controllers/DeleteController.ts';
 import { DraftController, type DraftQuery } from './controllers/DraftController.ts';
@@ -22,6 +23,7 @@ import { HelpController } from './controllers/HelpController.ts';
 import { IndexController } from './controllers/IndexController.ts';
 import { LoginController, type LoginQuery } from './controllers/LoginController.ts';
 import { MiscController, type MiscQuery } from './controllers/MiscController.ts';
+import { type HostResolver, ModerateController, type ModerateQuery } from './controllers/ModerateController.ts';
 import { PasswordResetController } from './controllers/PasswordResetController.ts';
 import { PostController, type PostQuery } from './controllers/PostController.ts';
 import { PremiumController, type PremiumQuery } from './controllers/PremiumController.ts';
@@ -49,6 +51,7 @@ import type { GalleryFileStore } from './repositories/GalleryFiles.ts';
 import type { GalleryStore } from './repositories/GalleryRepository.ts';
 import type { MailTemplateReader } from './repositories/MailTemplateFiles.ts';
 import type { UploadStore } from './repositories/MemberUploadFiles.ts';
+import type { ModerationStore } from './repositories/ModerationRepository.ts';
 import type { PostEditStore } from './repositories/PostEditRepository.ts';
 import type { PostingStore } from './repositories/PostingRepository.ts';
 import type { PostReader } from './repositories/PostRepository.ts';
@@ -57,7 +60,7 @@ import type { PrivateContactStore, SendingListStore } from './repositories/Priva
 import type { PrivateMessageStore } from './repositories/PrivateMessageRepository.ts';
 import type { ProfileStore } from './repositories/ProfileRepository.ts';
 import type { RegistrationStore } from './repositories/RegistrationRepository.ts';
-import type { ReportWriter } from './repositories/ReportRepository.ts';
+import type { ReportStore, ReportWriter } from './repositories/ReportRepository.ts';
 import type { ReputationStore } from './repositories/ReputationRepository.ts';
 import type { SearchReader, SearchWriter } from './repositories/SearchRepository.ts';
 import type { StatsReader } from './repositories/StatsRepository.ts';
@@ -103,10 +106,15 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	sendingLists: SendingListStore;
 	subscriptions: SubscriptionStore;
 	reputation: ReputationStore;
+	/** Modération des sujets et messages (moderate.php) et résolution inverse des IP. */
+	moderation: ModerationStore;
+	hostResolver: HostResolver;
 	/** Compte Premium de PV (tables apremium, acodes15, acodes365). */
 	premium: PremiumStore;
 	contacts: ContactStore;
 	reportWriter: ReportWriter;
+	/** Liste et traitement des signalements (admin_reports.php). */
+	reportStore: ReportStore;
 	toolbar: ToolbarReader;
 	avatars: AvatarLocator;
 	avatarStore: AvatarStore;
@@ -132,6 +140,7 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 
 /** Pages déjà servies par Node ; les autres liens partent vers l'installation PHP. */
 const PORTED_PAGES = new Set([
+	'admin_reports.php',
 	'delete.php',
 	'draft_edit.php',
 	'draft_list.php',
@@ -143,6 +152,7 @@ const PORTED_PAGES = new Set([
 	'index.php',
 	'login.php',
 	'misc.php',
+	'moderate.php',
 	'pms_contacts.php',
 	'pms_inbox.php',
 	'pms_send.php',
@@ -303,6 +313,14 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 		{ preHandler: [authenticate, verifyCsrf] },
 		fileManager.submit,
 	);
+
+	const moderate = new ModerateController({ ...deps, trackCookieName });
+	app.get<{ Querystring: ModerateQuery }>('/moderate.php', { preHandler: authenticate }, moderate.show);
+	app.post<{ Querystring: ModerateQuery; Body: FormBody }>('/moderate.php', { preHandler: [authenticate, verifyCsrf] }, moderate.submit);
+
+	const adminReports = new AdminReportsController(deps);
+	app.get<{ Querystring: AdminReportsQuery }>('/admin_reports.php', { preHandler: authenticate }, adminReports.show);
+	app.post<{ Body: FormBody }>('/admin_reports.php', { preHandler: [authenticate, verifyCsrf] }, adminReports.zap);
 
 	const premium = new PremiumController(deps);
 	app.get<{ Querystring: PremiumQuery }>('/premium.php', { preHandler: authenticate }, (request, reply) => premium.show(request, reply));

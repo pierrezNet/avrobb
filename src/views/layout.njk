@@ -1,4 +1,5 @@
 {#- Mise en page commune (main.tpl + header.php + footer.php). Données : `layout` (presenters/layout.ts). -#}
+{%- import "partials/actions.njk" as actions -%}
 <!DOCTYPE html>
 <html lang="{{ lang.common.langCode }}">
 <head>
@@ -94,7 +95,7 @@
 	<nav class="mod-controls" id="modcontrols" aria-label="{{ lang.common.modControls }}">
 		<ul>
 		{% for control in layout.modControls %}
-			<li><a href="{{ url(control.href) }}">{{ control.label }}</a></li>
+			<li>{% if control.post %}{{ actions.postButton(layout, control.href, control.label) }}{% else %}<a href="{{ url(control.href) }}">{{ control.label }}</a>{% endif %}</li>
 		{% endfor %}
 		</ul>
 	</nav>

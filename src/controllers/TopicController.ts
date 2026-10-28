@@ -17,6 +17,7 @@ import type { TopicReader, TopicWriter } from '../repositories/TopicRepository.t
 import type { AvatarLocator } from '../services/avatars.ts';
 import { buildCensor } from '../services/censor.ts';
 import { clampPage, pageCount } from '../services/pagination.ts';
+import { isForumModerator } from '../services/permissions.ts';
 import { DEFAULT_TOOLBAR } from '../services/toolbar.ts';
 import { markRead, parseTrackedTopics, serializeTrackedTopics } from '../services/trackedTopics.ts';
 import { positiveInt } from './params.ts';
@@ -81,9 +82,11 @@ export class TopicController {
 		const page = clampPage(request.query.p, numPages);
 		const offset = (page - 1) * perPage;
 
-		const [posts, labels, bannedUsernames, censoredWords, toolbar] = await Promise.all([
+		const [posts, labels, labelDefinitions, bannedUsernames, censoredWords, toolbar] = await Promise.all([
 			this.deps.posts.listPage(topic.id, offset, perPage),
 			this.deps.topicLabels.listForTopics([topic.id]),
+			// Balises proposées dans le pied de page : seulement pour les modérateurs du forum.
+			isForumModerator(viewer, topic.forum) ? this.deps.topicLabels.listDefinitions() : [],
 			this.deps.bans.listBannedUsernames(),
 			config.censoring ? this.deps.censorship.listWords() : [],
 			this.deps.toolbar.load(),
@@ -127,7 +130,7 @@ export class TopicController {
 				titleParts: [config.boardTitle, topic.forum.name, view.topic.subject],
 				pageNumber: page,
 				activeNav: 'index',
-				footer: { kind: 'viewtopic', topic, page },
+				footer: { kind: 'viewtopic', topic, page, labelDefinitions, appliedLabels: labels.get(topic.id) ?? [] },
 				allowIndex: true,
 				canonicalUrl: topicUrl(topic.id, page),
 			},

@@ -30,7 +30,6 @@ export const gallery = {
 
 	// Envoi
 	postTitle: 'Poster une image dans la galerie',
-	imageInfo: "Saisissez les détails de l'image",
 	imageUse:
 		"Le formulaire ci-dessous vous permet d'envoyer une image dans la galerie du site. L'image doit être au format JPG, GIF ou PNG, avec une taille maximale de 1,5 Mio. N'oubliez pas d'ajouter un titre et une petite description de l'image.",
 	imageRule:

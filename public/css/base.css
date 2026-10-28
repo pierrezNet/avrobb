@@ -1206,13 +1206,21 @@ a.site-status__alert {
 	}
 }
 
+/* Titre limité à deux lignes (complet en infobulle), activité alignée en bas de chaque carte. */
 .hot-topics__subject {
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	line-clamp: 2;
+	overflow: hidden;
 	padding: 0.5rem 0.75rem 0;
 	font-weight: 600;
+	line-height: 1.4;
 	overflow-wrap: anywhere;
 }
 
 .hot-topics__activity {
+	margin-top: auto;
 	padding: 0.25rem 0.75rem 0.5rem;
 	color: var(--color-muted);
 	font-size: 0.8125rem;

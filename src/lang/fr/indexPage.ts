@@ -15,7 +15,6 @@ export const indexPage = {
 	totalTopics: 'Nombre total de discussions :',
 	totalPosts: 'Nombre total de messages :',
 	online: 'Actuellement en ligne :',
-	boardInfo: 'Informations sur les forums',
 	boardStats: 'Statistiques des forums',
 	userInfo: "Informations sur l'utilisateur",
 	newPosts: 'Nouveaux messages',

@@ -11,7 +11,7 @@ import { type LayoutDeps, renderMessage } from '../http/layout.ts';
 import { paginationLinks } from '../presenters/navigation.ts';
 import type { BanStore } from '../repositories/BanRepository.ts';
 import type { PhpCacheStore } from '../repositories/PhpCacheFiles.ts';
-import { BAN_SEARCH_FIELDS, BAN_SEARCH_ORDERS, readBanForm, readBanSearch } from '../services/banForm.ts';
+import { BAN_SEARCH_FIELDS, BAN_SEARCH_ORDERS, readBanForm, readBanSearch, withLastIp } from '../services/banForm.ts';
 import { formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
 import { isAdmin } from '../services/permissions.ts';
 import { punTrim } from '../services/phpString.ts';
@@ -243,14 +243,4 @@ export class AdminBansController {
 			},
 		);
 	}
-}
-
-/** Ajoute l'adresse de la case « dernière IP connue » aux adresses saisies, sans doublon. */
-function withLastIp(typed: string, lastIp: string): string {
-	const ips = typed
-		.trim()
-		.split(/\s+/)
-		.filter((ip) => ip !== '');
-	const extra = lastIp.trim();
-	return (extra !== '' && !ips.includes(extra) ? [...ips, extra] : ips).join(' ');
 }

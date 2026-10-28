@@ -24,7 +24,7 @@ import type { ConfigStore } from '../repositories/ConfigRepository.ts';
 import type { MaintenanceStore } from '../repositories/MaintenanceRepository.ts';
 import type { PhpCacheName, PhpCacheStore } from '../repositories/PhpCacheFiles.ts';
 import type { StopwordsReader } from '../repositories/StopwordsLoader.ts';
-import { changedOptions, readMaintenanceForm } from '../services/adminOptions.ts';
+import { changedOptions, readColdTopicsForm, readMaintenanceForm } from '../services/adminOptions.ts';
 import { indexWords } from '../services/searchIndex.ts';
 import { adminDenied, renderAdminPage } from './adminPage.ts';
 import { positiveInt } from './params.ts';
@@ -107,10 +107,10 @@ export class AdminMaintenanceController {
 	}
 
 	async #saveColdTopics(request: FastifyRequest<{ Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> {
-		const raw = field(request.body, 'cold_days').trim();
-		if (!/^\d{1,4}$/.test(raw)) return renderMessage(request, reply, this.deps, 400, this.deps.page.lang.adminMaintenance.coldDaysInvalid);
+		const values = readColdTopicsForm((name) => field(request.body, name));
+		if (values === null) return renderMessage(request, reply, this.deps, 400, this.deps.page.lang.adminMaintenance.coldDaysInvalid);
 		// Clé propre à AvroBB, absente de la table tant qu'elle n'a pas été réglée : REPLACE.
-		await this.deps.configStore.replaceValues(new Map([['o_cold_topic_days', String(Number(raw))]]));
+		await this.deps.configStore.replaceValues(values);
 		await this.deps.configCache.invalidate();
 		return reply.redirect('admin_maintenance.php?done=cold#cold-topics', 303);
 	}

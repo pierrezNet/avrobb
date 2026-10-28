@@ -5,7 +5,6 @@
 
 export const toolbar = {
 	label: 'Mise en forme du message',
-	allSmilies: 'Toutes les émoticônes',
 	buttons: {
 		smilies: 'Cliquez ici pour afficher la barre d’émoticônes',
 		bold: 'Texte en gras : [b]texte[/b]',

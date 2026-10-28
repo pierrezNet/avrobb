@@ -38,7 +38,6 @@ export const topic = {
 	currentSubject: 'Sujet actuel',
 	newSubject: 'Nouveau sujet',
 	savePrefixes: 'Enregistrer',
-	prefixesUpdated: 'Balises du sujet mises à jour.',
 	prefixesTooLong: 'Le sujet ne peut pas dépasser 70 caractères avec ces balises.',
 	cancel: 'Annuler',
 };

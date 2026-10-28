@@ -88,7 +88,7 @@
 	<ul class="hot-topics">
 		{% for topic in view.hotTopics %}
 		<li class="hot-topics__item">
-			<a class="hot-topics__card" href="{{ url(topic.href) }}">
+			<a class="hot-topics__card" href="{{ url(topic.href) }}" title="{{ topic.subjectText }}">
 				{% if topic.imageUrl %}<img class="hot-topics__image" src="{{ topic.imageUrl }}" alt="" loading="lazy">{% else %}<span class="hot-topics__image hot-topics__image--none" aria-hidden="true"></span>{% endif %}
 				<span class="hot-topics__subject">{{ subjectParts.subject(topic.subject) }}</span>
 				<span class="hot-topics__activity">{{ topic.activity }}</span>

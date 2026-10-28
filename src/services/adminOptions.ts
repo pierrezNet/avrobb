@@ -289,6 +289,15 @@ export function readMaintenanceForm(read: (key: string) => string, defaultMessag
 	]);
 }
 
+/**
+ * Seuil des discussions anciennes (admin_maintenance.php, clé AvroBB o_cold_topic_days) : nombre
+ * entier de jours, 0 = désactivé ; null si la saisie n'est pas un nombre.
+ */
+export function readColdTopicsForm(read: (key: string) => string): Map<string, string> | null {
+	const raw = read('cold_days').trim();
+	return /^\d{1,4}$/.test(raw) ? new Map([['o_cold_topic_days', String(Number(raw))]]) : null;
+}
+
 /** Permissions (admin_permissions.php, clés p_*), dans l'ordre du formulaire PHP. */
 export const PERMISSION_SECTIONS: readonly OptionSection<'posting' | 'signatures' | 'registration'>[] = [
 	{ id: 'posting', fields: flags('message_bbcode', 'message_img_tag', 'message_all_caps', 'subject_all_caps', 'force_guest_email') },

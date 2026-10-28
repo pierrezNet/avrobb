@@ -39,6 +39,14 @@ export function hasSimulatorTag(subject: string, tags: readonly SubjectTag[]): b
 	return tags.some((tag) => tag.group === 'simulator' && prefixes.includes(tag.name));
 }
 
+/**
+ * Avertir avant de publier une nouvelle discussion ? Oui si le forum propose des balises de
+ * simulateur, que le sujet n'en porte aucune et que l'auteur n'a pas déjà confirmé.
+ */
+export function needsSimulatorTagWarning(subject: string, tags: readonly SubjectTag[], confirmed: boolean): boolean {
+	return !confirmed && tags.some((tag) => tag.group === 'simulator') && !hasSimulatorTag(subject, tags);
+}
+
 /** Sujet avec ces balises, dans l'ordre de la liste, séparées du titre par une espace. */
 function withTags(rest: string, names: readonly string[], tags: readonly SubjectTag[]): string {
 	const chosen = tags.filter((tag) => names.includes(tag.name));

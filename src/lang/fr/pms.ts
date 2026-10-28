@@ -80,14 +80,12 @@ export const pms = {
 	deletedDone: 'Messages supprimés.',
 
 	// Conversation
-	with: 'avec',
 	conversationTitle: (subject: string, participants: string) => `${subject} avec ${participants}`,
 	reply: 'Répondre',
 	quote: 'Citer',
 	edit: 'Modifier',
 	quickPost: 'Réponse',
 	deleteMessage: 'Supprimer le message',
-	deleteConversation: 'Supprimer la discussion',
 	topicBy: (name: string, date: string) => `Discussion démarrée par ${name} (${date})`,
 	replyBy: (name: string, date: string) => `Réponse de ${name} (${date})`,
 	deleteWarning: 'Vous êtes sur le point de supprimer définitivement ce message !',
@@ -96,7 +94,6 @@ export const pms = {
 	deleteInfo: 'Le message que vous souhaitez supprimer vous est présenté ci-dessous afin que vous puissiez le revoir avant de continuer.',
 	deleteForEverybody:
 		'Supprimer la discussion (ou le message) pour tous les participants (option disponible seulement pour les administrateurs et modérateurs).',
-	messageDeleted: 'Message supprimé.',
 
 	// Écriture
 	sendTo: 'Envoyer à',

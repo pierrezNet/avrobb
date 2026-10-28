@@ -31,7 +31,7 @@ import { canPostIn, isAnyModerator, isForumModerator } from '../services/permiss
 import { type PostForm, promotionGroup, quoteText, subscriptionChange, type ValidatedPost, validatePost } from '../services/posting.ts';
 import { normalizeUsername, usernameSkeleton } from '../services/registration.ts';
 import { indexWords } from '../services/searchIndex.ts';
-import { hasSimulatorTag } from '../services/subjectPrefixes.ts';
+import { needsSimulatorTagWarning } from '../services/subjectPrefixes.ts';
 import { DEFAULT_TOOLBAR } from '../services/toolbar.ts';
 import { markRead, parseTrackedTopics, serializeTrackedTopics } from '../services/trackedTopics.ts';
 import { type MentionNotifierDeps, notifyMentions } from './mentionNotifier.ts';
@@ -201,8 +201,7 @@ export class PostController {
 		}
 
 		// Nouvelle discussion sans balise de simulateur : avertir une fois, publier au second envoi.
-		const simulatorTags = config.subjectTags.some((tag) => tag.group === 'simulator');
-		if (target.topic === null && !asDraft && !confirmNoTag && simulatorTags && !hasSimulatorTag(post.subject, config.subjectTags)) {
+		if (target.topic === null && !asDraft && needsSimulatorTagWarning(post.subject, config.subjectTags, confirmNoTag)) {
 			const state: PostFormState = { ...this.stateOf(form, post), draft: asDraft, draftId, tagWarning: true };
 			return this.renderForm(request, reply, target, censor, state, [], null);
 		}

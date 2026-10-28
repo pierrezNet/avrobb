@@ -117,3 +117,13 @@ export function readBanSearch(
 	}
 	return { kind: 'ok', criteria: { patterns, expireAfter, expireBefore, orderBy, descending }, queryString: query.toString() };
 }
+
+/** Ajoute l'adresse de la case « dernière IP connue » aux adresses saisies, sans doublon. */
+export function withLastIp(typed: string, lastIp: string): string {
+	const ips = typed
+		.trim()
+		.split(/\s+/)
+		.filter((ip) => ip !== '');
+	const extra = lastIp.trim();
+	return (extra !== '' && !ips.includes(extra) ? [...ips, extra] : ips).join(' ');
+}

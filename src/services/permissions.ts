@@ -37,6 +37,19 @@ export function readOnlyViewer(viewer: Viewer, ban: { expire: number | null; mes
 	};
 }
 
+export interface BannedWriteQuery {
+	email?: string;
+	report?: string;
+}
+
+/**
+ * Envois de formulaire permis à un visiteur banni : connexion et déconnexion, « marquer comme lu »
+ * et abonnements (misc.php hors e-mail et signalement). Rien qui publie.
+ */
+export function canWriteWhileBanned(path: string, query: BannedWriteQuery): boolean {
+	return path === '/login.php' || (path === '/misc.php' && query.email === undefined && query.report === undefined);
+}
+
 export function isAdmin(viewer: Viewer): boolean {
 	return viewer.group.id === GroupId.Admin;
 }

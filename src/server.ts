@@ -38,7 +38,6 @@ import { PhpCacheFiles } from './repositories/PhpCacheFiles.ts';
 import { PostEditRepository } from './repositories/PostEditRepository.ts';
 import { PostingRepository } from './repositories/PostingRepository.ts';
 import { PostRepository } from './repositories/PostRepository.ts';
-import { PremiumRepository } from './repositories/PremiumRepository.ts';
 import { PrivateContactRepository } from './repositories/PrivateContactRepository.ts';
 import { PrivateMessageRepository } from './repositories/PrivateMessageRepository.ts';
 import { ProfileRepository } from './repositories/ProfileRepository.ts';
@@ -105,7 +104,6 @@ const app = await buildApp({
 	drafts: new DraftRepository(db),
 	subscriptions: new SubscriptionRepository(db),
 	reputation: new ReputationRepository(db),
-	premium: new PremiumRepository(db),
 	moderation: new ModerationRepository(db),
 	hostResolver: new DnsHostResolver(),
 	contacts: new ContactRepository(db),

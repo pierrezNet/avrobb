@@ -250,21 +250,6 @@ export interface SmiliesTable {
 	disp_position: Generated<number>;
 }
 
-/**
- * Premium de PV (premium.php) : tables sans préfixe, hors de TABLE_NAMES. Expiration au format
- * date SQL ; « 2036-01-01 » signifie « à vie ».
- */
-export interface ApremiumTable {
-	ID_User: number;
-	Expiration: string | Date;
-}
-
-/** Codes d'activation Premium de 15 et 365 jours ; Used = identifiant du membre qui l'a utilisé (0 = libre). */
-export interface PremiumCodesTable {
-	Code: string;
-	Used: number;
-}
-
 export interface SearchCacheTable {
 	id: number;
 	ident: string;
@@ -381,9 +366,6 @@ export interface UsersTable {
 }
 
 export interface Database {
-	acodes15: PremiumCodesTable;
-	acodes365: PremiumCodesTable;
-	apremium: ApremiumTable;
 	balises: BalisesTable;
 	balises_modo: BalisesModoTable;
 	bans: BansTable;

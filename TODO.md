@@ -95,7 +95,7 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
     dans une popin : ses images par défaut, recherche titre/description, « Fermer » et « Insérer et fermer »
   - [x] Image insérée avec son titre et sa description (la description, obligatoire dans la galerie, est
     aujourd'hui perdue à l'insertion), affichée en **carte** (image, titre, légende)
-- [x] Premium (`premium`, `premium.php`) **(PV)** — page du membre et codes d'activation ; le plugin d'administration `AP_Premium` (table `premium`) suit au lot 7
+- [x] Premium (`premium.php`) **(PV)** — porté puis retiré : statut sans effet dans le forum, page liée nulle part (tables conservées)
 
 ## Lot 6 — Modération
 
@@ -138,6 +138,8 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
 - [x] Ménage « projet à part » : Sondage (sans objet) et Mod Installer retirés ; plus d'installation/désinstallation de mods (PunBalise, Plugile, Uploadile) ; options sans effet retirées (GZip, formats de date et d'heure, langue par défaut, numéro de version) ; plus de version FluxBB (pied de page, accueil de l'administration, flux)
 
 ## À décider (mis de côté)
+
+- [ ] **Soutenir Pilote-Virtuel** : remettre à plat le besoin de soutien financier (dons, abonnement, Tipeee…) avant tout développement : ce que reçoit le donateur (badge, remerciement, avantages ?), moyen de paiement, gestion côté administration. L'ancien Premium (codes PV15/PV365, boutique Digiseller) n'est pas repris
 
 - [x] Plugin FluxToolBar (`AP_FluxToolBar.php`) : abandonné (la barre d'outils est définie par AvroBB ; les tables `toolbar_conf`/`toolbar_tags` restent lues si elles sont remplies)
 

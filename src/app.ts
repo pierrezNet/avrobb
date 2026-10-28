@@ -41,7 +41,6 @@ import { MiscController, type MiscQuery } from './controllers/MiscController.ts'
 import { type HostResolver, ModerateController, type ModerateQuery } from './controllers/ModerateController.ts';
 import { PasswordResetController } from './controllers/PasswordResetController.ts';
 import { PostController, type PostQuery } from './controllers/PostController.ts';
-import { PremiumController, type PremiumQuery } from './controllers/PremiumController.ts';
 import { PrivateContactController, type PrivateContactQuery } from './controllers/PrivateContactController.ts';
 import { PrivateMessageController, type PrivateMessageQuery } from './controllers/PrivateMessageController.ts';
 import { PrivateMessageSendController, type PrivateMessageSendQuery } from './controllers/PrivateMessageSendController.ts';
@@ -83,7 +82,6 @@ import type { ModerationStore } from './repositories/ModerationRepository.ts';
 import type { PostEditStore } from './repositories/PostEditRepository.ts';
 import type { PostingStore } from './repositories/PostingRepository.ts';
 import type { PostReader } from './repositories/PostRepository.ts';
-import type { PremiumStore } from './repositories/PremiumRepository.ts';
 import type { PrivateContactStore, SendingListStore } from './repositories/PrivateContactRepository.ts';
 import type { PrivateMessageStore } from './repositories/PrivateMessageRepository.ts';
 import type { ProfileStore } from './repositories/ProfileRepository.ts';
@@ -140,8 +138,6 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	/** Modération des sujets et messages (moderate.php) et résolution inverse des IP. */
 	moderation: ModerationStore;
 	hostResolver: HostResolver;
-	/** Compte Premium de PV (tables apremium, acodes15, acodes365). */
-	premium: PremiumStore;
 	contacts: ContactStore;
 	reportWriter: ReportWriter;
 	/** Liste et traitement des signalements (admin_reports.php). */
@@ -253,7 +249,6 @@ const PORTED_PAGES = new Set([
 	'pms_sending_lists.php',
 	'pms_view.php',
 	'post.php',
-	'premium.php',
 	'profile.php',
 	'register.php',
 	'reputation.php',
@@ -519,10 +514,6 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 	const adminReports = new AdminReportsController(deps);
 	app.get<{ Querystring: AdminReportsQuery }>('/admin_reports.php', { preHandler: authenticate }, adminReports.show);
 	app.post<{ Body: FormBody }>('/admin_reports.php', { preHandler: [authenticate, verifyCsrf] }, adminReports.zap);
-
-	const premium = new PremiumController(deps);
-	app.get<{ Querystring: PremiumQuery }>('/premium.php', { preHandler: authenticate }, (request, reply) => premium.show(request, reply));
-	app.post<{ Querystring: PremiumQuery; Body: FormBody }>('/premium.php', { preHandler: [authenticate, verifyCsrf] }, premium.activate);
 
 	const reputation = new ReputationController(deps);
 	app.get<{ Querystring: ReputationQuery }>('/reputation.php', { preHandler: authenticate }, reputation.show);

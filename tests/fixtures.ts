@@ -378,9 +378,6 @@ export interface FakeData {
 	reputationTargets?: ReputationTarget[];
 	addedVotes?: NewVote[];
 	deletedVotes?: { userId: number; ids: number[] }[];
-	/** Premium : expiration par membre, codes libres par table. */
-	premiumExpirations?: Map<number, string>;
-	premiumCodes?: { table: 'acodes15' | 'acodes365'; code: string; used: number }[];
 	/** Modération : sujets modérables, forums de destination, actions consignées. */
 	moderatedTopics?: ModeratedTopic[];
 	targetForums?: ForumTarget[];
@@ -1028,16 +1025,6 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 		},
 		serverInfo: { loadAverage: () => [0.5, 0.25, 0.125], operatingSystem: () => 'linux 7.0', runtimeVersion: () => 'v24.0.0' },
 		hostResolver: { reverse: async (ip) => (ip === '192.0.2.5' ? 'pilote.example.test' : ip) },
-		premium: {
-			findExpiration: async (id) => data.premiumExpirations?.get(id) ?? null,
-			redeemCode: async (userId, table, code, expiration) => {
-				const found = data.premiumCodes?.find((c) => c.table === table && c.code === code && c.used === 0);
-				if (found === undefined) return false;
-				found.used = userId;
-				data.premiumExpirations = new Map([...(data.premiumExpirations ?? []), [userId, expiration]]);
-				return true;
-			},
-		},
 		reputation: {
 			findMember: async (id) => data.reputationMembers?.find((m) => m.id === id) ?? null,
 			countVotes: async (id) => data.reputationVotes?.get(id)?.length ?? 0,

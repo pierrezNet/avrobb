@@ -28,7 +28,6 @@ import { misc } from './misc.ts';
 import { moderate } from './moderate.ts';
 import { pms } from './pms.ts';
 import { post } from './post.ts';
-import { premium } from './premium.ts';
 import { profile } from './profile.ts';
 import { register } from './register.ts';
 import { reputation } from './reputation.ts';
@@ -58,7 +57,6 @@ export const fr = {
 	delete: deletePage,
 	drafts,
 	reputation,
-	premium,
 	moderate,
 	admin,
 	adminBans,

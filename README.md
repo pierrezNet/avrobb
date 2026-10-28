@@ -146,8 +146,8 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   (la barre d'outils est définie par AvroBB), Plugile (il ne réglait que le titre d'un bloc du menu
   du profil : les plugiles suivent désormais les sections), Smilies (même le PHP n'affiche plus les
   images de la table `smilies` : 18 codes en dur, rendus en émojis par Node) et AP_Premium
-  (promotion temporaire dans un groupe ; sa table `premium` n'a jamais été installée sur PV, le
-  Premium réel est `premium.php` avec ses codes) ; plus d'installation
+  (promotion temporaire dans un groupe ; sa table `premium` n'a jamais été installée sur PV) ; plus
+  d'installation
   ni de désinstallation de mods (PunBalise, Plugile, Uploadile) ; options sans effet retirées du
   formulaire et jamais écrites (compression GZip, formats de date et d'heure, langue par défaut,
   numéro de version) ; plus de numéro de version FluxBB (pied de page, accueil, générateur des flux).
@@ -278,13 +278,10 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
 - Recherche : résultats mémorisés dans `search_cache` (lisibles par le PHP) et anti-flood
   `g_search_flood`, comme le PHP ; le formulaire reste en GET et écrit donc `last_search` et le cache.
   Pas de recherche « CJK » par LIKE (inutile sur un forum francophone). Refus pour flood en 429.
-- Premium (`premium.php`) : page dans la mise en page du forum ; le membre est celui de la session
-  (le PHP lisait l'identifiant dans le cookie sans le vérifier et se connectait à la base avec des
-  identifiants écrits en dur) ; la ligne `apremium` n'est créée qu'à l'activation d'un code (le PHP
-  l'écrivait à chaque visite) ; activation en POST avec jeton CSRF, code refusé signalé ; un code
-  prolonge un compte encore actif à partir de son expiration (le PHP repartait du jour). Tables
-  `apremium`, `acodes15`, `acodes365` sans préfixe, reconstituées pour les tests. Pas de
-  boutique Digiseller (le PHP chargeait son script) : la page sert seulement à activer un code.
+- Premium (`premium.php`) : non repris. Le statut acheté par code (PV15/PV365, boutique Digiseller,
+  dons Tipeee) n'avait aucun effet dans le forum et la page n'était liée nulle part. Les tables
+  `apremium`, `acodes15` et `acodes365` restent dans la base, intactes ; `premium.php` sera supprimé
+  du PHP à la bascule. Le soutien financier est à repenser (voir TODO).
 - Galerie : recherche dans le titre et la description (`?q=`, conservée par la pagination et le filtre « Mes images », page non indexée) ; informations visibles sous chaque vignette (le PHP les montrait au survol, inaccessible
   au clavier et au toucher), vignette collée en haut de la tuile ; filtre « Mes images » (`?mine=1`).
   Envoi : PNG accepté en plus du JPEG et du GIF, type lu dans le contenu ; vignette (150 px, JPEG)

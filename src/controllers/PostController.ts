@@ -31,6 +31,7 @@ import { canPostIn, isAnyModerator, isForumModerator } from '../services/permiss
 import { type PostForm, promotionGroup, quoteText, subscriptionChange, type ValidatedPost, validatePost } from '../services/posting.ts';
 import { normalizeUsername, usernameSkeleton } from '../services/registration.ts';
 import { indexWords } from '../services/searchIndex.ts';
+import { hasSimulatorTag } from '../services/subjectPrefixes.ts';
 import { DEFAULT_TOOLBAR } from '../services/toolbar.ts';
 import { markRead, parseTrackedTopics, serializeTrackedTopics } from '../services/trackedTopics.ts';
 import { type MentionNotifierDeps, notifyMentions } from './mentionNotifier.ts';
@@ -169,7 +170,11 @@ export class PostController {
 			stickTopic: checked(body, 'stick_topic'),
 			preview: checked(body, 'preview'),
 		};
-		return this.process(request, reply, target, censor, form, { asDraft, draftId: draftId > 0 ? draftId : null });
+		return this.process(request, reply, target, censor, form, {
+			asDraft,
+			draftId: draftId > 0 ? draftId : null,
+			confirmNoTag: field(body, 'no_tag_ok') !== '',
+		});
 	};
 
 	/**
@@ -182,7 +187,7 @@ export class PostController {
 		target: PostingTarget,
 		censor: Censor | null,
 		form: PostForm,
-		{ asDraft, draftId }: { asDraft: boolean; draftId: number | null },
+		{ asDraft, draftId, confirmNoTag = false }: { asDraft: boolean; draftId: number | null; confirmNoTag?: boolean },
 	): Promise<FastifyReply> {
 		const { viewer, board: config } = request;
 		const { lang } = this.deps.page;
@@ -193,6 +198,13 @@ export class PostController {
 			const errors = post.errors.map((error) => lang.post.postError(error));
 			const state: PostFormState = { ...this.stateOf(form, post), draft: asDraft, draftId };
 			return this.renderForm(request, reply, target, censor, state, errors, errors.length === 0 ? post.message : null);
+		}
+
+		// Nouvelle discussion sans balise de simulateur : avertir une fois, publier au second envoi.
+		const simulatorTags = config.subjectTags.some((tag) => tag.group === 'simulator');
+		if (target.topic === null && !asDraft && !confirmNoTag && simulatorTags && !hasSimulatorTag(post.subject, config.subjectTags)) {
+			const state: PostFormState = { ...this.stateOf(form, post), draft: asDraft, draftId, tagWarning: true };
+			return this.renderForm(request, reply, target, censor, state, [], null);
 		}
 
 		if (asDraft) {

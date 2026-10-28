@@ -43,3 +43,14 @@ describe('pastilles de balises', () => {
 		]);
 	});
 });
+
+describe('hasSimulatorTag', () => {
+	it('vrai seulement avec une balise de simulateur connue en tête du sujet', async () => {
+		const { hasSimulatorTag } = await import('../src/services/subjectPrefixes.ts');
+		expect(hasSimulatorTag('[MSFS] Panne moteur', TAGS)).toBe(true);
+		expect(hasSimulatorTag('[Résolu][x-plane] Panne', TAGS)).toBe(true);
+		expect(hasSimulatorTag('[Résolu] Panne moteur', TAGS)).toBe(false);
+		expect(hasSimulatorTag('Panne [MSFS]', TAGS)).toBe(false);
+		expect(hasSimulatorTag('[Inventée] Panne', TAGS)).toBe(false);
+	});
+});

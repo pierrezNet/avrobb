@@ -25,6 +25,13 @@
 	{{ forms.csrf(layout) }}
 	<input type="hidden" name="form_sent" value="1">
 	{% if view.form.draftId %}<input type="hidden" name="brouillon_id" value="{{ view.form.draftId }}">{% endif %}
+	{% if view.form.tagWarning %}
+	<div class="form__warning" role="alert">
+		<p><strong>{{ lang.post.noTagTitle }}</strong></p>
+		<p>{{ lang.post.noTagInfo }}</p>
+	</div>
+	<input type="hidden" name="no_tag_ok" value="1">
+	{% endif %}
 	<fieldset class="form__fieldset">
 		<legend class="form__legend">{{ view.legend }}</legend>
 		{% if view.guest %}{{ postFields.guestFields(view.guest, view.form, lang) }}{% endif %}

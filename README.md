@@ -161,6 +161,9 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   sans formulaire : Termes et règles (`terms.php`), Politique de confidentialité (`privacy.php`),
   Aide (`faq.php`). Textes dans `src/lang/fr/staticPages.ts` ; lisibles en mode maintenance et sans
   droit de lecture du forum.
+- Nouvelle discussion sans balise de simulateur : le formulaire est réaffiché avec un avertissement
+  (saisie conservée) ; un second « Valider » publie tel quel (`no_tag_ok`), pour les rares sujets
+  qui ne concernent aucun simulateur. Pas d'avertissement pour un brouillon ni pour une réponse.
 - Pas de flux Atom : `extern.php?type=atom` sert le flux RSS (les anciens abonnements continuent de
   fonctionner) ; l'option « Flux par défaut » ne propose plus que Aucun ou RSS, et l'ancien choix
   Atom (`o_feed_type` = 2, celui de PV) n'affiche plus de lien de flux. Pas de flux des discussions

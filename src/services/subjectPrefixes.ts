@@ -30,6 +30,15 @@ export function splitPrefixes(subject: string, tags: readonly SubjectTag[]): { p
 	return { prefixes, rest, hadTags };
 }
 
+/**
+ * Le sujet porte-t-il une balise de simulateur (MSFS, X-Plane…) ? Une nouvelle discussion sans
+ * balise reçoit un avertissement avant publication (AvroBB), sans être refusée.
+ */
+export function hasSimulatorTag(subject: string, tags: readonly SubjectTag[]): boolean {
+	const { prefixes } = splitPrefixes(subject, tags);
+	return tags.some((tag) => tag.group === 'simulator' && prefixes.includes(tag.name));
+}
+
 /** Sujet avec ces balises, dans l'ordre de la liste, séparées du titre par une espace. */
 function withTags(rest: string, names: readonly string[], tags: readonly SubjectTag[]): string {
 	const chosen = tags.filter((tag) => names.includes(tag.name));

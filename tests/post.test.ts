@@ -332,15 +332,25 @@ describe('POST /post.php', () => {
 		expect(fake.sentMails).toEqual([expect.objectContaining({ to: 'abonne@example.test', subject: 'Sujet new_reply_full' })]);
 	});
 
+	it('avec une balise de simulateur : publiée sans avertissement', async () => {
+		const fake = data({ forumInfos: [forumInfo({ topicPermission: true })] });
+		app = await buildApp(fakeDeps(fake));
+		const fields = { req_subject: '[MSFS] Premier vol', req_message: 'Bonjour', req_username: 'Pilote', req_email: 'p@example.test' };
+		expect((await submit(app, '/post.php?fid=2', fields, '')).statusCode).toBe(302);
+	});
+
 	it('crée une discussion d’invité avec son e-mail', async () => {
 		const fake = data({ forumInfos: [forumInfo({ topicPermission: true })] });
 		app = await buildApp(fakeDeps(fake));
-		const res = await submit(
-			app,
-			'/post.php?fid=2',
-			{ req_subject: 'Premier vol', req_message: 'Bonjour', req_username: 'Pilote', req_email: 'Pilote@Example.test' },
-			'',
-		);
+		const fields = { req_subject: 'Premier vol', req_message: 'Bonjour', req_username: 'Pilote', req_email: 'Pilote@Example.test' };
+		// Sans balise de simulateur : avertissement, rien n'est publié ; le second envoi publie.
+		const warned = await submit(app, '/post.php?fid=2', fields, '');
+		expect(warned.statusCode).toBe(200);
+		expect(warned.body).toContain('Aucune balise de simulateur');
+		expect(warned.body).toContain('<input type="hidden" name="no_tag_ok" value="1">');
+		expect(warned.body).toContain('value="Premier vol"');
+		expect(fake.savedTopics).toBeUndefined();
+		const res = await submit(app, '/post.php?fid=2', { ...fields, no_tag_ok: '1' }, '');
 		expect(res.statusCode).toBe(302);
 		expect(res.headers.location).toBe('viewtopic.php?pid=901#p901');
 		expect(fake.savedTopics).toEqual([

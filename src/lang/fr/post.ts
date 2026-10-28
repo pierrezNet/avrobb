@@ -88,6 +88,9 @@ export const post = {
 
 	// Formulaire
 	postErrors: 'Erreurs dans le message',
+	noTagTitle: 'Aucune balise de simulateur',
+	noTagInfo:
+		'Votre discussion ne précise pas le simulateur concerné (MSFS, FS24, X-Plane…). Ajoutez une balise avec les boutons sous le titre : les réponses seront plus justes. Si aucun ne convient, cliquez à nouveau sur « Valider » pour publier tel quel.',
 	postErrorsInfo: 'Les erreurs suivantes doivent être corrigées pour que le message puisse être envoyé :',
 	postPreview: 'Prévisualisation du message',
 	guestName: 'Nom',

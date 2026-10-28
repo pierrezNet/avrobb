@@ -41,6 +41,8 @@ export interface PostFormState {
 	draft: boolean;
 	/** Brouillon repris (post.php?brouillon) : supprimé une fois le message publié. */
 	draftId: number | null;
+	/** Nouvelle discussion sans balise de simulateur : avertissement, le prochain envoi publie. */
+	tagWarning?: boolean;
 }
 
 export interface PostPageInput {

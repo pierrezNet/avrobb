@@ -15,6 +15,7 @@ Stratégie de migration **page par page (« strangler fig »)** : Node et PHP pa
 
 ```bash
 npm run dev        # tsx watch, http://localhost:3000/viewtopic.php?id=4
+npm run build      # production : src/ compilé dans dist/ (puis npm run start)
 npm test           # vitest
 npm run typecheck  # tsc --noEmit (TypeScript strict)
 npm run lint       # Biome (lint + format, vérification seule)

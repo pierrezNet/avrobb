@@ -15,6 +15,20 @@ npm run parity -- 'viewtopic.php?id=4'     # compare le texte et les liens avec 
 npm run screenshot -- 'http://localhost:3000/viewtopic.php?id=4' --widths 320,1280
 ```
 
+### Production
+
+Le serveur de production exécute du JavaScript compilé, sans `tsx` :
+
+```bash
+npm ci                  # sur le serveur lui-même : sharp y installe son module natif
+npm run build           # src/ → dist/ (tsc, imports .ts réécrits en .js) + copie des vues
+npm prune --omit=dev    # facultatif : retire les outils de développement
+npm run start           # node dist/server.js, avec le .env du serveur
+```
+
+`public/` est servi depuis la racine du projet et `dist/views` depuis `dist/`. `dist/` n'est pas
+versionné : on le reconstruit à chaque déploiement.
+
 Variables des tests sur base : `TEST_DB_HOST`, `TEST_DB_PORT`, `TEST_DB_USER`, `TEST_DB_PASSWORD`
 (par défaut le conteneur `pv_db`, `root`/`root`), `TEST_DB_NAME` (doit finir par `_test`).
 Les captures demandent un Chrome sans tête (`CHROME_BIN`, ou celui de Playwright s'il est installé).

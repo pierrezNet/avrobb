@@ -42,6 +42,7 @@ import { RegistrationRepository } from './repositories/RegistrationRepository.ts
 import { ReportRepository } from './repositories/ReportRepository.ts';
 import { ReputationRepository } from './repositories/ReputationRepository.ts';
 import { SearchRepository } from './repositories/SearchRepository.ts';
+import { SmileyAdminRepository, SmileyImageFiles } from './repositories/SmileyAdminRepository.ts';
 import { StatsRepository } from './repositories/StatsRepository.ts';
 import { StopwordsLoader } from './repositories/StopwordsLoader.ts';
 import { SubscriptionRepository } from './repositories/SubscriptionRepository.ts';
@@ -78,6 +79,8 @@ const app = await buildApp({
 	forumAdmin: new ForumAdminRepository(db),
 	maintenance: new MaintenanceRepository(db),
 	premiumAdmin: new PremiumAdminRepository(db),
+	smileyAdmin: new SmileyAdminRepository(db),
+	smileyImages: new SmileyImageFiles(config.legacyRoot),
 	groupAdmin: new GroupAdminRepository(db),
 	userAdmin: new UserAdminRepository(db),
 	users,

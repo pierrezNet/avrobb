@@ -48,6 +48,7 @@ import type { ProfileStore } from '../src/repositories/ProfileRepository.ts';
 import type { NewUser } from '../src/repositories/RegistrationRepository.ts';
 import type { ReportTarget } from '../src/repositories/ReportRepository.ts';
 import type { NewVote } from '../src/repositories/ReputationRepository.ts';
+import type { SmileyRow } from '../src/repositories/SmileyAdminRepository.ts';
 import type { PostLocation } from '../src/repositories/TopicRepository.ts';
 import type { AdminUserRow, IpPoster, IpStat } from '../src/repositories/UserAdminRepository.ts';
 import type { ViewerRecord } from '../src/repositories/UserRepository.ts';
@@ -397,6 +398,9 @@ export interface FakeData {
 	prunableCount?: number;
 	/** Plugin AP_Premium.php : undefined si la table n'est pas installée. */
 	premiumMembers?: PremiumMember[];
+	/** Plugin AP_Smilies.php. */
+	smileyRows?: SmileyRow[];
+	smileyImageNames?: string[];
 	/** Signalements listés par admin_reports.php (modifiés en place quand ils sont traités). */
 	reportList?: Report[];
 	/** Messagerie privée en mémoire (créée vide au besoin). */
@@ -752,6 +756,28 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			},
 		},
 		forumAdmin: fakeForumAdmin(data),
+		smileyAdmin: {
+			listSmilies: async () => data.smileyRows ?? [],
+			updateSmilies: async (rows) => {
+				data.smileyRows = [...rows];
+			},
+			removeSmilies: async (ids) => {
+				data.smileyRows = (data.smileyRows ?? []).filter((row) => !ids.includes(row.id));
+			},
+			addSmiley: async (text, image) => {
+				data.smileyRows = [...(data.smileyRows ?? []), { id: 99, text, image, position: 0 }];
+			},
+		},
+		smileyImages: {
+			listImages: async () => data.smileyImageNames ?? [],
+			deleteImage: async (name) => {
+				data.smileyImageNames = (data.smileyImageNames ?? []).filter((n) => n !== name);
+				return true;
+			},
+			saveImage: async (base, extension) => {
+				data.smileyImageNames = [...(data.smileyImageNames ?? []), `${base}.${extension}`];
+			},
+		},
 		premiumAdmin: {
 			isInstalled: async () => data.premiumMembers !== undefined,
 			install: async () => {

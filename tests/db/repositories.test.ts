@@ -37,6 +37,7 @@ import { RegistrationRepository } from '../../src/repositories/RegistrationRepos
 import { ReportRepository } from '../../src/repositories/ReportRepository.ts';
 import { ReputationRepository } from '../../src/repositories/ReputationRepository.ts';
 import { SearchRepository } from '../../src/repositories/SearchRepository.ts';
+import { SmileyAdminRepository } from '../../src/repositories/SmileyAdminRepository.ts';
 import { StatsRepository } from '../../src/repositories/StatsRepository.ts';
 import { SubscriptionRepository } from '../../src/repositories/SubscriptionRepository.ts';
 import { ToolbarRepository } from '../../src/repositories/ToolbarRepository.ts';
@@ -500,6 +501,8 @@ describe('viewtopic de bout en bout', () => {
 			forumAdmin: new ForumAdminRepository(db),
 			maintenance: new MaintenanceRepository(db),
 			premiumAdmin: new PremiumAdminRepository(db),
+			smileyAdmin: new SmileyAdminRepository(db),
+			smileyImages: { listImages: async () => [], deleteImage: async () => false, saveImage: async () => undefined },
 			groupAdmin: new GroupAdminRepository(db),
 			userAdmin: new UserAdminRepository(db),
 			banStore: new BanRepository(db),

@@ -242,6 +242,14 @@ export interface ReputationTable {
 	rep_minus: Generated<number>;
 }
 
+/** Smileys du PHP (plugin AP_Smilies.php) ; Node affiche des émojis (services/smilies.ts). */
+export interface SmiliesTable {
+	id: Generated<number>;
+	image: string;
+	text: string;
+	disp_position: Generated<number>;
+}
+
 /**
  * Membres promus par le plugin AP_Premium.php (table créée par le plugin, absente tant qu'il n'est pas
  * installé ; `id` est l'identifiant du membre).
@@ -412,6 +420,7 @@ export interface Database {
 	search_cache: SearchCacheTable;
 	search_matches: SearchMatchesTable;
 	search_words: SearchWordsTable;
+	smilies: SmiliesTable;
 	sending_lists: SendingListsTable;
 	toolbar_conf: ToolbarConfTable;
 	toolbar_tags: ToolbarTagsTable;
@@ -443,6 +452,7 @@ export const TABLE_NAMES: readonly (keyof Database)[] = [
 	'search_cache',
 	'search_matches',
 	'search_words',
+	'smilies',
 	'sending_lists',
 	'toolbar_conf',
 	'toolbar_tags',

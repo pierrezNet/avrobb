@@ -81,6 +81,7 @@ import type { RegistrationStore } from './repositories/RegistrationRepository.ts
 import type { ReportStore, ReportWriter } from './repositories/ReportRepository.ts';
 import type { ReputationStore } from './repositories/ReputationRepository.ts';
 import type { SearchReader, SearchWriter } from './repositories/SearchRepository.ts';
+import type { SmileyAdminStore, SmileyImageStore } from './repositories/SmileyAdminRepository.ts';
 import type { StatsReader } from './repositories/StatsRepository.ts';
 import type { StopwordsReader } from './repositories/StopwordsLoader.ts';
 import type { SubscriptionStore } from './repositories/SubscriptionRepository.ts';
@@ -148,6 +149,9 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	maintenance: MaintenanceStore;
 	/** Plugin AP_Premium.php (table premium). */
 	premiumAdmin: PremiumAdminStore;
+	/** Plugin AP_Smilies.php : table smilies et images du PHP. */
+	smileyAdmin: SmileyAdminStore;
+	smileyImages: SmileyImageStore;
 	/** Groupes d'utilisateurs (admin_groups.php). */
 	groupAdmin: GroupAdminStore;
 	/** Recherche d'utilisateurs et d'adresses IP (admin_users.php). */

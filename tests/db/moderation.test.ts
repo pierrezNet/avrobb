@@ -532,3 +532,25 @@ describe('UserAdminRepository (plugin Uploadile)', () => {
 		await store.ensureUploadColumn();
 	});
 });
+
+describe('SmileyAdminRepository (AP_Smilies.php)', () => {
+	it('ajoute, modifie et retire des smileys', async () => {
+		const { SmileyAdminRepository } = await import('../../src/repositories/SmileyAdminRepository.ts');
+		await inRollback(async (trx) => {
+			const store = new SmileyAdminRepository(trx);
+			const before = await store.listSmilies();
+			await store.addSmiley(':)', 'smile.png');
+			const added = (await store.listSmilies()).find((row) => row.text === ':)');
+			if (added === undefined) throw new Error('smiley absent');
+			await store.updateSmilies([{ ...added, text: ':-)', position: 7 }]);
+			expect((await store.listSmilies()).find((row) => row.id === added.id)).toEqual({
+				id: added.id,
+				text: ':-)',
+				image: 'smile.png',
+				position: 7,
+			});
+			await store.removeSmilies([added.id]);
+			expect(await store.listSmilies()).toEqual(before);
+		});
+	});
+});

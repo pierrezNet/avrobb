@@ -2199,3 +2199,13 @@ a.site-status__alert {
 	max-height: 6rem;
 	border-radius: 0.25rem;
 }
+
+/* Images de smileys (plugin Smilies) */
+.smiley-images {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+	gap: 0 1rem;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}

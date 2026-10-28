@@ -115,6 +115,9 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   membre précis (le PHP supprimait le même nom chez tous les membres) et recalcule son espace utilisé ;
   ni désinstallation (elle supprime `users.upload`, dont dépendent les pages) ni régénération des
   miniatures (pas de bibliothèque d'images côté serveur, les miniatures sont faites par le navigateur).
+- Plugin Smilies : gère la table `smilies` et les images du PHP (les pages Node affichent des
+  émojis) ; type d'image lu dans son contenu ; nom de fichier limité à lettres, chiffres, « _ » et
+  « - » ; erreurs réaffichées dans la page.
 - Rédaction (`post.php`) : émojis conservés (le PHP remplaçait les caractères de 4 octets par « ? »,
   héritage d'une base en utf8 sur 3 octets) ; redirection immédiate vers le message ; boutons de
   préfixe du sujet en JavaScript et seulement pour une nouvelle discussion ; pas de réponse dans le

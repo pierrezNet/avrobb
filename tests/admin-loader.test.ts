@@ -208,3 +208,79 @@ describe('plugin Uploadile', () => {
 		expect(fake.userActionLog).toEqual(['ensureUploadColumn']);
 	});
 });
+
+describe('plugin Smilies', () => {
+	const send = (server: FastifyInstance, fields: Record<string, string>) =>
+		server.inject({
+			method: 'POST',
+			url: '/admin_loader.php?plugin=AP_Smilies.php',
+			headers: { cookie: cookies(2), 'content-type': 'application/x-www-form-urlencoded' },
+			payload: new URLSearchParams({ csrf_token: csrfToken(CSRF_SECRET, SEED, 2), ...fields }).toString(),
+		});
+
+	it('modification, codes uniques, retrait, ajout et images utilisées protégées', async () => {
+		const { server, fake } = await start();
+		fake.smileyRows = [
+			{ id: 1, text: ':)', image: 'smile.png', position: 0 },
+			{ id: 2, text: ':(', image: 'sad.png', position: 1 },
+		];
+		fake.smileyImageNames = ['sad.png', 'smile.png', 'wink.png'];
+		const page = await get(server, 2, '/admin_loader.php?plugin=AP_Smilies.php');
+		expect(page.body).toContain('<option value="smile.png" selected>smile.png</option>');
+		const dup = await send(server, { reord: '1', 'smilies_code[1]': ':)', 'smilies_code[2]': ':)' });
+		expect(dup.body).toContain('Impossible de dupliquer le code :)');
+		await send(server, {
+			reord: '1',
+			'smilies_code[1]': ':-)',
+			'smilies_img[1]': 'wink.png',
+			'smilies_order[1]': '3',
+			'smilies_code[2]': ':(',
+		});
+		expect(fake.smileyRows[0]).toEqual({ id: 1, text: ':-)', image: 'wink.png', position: 3 });
+		expect((await send(server, { delete: '1', 'del_smilies[wink.png]': '1' })).body).toContain('utilisées : wink.png');
+		await send(server, { delete: '1', 'del_smilies[smile.png]': '1' });
+		expect(fake.smileyImageNames).toEqual(['sad.png', 'wink.png']);
+		await send(server, { remove: '1', 'rem_smilies[2]': '1' });
+		expect((await send(server, { add_smiley: '1', smiley_code: ':-)', smiley_image: 'sad.png' })).body).toContain(
+			'Le code texte existe déjà.',
+		);
+		await send(server, { add_smiley: '1', smiley_code: ';)', smiley_image: 'sad.png' });
+		expect(fake.smileyRows?.map((row) => row.text)).toEqual([':-)', ';)']);
+	});
+});
+
+describe('plugin Smilies : envoi d’image', () => {
+	const png = (width: number, height: number): Buffer => {
+		const data = Buffer.alloc(33);
+		Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(data);
+		data.writeUInt32BE(13, 8);
+		data.write('IHDR', 12, 'latin1');
+		data.writeUInt32BE(width, 16);
+		data.writeUInt32BE(height, 20);
+		return data;
+	};
+	async function upload(server: FastifyInstance, name: string, content: Buffer) {
+		const form = new FormData();
+		form.append('csrf_token', csrfToken(CSRF_SECRET, SEED, 2));
+		form.append('add_image', '1');
+		form.append('req_file', new Blob([new Uint8Array(content)]), name);
+		const request = new Request('http://x/', { method: 'POST', body: form });
+		return server.inject({
+			method: 'POST',
+			url: '/admin_loader.php?plugin=AP_Smilies.php',
+			headers: { cookie: cookies(2), 'content-type': request.headers.get('content-type') ?? '' },
+			payload: Buffer.from(await request.arrayBuffer()),
+		});
+	}
+
+	it('type lu dans le contenu, 20 × 20 au plus, nom sûr', async () => {
+		const { server, fake } = await start();
+		expect((await upload(server, 'grand.png', png(40, 40))).body).toContain('20 × 20 pixels');
+		expect((await upload(server, 'faux.png', Buffer.from('<?php'))).body).toContain('n&#39;est pas autorisé');
+		expect((await upload(server, '../../evil.png', png(20, 20))).statusCode).toBe(303);
+		expect((await upload(server, 'clin d oeil.png', png(20, 20))).statusCode).toBe(400);
+		const ok = await upload(server, 'clin.gif', png(16, 16));
+		expect(ok.headers.location).toBe('admin_loader.php?plugin=AP_Smilies.php&done=uploaded');
+		expect(fake.smileyImageNames).toEqual(['evil.png', 'clin.png']);
+	});
+});

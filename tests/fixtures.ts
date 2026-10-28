@@ -762,6 +762,13 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			},
 		},
 		forumAdmin: fakeForumAdmin(data),
+		memberSuggest: {
+			suggestMembers: async (prefix, limit) =>
+				data.users
+					.filter((u) => u.viewer.id > 1 && u.viewer.username.toLowerCase().startsWith(prefix.toLowerCase()))
+					.slice(0, limit)
+					.map((u) => ({ id: u.viewer.id, username: u.viewer.username })),
+		},
 		subjectPrefixes: {
 			firstPostMessage: async (postId) => [...data.posts.values()].flat().find((p) => p.id === postId)?.message ?? '',
 			updateSubject: async (topicId, _firstPostId, subject) => {

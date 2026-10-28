@@ -128,6 +128,11 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
 - Préfixes du sujet (PV) : page `topic_prefixes.php`, propre à Node (le PHP n'a pas d'équivalent),
   ouverte par un bouton de viewtopic pour l'auteur de la discussion et les modérateurs du forum ; les
   préfixes connus sont réécrits dans l'ordre des listes, séparés du titre par une espace.
+- Mentions de membres (ajout, propre à Node) : dans les zones de message (rédaction, réponse rapide,
+  messagerie), « @ » suivi du début d'un nom propose des membres (`member_suggest.php`, réservé aux
+  groupes qui voient la liste des membres) ; le choix insère `[url=<base>/profile.php?id=N]@Nom[/url]`,
+  que le PHP affiche aussi comme un lien. Les champs de destinataires et de contacts de la messagerie
+  complètent les noms de la même façon. Pas de notification au membre mentionné.
 - Rédaction (`post.php`) : émojis conservés (le PHP remplaçait les caractères de 4 octets par « ? »,
   héritage d'une base en utf8 sur 3 octets) ; redirection immédiate vers le message ; boutons de
   préfixe du sujet en JavaScript et seulement pour une nouvelle discussion ; pas de réponse dans le

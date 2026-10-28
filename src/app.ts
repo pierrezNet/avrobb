@@ -33,6 +33,7 @@ import { GalleryController, type GalleryQuery } from './controllers/GalleryContr
 import { HelpController } from './controllers/HelpController.ts';
 import { IndexController } from './controllers/IndexController.ts';
 import { LoginController, type LoginQuery } from './controllers/LoginController.ts';
+import { MemberSuggestController, type MemberSuggestQuery } from './controllers/MemberSuggestController.ts';
 import { MiscController, type MiscQuery } from './controllers/MiscController.ts';
 import { type HostResolver, ModerateController, type ModerateQuery } from './controllers/ModerateController.ts';
 import { PasswordResetController } from './controllers/PasswordResetController.ts';
@@ -69,6 +70,7 @@ import type { GroupAdminStore } from './repositories/GroupAdminRepository.ts';
 import type { LabelAdminStore } from './repositories/LabelAdminRepository.ts';
 import type { MailTemplateReader } from './repositories/MailTemplateFiles.ts';
 import type { MaintenanceStore } from './repositories/MaintenanceRepository.ts';
+import type { MemberSuggestReader } from './repositories/MemberSuggestRepository.ts';
 import type { UploadStore } from './repositories/MemberUploadFiles.ts';
 import type { ModerationStore } from './repositories/ModerationRepository.ts';
 import type { PostEditStore } from './repositories/PostEditRepository.ts';
@@ -159,6 +161,8 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	labelAdmin: LabelAdminStore;
 	/** Préfixes du sujet (topic_prefixes.php, page propre à Node). */
 	subjectPrefixes: SubjectPrefixStore;
+	/** Complètement des noms de membres (member_suggest.php, propre à Node). */
+	memberSuggest: MemberSuggestReader;
 	/** Groupes d'utilisateurs (admin_groups.php). */
 	groupAdmin: GroupAdminStore;
 	/** Recherche d'utilisateurs et d'adresses IP (admin_users.php). */
@@ -200,6 +204,7 @@ const PORTED_PAGES = new Set([
 	'admin_permissions.php',
 	'admin_reports.php',
 	'admin_users.php',
+	'member_suggest.php',
 	'topic_prefixes.php',
 	'admin_statistics.php',
 	'delete.php',
@@ -444,6 +449,9 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 		{ preHandler: [authenticate, verifyCsrf] },
 		subjectPrefixes.submit,
 	);
+
+	const memberSuggest = new MemberSuggestController(deps);
+	app.get<{ Querystring: MemberSuggestQuery }>('/member_suggest.php', { preHandler: authenticate }, memberSuggest.suggest);
 
 	const adminReports = new AdminReportsController(deps);
 	app.get<{ Querystring: AdminReportsQuery }>('/admin_reports.php', { preHandler: authenticate }, adminReports.show);

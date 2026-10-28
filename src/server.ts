@@ -27,6 +27,7 @@ import { GroupAdminRepository } from './repositories/GroupAdminRepository.ts';
 import { LabelAdminRepository } from './repositories/LabelAdminRepository.ts';
 import { MailTemplateFiles } from './repositories/MailTemplateFiles.ts';
 import { MaintenanceRepository } from './repositories/MaintenanceRepository.ts';
+import { MemberSuggestRepository } from './repositories/MemberSuggestRepository.ts';
 import { MemberUploadFiles } from './repositories/MemberUploadFiles.ts';
 import { ModerationRepository } from './repositories/ModerationRepository.ts';
 import { OnlineRepository } from './repositories/OnlineRepository.ts';
@@ -85,6 +86,7 @@ const app = await buildApp({
 	smileyImages: new SmileyImageFiles(config.legacyRoot),
 	labelAdmin: new LabelAdminRepository(db),
 	subjectPrefixes: new SubjectPrefixRepository(db),
+	memberSuggest: new MemberSuggestRepository(db),
 	groupAdmin: new GroupAdminRepository(db),
 	userAdmin: new UserAdminRepository(db),
 	users,

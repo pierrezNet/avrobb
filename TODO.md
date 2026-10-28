@@ -112,6 +112,11 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
 - [x] Maintenance : reconstruction de l'index de recherche, vidage des caches, mode maintenance
 - [x] Plugins d'administration : balises, smileys, premium, sondages, uploads, messagerie privée, Plugile, gestion d'utilisateur **(PV)**
 
+## Ajouts AvroBB
+
+- [x] Mentions @membre : complètement des noms (`member_suggest.php`, `public/js/mentions.js`) dans les messages et les destinataires de la messagerie ; insertion d'un lien BBCode vers le profil
+- [ ] Mentions : prévenir le membre mentionné (message privé ou e-mail, à décider)
+
 ## À décider (mis de côté)
 
 - [ ] Plugin FluxToolBar (`AP_FluxToolBar.php`) : encore utile ? Il règle la barre d'outils BBCode (tables `toolbar_conf`/`toolbar_tags`, vides en local). Encore servi par le PHP ; à porter avec un export de production, ou à abandonner

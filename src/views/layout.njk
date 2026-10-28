@@ -15,9 +15,10 @@
 <link rel="icon" href="{{ url('img/favicon.ico') }}">
 <link rel="stylesheet" href="{{ asset('css/base.css') }}">
 <link rel="stylesheet" href="{{ asset('css/themes/' ~ layout.theme ~ '.css') }}">
+{% if layout.memberSuggest %}<script src="{{ asset('js/mentions.js') }}" defer></script>{% endif %}
 {% block head %}{% endblock %}
 </head>
-<body>
+<body{% if layout.memberSuggest %} data-profile-base="{{ layout.memberSuggest.profileBase }}" data-members-label="{{ lang.common.memberSuggestions }}"{% endif %}>
 <a class="skip-link" href="#main">{{ lang.common.skipToContent }}</a>
 
 <div id="pun{{ layout.pageId }}" class="page theme-{{ layout.theme }}">

@@ -27,7 +27,7 @@
 		{% if view.newConversation %}
 		<p class="form__field">
 			<label for="p_username">{{ lang.pms.sendTo }} <span class="form__required">{{ lang.post.required }}</span></label>
-			<input type="text" id="p_username" name="p_username" value="{{ view.newConversation.usernames }}" required autocomplete="off">
+			<input type="text" id="p_username" name="p_username" value="{{ view.newConversation.usernames }}" required autocomplete="off" data-member-list>
 		</p>
 		<p class="form__help">{{ lang.pms.sendMultiple(view.newConversation.maxReceivers) }}</p>
 		{% if view.newConversation.lists.length %}
@@ -46,7 +46,7 @@
 		{% endif %}
 		<div class="form__field">
 			<label for="req_message">{{ lang.post.message }} <span class="form__required">{{ lang.post.required }}</span></label>
-			<textarea id="req_message" name="req_message" rows="14" required>{{ view.message }}</textarea>
+			<textarea id="req_message" name="req_message" rows="14" required data-mentions>{{ view.message }}</textarea>
 		</div>
 		{{ postFields.bbcodeStatus(view.bbcodeStatus, lang) }}
 	</fieldset>

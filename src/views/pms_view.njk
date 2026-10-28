@@ -31,7 +31,7 @@
 	{{ forms.csrf(layout) }}
 	<div class="form__field">
 		<label for="req_message">{{ lang.post.message }} <span class="form__required">{{ lang.post.required }}</span></label>
-		<textarea id="req_message" name="req_message" rows="7" required></textarea>
+		<textarea id="req_message" name="req_message" rows="7" required data-mentions></textarea>
 	</div>
 	{{ postFields.bbcodeStatus(view.quickPost.bbcodeStatus, lang) }}
 	<p class="form__buttons">

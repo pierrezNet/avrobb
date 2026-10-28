@@ -46,7 +46,7 @@
 		<div class="form__field">
 			<label for="req_message">{{ lang.post.message }} <span class="form__required">{{ lang.post.required }}</span></label>
 			{% if view.toolbar %}{{ postFields.toolbar(view.toolbar) }}{% endif %}
-			<textarea id="req_message" name="req_message" rows="14" required>{{ view.form.message }}</textarea>
+			<textarea id="req_message" name="req_message" rows="14" required data-mentions>{{ view.form.message }}</textarea>
 		</div>
 		{{ postFields.bbcodeStatus(view.bbcodeStatus, lang) }}
 	</fieldset>

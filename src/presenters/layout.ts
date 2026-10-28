@@ -122,6 +122,11 @@ export interface LayoutView {
 	poweredByVersion: string | null;
 	/** Jeton CSRF à placer dans les formulaires POST (partials/forms.njk). */
 	csrfToken: string;
+	/**
+	 * Complètement des noms de membres (@mention, destinataires) : début de l'adresse des profils, ou
+	 * null si le lecteur ne peut pas consulter la liste des membres.
+	 */
+	memberSuggest: { profileBase: string } | null;
 }
 
 export interface LayoutInput {
@@ -372,6 +377,7 @@ export function buildLayout(input: LayoutInput): LayoutView {
 		quickjump: buildQuickjump(input.forums, footer),
 		poweredByVersion: config.shownVersion,
 		csrfToken: input.csrfToken,
+		memberSuggest: !viewer.isGuest && viewer.group.canViewUsers ? { profileBase: `${config.baseUrl}/profile.php?id=` } : null,
 	};
 }
 
@@ -397,5 +403,6 @@ export function buildMinimalLayout(lang: Lang, title: string): LayoutView {
 		quickjump: null,
 		poweredByVersion: null,
 		csrfToken: '',
+		memberSuggest: null,
 	};
 }

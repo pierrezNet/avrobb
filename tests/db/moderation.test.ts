@@ -613,3 +613,14 @@ describe('SubjectPrefixRepository (préfixes du sujet)', () => {
 		});
 	});
 });
+
+describe('MemberSuggestRepository (complètement des noms)', () => {
+	it('début de nom insensible à la casse, jokers de LIKE pris littéralement', async () => {
+		const { MemberSuggestRepository } = await import('../../src/repositories/MemberSuggestRepository.ts');
+		const store = new MemberSuggestRepository(db);
+		expect(await store.suggestMembers('max', 8)).toEqual([{ id: 5, username: 'MaxDUO' }]);
+		expect(await store.suggestMembers('%', 8)).toEqual([]);
+		expect(await store.suggestMembers('_', 8)).toEqual([]);
+		expect((await store.suggestMembers('Invit', 8)).map((m) => m.id)).not.toContain(1);
+	});
+});

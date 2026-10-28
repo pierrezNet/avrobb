@@ -112,4 +112,7 @@ export const common = {
 	// Liens d'administration de l'en-tête
 	newReports: 'De nouveaux signalements ont été envoyés\u00a0!',
 	maintenanceModeEnabled: 'Le mode maintenance est activé\u00a0!',
+
+	/** Absent de FluxBB : liste du complètement des noms de membres (@mention, destinataires). */
+	memberSuggestions: 'Membres correspondants',
 };

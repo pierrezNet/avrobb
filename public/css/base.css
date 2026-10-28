@@ -614,6 +614,12 @@ a.site-status__alert {
 	filter: brightness(1.15);
 }
 
+/* Les petits boutons ne se soulignent pas au survol : ils s'éclaircissent seulement. */
+.post__author .post__vote:hover,
+.post__author .post__vote:focus-visible {
+	text-decoration: none;
+}
+
 .post__contacts {
 	display: flex;
 	flex-wrap: wrap;

@@ -120,7 +120,7 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   « - » ; erreurs réaffichées dans la page.
 - Plugin PunBalise (`AP_Balises.php`) : ajout, édition et suppression des balises (avec la colonne
   `bal<id>` de `balises_modo`, hors transaction car l'ALTER TABLE valide implicitement) ; le nom d'une
-  balise n'est pas modifiable, comme le PHP ; sélecteur de couleur natif du navigateur ; couleur
+  balise se modifie (le PHP le figeait), sans doublon nom et type ; sélecteur de couleur natif du navigateur ; couleur
   vérifiée (#RRGGBB) avant affichage. L'installation, la mise à jour et la désinstallation du mod
   restent sur le PHP.
 - Plugins encore servis par le PHP (redirection depuis `admin_loader.php`) : FluxToolBar et Mod

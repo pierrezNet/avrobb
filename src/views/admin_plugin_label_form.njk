@@ -15,7 +15,7 @@
 	{{ forms.csrf(layout) }}
 	<fieldset class="form__fieldset">
 		<legend class="form__legend">{{ t.legend }}</legend>
-		<p class="form__field"><label for="nom">{{ t.name }}</label><input type="text" id="nom" name="nom" value="{{ v.name }}" maxlength="50" required{% if view.editing %} readonly{% endif %} aria-describedby="nom_help"><span id="nom_help" class="form__help">{{ t.nameHelp }}</span></p>
+		<p class="form__field"><label for="nom">{{ t.name }}</label><input type="text" id="nom" name="nom" value="{{ v.name }}" maxlength="50" required aria-describedby="nom_help"><span id="nom_help" class="form__help">{{ t.nameHelp }}</span></p>
 		<p class="form__field"><label for="color1">{{ t.color }}</label><input type="color" id="color1" name="color1" value="{{ v.color }}"></p>
 		<div class="form__field" role="group" aria-labelledby="label-deco">
 			<span id="label-deco" class="form__label">{{ t.decoration }}</span>

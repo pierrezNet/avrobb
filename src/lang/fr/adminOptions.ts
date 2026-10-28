@@ -58,7 +58,7 @@ export const adminOptions = {
 			label: 'Délai de redirection',
 			help: 'Délai en secondes avant redirection. Si défini à 0, la page de redirection ne sera pas affichée (non recommandé).',
 		},
-		show_version: { label: 'Numéro de version', help: 'Afficher la version de FluxBB dans le pied de page.' },
+		show_version: { label: 'Numéro de version', help: "Afficher la version d'AvroBB dans le pied de page." },
 		show_user_info: {
 			label: "Infos sur l'utilisateur dans les messages",
 			help: "Afficher les informations à propos de l'utilisateur ayant créé le  message sous son nom d'utilisateur dans la discussion. Les informations données sont : le lieu, la date d'inscription, le nombre de messages publiés et les liens de contact (e-mail et URL).",
@@ -74,7 +74,7 @@ export const adminOptions = {
 		},
 		make_links: {
 			label: 'Rendre les liens cliquables',
-			help: 'Si activée, FluxBB détectera automatiquement les URL dans les messages et les convertira en hyperliens cliquables.',
+			help: 'Si activée, AvroBB détectera automatiquement les URL dans les messages et les convertira en hyperliens cliquables.',
 		},
 		topic_review: {
 			label: 'Résumé de discussion',
@@ -98,7 +98,7 @@ export const adminOptions = {
 		},
 		quickpost: {
 			label: 'Réponse rapide',
-			help: 'Si activée, FluxBB ajoutera un formulaire de réponse rapide au bas des sujets. Ainsi, les utilisateurs pourront répondre directement à partir du sujet.',
+			help: 'Si activée, AvroBB ajoutera un formulaire de réponse rapide au bas des sujets. Ainsi, les utilisateurs pourront répondre directement à partir du sujet.',
 		},
 		users_online: {
 			label: 'Utilisateurs en ligne',
@@ -120,7 +120,7 @@ export const adminOptions = {
 		quickjump: { label: 'Basculement rapide', help: 'Activer la liste déroulante de basculement rapide (basculer vers un forum).' },
 		gzip: {
 			label: 'Compression GZip',
-			help: "Si activée, FluxBB compressera au format gzip ce qui sera envoyé au navigateur. Cela réduira l'utilisation de la bande passante mais utilisera davantage les ressources du processeur. Cette fonctionnalité demande une configuration de PHP avec zlib (--with-zlib). Remarque : si vous avez d'ores et déjà configuré un des modules Apache mod_gzip ou mod_deflate pour compresser les scripts PHP, vous devriez désactiver cette fonctionnalité.",
+			help: "Si activée, AvroBB compressera au format gzip ce qui sera envoyé au navigateur. Cela réduira l'utilisation de la bande passante mais utilisera davantage les ressources du processeur. Cette fonctionnalité demande une configuration de PHP avec zlib (--with-zlib). Remarque : si vous avez d'ores et déjà configuré un des modules Apache mod_gzip ou mod_deflate pour compresser les scripts PHP, vous devriez désactiver cette fonctionnalité.",
 		},
 		search_all_forums: {
 			label: 'Rechercher dans tous les forums',
@@ -152,7 +152,7 @@ export const adminOptions = {
 		},
 		avatars_dir: {
 			label: "Répertoire d'envoi",
-			help: "Le répertoire vers lequel les avatars seront envoyés (relatif au répertoire racine de FluxBB). PHP doit avoir les permissions d'écriture dans ce répertoire.",
+			help: "Le répertoire vers lequel les avatars seront envoyés (relatif à la racine du forum). PHP doit avoir les permissions d'écriture dans ce répertoire.",
 		},
 		avatars_width: { label: 'Largeur max', help: 'La largeur maximale autorisée pour les avatars en pixels (60 recommandés).' },
 		avatars_height: { label: 'Hauteur max', help: 'La hauteur maximale autorisée pour les avatars en pixels (60 recommandés).' },
@@ -196,7 +196,7 @@ export const adminOptions = {
 		},
 		regs_report: {
 			label: 'Signaler les nouvelles inscriptions',
-			help: "Si activée, FluxBB notifiera les utilisateurs dans la liste de diffusion (voir ci-dessus) lorsqu'un nouvel utilisateur s'inscrit sur les forums.",
+			help: "Si activée, AvroBB notifiera les utilisateurs dans la liste de diffusion (voir ci-dessus) lorsqu'un nouvel utilisateur s'inscrit sur les forums.",
 		},
 		rules: {
 			label: 'Règles du forum pour les utilisateurs',

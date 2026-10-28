@@ -68,7 +68,7 @@ export const admin = {
 		'Traiter les signalements de messages.',
 	],
 	aboutHead: 'Au sujet du forum',
-	versionLabel: 'Version de FluxBB (base de données)',
+	versionLabel: "Version d'AvroBB (base de données)",
 	viewServerStatistics: 'Voir les statistiques du serveur',
 	serverLoadLabel: 'Charge du serveur',
 	serverLoadData: (load: string, online: number) => `${load} - ${online} utilisateur(s) en ligne`,

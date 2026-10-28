@@ -316,7 +316,8 @@ describe('plugin PunBalise', () => {
 		await send(server, '&action=add', { nom: 'Urgent', color1: '#FF0000', baltype: '2', affich: '1' });
 		expect(fake.labelRows?.at(-1)).toMatchObject({ id: 9, name: 'Urgent', style: 2, moderatorVisible: true });
 		await send(server, '&action=edit&id=1', { nom: 'Autre', color1: '#123456', position: '5', baltype: '1' });
-		expect(fake.labelRows?.[0]).toMatchObject({ name: 'Réglé', color: '#123456', position: 5, style: 1, bold: false });
+		expect(fake.labelRows?.[0]).toMatchObject({ name: 'Autre', color: '#123456', position: 5, style: 1, bold: false });
+		expect((await send(server, '&action=edit&id=1', { nom: 'Urgent', color1: '#123456', baltype: '2' })).body).toContain('déjà utilisé');
 		expect((await get(server, 2, '/admin_loader.php?plugin=AP_Balises.php&action=delete&id=2')).body).toContain('name="delete_comply"');
 		await send(server, '&action=delete&id=2', { delete_comply: '1' });
 		expect(fake.labelRows?.map((l) => l.id)).toEqual([1, 9]);

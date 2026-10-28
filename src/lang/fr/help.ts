@@ -31,7 +31,7 @@ export const help = {
 	myEmailAddress: 'Mon adresse électronique',
 	imagesInfo:
 		"Si vous souhaitez afficher une image, vous pouvez utiliser la balise « img ». Le texte après le signe « = » dans la balise ouvrante est utilisé pour l'attribut alt (texte alternatif en cas de non affichage de l'image) et devrait être ajouté à chaque fois que cela est possible",
-	bbcodeTest: 'Test du bbcode FluxBB',
+	bbcodeTest: 'Test du bbcode AvroBB',
 	testTopic: 'Discussion de test',
 	testPost: 'Message de test',
 	testForum: 'Forum de test',

@@ -118,14 +118,17 @@ export class LabelsPlugin implements PluginHandler {
 		const sent = Object.fromEntries(Object.entries(body).map(([name, value]) => [name, typeof value === 'string' ? value : '']));
 		const form = readLabelForm((name) => field(body, name));
 		if (form.kind === 'error') return this.#renderLabelForm(request, reply, label, sent, [t.errors[form.error]], 400);
+		// Même nom et même type qu'une autre balise : refusé (le PHP ne contrôlait que l'ajout).
+		const duplicate = (await store.listLabels()).some(
+			(other) => other.id !== label?.id && other.name === form.values.name && other.style === form.values.style,
+		);
+		if (duplicate) return this.#renderLabelForm(request, reply, label, sent, [t.errors.duplicate], 400);
 		if (label === null) {
-			const exists = (await store.listLabels()).some((other) => other.name === form.values.name && other.style === form.values.style);
-			if (exists) return this.#renderLabelForm(request, reply, null, sent, [t.errors.duplicate], 400);
 			await store.addLabel(form.values);
 			return done('added');
 		}
-		// Le nom d'une balise ne change pas (le PHP le renvoyait dans un champ caché).
-		await store.updateLabel(label.id, { ...form.values, name: label.name, position: form.position });
+		// Écart voulu : le nom se modifie (le PHP le figeait dans un champ caché).
+		await store.updateLabel(label.id, { ...form.values, position: form.position });
 		return done('updated');
 	}
 }

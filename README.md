@@ -102,6 +102,9 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
 - Bannissements (`admin_bans.php`) : suppression par bouton POST après confirmation (le PHP
   supprimait sur un lien GET) ; erreurs réaffichées dans le formulaire ; un octet « 000 » d'une IP
   devient « 0 » (le PHP le vidait) ; dates de recherche aux formats proposés (aaaa-mm-jj).
+  Bannir un compte ne bannit plus d'office son adresse IP (FluxBB la préremplissait) : la dernière IP
+  connue est proposée par une case non cochée, avec un avertissement (tous ceux qui partagent cette
+  adresse seraient bloqués) ; compte, IP et e-mail restent des critères indépendants.
   **Un banni lit le forum mais n'y écrit plus** (FluxBB lui fermait tout le forum) : ses droits
   d'écriture sont retirés (messages, modification, suppression, e-mail, messagerie, renommée, balises
   du sujet), un bandeau rappelle l'échéance et le motif, et tout envoi de formulaire est refusé sauf

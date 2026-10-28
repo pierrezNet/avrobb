@@ -48,10 +48,15 @@ export const adminBans = {
 		"L'e-mail ou le domaine d'e-mail que vous souhaitez bannir (ex. : utilisateur@domaine.com ou domaine.com). Rendez-vous à « Autoriser les adresses électroniques bannies » dans la rubrique Permissions pour davantage d'informations.",
 	ip: "Adresse IP/plages d'adresses IP",
 	ipHelp:
-		"L'adresse IP ou la plage d'adresses IP que vous souhaitez bannir (ex. : 150.11.110.1 ou 150.11.110). Séparez les adresses par des espaces. Si une IP est déjà indiquée, il s'agit de la dernière adresse IP connue de cet utilisateur enregistrée dans la base de données.",
+		"L'adresse IP ou la plage d'adresses IP que vous souhaitez bannir (ex. : 150.11.110.1 ou 150.11.110). Séparez les adresses par des espaces. Laissez vide pour ne bannir que le compte.",
+	banLastIp: (ip: string) => `Bannir aussi sa dernière adresse IP connue (${ip})`,
+	banLastIpHelp:
+		'Utile si le membre recrée des comptes. Attention : toute personne qui utilise cette adresse (même box, même entreprise, même réseau mobile) sera aussi bannie.',
+	criteriaInfo:
+		"Chaque champ rempli est un critère : bannissez un compte (nom d'utilisateur), une adresse IP et/ou un e-mail, ensemble ou séparément.",
 	ipStatsLink: 'Afficher les statistiques IP de cet utilisateur',
 	advancedHead: 'Paramètres de bannissement avancés',
-	advancedSubhead: 'Ajouter IP et e-mail pour compléter le bannissement',
+	advancedSubhead: 'Critères du bannissement',
 	banMessage: 'Message de bannissement',
 	banMessageHelp: "Un message qui s'affichera lors de la prochaine visite de l'utilisateur banni.",
 	messageExpirySubhead: 'Message de bannissement et expiration',

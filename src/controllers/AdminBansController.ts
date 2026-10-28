@@ -125,10 +125,12 @@ export class AdminBansController {
 		if (field(body, 'add_edit_ban') === '') return renderMessage(request, reply, this.deps, 400, lang.common.badRequest);
 		const mode = field(body, 'mode') === 'edit' ? 'edit' : 'add';
 		const banId = mode === 'edit' ? positiveInt(field(body, 'ban_id')) : null;
-		const result = readBanForm((name) => field(body, name), viewerOffset(request.viewer), clock());
+		// Case « bannir aussi sa dernière IP » : l'adresse rejoint celles saisies (séparées par des espaces).
+		const ips = withLastIp(field(body, 'ban_ip'), field(body, 'ban_last_ip'));
+		const result = readBanForm((name) => (name === 'ban_ip' ? ips : field(body, name)), viewerOffset(request.viewer), clock());
 		const sent = {
 			username: field(body, 'ban_user'),
-			ip: field(body, 'ban_ip'),
+			ip: ips,
 			email: field(body, 'ban_email'),
 			message: field(body, 'ban_message'),
 			expireText: field(body, 'ban_expire'),
@@ -165,8 +167,20 @@ export class AdminBansController {
 		if (target === null) return renderMessage(request, reply, this.deps, 400, 'id' in by ? t.noUserId : t.noUser);
 		const refusal = this.#protected(target);
 		if (refusal !== null) return renderMessage(request, reply, this.deps, 400, refusal);
-		const ip = await this.deps.banStore.lastKnownIp(target.id);
-		return this.#renderForm(request, reply, 'add', null, { ...empty, username: target.username, email: target.email, ip }, target.id, []);
+		// Dernière IP proposée par une case à cocher, non cochée : FluxBB la préremplissait, si bien
+		// qu'un bannissement de compte bannissait aussi, sans qu'on y pense, tous ceux de cette adresse.
+		const lastIp = await this.deps.banStore.lastKnownIp(target.id);
+		return this.#renderForm(
+			request,
+			reply,
+			'add',
+			null,
+			{ ...empty, username: target.username, email: target.email },
+			target.id,
+			[],
+			200,
+			lastIp,
+		);
 	}
 
 	#renderForm(
@@ -178,6 +192,7 @@ export class AdminBansController {
 		userId: number | null,
 		errors: string[],
 		status = 200,
+		lastIp: string | null = null,
 	): Promise<FastifyReply> {
 		reply.code(status);
 		return renderAdminPage(
@@ -196,6 +211,7 @@ export class AdminBansController {
 					expire: values.expireText,
 				},
 				ipStatsHref: userId !== null ? `admin_users.php?ip_stats=${userId}` : null,
+				lastIp: lastIp !== null && lastIp !== '' ? lastIp : null,
 				errors,
 			},
 		);
@@ -227,4 +243,14 @@ export class AdminBansController {
 			},
 		);
 	}
+}
+
+/** Ajoute l'adresse de la case « dernière IP connue » aux adresses saisies, sans doublon. */
+function withLastIp(typed: string, lastIp: string): string {
+	const ips = typed
+		.trim()
+		.split(/\s+/)
+		.filter((ip) => ip !== '');
+	const extra = lastIp.trim();
+	return (extra !== '' && !ips.includes(extra) ? [...ips, extra] : ips).join(' ');
 }

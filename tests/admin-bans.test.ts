@@ -77,15 +77,32 @@ describe('admin_bans.php', () => {
 		expect((await get(server, 6, '/admin_bans.php')).statusCode).toBe(200);
 	});
 
-	it('ajout depuis un profil : pseudo, adresse et dernière IP préremplis ; modérateurs protégés', async () => {
+	it('ajout depuis un profil : compte seul par défaut, dernière IP proposée par une case ; modérateurs protégés', async () => {
 		const { server, fake } = await start();
 		const form = await get(server, 6, '/admin_bans.php?add_ban=3');
 		expect(form.body).toContain('name="ban_user" value="Tessy"');
-		expect(form.body).toContain('name="ban_ip" value="192.0.2.5"');
+		expect(form.body).toContain('name="ban_ip" value=""');
+		expect(form.body).toContain('name="ban_last_ip" value="192.0.2.5"');
+		expect(form.body).not.toMatch(/name="ban_last_ip"[^>]*checked/);
 		expect((await get(server, 6, '/admin_bans.php?add_ban=5')).body).toContain('est un modérateur');
-		const done = await post(server, 6, '/admin_bans.php', { add_edit_ban: '1', mode: 'add', ban_user: 'Tessy', ban_ip: '192.0.2.5' });
-		expect(done.headers.location).toBe('admin_bans.php?done=added');
-		expect(fake.banLog).toEqual(['add {"username":"Tessy","ip":"192.0.2.5","email":null,"message":null,"expire":null} by 6']);
+
+		const userOnly = await post(server, 6, '/admin_bans.php', { add_edit_ban: '1', mode: 'add', ban_user: 'Tessy' });
+		expect(userOnly.headers.location).toBe('admin_bans.php?done=added');
+		const withIp = await post(server, 6, '/admin_bans.php', {
+			add_edit_ban: '1',
+			mode: 'add',
+			ban_user: 'Tessy',
+			ban_ip: '10.1',
+			ban_last_ip: '192.0.2.5',
+		});
+		expect(withIp.headers.location).toBe('admin_bans.php?done=added');
+		const ipOnly = await post(server, 6, '/admin_bans.php', { add_edit_ban: '1', mode: 'add', ban_ip: '198.51.100.7' });
+		expect(ipOnly.headers.location).toBe('admin_bans.php?done=added');
+		expect(fake.banLog).toEqual([
+			'add {"username":"Tessy","ip":null,"email":null,"message":null,"expire":null} by 6',
+			'add {"username":"Tessy","ip":"10.1 192.0.2.5","email":null,"message":null,"expire":null} by 6',
+			'add {"username":null,"ip":"198.51.100.7","email":null,"message":null,"expire":null} by 6',
+		]);
 		const refused = await post(server, 6, '/admin_bans.php', { add_edit_ban: '1', mode: 'add', ban_user: 'admin' });
 		expect(refused.statusCode).toBe(400);
 	});

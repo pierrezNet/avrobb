@@ -95,8 +95,8 @@ export interface StatusView {
 export interface FeedLink {
 	href: string;
 	label: string;
-	mimeType: 'application/rss+xml' | 'application/atom+xml';
-	cssClass: 'rss' | 'atom';
+	mimeType: 'application/rss+xml';
+	cssClass: 'rss';
 }
 
 export interface QuickjumpView {
@@ -271,18 +271,12 @@ function buildFeed(footer: FooterContext, config: BoardConfig, lang: Lang): Feed
 	if (config.feedType === 'none' || footer.kind === 'default' || footer.kind === 'index') return null;
 
 	const t = lang.common;
-	const rss = config.feedType === 'rss';
-	const labels = {
-		viewforum: rss ? t.rssForumFeed : t.atomForumFeed,
-		viewtopic: rss ? t.rssTopicFeed : t.atomTopicFeed,
-	};
-	const scope = footer.kind === 'viewforum' ? `&fid=${footer.forum.id}` : footer.kind === 'viewtopic' ? `&tid=${footer.topic.id}` : '';
-
+	const forum = footer.kind === 'viewforum';
 	return {
-		href: `extern.php?action=feed${scope}&type=${config.feedType}`,
-		label: labels[footer.kind],
-		mimeType: rss ? 'application/rss+xml' : 'application/atom+xml',
-		cssClass: config.feedType,
+		href: `extern.php?action=feed${forum ? `&fid=${footer.forum.id}` : `&tid=${footer.topic.id}`}&type=rss`,
+		label: forum ? t.rssForumFeed : t.rssTopicFeed,
+		mimeType: 'application/rss+xml',
+		cssClass: 'rss',
 	};
 }
 

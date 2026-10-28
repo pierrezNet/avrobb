@@ -62,8 +62,10 @@ describe('parsePhpCacheVariable', () => {
 describe('toBoardConfig', () => {
 	it('convertit les options en réglages typés', () => {
 		const config = toBoardConfig(toStringMap(parsePhpCacheVariable(CACHE_CONFIG, 'pun_config')));
-		expect(config).toMatchObject({ defaultStyle: 'GreenDark', feedType: 'atom', announcement: '<p>Annonce</p>', reportsByBoard: true });
+		expect(config).toMatchObject({ defaultStyle: 'GreenDark', feedType: 'none', announcement: '<p>Annonce</p>', reportsByBoard: true });
 		expect(toBoardConfig(new Map([['o_report_method', '1']])).reportsByBoard).toBe(false);
+		// Ancien choix Atom (2) : plus de lien de flux ; RSS (1) seulement.
+		expect(toBoardConfig(new Map([['o_feed_type', '1']])).feedType).toBe('rss');
 		expect(toBoardConfig(new Map()).announcement).toBeNull();
 	});
 });

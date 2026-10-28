@@ -7,7 +7,8 @@
 import type { BoardConfig, FeedType } from '../domain/models.ts';
 import { parseSubjectTags, SUBJECT_TAGS_KEY } from './subjectTagConfig.ts';
 
-const FEED_TYPES: Readonly<Record<string, FeedType>> = { '1': 'rss', '2': 'atom' };
+/** o_feed_type : 1 = RSS ; l'ancien choix Atom (2) ne publie plus de lien de flux. */
+const FEED_TYPES: Readonly<Record<string, FeedType>> = { '1': 'rss' };
 
 export function toBoardConfig(values: ReadonlyMap<string, string>): BoardConfig {
 	const text = (name: string, fallback = ''): string => values.get(name) ?? fallback;

@@ -211,7 +211,7 @@ export function readOptionsForm(read: (key: string) => string, defaults: Options
 		!(TIMEZONES as readonly number[]).includes(timezone) ||
 		!(THEMES as readonly string[]).includes(style) ||
 		feedType < 0 ||
-		feedType > 2 ||
+		feedType > 1 ||
 		feedTtl < 0 ||
 		reportMethod < 0 ||
 		reportMethod > 2 ||

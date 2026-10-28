@@ -99,9 +99,7 @@ export const common = {
 
 	// Flux (extern.php)
 	rssForumFeed: 'Flux RSS du forum',
-	atomForumFeed: 'Flux Atom du forum',
 	rssTopicFeed: 'Flux RSS de la discussion',
-	atomTopicFeed: 'Flux Atom de la discussion',
 
 	rssDescription: (board: string) => `Les sujets les plus récents sur ${board}.`,
 	rssDescriptionTopic: (topic: string) => `Les sujets les plus récents dans ${topic}.`,

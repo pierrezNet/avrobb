@@ -19,7 +19,7 @@ export function optionsForm(overrides: Record<string, string> = {}): Record<stri
 		disp_posts_default: '25',
 		indent_num_spaces: '4',
 		quote_depth: '3',
-		feed_type: '2',
+		feed_type: '1',
 		feed_ttl: '0',
 		report_method: '0',
 		mailing_list: '',

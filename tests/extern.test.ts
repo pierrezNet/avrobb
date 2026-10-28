@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
 import type { FeedReader, FeedTopicRow } from '../src/repositories/FeedRepository.ts';
-import { type Feed, iso8601, renderAtom, renderHtmlList, renderRss, rfc2822 } from '../src/services/feeds.ts';
+import { type Feed, iso8601, renderHtmlList, renderRss, rfc2822 } from '../src/services/feeds.ts';
 import { fakeDeps, group, guest, NOW } from './fixtures.ts';
 
 const feed: Feed = {
@@ -40,13 +40,6 @@ describe('formats de flux', () => {
 		expect(rss).toContain('<atom:link href="http://forum.test/extern.php?type=rss&amp;a=1" rel="self" type="application/rss+xml" />');
 		expect(rss).toContain('<author><![CDATA[dummy@example.com (Tessy)]]></author>');
 		expect(rss).toContain('<lastBuildDate>Sun, 09 Sep 2001 01:46:40 +0000</lastBuildDate>');
-	});
-
-	it('Atom : contenu complet pour un sujet, auteur avec uri', () => {
-		const atom = renderAtom(feed, context);
-		expect(atom).toContain('<content type="html"><![CDATA[<p>Bonjour</p>]]></content>');
-		expect(atom).toContain('<uri>http://forum.test/profile.php?id=3</uri>');
-		expect(atom).not.toContain('<email>');
 	});
 
 	it('liste HTML : sujet tronqué à 30 caractères', () => {
@@ -103,9 +96,11 @@ describe('GET /extern.php', () => {
 
 	it('flux d’une discussion, liste HTML par défaut, sujet inconnu', async () => {
 		app = await buildApp(deps());
+		// Ancienne adresse Atom : le flux est servi en RSS.
 		const atom = await app.inject('/extern.php?action=feed&type=atom&tid=10');
-		expect(atom.headers['content-type']).toBe('application/atom+xml; charset=utf-8');
-		expect(atom.body).toContain('<title type="html"><![CDATA[Réponse à :  Sujet <10>]]></title>');
+		expect(atom.headers['content-type']).toBe('application/xml; charset=utf-8');
+		expect(atom.body).toContain('<rss version="2.0"');
+		expect(atom.body).not.toContain('<feed xmlns');
 
 		const html = await app.inject('/extern.php');
 		expect(html.body).toBe(

@@ -250,7 +250,7 @@ export const boardConfig: BoardConfig = {
 	},
 	announcement: null,
 	quickjump: true,
-	feedType: 'atom',
+	feedType: 'rss',
 	privateMessagesEnabled: false,
 	smilies: true,
 	signatureSmilies: true,

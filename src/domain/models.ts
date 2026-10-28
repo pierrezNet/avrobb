@@ -155,8 +155,8 @@ export interface Post {
 	author: PostAuthor | null;
 }
 
-/** Format des liens de flux de syndication (o_feed_type). */
-export type FeedType = 'none' | 'rss' | 'atom';
+/** Liens de flux de syndication (o_feed_type) : RSS seulement, AvroBB n'a pas de flux Atom. */
+export type FeedType = 'none' | 'rss';
 
 /** Réglages du forum (table config) utiles à l'affichage. */
 /** Balise du sujet (« [MSFS] »…) proposée aux auteurs, avec la couleur de fond de sa pastille. */

@@ -456,7 +456,7 @@ describe('ConfigLoader sur la table config', () => {
 		expect(await loader.load()).toMatchObject({
 			boardTitle: 'Forum de test',
 			defaultPostsPerPage: 2,
-			feedType: 'atom',
+			feedType: 'none',
 			privateMessagesEnabled: true,
 		});
 	});

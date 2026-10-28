@@ -215,7 +215,7 @@ export const adminOptions = {
 	} as Record<string, { label: string; help: string | null }>,
 	smtpChangePass: 'Cocher ceci si vous souhaitez modifier ou supprimer le mot de passe stocké actuellement.',
 	smtpPassConfirm: 'Confirmer le mot de passe SMTP',
-	feedTypes: ['Aucun', 'RSS', 'Atom'],
+	feedTypes: ['Aucun', 'RSS'],
 	feedTtlNone: 'Ne pas placer dans le cache',
 	feedTtlMinutes: (minutes: number) => `${minutes} minutes`,
 	reportMethods: ['Interne', 'E-mail', 'Les deux'],

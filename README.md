@@ -129,8 +129,10 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   ni de désinstallation de mods (PunBalise, Plugile, Uploadile) ; options sans effet retirées du
   formulaire et jamais écrites (compression GZip, formats de date et d'heure, langue par défaut,
   numéro de version) ; plus de numéro de version FluxBB (pied de page, accueil, générateur des flux).
-- Pas de flux des discussions actives à l'accueil (lien et `<link rel="alternate">`) ; les flux de
-  forum et de discussion restent, et `extern.php` sert toujours le flux général.
+- Pas de flux Atom : `extern.php?type=atom` sert le flux RSS (les anciens abonnements continuent de
+  fonctionner) ; l'option « Flux par défaut » ne propose plus que Aucun ou RSS, et l'ancien choix
+  Atom (`o_feed_type` = 2, celui de PV) n'affiche plus de lien de flux. Pas de flux des discussions
+  actives à l'accueil ; avec RSS, liens de flux du forum et de la discussion.
 - Pagination discrète (liens simples, page courante soulignée) et masquée quand il n'y a qu'une
   page (FluxBB affichait « Pages : 1 »).
 - Page Balises de l'administration : balises du sujet (nom, groupe simulateur ou autre, couleur de

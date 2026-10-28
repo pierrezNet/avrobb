@@ -1,5 +1,5 @@
 /**
- * Contrôleur d'extern.php : flux RSS, Atom, XML ou liste HTML des discussions récentes ou d'une
+ * Contrôleur d'extern.php : flux RSS, XML ou liste HTML des discussions récentes ou d'une
  * discussion, et fragments HTML « membres en ligne » et « statistiques » pour d'autres sites.
  *
  * Écarts assumés : pas d'authentification HTTP Basic (lot Authentification) ni de cache des flux
@@ -15,7 +15,7 @@ import type { StatsReader } from '../repositories/StatsRepository.ts';
 import type { UsersInfoReader } from '../repositories/UsersInfoLoader.ts';
 import { escapeHtml } from '../services/bbcode.ts';
 import { buildCensor } from '../services/censor.ts';
-import { type Feed, renderAtom, renderHtmlList, renderRss, renderXml } from '../services/feeds.ts';
+import { type Feed, renderHtmlList, renderRss, renderXml } from '../services/feeds.ts';
 import { forumNumberFormat } from '../services/numberFormat.ts';
 
 export interface ExternControllerDeps extends LayoutDeps {
@@ -35,12 +35,11 @@ export interface ExternQuery {
 	order?: string;
 }
 
-type FeedType = 'html' | 'rss' | 'atom' | 'xml';
+type FeedType = 'html' | 'rss' | 'xml';
 
 const CONTENT_TYPES: Record<FeedType, string> = {
 	html: 'text/html; charset=utf-8',
 	rss: 'application/xml; charset=utf-8',
-	atom: 'application/atom+xml; charset=utf-8',
 	xml: 'application/xml; charset=utf-8',
 };
 
@@ -86,7 +85,8 @@ export class ExternController {
 		const { viewer, board: config } = request;
 		const { query } = request;
 		const requested = (query.type ?? 'html').toLowerCase();
-		const type: FeedType = requested === 'rss' || requested === 'atom' || requested === 'xml' ? requested : 'html';
+		// Pas de flux Atom dans AvroBB : les anciens abonnements (type=atom) reçoivent le flux RSS.
+		const type: FeedType = requested === 'rss' || requested === 'atom' ? 'rss' : requested === 'xml' ? 'xml' : 'html';
 		const show = Number.parseInt(query.show ?? '15', 10);
 		const limit = Number.isSafeInteger(show) && show >= 1 && show <= 50 ? show : 15;
 		const input: FeedInput = {
@@ -117,14 +117,7 @@ export class ExternController {
 		}
 
 		const context = { selfUrl: `${config.baseUrl}${request.url}`, now: this.deps.page.clock() };
-		const body =
-			type === 'rss'
-				? renderRss(feed, context)
-				: type === 'atom'
-					? renderAtom(feed, context)
-					: type === 'xml'
-						? renderXml(feed)
-						: renderHtmlList(feed);
+		const body = type === 'rss' ? renderRss(feed, context) : type === 'xml' ? renderXml(feed) : renderHtmlList(feed);
 		return reply.type(CONTENT_TYPES[type]).header('Cache-Control', 'must-revalidate').send(body);
 	}
 

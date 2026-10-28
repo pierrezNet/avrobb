@@ -66,7 +66,7 @@ describe('readOptionsForm', () => {
 	it('erreurs de saisie et requêtes invalides', () => {
 		const invalid = readOptionsForm(read(optionsForm({ board_title: ' ', admin_email: 'x', timeout_online: '1800' })), DEFAULTS);
 		expect(invalid).toEqual({ kind: 'invalid', errors: ['missingTitle', 'timeout', 'invalidAdminEmail'] });
-		for (const bad of [{ feed_type: '3' }, { default_style: '../x' }, { default_timezone: '1.3' }]) {
+		for (const bad of [{ feed_type: '2' }, { default_style: '../x' }, { default_timezone: '1.3' }]) {
 			expect(readOptionsForm(read(optionsForm(bad)), DEFAULTS)).toEqual({ kind: 'badRequest' });
 		}
 	});

@@ -1,5 +1,5 @@
 /**
- * Flux de syndication d'extern.php : output_rss(), output_atom(), output_xml() et output_html().
+ * Flux de syndication d'extern.php : output_rss(), output_xml() et output_html() (pas d'Atom dans AvroBB).
  * Fonctions pures produisant le document final ; les textes passent en CDATA (escape_cdata()) et les
  * URL en attribut échappé, comme le PHP.
  */
@@ -19,7 +19,7 @@ export interface Feed {
 	title: string;
 	link: string;
 	description: string;
-	/** posts : flux d'un sujet (contenu complet en Atom) ; topics : flux de sujets (résumé). */
+	/** posts : flux d'un sujet ; topics : flux de sujets (résumé). */
 	type: 'posts' | 'topics';
 	items: FeedItem[];
 }
@@ -89,38 +89,6 @@ function authorLines(author: FeedItem['author'], indent: string): string[] {
 		...(author.email !== null ? [`${indent}<email>${cdata(author.email)}</email>`] : []),
 		...(author.uri !== null ? [`${indent}<uri>${escapeAttr(author.uri)}</uri>`] : []),
 	];
-}
-
-export function renderAtom(feed: Feed, context: FeedContext): string {
-	const contentTag = feed.type === 'posts' ? 'content' : 'summary';
-	const lines = [
-		'<?xml version="1.0" encoding="utf-8"?>',
-		'<feed xmlns="http://www.w3.org/2005/Atom">',
-		`\t<title type="html">${cdata(feed.title)}</title>`,
-		`\t<link rel="self" href="${escapeAttr(context.selfUrl)}"/>`,
-		`\t<link href="${escapeAttr(feed.link)}"/>`,
-		`\t<updated>${iso8601(lastUpdate(feed, context.now))}</updated>`,
-		'\t<generator>AvroBB</generator>',
-		`\t<id>${escapeAttr(feed.link)}</id>`,
-	];
-
-	for (const item of feed.items) {
-		lines.push(
-			'\t<entry>',
-			`\t\t<title type="html">${cdata(item.title)}</title>`,
-			`\t\t<link rel="alternate" href="${escapeAttr(item.link)}"/>`,
-			`\t\t<${contentTag} type="html">${cdata(item.description)}</${contentTag}>`,
-			'\t\t<author>',
-			...authorLines(item.author, '\t\t\t'),
-			'\t\t</author>',
-			`\t\t<updated>${iso8601(item.pubDate)}</updated>`,
-			`\t\t<id>${escapeAttr(item.link)}</id>`,
-			'\t</entry>',
-		);
-	}
-
-	lines.push('</feed>');
-	return `${lines.join('\n')}\n`;
 }
 
 export function renderXml(feed: Feed): string {

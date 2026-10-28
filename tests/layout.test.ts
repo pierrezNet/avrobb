@@ -113,7 +113,7 @@ describe('buildLayout', () => {
 		const options = { pageId: 'viewtopic', titleParts: [], footer: { kind: 'viewtopic' as const, topic: modTopic, page: 1 } };
 
 		const layout = buildLayout(input({ viewer: mod, options, forums: forumCategories }));
-		expect(layout.feed).toMatchObject({ href: 'extern.php?action=feed&tid=10&type=atom', mimeType: 'application/atom+xml' });
+		expect(layout.feed).toMatchObject({ href: 'extern.php?action=feed&tid=10&type=rss', mimeType: 'application/rss+xml' });
 		expect(layout.quickjump?.categories[1]?.forums[0]).toEqual({ id: 2, label: 'Captures & Vidéos', selected: true });
 		expect(layout.modControls.map((c) => c.href)).toContain('moderate.php?fid=2&open=10');
 

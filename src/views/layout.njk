@@ -32,7 +32,7 @@
 			<nav aria-label="{{ lang.common.mainNav }}">
 				<ul class="site-nav__list">
 				{% for item in layout.nav %}
-					<li id="{{ item.id }}" class="site-nav__item{% if item.active %} is-active{% endif %}{% if item.count %} has-news{% endif %}">
+					<li id="{{ item.id }}" class="site-nav__item{% if item.active %} is-active{% endif %}{% if item.count %} has-news{% endif %}{% if item.mobileOnly %} site-nav__item--mobile{% endif %}">
 					{%- if item.trustedHtml -%}
 						{#- HTML saisi par l'administrateur (o_additional_navlinks), affiché tel quel comme dans header.php. -#}
 						{{ item.trustedHtml | safe }}
@@ -50,8 +50,8 @@
 	{% if layout.status %}
 		<ul class="site-status__info">
 			<li>{{ lang.common.loggedInAs }}<strong>{{ layout.status.username }}</strong></li>
-			<li>{{ layout.status.lastVisit }}</li>
-			{% if layout.status.showAdminLink %}<li id="navadmin"><a href="{{ url('admin_index.php') }}">{{ lang.common.admin }}</a></li>{% endif %}
+			<li class="site-status__wide">{{ layout.status.lastVisit }}</li>
+			{% if layout.status.showAdminLink %}<li id="navadmin" class="site-status__wide"><a href="{{ url('admin_index.php') }}">{{ lang.common.admin }}</a></li>{% endif %}
 			{% if layout.status.pendingReports %}<li class="site-status__alert"><a href="{{ url('admin_reports.php') }}">{{ lang.common.newReports }}</a></li>{% endif %}
 			{% if layout.status.maintenance %}<li class="site-status__alert"><a href="{{ url('admin_maintenance.php#maintenance-mode') }}">{{ lang.common.maintenanceModeEnabled }}</a></li>{% endif %}
 			{% if layout.status.privateMessageBox %}

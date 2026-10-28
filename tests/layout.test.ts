@@ -161,6 +161,10 @@ describe('rendu de la mise en page', () => {
 		);
 		const res = await app.inject({ url: '/index.php', headers: { cookie: cookie(5, 'hash-mod') } });
 		expect(res.body).toContain('<li id="navpm" class="site-nav__item has-news">');
+		// Modérateur : lien Administration dans le menu burger (masqué sur grand écran).
+		expect(res.body).toContain(
+			'<li id="navadminmenu" class="site-nav__item site-nav__item--mobile"><a href="admin_index.php">Administration</a>',
+		);
 		expect(res.body).toContain('<span class="site-nav__count">3<span class="visually-hidden"> non lus</span></span>');
 		await app.close();
 		app = await buildApp(fakeDeps({ users, topics: [], posts: new Map(), config: { privateMessagesEnabled: true } }));

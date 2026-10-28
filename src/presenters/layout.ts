@@ -64,9 +64,11 @@ export interface NavLink {
 	label: string;
 	/** Libellé développé quand `label` est une abréviation (« MP »). */
 	abbrTitle: string | null;
-	/** Compteur affiché devant le libellé (« (2) MP »). */
+	/** Pastille du nombre de nouveautés (MP non lus). */
 	count: number | null;
 	active: boolean;
+	/** Menu burger seulement : sur grand écran, le lien est dans la ligne d'état (Administration). */
+	mobileOnly: boolean;
 	/** Lien supplémentaire saisi par l'administrateur (o_additional_navlinks), HTML brut. */
 	trustedHtml: string | null;
 }
@@ -156,7 +158,7 @@ export function pageTitle(parts: readonly string[], pageNumber: number | null, l
 }
 
 function link(id: string, href: string, label: string, active: boolean): NavLink {
-	return { id, href, label, abbrTitle: null, count: null, active, trustedHtml: null };
+	return { id, href, label, abbrTitle: null, count: null, active, trustedHtml: null, mobileOnly: false };
 }
 
 /**
@@ -207,6 +209,8 @@ function buildNav(input: LayoutInput): NavLink[] {
 				count: unread > 0 ? unread : null,
 			});
 		}
+
+		if (isAnyModerator(viewer)) links.push({ ...link('navadminmenu', 'admin_index.php', t.admin, active === 'admin'), mobileOnly: true });
 
 		const token = logoutToken(viewer.id, input.remoteAddress);
 		links.push(link('navlogout', `login.php?action=out&id=${viewer.id}&csrf_token=${token}`, t.logout, false));

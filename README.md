@@ -110,7 +110,7 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
 - Plugin Premium (`AP_Premium.php`, table `premium` distincte de la boutique `apremium`) : table
   créée en InnoDB (MyISAM dans le PHP) ; erreurs réaffichées dans la page ; pas de retour automatique
   au groupe initial à l'échéance, comme dans le PHP malgré sa description.
-- Plugin Uploadile : réglages et installation comme le PHP ; la suppression vise le fichier d'un
+- Plugin Uploadile : réglages comme le PHP ; la suppression vise le fichier d'un
   membre précis (le PHP supprimait le même nom chez tous les membres) et recalcule son espace utilisé ;
   ni installation ni désinstallation du mod, ni régénération des
   miniatures (pas de bibliothèque d'images côté serveur, les miniatures sont faites par le navigateur).

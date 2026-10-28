@@ -52,7 +52,7 @@
 			<li>{{ layout.status.lastVisit }}</li>
 			{% if layout.status.showAdminLink %}<li id="navadmin"><a href="{{ url('admin_index.php') }}">{{ lang.common.admin }}</a></li>{% endif %}
 			{% if layout.status.pendingReports %}<li class="site-status__alert"><a href="{{ url('admin_reports.php') }}">{{ lang.common.newReports }}</a></li>{% endif %}
-			{% if layout.status.maintenance %}<li class="site-status__alert"><a href="{{ url('admin_options.php#maintenance') }}">{{ lang.common.maintenanceModeEnabled }}</a></li>{% endif %}
+			{% if layout.status.maintenance %}<li class="site-status__alert"><a href="{{ url('admin_maintenance.php#maintenance-mode') }}">{{ lang.common.maintenanceModeEnabled }}</a></li>{% endif %}
 			{% if layout.status.privateMessageBox %}
 				{% set box = layout.status.privateMessageBox %}
 				<li>

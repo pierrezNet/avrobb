@@ -2,6 +2,7 @@
 {% extends "layout.njk" %}
 
 {% block main %}
+{% if view.preview %}<p class="message-box" role="note">{{ view.preview.label }} <a href="{{ url(view.preview.backHref) }}">{{ lang.adminMaintenance.backToMaintenance }}</a></p>{% endif %}
 <section class="message-box" id="punmaint" aria-labelledby="maint-title">
 	<h1 id="maint-title" class="message-box__title">{{ lang.common.maintenance }}</h1>
 	{#- o_maintenance_message : HTML saisi par l'administrateur, affiché tel quel comme dans le PHP. #}

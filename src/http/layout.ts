@@ -116,6 +116,7 @@ export async function renderBlock(
 			{ pageId: 'maint', titleParts: [config.boardTitle, lang.common.maintenance] },
 			{
 				messageHtml: config.maintenanceMessage,
+				preview: null,
 			},
 		);
 	}

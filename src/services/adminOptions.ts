@@ -45,8 +45,7 @@ export type OptionSectionId =
 	| 'avatars'
 	| 'email'
 	| 'registration'
-	| 'announcement'
-	| 'maintenance';
+	| 'announcement';
 
 const text = (maxLength: number, type: 'text' | 'email' | 'url' = 'text'): OptionInput => ({ kind: 'text', maxLength, type });
 const num = (min: number, max = 99999): OptionInput => ({ kind: 'number', min, max });
@@ -133,7 +132,6 @@ export const OPTION_SECTIONS: readonly OptionSection<OptionSectionId>[] = [
 		],
 	},
 	{ id: 'announcement', fields: [field('announcement', yesno), field('announcement_message', { kind: 'textarea', rows: 5 })] },
-	{ id: 'maintenance', fields: [field('maintenance', yesno), field('maintenance_message', { kind: 'textarea', rows: 5 })] },
 ];
 
 export type OptionsError = 'missingTitle' | 'invalidBaseUrl' | 'invalidAdminEmail' | 'invalidWebmasterEmail' | 'smtpMismatch' | 'timeout';
@@ -267,7 +265,6 @@ export function readOptionsForm(read: (key: string) => string, defaults: Options
 	for (const [flagKey, messageKey, fallback] of [
 		['announcement', 'announcement_message', defaults.announcement],
 		['rules', 'rules_message', defaults.rules],
-		['maintenance', 'maintenance_message', defaults.maintenance],
 	] as const) {
 		const message = trimmed(messageKey);
 		if (message !== '') set(messageKey, punLinebreaks(message));
@@ -278,6 +275,18 @@ export function readOptionsForm(read: (key: string) => string, defaults: Options
 	}
 
 	return errors.length > 0 ? { kind: 'invalid', errors } : { kind: 'ok', values };
+}
+
+/**
+ * Mode maintenance, réglé dans admin_maintenance.php (AvroBB l'a sorti d'admin_options.php) : message
+ * vide = texte par défaut, comme les autres messages des options.
+ */
+export function readMaintenanceForm(read: (key: string) => string, defaultMessage: string): Map<string, string> {
+	const message = read('maintenance_message').trim();
+	return new Map([
+		['o_maintenance', read('maintenance') === '1' ? '1' : '0'],
+		['o_maintenance_message', message !== '' ? punLinebreaks(message) : defaultMessage],
+	]);
 }
 
 /** Permissions (admin_permissions.php, clés p_*), dans l'ordre du formulaire PHP. */

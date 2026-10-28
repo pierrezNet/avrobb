@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { changedOptions, readOptionsForm } from '../src/services/adminOptions.ts';
+import { changedOptions, readMaintenanceForm, readOptionsForm } from '../src/services/adminOptions.ts';
 import { optionsForm } from './optionsForm.ts';
 
 const DEFAULTS = { announcement: 'Annonce ici', rules: 'Règles ici', maintenance: 'Fermé' };
@@ -46,8 +46,24 @@ describe('readOptionsForm', () => {
 		const v = values({ announcement: '1', announcement_message: '', maintenance: '1', rules: '1', rules_message: 'a\r\nb' });
 		expect(v.get('o_announcement')).toBe('0');
 		expect(v.get('o_announcement_message')).toBe('Annonce ici');
-		expect(v.get('o_maintenance')).toBe('1');
+		// Le mode maintenance se règle dans admin_maintenance.php.
+		expect(v.has('o_maintenance')).toBe(false);
 		expect(v.get('o_rules_message')).toBe('a\nb');
+	});
+
+	it('mode maintenance : interrupteur et message, texte par défaut si vide', () => {
+		expect(readMaintenanceForm(read({ maintenance: '1', maintenance_message: ' <b>Pause</b>\r\nà 20 h ' }), 'Fermé')).toEqual(
+			new Map([
+				['o_maintenance', '1'],
+				['o_maintenance_message', '<b>Pause</b>\nà 20 h'],
+			]),
+		);
+		expect(readMaintenanceForm(read({ maintenance: 'x' }), 'Fermé')).toEqual(
+			new Map([
+				['o_maintenance', '0'],
+				['o_maintenance_message', 'Fermé'],
+			]),
+		);
 	});
 
 	it('domaine accentué en punycode', () => {

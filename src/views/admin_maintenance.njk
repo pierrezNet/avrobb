@@ -11,6 +11,19 @@
 {{ adminMenu.menu(view.menu, lang) }}
 <div class="side-layout__content">
 {{ sideMenu.notice(view.notice) }}
+<form class="form-box form options-form" id="maintenance-mode" method="post" action="{{ url('admin_maintenance.php') }}">
+	{{ forms.csrf(layout) }}
+	<input type="hidden" name="action" value="mode">
+	<h2 class="form-box__title">{{ t.modeSubhead }}</h2>
+	<p class="form__help">{{ t.modeInfo }}</p>
+	<div class="form__field" role="radiogroup" aria-labelledby="label-maintenance">
+		<span id="label-maintenance" class="form__label">{{ t.modeLabel }}</span>
+		<label class="form__choice"><input type="radio" name="maintenance" value="1"{% if view.mode.enabled %} checked{% endif %}> {{ t.modeOn }}</label>
+		<label class="form__choice"><input type="radio" name="maintenance" value="0"{% if not view.mode.enabled %} checked{% endif %}> {{ t.modeOff }}</label>
+	</div>
+	<p class="form__field"><label for="maintenance_message">{{ t.modeMessage }}</label><textarea id="maintenance_message" name="maintenance_message" rows="5" aria-describedby="maintenance_message_help">{{ view.mode.message }}</textarea><span id="maintenance_message_help" class="form__help">{{ t.modeMessageHelp }}</span></p>
+	<p class="form__buttons"><button type="submit" class="button button--primary">{{ t.modeSave }}</button> <a href="{{ url(view.mode.previewHref) }}" target="_blank" rel="noopener">{{ t.modePreview }}</a></p>
+</form>
 <form class="form-box form options-form" method="post" action="{{ url('admin_maintenance.php') }}">
 	{{ forms.csrf(layout) }}
 	<input type="hidden" name="action" value="rebuild">

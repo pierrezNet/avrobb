@@ -42,6 +42,8 @@ async function start(): Promise<{ server: FastifyInstance; fake: FakeData }> {
 	return { server: app, fake };
 }
 
+const get = (server: FastifyInstance, userId: number, url: string) => server.inject({ url, headers: { cookie: cookies(userId) } });
+
 function send(server: FastifyInstance, userId: number, fields: Record<string, string>) {
 	return server.inject({
 		method: 'POST',
@@ -69,6 +71,32 @@ describe('admin_maintenance.php', () => {
 		expect(last.headers.location).toBe('admin_maintenance.php?done=rebuilt');
 		expect(fake.maintenanceLog).toEqual(['empty', 'index 100', 'index 101', 'index 102']);
 		expect((await send(server, 2, { action: 'rebuild', i_per_page: '0' })).statusCode).toBe(400);
+	});
+
+	it('mode maintenance : réglage, aperçu et page vue par les membres', async () => {
+		const { server, fake } = await start();
+		fake.configValues = new Map([
+			['o_maintenance', '0'],
+			['o_maintenance_message', 'Fermé'],
+		]);
+		const page = await get(server, 2, '/admin_maintenance.php');
+		expect(page.body).toContain('id="maintenance-mode"');
+		expect(page.body).toContain('href="admin_maintenance.php?preview=1"');
+
+		const saved = await send(server, 2, { action: 'mode', maintenance: '1', maintenance_message: '<b>Pause</b>' });
+		expect(saved.headers.location).toBe('admin_maintenance.php?done=mode#maintenance-mode');
+		expect(fake.configValues?.get('o_maintenance')).toBe('1');
+		expect(fake.configValues?.get('o_maintenance_message')).toBe('<b>Pause</b>');
+		expect((await send(server, 5, { action: 'mode', maintenance: '1' })).statusCode).toBe(403);
+
+		fake.config = { ...fake.config, maintenance: true, maintenanceMessage: '<b>Pause</b>' };
+		const preview = await get(server, 2, '/admin_maintenance.php?preview=1');
+		expect(preview.body).toContain('<b>Pause</b>');
+		expect(preview.body).toContain('Aperçu');
+		expect((await get(server, 2, '/index.php')).body).toContain('href="admin_maintenance.php#maintenance-mode"');
+		const blocked = await server.inject({ url: '/index.php' });
+		expect(blocked.statusCode).toBe(503);
+		expect(blocked.body).not.toContain('Aperçu');
 	});
 
 	it('vidage des caches', async () => {

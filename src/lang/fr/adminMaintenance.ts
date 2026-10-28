@@ -4,6 +4,20 @@
 
 export const adminMaintenance = {
 	title: 'Maintenance du forum',
+	modeSubhead: 'Mode maintenance',
+	modeInfo:
+		'En mode maintenance, seuls les administrateurs peuvent utiliser le forum ; les autres visiteurs voient la page de maintenance avec le message ci-dessous. Les administrateurs peuvent toujours se connecter.',
+	modeLabel: 'Mode maintenance',
+	modeOn: 'Activé',
+	modeOff: 'Désactivé',
+	modeMessage: 'Message de maintenance',
+	modeMessageHelp: 'Peut contenir du code HTML. Si laissé vide, un message par défaut est utilisé.',
+	modeSave: 'Enregistrer',
+	modePreview: 'Aperçu de la page de maintenance',
+	modeEnabled: 'Le mode maintenance est activé : seuls les administrateurs ont accès au forum.',
+	modeDisabled: 'Le mode maintenance est désactivé.',
+	previewNotice: 'Aperçu : voici la page que voient les membres et les invités pendant la maintenance.',
+	backToMaintenance: 'Retour à la maintenance',
 	rebuildSubhead: "Reconstruire l'index de recherche",
 	rebuildInfo:
 		"Si vous avez ajouté, modifié ou supprimé des messages manuellement dans la base de données ou si vous rencontrez des problèmes lors des recherches, vous devriez reconstruire l'index de recherche. Pour une performance optimale, vous devriez passer le forum en mode maintenance pendant la reconstruction.",

@@ -108,6 +108,10 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   POST avec jeton CSRF (le PHP enchaînait des GET qui écrivaient), un script enchaîne les étapes et
   un bouton « Continuer » le remplace sans JavaScript ; l'élagage demande confirmation comme le PHP.
   Ajout : « Vider les caches » supprime les fichiers `cache/cache_*.php`, que le PHP régénère.
+  Le **mode maintenance** (interrupteur et message, `o_maintenance*`) se règle dans cette page et
+  non plus dans les Options, avec un aperçu de la page vue par les membres
+  (`admin_maintenance.php?preview=1`) ; l'alerte « mode maintenance activé » de l'en-tête y mène.
+  Un message vide reprend le texte par défaut sans désactiver le mode.
 - Messagerie privée : mêmes réglages que le PHP, avec jeton CSRF ; seules les clés modifiées sont
   écrites.
 - Fichiers des membres (Uploadile) : réglages comme le PHP, sans la miniaturisation

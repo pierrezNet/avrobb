@@ -16,7 +16,6 @@ export const adminOptions = {
 		email: 'E-mail',
 		registration: 'Inscription',
 		announcement: 'Annonces',
-		maintenance: 'Maintenance',
 	},
 	fields: {
 		board_title: {
@@ -203,14 +202,6 @@ export const adminOptions = {
 		announcement_message: {
 			label: "Message d'annonce",
 			help: 'Ce texte ne sera pas traité comme les messages ordinaires et peut contenir du code HTML.',
-		},
-		maintenance: {
-			label: 'Mode maintenance',
-			help: "Si activé, le forum ne sera disponible qu'aux administrateurs. Ceci devra être utilisé si le forum doit être indisponible temporairement pour maintenance. ATTENTION ! Ne vous déconnectez pas lorsque le forum est en mode maintenance. Vous ne seriez plus en mesure de vous connecter.",
-		},
-		maintenance_message: {
-			label: 'Message de maintenance',
-			help: "Le message qui s'affichera pour les utilisateurs lorsque le forum sera en mode maintenance. Si laissé vide, un message par défaut sera utilisé. Ce texte ne sera pas traité comme les messages ordinaires et peut contenir du code HTML.",
 		},
 	} as Record<string, { label: string; help: string | null }>,
 	smtpChangePass: 'Cocher ceci si vous souhaitez modifier ou supprimer le mot de passe stocké actuellement.',

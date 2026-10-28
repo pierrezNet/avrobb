@@ -34,7 +34,7 @@
 <p class="message-box">{{ lang.gallery.noOwnImages }}</p>
 {% endif %}
 
-<h2 class="form-box__title">{{ lang.gallery.addPicture }}</h2>
+<h2 id="gallery-upload" class="form-box__title">{{ lang.gallery.addPicture }}</h2>
 {{ forms.errors(lang.gallery.errorsTitle, lang.gallery.errorsInfo, view.form.errors) }}
 {{ galleryForm.uploadForm(view.form, layout, lang) }}
 {% endblock %}

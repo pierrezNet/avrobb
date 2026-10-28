@@ -114,7 +114,7 @@ export function buildDraftEditPage(input: DraftEditInput): PostPageView {
 		previewHtml: input.preview !== null ? parseMessage(input.preview, messageParserOptions(config, viewer, lang, censor)) : null,
 		subjectPrefixes: null,
 		bbcodeStatus: bbcodeStatus(config, viewer, lang),
-		toolbar: toolbarView(input.toolbar, 'form', config, lang),
+		toolbar: toolbarView(input.toolbar, 'form', config, lang, !viewer.isGuest),
 		checkboxes: [],
 		draftsUrl: null,
 		review: [],

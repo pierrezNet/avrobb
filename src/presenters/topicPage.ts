@@ -119,7 +119,7 @@ function quickPost(input: TopicPageInput): QuickPostView | null {
 			: null,
 		keepSubscribed: !viewer.isGuest && config.topicSubscriptions && (viewer.autoNotify || topic.isSubscribed),
 		bbcodeStatus: bbcodeStatus(config, viewer, lang),
-		toolbar: toolbarView(input.toolbar, 'quickform', config, lang),
+		toolbar: toolbarView(input.toolbar, 'quickform', config, lang, !viewer.isGuest),
 	};
 }
 

@@ -114,12 +114,25 @@ const TOOLBAR_SMILIES = SMILIES.filter((smiley, i) => SMILIES.findIndex((other) 
 	({ code, emoji, name }) => ({ code, emoji, name }),
 );
 
-export function toolbarView(settings: ToolbarSettings, form: 'form' | 'quickform', config: BoardConfig, lang: Lang): ToolbarView | null {
+/**
+ * Barre d'outils du message. `member` : le bouton image propose aussi la galerie (choisir une image
+ * ou en envoyer une nouvelle, gallery.php?info=pick), réservée aux membres.
+ */
+export function toolbarView(
+	settings: ToolbarSettings,
+	form: 'form' | 'quickform',
+	config: BoardConfig,
+	lang: Lang,
+	member = false,
+): ToolbarView | null {
 	const toolbar = toolbarButtons(settings, form, { bbcode: config.bbcode, imgTag: config.imgTag, smilies: config.smilies }, lang.toolbar);
 	if (toolbar === null) return null;
+	const imageChooser = member
+		? { ...lang.toolbar.imageChooser, galleryUrl: 'gallery.php?info=pick', uploadUrl: 'gallery.php?info=pick#gallery-upload' }
+		: null;
 	return {
 		imageDir: toolbar.imageDir,
-		config: JSON.stringify({ label: lang.toolbar.label, buttons: toolbar.buttons, smilies: TOOLBAR_SMILIES }),
+		config: JSON.stringify({ label: lang.toolbar.label, buttons: toolbar.buttons, smilies: TOOLBAR_SMILIES, imageChooser }),
 	};
 }
 
@@ -180,7 +193,7 @@ export function buildPostPage(input: PostPageInput): PostPageView {
 				: null,
 		subjectPrefixes: isNewTopic ? subjectTagChoices(config.subjectTags) : null,
 		bbcodeStatus: bbcodeStatus(config, viewer, lang),
-		toolbar: toolbarView(input.toolbar, 'form', config, lang),
+		toolbar: toolbarView(input.toolbar, 'form', config, lang, !viewer.isGuest),
 		checkboxes: checkboxes(input, isNewTopic),
 		draftsUrl: viewer.isGuest ? null : 'draft_list.php',
 		review: input.review.map((post) => ({
@@ -235,7 +248,7 @@ export function buildEditPage(input: EditPageInput): PostPageView {
 			input.preview !== null ? parseMessage(input.preview, messageParserOptions(config, viewer, lang, censor, form.hideSmilies)) : null,
 		subjectPrefixes: isTopicPost ? subjectTagChoices(input.config.subjectTags) : null,
 		bbcodeStatus: bbcodeStatus(config, viewer, lang),
-		toolbar: toolbarView(input.toolbar, 'form', config, lang),
+		toolbar: toolbarView(input.toolbar, 'form', config, lang, !viewer.isGuest),
 		checkboxes,
 		draftsUrl: null,
 		review: [],

@@ -76,6 +76,67 @@
 		return element;
 	}
 
+	/**
+	 * Bouton image : petit menu « Adresse (URL) », « Mes images de la galerie », « Nouvelle image ».
+	 * La galerie s'ouvre dans une fenêtre qui insère le code dans ce message (insert-into-message.js).
+	 */
+	function imageChooser(element, action, textarea, chooser) {
+		const anchor = document.createElement('span');
+		anchor.className = 'bbcode-toolbar__anchor';
+		const menu = document.createElement('div');
+		menu.className = 'bbcode-toolbar__menu';
+		menu.setAttribute('role', 'menu');
+		menu.setAttribute('aria-label', chooser.label);
+		menu.hidden = true;
+		element.setAttribute('aria-haspopup', 'menu');
+		element.setAttribute('aria-expanded', 'false');
+
+		const close = (focusButton) => {
+			menu.hidden = true;
+			element.setAttribute('aria-expanded', 'false');
+			if (focusButton) element.focus();
+		};
+		const open = () => {
+			menu.hidden = false;
+			element.setAttribute('aria-expanded', 'true');
+			menu.querySelector('button')?.focus();
+		};
+		const entry = (label, onChoose) => {
+			const item = document.createElement('button');
+			item.type = 'button';
+			item.setAttribute('role', 'menuitem');
+			item.textContent = label;
+			item.addEventListener('click', () => {
+				close(false);
+				onChoose();
+			});
+			menu.append(item);
+		};
+		const gallery = (url) => window.open(url, 'galerie', 'width=900,height=700,scrollbars=yes,resizable=yes');
+		entry(chooser.url, () => run(action, textarea));
+		entry(chooser.gallery, () => gallery(chooser.galleryUrl));
+		entry(chooser.upload, () => gallery(chooser.uploadUrl));
+
+		element.addEventListener('click', () => (menu.hidden ? open() : close(true)));
+		menu.addEventListener('keydown', (event) => {
+			const items = [...menu.querySelectorAll('button')];
+			const index = items.indexOf(document.activeElement);
+			if (event.key === 'Escape') {
+				event.preventDefault();
+				close(true);
+			} else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+				event.preventDefault();
+				const step = event.key === 'ArrowDown' ? 1 : -1;
+				items[(index + step + items.length) % items.length]?.focus();
+			}
+		});
+		document.addEventListener('click', (event) => {
+			if (!menu.hidden && event.target instanceof Node && !anchor.contains(event.target)) close(false);
+		});
+		anchor.append(element, menu);
+		return anchor;
+	}
+
 	function init(holder) {
 		const textarea = document.getElementById(holder.dataset.toolbarFor);
 		if (textarea === null || typeof textarea.setRangeText !== 'function') return;
@@ -118,6 +179,10 @@
 				anchor.className = 'bbcode-toolbar__anchor';
 				anchor.append(element, picker);
 				bar.append(anchor);
+				continue;
+			}
+			if (item.action.tag === 'img' && config.imageChooser) {
+				bar.append(imageChooser(element, item.action, textarea, config.imageChooser));
 				continue;
 			}
 			if (item.action.kind === 'smilies') {

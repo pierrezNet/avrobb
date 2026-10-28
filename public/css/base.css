@@ -2268,3 +2268,69 @@ a.site-status__alert {
 		inset 0 0 0 2px #fff,
 		0 0 0 2px currentColor;
 }
+
+/* Carte d'une image de la galerie dans un message : image, titre, légende */
+.post-card {
+	display: inline-flex;
+	flex-direction: column;
+	max-width: min(100%, 40rem);
+	margin: 0.75rem 0;
+	overflow: hidden;
+	border: 1px solid var(--color-border);
+	border-radius: 0.5rem;
+	background: var(--color-surface);
+}
+.post-card .postimg,
+.post-card .postimg img {
+	display: block;
+	max-width: 100%;
+	height: auto;
+	margin: 0;
+}
+.post-card figcaption {
+	padding: 0.5rem 0.75rem 0.75rem;
+}
+.post-card__title {
+	display: block;
+	margin-bottom: 0.25rem;
+}
+.post-card__text {
+	display: block;
+	color: var(--color-muted);
+	font-size: 0.9375rem;
+}
+/* Menu du bouton image de la barre d'outils (URL, galerie, nouvelle image) */
+.bbcode-toolbar__menu {
+	position: absolute;
+	top: 100%;
+	left: 0;
+	z-index: 20;
+	display: flex;
+	flex-direction: column;
+	min-width: 16rem;
+	margin-top: 0.25rem;
+	padding: 0.25rem;
+	border: 1px solid var(--color-border);
+	border-radius: 0.375rem;
+	background: var(--color-surface);
+	box-shadow: 0 0.25rem 0.75rem rgb(0 0 0 / 0.15);
+}
+.bbcode-toolbar__menu[hidden] {
+	display: none;
+}
+.bbcode-toolbar__menu button {
+	min-height: 2.75rem;
+	padding: 0 0.75rem;
+	border: 0;
+	border-radius: 0.25rem;
+	background: none;
+	color: var(--color-text);
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
+}
+.bbcode-toolbar__menu button:hover,
+.bbcode-toolbar__menu button:focus-visible {
+	background: var(--color-accent);
+	color: #fff;
+}

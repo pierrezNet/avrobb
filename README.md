@@ -240,7 +240,11 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   après confirmation, par l'auteur, un administrateur ou le groupe des modérateurs (le PHP la
   réservait à ce groupe, par un lien GET). Sélecteur `gallery.php?info=pick`, ouvert depuis les
   formulaires de rédaction : choisir une de ses images ou en envoyer une nouvelle (elle rejoint la
-  galerie) et l'insérer avec son titre et sa description.
+  galerie) et l'insérer avec son titre et sa description. Le bouton image de la barre d'outils
+  ouvre un menu (adresse d'une image, mes images de la galerie, nouvelle image) ; sans JavaScript,
+  le lien « Images de la galerie » reste sous le formulaire. Une image de la galerie insérée avec
+  son titre et sa description s'affiche en carte (`<figure>` : image, titre, légende) ; le PHP
+  montre le même BBCode en titre gras, image et texte.
 - extern.php : pas d'authentification HTTP Basic ni de cache des flux (`o_feed_ttl`).
 - Connexion : jeton CSRF, adresse de retour limitée aux pages du forum (le PHP permettait une
   redirection ouverte), redirection immédiate sans page « Redirection… », page accessible en

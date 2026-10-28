@@ -40,4 +40,12 @@ export const toolbar = {
 		acronym: ["Désignation complète de l'acronyme :"],
 		video: ["Veuillez entrer l'URL de votre vidéo youtube (watch ou embed) ou dailymotion (URL ou lien d'intégration)"],
 	} as Readonly<Record<string, readonly string[]>>,
+
+	/** Bouton image : choix de la source (absent de FluxToolBar). */
+	imageChooser: {
+		label: 'Insérer une image',
+		url: 'Adresse d’une image (URL)',
+		gallery: 'Mes images de la galerie',
+		upload: 'Nouvelle image (envoi)',
+	},
 };

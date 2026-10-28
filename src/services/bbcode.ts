@@ -19,7 +19,8 @@
  *   (<span class="bbcode-gap">) : une ligne tapée avec Entrée se lit comme un petit paragraphe ;
  * - une image envoyée sur le forum (WebP de img/members/ ou img/gallery/) est servie dans un
  *   <picture> avec sa variante mobile pour les petits écrans ; toutes les images sont chargées à
- *   la demande (loading="lazy").
+ *   la demande (loading="lazy") ;
+ * - une image de la galerie insérée avec son titre et sa description devient une carte (<figure>).
  */
 
 import type { Censor } from './censor.ts';
@@ -332,7 +333,33 @@ export function parseMessage(source: string, options: BbcodeOptions): string {
 		return `</p><div class="codebox"><pre${scroll}><code>${code}</code></pre></div><p>`;
 	});
 
-	return spaceLineBreaks(cleanParagraphs(text));
+	const html = spaceLineBreaks(cleanParagraphs(text));
+	return options.showImages ? galleryCards(html, options.baseUrl) : html;
+}
+
+const escapeRegExp = (text: string): string => text.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
+
+/**
+ * Image de la galerie insérée dans un message ([b]titre[/b], [img]…[/img], description : code de
+ * gallery.php?info=pick) mise en forme de carte : image, titre et légende dans un <figure>. Seul un
+ * paragraphe qui ne contient que ce bloc est transformé ; le PHP l'affiche tel quel.
+ */
+function galleryCards(html: string, baseUrl: string): string {
+	if (baseUrl === '' || !html.includes('/img/gallery/')) return html;
+	const gap = '<br /><span class="bbcode-gap"></span>';
+	const gallery = escapeRegExp(`${baseUrl}/img/gallery/`);
+	const image = `<span class="postimg">(?:<picture>(?:(?!</picture>).)*</picture>|<img src="${gallery}[^"]*"[^>]*/>)</span>`;
+	const pattern = new RegExp(
+		`<p><strong>([^<]{1,80})</strong>${escapeRegExp(gap)}(${image})(?:${escapeRegExp(gap)}((?:(?!</p>).)*))?</p>`,
+		'g',
+	);
+	return html.replace(pattern, (whole, title: string, img: string, text: string | undefined) => {
+		if (!img.includes(`${baseUrl}/img/gallery/`)) return whole;
+		// Le titre décrit l'image mieux que son nom de fichier.
+		const described = img.replace(/ alt="[^"]*"/, ` alt="${title}"`);
+		const caption = text !== undefined && text !== '' ? `<span class="post-card__text">${text}</span>` : '';
+		return `<figure class="post-card">${described}<figcaption><strong class="post-card__title">${title}</strong>${caption}</figcaption></figure>`;
+	});
 }
 
 /**

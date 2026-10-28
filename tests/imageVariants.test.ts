@@ -53,6 +53,26 @@ describe('rendu des images', () => {
 	});
 });
 
+describe('carte d’une image de la galerie', () => {
+	it('titre, image et description insérés depuis la galerie : <figure> avec légende', () => {
+		const html = parseMessage(`Avant\n\n[b]Peinture[/b]\n[img]${BASE}/img/gallery/42.webp[/img]\nLivrée [i]hier[/i]\n\nAprès`, options);
+		expect(html).toContain('<figure class="post-card"><span class="postimg"><picture>');
+		expect(html).toContain('alt="Peinture"');
+		expect(html).toContain(
+			'<figcaption><strong class="post-card__title">Peinture</strong><span class="post-card__text">Livrée <em>hier</em></span></figcaption></figure><p>Après</p>',
+		);
+	});
+
+	it('image d’un autre site, ou bloc mêlé à du texte : pas de carte', () => {
+		expect(parseMessage('[b]Ailleurs[/b]\n[img]http://autre.test/img/gallery/1.jpg[/img]', options)).not.toContain('<figure');
+		expect(parseMessage(`Texte [b]Titre[/b]\n[img]${BASE}/img/gallery/1.webp[/img]`, options)).not.toContain('<figure');
+	});
+
+	it('images masquées par le lecteur : simple lien, pas de carte', () => {
+		expect(parseMessage(`[b]T[/b]\n[img]${BASE}/img/gallery/1.webp[/img]`, { ...options, showImages: false })).not.toContain('<figure');
+	});
+});
+
 describe('conversion par sharp', () => {
 	const processor = new SharpImageProcessor();
 

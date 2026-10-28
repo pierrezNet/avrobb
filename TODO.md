@@ -90,9 +90,10 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
   - [x] Tuiles : image collée en haut de la tuile (sans marge au-dessus)
   - [x] Filtre « Mes images » pour ne voir que les siennes
   - [x] Insertion d'image dans un message : en plus de l'URL, choisir parmi ses images de la galerie, ou
-    téléverser une image depuis l'édition du message (elle rejoint alors la galerie) — `gallery.php?info=pick`
+    téléverser une image depuis l'édition du message (elle rejoint alors la galerie) — `gallery.php?info=pick`,
+    ouvert par le bouton image de la barre d'outils (menu : URL, mes images de la galerie, nouvelle image)
   - [x] Image insérée avec son titre et sa description (la description, obligatoire dans la galerie, est
-    aujourd'hui perdue à l'insertion)
+    aujourd'hui perdue à l'insertion), affichée en **carte** (image, titre, légende)
 - [x] Premium (`premium`, `premium.php`) **(PV)** — page du membre et codes d'activation ; le plugin d'administration `AP_Premium` (table `premium`) suit au lot 7
 
 ## Lot 6 — Modération

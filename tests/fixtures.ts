@@ -388,6 +388,8 @@ export interface FakeData {
 	adminUserRows?: AdminUserRow[];
 	userSearches?: UserSearchCriteria[];
 	userActionLog?: string[];
+	/** Écritures d'admin_bans.php. */
+	banLog?: string[];
 	/** Signalements listés par admin_reports.php (modifiés en place quand ils sont traités). */
 	reportList?: Report[];
 	/** Messagerie privée en mémoire (créée vide au besoin). */
@@ -733,6 +735,54 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			},
 		},
 		forumAdmin: fakeForumAdmin(data),
+		banStore: {
+			findBan: async (id) => {
+				const ban = (data.bans ?? []).find((b) => b.id === id);
+				return ban !== undefined
+					? {
+							id: ban.id,
+							username: ban.username || null,
+							ip: ban.ip || null,
+							email: ban.email || null,
+							message: ban.message || null,
+							expire: ban.expire,
+						}
+					: null;
+			},
+			addBan: async (ban, creatorId) => {
+				data.banLog = [...(data.banLog ?? []), `add ${JSON.stringify(ban)} by ${creatorId}`];
+			},
+			updateBan: async (id, ban) => {
+				data.banLog = [...(data.banLog ?? []), `update ${id} ${JSON.stringify(ban)}`];
+			},
+			removeBan: async (id) => {
+				data.banLog = [...(data.banLog ?? []), `remove ${id}`];
+			},
+			findTarget: async (by) => {
+				const user = data.users.find((u) => ('id' in by ? u.viewer.id === by.id : u.viewer.username === by.username) && u.viewer.id > 1);
+				return user !== undefined
+					? {
+							id: user.viewer.id,
+							username: user.viewer.username,
+							email: `${user.viewer.username.toLowerCase()}@example.test`,
+							groupId: user.viewer.group.id,
+							isModerator: user.viewer.group.isModerator,
+						}
+					: null;
+			},
+			lastKnownIp: async () => '192.0.2.5',
+			countBans: async () => (data.bans ?? []).length,
+			searchBans: async () =>
+				(data.bans ?? []).map((ban) => ({
+					id: ban.id,
+					username: ban.username || null,
+					ip: ban.ip || null,
+					email: ban.email || null,
+					message: ban.message || null,
+					expire: ban.expire,
+					creator: { id: 2, username: 'admin' },
+				})),
+		},
 		userAdmin: {
 			countIpStats: async (userId) => (data.ipStats?.get(userId) ?? []).length,
 			listIpStats: async (userId, offset, limit) => (data.ipStats?.get(userId) ?? []).slice(offset, offset + limit),

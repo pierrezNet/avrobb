@@ -96,6 +96,11 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   désactivé par PV : formulaire sans bouton) ; mot de passe de 6 caractères au moins comme ailleurs
   dans Node (4 dans le plugin) ; erreurs réaffichées dans le formulaire ; e-mails d'alerte et de
   bienvenue tirés des modèles du PHP.
+- Bannissements (`admin_bans.php`) : suppression par bouton POST après confirmation (le PHP
+  supprimait sur un lien GET) ; erreurs réaffichées dans le formulaire ; un octet « 000 » d'une IP
+  devient « 0 » (le PHP le vidait) ; dates de recherche aux formats proposés (aaaa-mm-jj).
+- Censure (`admin_censoring.php`) : identique au PHP, avec jeton CSRF ; `cache_censoring.php` est
+  supprimé après chaque modification.
 - Rédaction (`post.php`) : émojis conservés (le PHP remplaçait les caractères de 4 octets par « ? »,
   héritage d'une base en utf8 sur 3 octets) ; redirection immédiate vers le message ; boutons de
   préfixe du sujet en JavaScript et seulement pour une nouvelle discussion ; pas de réponse dans le

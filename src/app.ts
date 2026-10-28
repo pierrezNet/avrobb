@@ -11,6 +11,7 @@ import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply, ty
 import nunjucks from 'nunjucks';
 import type { Mailer } from './adapters/mailer.ts';
 import type { ServerInfo } from './adapters/serverInfo.ts';
+import { AdminBansController, type AdminBansQuery } from './controllers/AdminBansController.ts';
 import { AdminCensoringController, type AdminCensoringQuery } from './controllers/AdminCensoringController.ts';
 import { AdminGroupsController, type AdminGroupsQuery } from './controllers/AdminGroupsController.ts';
 import { AdminIndexController } from './controllers/AdminIndexController.ts';
@@ -52,6 +53,7 @@ import { type FormBody, registerFormParser } from './http/forms.ts';
 import { type LayoutDeps, renderBlock, renderMessage, renderMinimalMessage } from './http/layout.ts';
 import { checkAccess, purgeOnline, type SessionDeps, startSession } from './http/session.ts';
 import type { AdminStatsReader } from './repositories/AdminStatsRepository.ts';
+import type { BanStore } from './repositories/BanRepository.ts';
 import type { CensorStore } from './repositories/CensorRepository.ts';
 import type { ConfigCache, ConfigReader } from './repositories/ConfigLoader.ts';
 import type { ConfigStore } from './repositories/ConfigRepository.ts';
@@ -129,6 +131,8 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	reportWriter: ReportWriter;
 	/** Liste et traitement des signalements (admin_reports.php). */
 	reportStore: ReportStore;
+	/** Bannissements gérés dans l'administration (admin_bans.php). */
+	banStore: BanStore;
 	/** Statistiques de l'administration (admin_statistics.php). */
 	adminStats: AdminStatsReader;
 	serverInfo: ServerInfo;
@@ -166,6 +170,7 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 
 /** Pages déjà servies par Node ; les autres liens partent vers l'installation PHP. */
 const PORTED_PAGES = new Set([
+	'admin_bans.php',
 	'admin_categories.php',
 	'admin_censoring.php',
 	'admin_forums.php',
@@ -399,6 +404,14 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 	const adminCensoring = new AdminCensoringController(deps);
 	app.get<{ Querystring: AdminCensoringQuery }>('/admin_censoring.php', { preHandler: authenticate }, adminCensoring.show);
 	app.post<{ Body: FormBody }>('/admin_censoring.php', { preHandler: [authenticate, verifyCsrf] }, adminCensoring.submit);
+
+	const adminBans = new AdminBansController(deps);
+	app.get<{ Querystring: AdminBansQuery }>('/admin_bans.php', { preHandler: authenticate }, adminBans.show);
+	app.post<{ Querystring: AdminBansQuery; Body: FormBody }>(
+		'/admin_bans.php',
+		{ preHandler: [authenticate, verifyCsrf] },
+		adminBans.submit,
+	);
 
 	const adminReports = new AdminReportsController(deps);
 	app.get<{ Querystring: AdminReportsQuery }>('/admin_reports.php', { preHandler: authenticate }, adminReports.show);

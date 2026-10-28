@@ -1,0 +1,38 @@
+{#- Formulaire d'un bannissement (admin_bans.php, ajout ou modification). Données : `view` (controllers/AdminBansController.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/adminMenu.njk" as adminMenu %}
+{% import "partials/forms.njk" as forms %}
+
+{% block main %}
+{% set t = lang.adminBans %}
+{% set v = view.values %}
+<h1 class="page-title">{{ t.advancedHead }}</h1>
+<div class="side-layout">
+{{ adminMenu.menu(view.menu, lang) }}
+<div class="side-layout__content">
+{{ forms.errors(lang.profile.formErrors, lang.profile.formErrorsInfo, view.errors) }}
+<form id="bans2" class="form-box form" method="post" action="{{ url('admin_bans.php') }}">
+	{{ forms.csrf(layout) }}
+	<input type="hidden" name="mode" value="{{ view.mode }}">
+	{% if view.banId %}<input type="hidden" name="ban_id" value="{{ view.banId }}">{% endif %}
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ t.advancedSubhead }}</legend>
+		<p class="form__field"><label for="ban_user">{{ t.username }}</label><input type="text" id="ban_user" name="ban_user" value="{{ v.username }}" maxlength="25" aria-describedby="ban_user_help"><span id="ban_user_help" class="form__help">{{ t.usernameHelp }}</span></p>
+		<p class="form__field">
+			<label for="ban_ip">{{ t.ip }}</label>
+			<input type="text" id="ban_ip" name="ban_ip" value="{{ v.ip }}" maxlength="255" aria-describedby="ban_ip_help" spellcheck="false">
+			<span id="ban_ip_help" class="form__help">{{ t.ipHelp }}{% if view.ipStatsHref %} <a href="{{ url(view.ipStatsHref) }}">{{ t.ipStatsLink }}</a>{% endif %}</span>
+		</p>
+		<p class="form__field"><label for="ban_email">{{ t.email }}</label><input type="text" id="ban_email" name="ban_email" value="{{ v.email }}" maxlength="80" aria-describedby="ban_email_help" spellcheck="false"><span id="ban_email_help" class="form__help">{{ t.emailHelp }}</span></p>
+		<p class="form__warning">{{ t.ipRangeInfo }}</p>
+	</fieldset>
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ t.messageExpirySubhead }}</legend>
+		<p class="form__field"><label for="ban_message">{{ t.banMessage }}</label><input type="text" id="ban_message" name="ban_message" value="{{ v.message }}" maxlength="255" aria-describedby="ban_message_help"><span id="ban_message_help" class="form__help">{{ t.banMessageHelp }}</span></p>
+		<p class="form__field"><label for="ban_expire">{{ t.expireDate }}</label><input type="date" id="ban_expire" name="ban_expire" value="{{ v.expire }}" aria-describedby="ban_expire_help"><span id="ban_expire_help" class="form__help">{{ t.expireDateHelp }}</span></p>
+	</fieldset>
+	<p class="form__buttons"><button type="submit" class="button button--primary" name="add_edit_ban" value="1">{{ t.save }}</button></p>
+</form>
+</div>
+</div>
+{% endblock %}

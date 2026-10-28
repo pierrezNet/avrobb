@@ -1,0 +1,21 @@
+{#- Confirmation de suppression d'un bannissement (admin_bans.php?del_ban=…). Données : `view` (controllers/AdminBansController.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/adminMenu.njk" as adminMenu %}
+{% import "partials/forms.njk" as forms %}
+
+{% block main %}
+{% set t = lang.adminBans %}
+{% set b = view.ban %}
+<h1 class="page-title">{{ t.title }}</h1>
+<div class="side-layout">
+{{ adminMenu.menu(view.menu, lang) }}
+<div class="side-layout__content">
+<form class="form-box form" method="post" action="{{ url(view.formAction) }}">
+	{{ forms.csrf(layout) }}
+	<h2 class="form-box__title">{{ t.confirmRemove }}</h2>
+	<p>{% if b.username %}{{ t.username }}&#160;: {{ b.username }}<br>{% endif %}{% if b.ip %}{{ t.ip }}&#160;: {{ b.ip }}<br>{% endif %}{% if b.email %}{{ t.email }}&#160;: {{ b.email }}{% endif %}</p>
+	<p class="form__buttons"><button type="submit" class="button button--primary" name="del_ban_comply" value="1">{{ t.remove }}</button> <a class="button" href="{{ url('admin_bans.php') }}">{{ t.goBack }}</a></p>
+</form>
+</div>
+</div>
+{% endblock %}

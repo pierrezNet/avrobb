@@ -409,3 +409,31 @@ describe('CensorRepository (admin_censoring.php)', () => {
 		});
 	});
 });
+
+describe('BanRepository (admin_bans.php)', () => {
+	it('ajoute, cherche, modifie et supprime un bannissement', async () => {
+		const { BanRepository } = await import('../../src/repositories/BanRepository.ts');
+		await inRollback(async (trx) => {
+			const store = new BanRepository(trx);
+			expect(await store.findTarget({ username: 'MaxDUO' })).toMatchObject({ id: 5, isModerator: true });
+			expect(await store.findTarget({ id: 1 })).toBeNull();
+			expect(await store.lastKnownIp(5)).toBe('192.0.2.5');
+			await store.addBan({ username: 'Tessy', ip: '10.1', email: null, message: 'Spam', expire: null }, 2);
+			const criteria = {
+				patterns: { username: 'tes%' },
+				expireAfter: null,
+				expireBefore: null,
+				orderBy: 'username' as const,
+				descending: false,
+			};
+			const [found] = await store.searchBans(criteria, 0, 50);
+			expect(found).toMatchObject({ username: 'Tessy', ip: '10.1', creator: { id: 2, username: 'admin' } });
+			expect(await store.countBans(criteria)).toBe(1);
+			if (found === undefined) return;
+			await store.updateBan(found.id, { username: 'Tessy', ip: null, email: 'tessy@example.test', message: null, expire: 1900000000 });
+			expect(await store.findBan(found.id)).toMatchObject({ ip: null, email: 'tessy@example.test', expire: 1900000000 });
+			await store.removeBan(found.id);
+			expect(await store.findBan(found.id)).toBeNull();
+		});
+	});
+});

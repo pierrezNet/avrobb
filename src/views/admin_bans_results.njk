@@ -1,0 +1,34 @@
+{#- Résultats de la recherche de bannissements (admin_bans.php?find_ban). Données : `view` (controllers/AdminBansController.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/adminMenu.njk" as adminMenu %}
+{% import "partials/navigation.njk" as nav %}
+
+{% block main %}
+{% set t = lang.adminBans %}
+<h1 class="page-title">{{ t.resultsHead }}</h1>
+<div class="side-layout">
+{{ adminMenu.menu(view.menu, lang) }}
+<div class="side-layout__content">
+{{ nav.pagination(view.pagination, lang) }}
+<section class="form-box">
+	{% if view.bans.length %}
+	<ul class="admin-rows">
+		{% for b in view.bans %}
+		<li class="admin-rows__item">
+			<p class="admin-rows__main">
+				<strong>{{ b.username or b.ip or b.email }}</strong><br>
+				{% if b.email %}{{ t.email }}&#160;: {{ b.email }} · {% endif %}{% if b.ip %}IP&#160;: {{ b.ip }} · {% endif %}{{ t.expire }}&#160;: {{ b.expireText }}<br>
+				{% if b.message %}{{ t.message }}&#160;: {{ b.message }} · {% endif %}{{ t.bannedBy }}&#160;: {% if b.creatorHref %}<a href="{{ url(b.creatorHref) }}">{{ b.creator.username }}</a>{% else %}{{ t.unknown }}{% endif %}
+			</p>
+			<p><a href="{{ url(b.editHref) }}">{{ t.edit }}</a> · <a href="{{ url(b.deleteHref) }}">{{ t.remove }}</a></p>
+		</li>
+		{% endfor %}
+	</ul>
+	{% else %}
+	<p>{{ t.noMatch }}</p>
+	{% endif %}
+</section>
+{{ nav.pagination(view.pagination, lang) }}
+</div>
+</div>
+{% endblock %}

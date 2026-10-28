@@ -498,6 +498,7 @@ describe('viewtopic de bout en bout', () => {
 			forumAdmin: new ForumAdminRepository(db),
 			groupAdmin: new GroupAdminRepository(db),
 			userAdmin: new UserAdminRepository(db),
+			banStore: new BanRepository(db),
 			configCache: { invalidate: async () => {} },
 			serverInfo: new NodeServerInfo(),
 			toolbar: new ToolbarRepository(db),

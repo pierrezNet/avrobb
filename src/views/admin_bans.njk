@@ -1,0 +1,38 @@
+{#- Bannissements (admin_bans.php) : nouveau bannissement et recherche. Données : `view` (controllers/AdminBansController.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/adminMenu.njk" as adminMenu %}
+{% import "partials/forms.njk" as forms %}
+{% import "partials/sideMenu.njk" as sideMenu %}
+
+{% block main %}
+{% set t = lang.adminBans %}
+<h1 class="page-title">{{ t.title }}</h1>
+<div class="side-layout">
+{{ adminMenu.menu(view.menu, lang) }}
+<div class="side-layout__content">
+{{ sideMenu.notice(view.notice) }}
+<form id="bans" class="form-box form" method="post" action="{{ url('admin_bans.php') }}">
+	{{ forms.csrf(layout) }}
+	<h2 class="form-box__title">{{ t.newBanHead }}</h2>
+	<p class="form__field">
+		<label for="new_ban_user">{{ t.username }}</label>
+		<input type="text" id="new_ban_user" name="new_ban_user" maxlength="25" aria-describedby="new_ban_user_help" autocomplete="off">
+		<span id="new_ban_user_help" class="form__help">{{ t.usernameAdvancedHelp }}</span>
+	</p>
+	<p class="form__buttons"><button type="submit" class="button button--primary" name="add_ban" value="1">{{ t.add }}</button></p>
+</form>
+<form id="find_bans" class="form-box form" method="get" action="{{ url('admin_bans.php') }}">
+	<h2 class="form-box__title">{{ t.searchHead }}</h2>
+	<p class="form__help">{{ t.searchInfo }}</p>
+	{% for f in view.fields %}
+	<p class="form__field"><label for="{{ f.name }}">{{ f.label }}</label><input type="text" id="{{ f.name }}" name="{{ f.name }}" maxlength="100"></p>
+	{% endfor %}
+	<p class="form__field"><label for="expire_after">{{ t.expireAfter }} <span class="form__required">{{ t.dateHelp }}</span></label><input type="date" id="expire_after" name="expire_after"></p>
+	<p class="form__field"><label for="expire_before">{{ t.expireBefore }} <span class="form__required">{{ t.dateHelp }}</span></label><input type="date" id="expire_before" name="expire_before"></p>
+	<p class="form__field"><label for="order_by">{{ t.orderBy }}</label><select id="order_by" name="order_by">{% for o in view.orders %}<option value="{{ o.value }}">{{ o.label }}</option>{% endfor %}</select></p>
+	<p class="form__field"><label for="direction">{{ t.direction }}</label><select id="direction" name="direction"><option value="ASC">{{ t.ascending }}</option><option value="DESC">{{ t.descending }}</option></select></p>
+	<p class="form__buttons"><button type="submit" class="button button--primary" name="find_ban" value="">{{ t.submitSearch }}</button></p>
+</form>
+</div>
+</div>
+{% endblock %}

@@ -65,6 +65,7 @@ const avatars = new FileAvatarLocator(config.legacyRoot, config.legacyBaseUrl);
 const privateMessages = new PrivateMessageRepository(db);
 const privateContacts = new PrivateContactRepository(db);
 
+const bans = new BanRepository(db);
 const configStore = new ConfigRepository(db);
 const configLoader = new ConfigLoader(configStore, phpCache, clock);
 
@@ -107,7 +108,8 @@ const app = await buildApp({
 	privateMessageStore: privateMessages,
 	privateContacts,
 	sendingLists: privateContacts,
-	bans: new BanRepository(db),
+	bans,
+	banStore: bans,
 	online: new OnlineRepository(db),
 	phpCache,
 	censorship: new CensorRepository(db),

@@ -1,12 +1,12 @@
 /**
- * Textes des plugins d'administration portés (plugins/AMP_*.php, AP_*.php).
+ * Textes des pages d'administration propres à PV (anciens plugins AMP_*.php et AP_*.php du PHP).
  */
 
 export const adminPlugins = {
 	userManagement: {
-		title: "Gestion d'utilisateur",
+		title: 'Ajouter un membre',
 		intro:
-			"Ce plugin vous permet d'ajouter des utilisateurs manuellement, ce qui est utile pour les forums fermés, par exemple si vous avez empêché les nouvelles inscriptions dans Options.",
+			"Cette page vous permet d'ajouter des membres manuellement, ce qui est utile pour les forums fermés, par exemple si vous avez empêché les nouvelles inscriptions dans Options.",
 		addHead: "Ajout d'utilisateur",
 		username: "Nom d'utilisateur",
 		email: 'E-mail',
@@ -21,8 +21,8 @@ export const adminPlugins = {
 	},
 
 	privateMessages: {
-		title: 'Messages privés',
-		intro: 'Plugin de gestion des quotas de messages privés en fonctions des groupes.',
+		title: 'Messagerie privée',
+		intro: 'Réglages de la messagerie privée et quotas de messages en fonction des groupes.',
 		settings: 'Paramètres',
 		enabled: 'Activer la messagerie personnelle',
 		enabledHelp: "Permet d'activer ou non le système des messages privés.",
@@ -42,8 +42,8 @@ export const adminPlugins = {
 	},
 
 	uploadile: {
-		title: 'Uploadile',
-		intro: "Ce plugin vous permet de gérer les options d'Uploadile.",
+		title: 'Fichiers des membres',
+		intro: 'Réglages des fichiers envoyés par les membres (types permis, tailles, espace alloué) et liste des fichiers.',
 		configuration: 'Configuration',
 		legend: 'Choisissez votre configuration',
 		laws: 'Types de fichiers autorisés',
@@ -55,7 +55,7 @@ export const adminPlugins = {
 		yes: 'Oui',
 		no: 'Non',
 		update: 'Mettre à jour',
-		updated: 'Votre base de données a été correctement mise à jour pour Uploadile.',
+		updated: 'Réglages enregistrés.',
 		files: 'Fichiers des membres',
 		member: 'Nom du membre',
 		file: 'Nom du fichier',

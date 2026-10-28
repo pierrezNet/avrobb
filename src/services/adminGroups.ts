@@ -104,10 +104,7 @@ export function readGroupForm(
 		const value = read(name);
 		return value === undefined ? fallback : intval(value) !== 0 ? 1 : 0;
 	};
-	const flood = (name: string): number => {
-		const value = intval(read(name) ?? '0');
-		return value >= 0 ? value : 0;
-	};
+	const flood = (name: string): number => Math.max(0, intval(read(name) ?? '0'));
 	const next = Number(read('promote_next_group'));
 	const moderator = is('moderator');
 

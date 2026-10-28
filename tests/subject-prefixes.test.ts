@@ -9,7 +9,7 @@ import { buildApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
 import { buildLegacyCookie } from '../src/services/legacySession.ts';
-import { applyPrefixes, splitPrefixes } from '../src/services/subjectPrefixes.ts';
+import { applyPrefixes, normalizeSubjectTags, splitPrefixes } from '../src/services/subjectPrefixes.ts';
 import { type FakeData, fakeDeps, group, guest, NOW, post, topic, viewer } from './fixtures.ts';
 
 const SEED = 'graine-de-test';
@@ -23,8 +23,15 @@ const cookies = (userId: number): string =>
 
 describe('réécriture du sujet', () => {
 	it('repère les préfixes connus en tête, quelle que soit la casse', () => {
-		expect(splitPrefixes('[msfs] [Résolu]Panne moteur')).toEqual({ prefixes: ['MSFS', 'Résolu'], rest: 'Panne moteur' });
-		expect(splitPrefixes('[Inconnu] Titre')).toEqual({ prefixes: [], rest: '[Inconnu] Titre' });
+		expect(splitPrefixes('[msfs] [Résolu]Panne moteur')).toEqual({ prefixes: ['MSFS', 'Résolu'], rest: 'Panne moteur', hadTags: true });
+		expect(splitPrefixes('[Inconnu] Titre')).toEqual({ prefixes: [], rest: 'Titre', hadTags: true });
+		expect(splitPrefixes('Titre [MSFS]')).toEqual({ prefixes: [], rest: 'Titre [MSFS]', hadTags: false });
+	});
+
+	it('à l’enregistrement : balises inventées retirées, doublons supprimés, ordre des listes', () => {
+		expect(normalizeSubjectTags('[BETA] [CI34] Optimisation FPS')).toBe('Optimisation FPS');
+		expect(normalizeSubjectTags('[Résolu][msfs][MSFS] Panne')).toBe('[MSFS][Résolu] Panne');
+		expect(normalizeSubjectTags('Panne [BETA] moteur')).toBe('Panne [BETA] moteur');
 	});
 
 	it('remet les préfixes choisis dans l’ordre des listes, retire les autres', () => {

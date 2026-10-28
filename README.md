@@ -139,6 +139,12 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   affiche tels quels. Couleur fixe pour les balises proposées, couleur stable tirée du nom pour les
   autres, couleur réglée dans PunBalise pour les balises des modérateurs (texte clair ou foncé selon
   le fond).
+- Balises du sujet, seules les balises proposées sont gardées : à l'enregistrement d'un sujet
+  (nouvelle discussion, modification, brouillon, page « Balises du sujet »), les balises inventées en
+  tête (`[BETA]`) sont retirées et les doublons supprimés ; un sujet réduit à des balises est refusé.
+  Les anciens sujets ne sont pas réécrits, mais leurs balises inventées et doublons ne sont plus
+  affichés par Node (le PHP les montre toujours). Les boutons du formulaire ajoutent une balise ou la
+  retirent si elle y est déjà.
 - Rédaction (`post.php`) : émojis conservés (le PHP remplaçait les caractères de 4 octets par « ? »,
   héritage d'une base en utf8 sur 3 octets) ; redirection immédiate vers le message ; boutons de
   préfixe du sujet en JavaScript et seulement pour une nouvelle discussion ; pas de réponse dans le

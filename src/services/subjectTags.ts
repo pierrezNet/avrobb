@@ -3,7 +3,7 @@
  * sans crochets. Affichage seulement : le sujet enregistré garde ses crochets (le PHP l'affiche tel quel).
  */
 
-import { OTHER_PREFIXES, SIMULATOR_PREFIXES } from './subjectPrefixes.ts';
+import { knownTag, OTHER_PREFIXES, SIMULATOR_PREFIXES } from './subjectPrefixes.ts';
 import type { SubjectPart } from './topicLabels.ts';
 
 export interface TagColors {
@@ -67,11 +67,19 @@ const TAG = /^\s*\[([^[\]]{1,20})\]\s*/;
 
 /**
  * Transforme les balises entre crochets en tête du sujet en pastilles. Une balise PunBalise déjà
- * stylée « [Nom] » devient une pastille de sa couleur ; dès qu'un autre texte apparaît, le reste du
- * sujet est laissé tel quel (une balise au milieu du titre n'est pas touchée).
+ * stylée « [Nom] » devient une pastille de sa couleur. Les balises inventées (« [BETA] ») et les
+ * doublons ne sont pas affichés, même dans les anciens sujets (le sujet enregistré n'est pas modifié).
+ * Dès qu'un autre texte apparaît, le reste du sujet est laissé tel quel.
  */
 export function subjectSegments(parts: readonly SubjectPart[], css: (part: SubjectPart) => string | null): SubjectSegment[] {
 	const segments: SubjectSegment[] = [];
+	const shown = new Set<string>();
+	const pushTag = (name: string, colors: TagColors): void => {
+		const key = name.toLowerCase();
+		if (shown.has(key)) return;
+		shown.add(key);
+		segments.push({ text: name, css: null, tag: colors });
+	};
 	let leading = true;
 	for (const part of parts) {
 		if (!leading) {
@@ -82,8 +90,8 @@ export function subjectSegments(parts: readonly SubjectPart[], css: (part: Subje
 			const bracketed = /^\s*\[([^[\]]+)\]\s*$/.exec(part.text);
 			const color = part.style.color;
 			if (bracketed?.[1] !== undefined) {
-				const colors = color !== null && /^#[0-9a-f]{3}([0-9a-f]{3})?$/i.test(color) ? readableOn(color) : tagColors(bracketed[1]);
-				segments.push({ text: bracketed[1].trim(), css: null, tag: colors });
+				const name = bracketed[1].trim();
+				pushTag(name, color !== null && /^#[0-9a-f]{3}([0-9a-f]{3})?$/i.test(color) ? readableOn(color) : tagColors(name));
 			} else {
 				leading = false;
 				segments.push({ text: part.text, css: css(part), tag: null });
@@ -92,7 +100,8 @@ export function subjectSegments(parts: readonly SubjectPart[], css: (part: Subje
 		}
 		let text = part.text;
 		for (let match = TAG.exec(text); match?.[1] !== undefined; match = TAG.exec(text)) {
-			segments.push({ text: match[1].trim(), css: null, tag: tagColors(match[1]) });
+			const known = knownTag(match[1]);
+			if (known !== undefined) pushTag(known, tagColors(known));
 			text = text.slice(match[0].length);
 		}
 		if (text.trim() !== '') {

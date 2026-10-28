@@ -15,6 +15,7 @@ import { isValidEmail } from './mail.ts';
 import { isAllUppercase, punLinebreaks, punTrim } from './phpString.ts';
 import { type PreparseError, type PreparseOptions, preparseBbcode } from './preparse.ts';
 import { checkUsername, isBannedEmail, normalizeUsername, type UsernameError } from './registration.ts';
+import { normalizeSubjectTags } from './subjectPrefixes.ts';
 
 /** PUN_MAX_POSTSIZE : taille maximale d'un message, en octets. */
 export const MAX_POST_SIZE = 1_048_576;
@@ -137,7 +138,8 @@ export function validatePost(form: PostForm, context: PostContext): ValidatedPos
 	const flood = form.preview || context.checkFlood === false ? null : floodError(viewer, context.now);
 	if (flood !== null) errors.push(flood);
 
-	const subject = form.subject !== null ? punTrim(form.subject) : '';
+	// Balises du sujet (PV) : inventées retirées, doublons supprimés avant les contrôles de longueur.
+	const subject = form.subject !== null ? punTrim(normalizeSubjectTags(form.subject)) : '';
 	if (form.subject !== null) errors.push(...subjectErrors(subject, context));
 
 	const username = viewer.isGuest ? punTrim(form.username) : viewer.username;

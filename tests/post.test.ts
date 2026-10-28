@@ -57,6 +57,11 @@ describe('validatePost (post.php)', () => {
 		expect(validatePost(form({ preview: true }), recent).errors).toEqual([]);
 	});
 
+	it('sujet : balises inventées et doublons retirés ; sujet réduit à des balises refusé', () => {
+		expect(validatePost(form({ subject: '[BETA][MSFS][msfs] Vol' }), context()).subject).toBe('[MSFS] Vol');
+		expect(kinds(validatePost(form({ subject: '[BETA] [CI34]' }), context()))).toEqual(['noSubject']);
+	});
+
 	it('sujet : vide, censuré, trop long, en capitales (sauf modérateurs)', () => {
 		expect(kinds(validatePost(form({ subject: '  ' }), context()))).toEqual(['noSubject']);
 		const censor = buildCensor([{ searchFor: 'zut', replaceWith: '' }]);

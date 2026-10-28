@@ -118,6 +118,8 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
 - [ ] Mentions : prévenir le membre mentionné (message privé ou e-mail, à décider)
 
 - [x] Balises de sujet en pastilles colorées (sans crochets) dans les listes et les titres
+- [x] Balises de sujet : balises inventées retirées et doublons supprimés à l'enregistrement, masqués à l'affichage
+- [ ] Balises de sujet : nettoyer en base les anciens sujets (balises inventées, doublons), pour que le PHP les affiche aussi proprement
 - [ ] Balises de sujet : couleurs réglables dans l'administration (aujourd'hui fixées dans `services/subjectTags.ts`)
 
 ## À décider (mis de côté)

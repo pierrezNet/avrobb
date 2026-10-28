@@ -22,6 +22,13 @@ describe('pastilles de balises', () => {
 		expect(subjectSegments([plain('Panne [MSFS] moteur')], css)).toEqual([{ text: 'Panne [MSFS] moteur', css: null, tag: null }]);
 	});
 
+	it('balises inventées et doublons masqués dans les anciens sujets', () => {
+		expect(subjectSegments([plain('[BETA] [MSFS] [msfs] Optimisation')], css)).toEqual([
+			{ text: 'MSFS', css: null, tag: { background: '#1d4ed8', foreground: '#ffffff' } },
+			{ text: 'Optimisation', css: null, tag: null },
+		]);
+	});
+
 	it('balises inconnues : couleur stable tirée du nom, insensible à la casse', () => {
 		expect(tagColors('BETA')).toEqual(tagColors('beta'));
 		expect(tagColors('BETA').foreground).toBe('#ffffff');

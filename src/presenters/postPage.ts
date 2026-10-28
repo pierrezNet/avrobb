@@ -9,6 +9,7 @@ import { parseMessage } from '../services/bbcode.ts';
 import type { Censor } from '../services/censor.ts';
 import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
 import { SMILIES } from '../services/smilies.ts';
+import { OTHER_PREFIXES, SIMULATOR_PREFIXES } from '../services/subjectPrefixes.ts';
 import { type ToolbarSettings, toolbarButtons } from '../services/toolbar.ts';
 import { type Crumb, crumbs } from './navigation.ts';
 import { messageParserOptions } from './parserOptions.ts';
@@ -75,9 +76,6 @@ export interface PostPageView {
 	draftsUrl: string | null;
 	review: { poster: string; postedAt: string; messageHtml: string }[];
 }
-
-const SIMULATOR_PREFIXES = ['MSFS', 'FS-24', 'FSX', 'X-Plane', 'Flight', 'P3D', 'MULTI-SIMU'];
-const OTHER_PREFIXES = ['Résolu', 'Réel', 'Video'];
 
 function checkboxes(input: PostPageInput, isNewTopic: boolean): Checkbox[] {
 	const { viewer, config, form, lang, target } = input;
@@ -166,7 +164,7 @@ export function buildPostPage(input: PostPageInput): PostPageView {
 			input.preview !== null
 				? parseMessage(input.preview, messageParserOptions(config, viewer, lang, censor, input.form.hideSmilies))
 				: null,
-		subjectPrefixes: isNewTopic ? { simulators: SIMULATOR_PREFIXES, other: OTHER_PREFIXES } : null,
+		subjectPrefixes: isNewTopic ? { simulators: [...SIMULATOR_PREFIXES], other: [...OTHER_PREFIXES] } : null,
 		bbcodeStatus: bbcodeStatus(config, viewer, lang),
 		toolbar: toolbarView(input.toolbar, 'form', config, lang),
 		checkboxes: checkboxes(input, isNewTopic),
@@ -221,7 +219,7 @@ export function buildEditPage(input: EditPageInput): PostPageView {
 		errors: input.errors,
 		previewHtml:
 			input.preview !== null ? parseMessage(input.preview, messageParserOptions(config, viewer, lang, censor, form.hideSmilies)) : null,
-		subjectPrefixes: isTopicPost ? { simulators: SIMULATOR_PREFIXES, other: OTHER_PREFIXES } : null,
+		subjectPrefixes: isTopicPost ? { simulators: [...SIMULATOR_PREFIXES], other: [...OTHER_PREFIXES] } : null,
 		bbcodeStatus: bbcodeStatus(config, viewer, lang),
 		toolbar: toolbarView(input.toolbar, 'form', config, lang),
 		checkboxes,

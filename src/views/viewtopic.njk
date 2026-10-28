@@ -9,9 +9,10 @@
 {% macro topicBar(view, lang) %}
 <div class="page-bar">
 	{{ navigation.pagination(view.pagination, lang) }}
-	{% if view.replyUrl or view.topic.closed %}
+	{% if view.replyUrl or view.topic.closed or view.prefixesUrl %}
 	<p class="page-bar__actions">
 		{% if view.topic.closed %}<span class="badge">{{ lang.topic.topicClosed }}</span>{% endif %}
+		{% if view.prefixesUrl %}<a class="button" href="{{ url(view.prefixesUrl) }}">{{ lang.topic.subjectPrefixes }}</a>{% endif %}
 		{% if view.replyUrl %}<a class="button button--primary" href="{{ url(view.replyUrl) }}">{{ lang.topic.postReply }}</a>{% endif %}
 	</p>
 	{% endif %}

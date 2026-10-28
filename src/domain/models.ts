@@ -109,6 +109,8 @@ export interface Topic {
 	closed: boolean;
 	sticky: boolean;
 	firstPostId: number;
+	/** Auteur du premier message (1 pour un invité ou un compte supprimé). */
+	posterId: number;
 	numReplies: number;
 	forum: Forum;
 	/** Permission « répondre » propre au forum pour le groupe ; null = celle du groupe. */

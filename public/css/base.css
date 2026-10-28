@@ -2209,3 +2209,10 @@ a.site-status__alert {
 	padding: 0;
 	list-style: none;
 }
+
+/* Préfixes du sujet : cases côte à côte quand la place le permet */
+.prefix-choices {
+	display: flex;
+	flex-wrap: wrap;
+	column-gap: 1.5rem;
+}

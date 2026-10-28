@@ -1,0 +1,26 @@
+{#- Préfixes du sujet (topic_prefixes.php, page propre à Node). Données : `view` (controllers/SubjectPrefixController.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/forms.njk" as forms %}
+
+{% macro choices(items, legend) %}
+<fieldset class="form__fieldset">
+	<legend class="form__legend">{{ legend }}</legend>
+	<div class="prefix-choices">
+		{% for c in items %}<label class="form__choice"><input type="checkbox" name="prefix[{{ c.prefix }}]" value="1"{% if c.checked %} checked{% endif %}> [{{ c.prefix }}]</label>{% endfor %}
+	</div>
+</fieldset>
+{% endmacro %}
+
+{% block main %}
+{% set t = lang.topic %}
+<h1 class="page-title">{{ t.subjectPrefixes }}</h1>
+{% if view.error %}<p class="form-errors" role="alert">{{ view.error }}</p>{% endif %}
+<form class="form-box form" method="post" action="{{ url(view.formAction) }}">
+	{{ forms.csrf(layout) }}
+	<p><strong>{{ t.currentSubject }}&#160;:</strong> {{ view.subject }}</p>
+	<p class="form__help">{{ t.subjectPrefixesInfo }}</p>
+	{{ choices(view.simulators, t.simulators) }}
+	{{ choices(view.other, t.otherPrefixes) }}
+	<p class="form__buttons"><button type="submit" class="button button--primary">{{ t.savePrefixes }}</button> <a class="button" href="{{ url(view.topicHref) }}">{{ t.cancel }}</a></p>
+</form>
+{% endblock %}

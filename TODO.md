@@ -71,7 +71,7 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
 - [x] Abonnements aux sujets et forums + notifications par e-mail
 - [x] Signalement d'un message (`misc.php?report`) et e-mail à un membre (`misc.php?email`)
 - [x] ~~Création et vote dans les sondages~~ : sans objet, `AP_Sondage` est un reste sans table ni affichage (voir lot 1) **(PV)**
-- [ ] Préfixes du sujet (`[MSFS]`, `[FS-24]`… et `[Résolu]`, `[Réel]`, `[Video]`) : l'auteur peut toujours en ajouter ou en retirer sur sa discussion, **même après les 30 minutes** de modification du message (action dédiée qui ne touche qu'au sujet ; listes aujourd'hui en dur dans `post.php`/`edit.php` et `presenters/postPage.ts`) **(PV)**
+- [x] Préfixes du sujet (`[MSFS]`, `[FS-24]`… et `[Résolu]`, `[Réel]`, `[Video]`) : l'auteur peut toujours en ajouter ou en retirer sur sa discussion, **même après les 30 minutes** de modification du message (action dédiée qui ne touche qu'au sujet ; listes aujourd'hui en dur dans `post.php`/`edit.php` et `presenters/postPage.ts`) **(PV)** — page `topic_prefixes.php` (propre à Node), bouton « Préfixes du sujet » sur viewtopic pour l'auteur et les modérateurs
 
 ## Lot 4 — Profil (édition)
 

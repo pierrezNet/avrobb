@@ -591,3 +591,25 @@ describe('LabelAdminRepository (AP_Balises.php)', () => {
 		expect(await store.findLabel(id)).toBeNull();
 	});
 });
+
+describe('SubjectPrefixRepository (préfixes du sujet)', () => {
+	it('change le sujet, ses redirections et l’index du premier message', async () => {
+		const { SubjectPrefixRepository } = await import('../../src/repositories/SubjectPrefixRepository.ts');
+		const { indexWords } = await import('../../src/services/searchIndex.ts');
+		await inRollback(async (trx) => {
+			const store = new SubjectPrefixRepository(trx);
+			const message = await store.firstPostMessage(100);
+			await store.updateSubject(10, 100, '[MSFS] Postez un « vintage »', indexWords(message, '[MSFS] Postez un « vintage »', new Set()));
+			const subjects = await trx.selectFrom('topics').select(['id', 'subject']).where('id', 'in', [10, 12]).orderBy('id').execute();
+			expect(subjects.map((row) => row.subject)).toEqual(['[MSFS] Postez un « vintage »', '[MSFS] Postez un « vintage »']);
+			const subjectWords = await trx
+				.selectFrom('search_matches as m')
+				.innerJoin('search_words as w', 'w.id', 'm.word_id')
+				.select('w.word')
+				.where('m.post_id', '=', 100)
+				.where('m.subject_match', '=', 1)
+				.execute();
+			expect(subjectWords.map((row) => row.word)).toContain('msfs');
+		});
+	});
+});

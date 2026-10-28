@@ -45,6 +45,7 @@ import { ProfileController, type ProfileQuery } from './controllers/ProfileContr
 import { RegisterController, type RegisterQuery } from './controllers/RegisterController.ts';
 import { ReputationController, type ReputationQuery } from './controllers/ReputationController.ts';
 import { SearchController, type SearchQuery } from './controllers/SearchController.ts';
+import { SubjectPrefixController, type SubjectPrefixQuery } from './controllers/SubjectPrefixController.ts';
 import { TopicController, type TopicQuery } from './controllers/TopicController.ts';
 import { UserlistController, type UserlistParams } from './controllers/UserlistController.ts';
 import type { BoardConfig, Viewer } from './domain/models.ts';
@@ -85,6 +86,7 @@ import type { SearchReader, SearchWriter } from './repositories/SearchRepository
 import type { SmileyAdminStore, SmileyImageStore } from './repositories/SmileyAdminRepository.ts';
 import type { StatsReader } from './repositories/StatsRepository.ts';
 import type { StopwordsReader } from './repositories/StopwordsLoader.ts';
+import type { SubjectPrefixStore } from './repositories/SubjectPrefixRepository.ts';
 import type { SubscriptionStore } from './repositories/SubscriptionRepository.ts';
 import type { ToolbarReader } from './repositories/ToolbarRepository.ts';
 import type { TopicLabelReader } from './repositories/TopicLabelRepository.ts';
@@ -155,6 +157,8 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	smileyImages: SmileyImageStore;
 	/** Plugin AP_Balises.php (mod PunBalise). */
 	labelAdmin: LabelAdminStore;
+	/** Préfixes du sujet (topic_prefixes.php, page propre à Node). */
+	subjectPrefixes: SubjectPrefixStore;
 	/** Groupes d'utilisateurs (admin_groups.php). */
 	groupAdmin: GroupAdminStore;
 	/** Recherche d'utilisateurs et d'adresses IP (admin_users.php). */
@@ -196,6 +200,7 @@ const PORTED_PAGES = new Set([
 	'admin_permissions.php',
 	'admin_reports.php',
 	'admin_users.php',
+	'topic_prefixes.php',
 	'admin_statistics.php',
 	'delete.php',
 	'draft_edit.php',
@@ -431,6 +436,14 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 	const adminMaintenance = new AdminMaintenanceController(deps);
 	app.get<{ Querystring: AdminMaintenanceQuery }>('/admin_maintenance.php', { preHandler: authenticate }, adminMaintenance.show);
 	app.post<{ Body: FormBody }>('/admin_maintenance.php', { preHandler: [authenticate, verifyCsrf] }, adminMaintenance.submit);
+
+	const subjectPrefixes = new SubjectPrefixController(deps);
+	app.get<{ Querystring: SubjectPrefixQuery }>('/topic_prefixes.php', { preHandler: authenticate }, subjectPrefixes.show);
+	app.post<{ Querystring: SubjectPrefixQuery; Body: FormBody }>(
+		'/topic_prefixes.php',
+		{ preHandler: [authenticate, verifyCsrf] },
+		subjectPrefixes.submit,
+	);
 
 	const adminReports = new AdminReportsController(deps);
 	app.get<{ Querystring: AdminReportsQuery }>('/admin_reports.php', { preHandler: authenticate }, adminReports.show);

@@ -97,6 +97,15 @@ export function canEditPost(viewer: Viewer, post: PostOwnership, now: number): b
 	return moderates(viewer, post) ?? (ownsOpenPost(viewer, post) && viewer.group.canEditPosts && now - post.posted <= EDIT_WINDOW_SECONDS);
 }
 
+/**
+ * Préfixes du sujet (PV) : l'auteur de la discussion peut toujours en ajouter ou en retirer, même après
+ * le délai de modification du message ; les modérateurs du forum aussi.
+ */
+export function canEditSubjectPrefixes(viewer: Viewer, topic: Pick<Topic, 'posterId' | 'forum'>): boolean {
+	if (viewer.isGuest) return false;
+	return isForumModerator(viewer, topic.forum) || topic.posterId === viewer.id;
+}
+
 /** delete.php : supprimer le premier message supprime la discussion (g_delete_topics en plus). */
 export function canDeletePost(viewer: Viewer, post: PostOwnership): boolean {
 	return (

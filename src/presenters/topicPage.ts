@@ -13,6 +13,7 @@ import type { Censor } from '../services/censor.ts';
 import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
 import { safeExternalUrl } from '../services/links.ts';
 import {
+	canEditSubjectPrefixes,
 	canQuickPost,
 	canReply,
 	canSeeReputation,
@@ -87,6 +88,8 @@ export interface TopicPageView {
 	pagination: PaginationLink[];
 	/** Lien « Répondre » ; null si le membre ne peut pas répondre. */
 	replyUrl: string | null;
+	/** Préfixes du sujet (PV) : auteur de la discussion et modérateurs. */
+	prefixesUrl: string | null;
 	posts: PostView[];
 	/** Formulaire de réponse rapide, ou null. */
 	quickPost: QuickPostView | null;
@@ -311,6 +314,7 @@ export function buildTopicPage(input: TopicPageInput): TopicPageView {
 		),
 		pagination: paginationLinks(input.numPages, input.page, (page) => topicUrl(topic.id, page)),
 		replyUrl: canReply(viewer, topic) ? `post.php?tid=${topic.id}` : null,
+		prefixesUrl: canEditSubjectPrefixes(viewer, topic) ? `topic_prefixes.php?id=${topic.id}` : null,
 		posts,
 		quickPost: quickPost(input),
 		subscription:

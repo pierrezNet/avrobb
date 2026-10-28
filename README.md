@@ -125,6 +125,9 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   restent sur le PHP.
 - Plugins encore servis par le PHP (redirection depuis `admin_loader.php`) : FluxToolBar et Mod
   Installer.
+- Préfixes du sujet (PV) : page `topic_prefixes.php`, propre à Node (le PHP n'a pas d'équivalent),
+  ouverte par un bouton de viewtopic pour l'auteur de la discussion et les modérateurs du forum ; les
+  préfixes connus sont réécrits dans l'ordre des listes, séparés du titre par une espace.
 - Rédaction (`post.php`) : émojis conservés (le PHP remplaçait les caractères de 4 octets par « ? »,
   héritage d'une base en utf8 sur 3 octets) ; redirection immédiate vers le message ; boutons de
   préfixe du sujet en JavaScript et seulement pour une nouvelle discussion ; pas de réponse dans le

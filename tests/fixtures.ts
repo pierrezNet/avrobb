@@ -150,6 +150,7 @@ export function topic(overrides: Partial<Topic> = {}): Topic {
 		closed: false,
 		sticky: false,
 		firstPostId: 100,
+		posterId: 3,
 		numReplies: 0,
 		forum: { id: 1, name: 'Forum', moderators: new Map() },
 		forumReplyPermission: null,
@@ -404,6 +405,8 @@ export interface FakeData {
 	smileyImageNames?: string[];
 	/** Plugin AP_Balises.php. */
 	labelRows?: LabelRow[];
+	/** Préfixes du sujet : sujets réécrits. */
+	subjectUpdates?: { topicId: number; subject: string }[];
 	/** Signalements listés par admin_reports.php (modifiés en place quand ils sont traités). */
 	reportList?: Report[];
 	/** Messagerie privée en mémoire (créée vide au besoin). */
@@ -759,6 +762,12 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			},
 		},
 		forumAdmin: fakeForumAdmin(data),
+		subjectPrefixes: {
+			firstPostMessage: async (postId) => [...data.posts.values()].flat().find((p) => p.id === postId)?.message ?? '',
+			updateSubject: async (topicId, _firstPostId, subject) => {
+				data.subjectUpdates = [...(data.subjectUpdates ?? []), { topicId, subject }];
+			},
+		},
 		labelAdmin: {
 			listLabels: async () => data.labelRows ?? [],
 			findLabel: async (id) => (data.labelRows ?? []).find((label) => label.id === id) ?? null,

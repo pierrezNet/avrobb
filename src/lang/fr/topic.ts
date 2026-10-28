@@ -28,4 +28,17 @@ export const topic = {
 	reputation: 'Renommée',
 	reputationPlus: 'Augmentation de renommée',
 	reputationMinus: 'Réduction de renommée',
+
+	/** Préfixes du sujet (PV) : page propre à Node, ouverte depuis viewtopic. */
+	subjectPrefixes: 'Préfixes du sujet',
+	subjectPrefixesInfo:
+		'Cochez les préfixes à afficher devant le sujet de la discussion. Vous pouvez les changer à tout moment, même après le délai de modification de votre message.',
+	simulators: 'Simulateur',
+	otherPrefixes: 'Autre',
+	currentSubject: 'Sujet actuel',
+	newSubject: 'Nouveau sujet',
+	savePrefixes: 'Enregistrer',
+	prefixesUpdated: 'Préfixes du sujet mis à jour.',
+	prefixesTooLong: 'Le sujet ne peut pas dépasser 70 caractères avec ces préfixes.',
+	cancel: 'Annuler',
 };

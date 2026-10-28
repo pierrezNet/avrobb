@@ -46,6 +46,7 @@ import { SearchRepository } from './repositories/SearchRepository.ts';
 import { SmileyAdminRepository, SmileyImageFiles } from './repositories/SmileyAdminRepository.ts';
 import { StatsRepository } from './repositories/StatsRepository.ts';
 import { StopwordsLoader } from './repositories/StopwordsLoader.ts';
+import { SubjectPrefixRepository } from './repositories/SubjectPrefixRepository.ts';
 import { SubscriptionRepository } from './repositories/SubscriptionRepository.ts';
 import { ToolbarRepository } from './repositories/ToolbarRepository.ts';
 import { TopicLabelRepository } from './repositories/TopicLabelRepository.ts';
@@ -83,6 +84,7 @@ const app = await buildApp({
 	smileyAdmin: new SmileyAdminRepository(db),
 	smileyImages: new SmileyImageFiles(config.legacyRoot),
 	labelAdmin: new LabelAdminRepository(db),
+	subjectPrefixes: new SubjectPrefixRepository(db),
 	groupAdmin: new GroupAdminRepository(db),
 	userAdmin: new UserAdminRepository(db),
 	users,

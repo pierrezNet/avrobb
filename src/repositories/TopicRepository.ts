@@ -47,8 +47,10 @@ export class TopicRepository implements TopicReader, TopicWriter {
 			.innerJoin('forums as f', 'f.id', 't.forum_id')
 			.leftJoin('forum_perms as fp', (join) => join.onRef('fp.forum_id', '=', 'f.id').on('fp.group_id', '=', groupId))
 			.leftJoin('topic_subscriptions as s', (join) => join.onRef('s.topic_id', '=', 't.id').on('s.user_id', '=', userId))
+			.leftJoin('posts as p', 'p.id', 't.first_post_id')
 			.select([
 				't.id',
+				'p.poster_id',
 				't.subject',
 				't.closed',
 				't.sticky',
@@ -73,6 +75,7 @@ export class TopicRepository implements TopicReader, TopicWriter {
 			closed: row.closed === 1,
 			sticky: row.sticky === 1,
 			firstPostId: row.first_post_id,
+			posterId: row.poster_id ?? 1,
 			numReplies: row.num_replies,
 			forum: {
 				id: row.forum_id,

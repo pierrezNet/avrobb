@@ -43,8 +43,6 @@ function sendErrorText(error: SendError): string {
 export const pms = {
 	pmAbbr: 'MP',
 	pmTitle: 'Messages privés',
-	newMessage: 'Vous avez un message privé non lu !',
-	newMessages: (count: number) => `Vous avez ${count} messages privés non lus !`,
 	fullBoxes: 'Vos boîtes de messages privés sont pleines !',
 	emptyBoxes: 'Vos boîtes de messages privés sont vides.',
 	fullTo: (percent: number) => `Boîtes de messages privés pleines à ${percent} %`,

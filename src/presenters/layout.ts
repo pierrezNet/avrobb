@@ -91,8 +91,6 @@ export interface StatusView {
 	pendingReports: boolean;
 	maintenance: boolean;
 	privateMessageBox: PrivateMessageBox | null;
-	/** Texte du lien vers les MP non lus ; null s'il n'y en a pas. */
-	unreadPrivateMessages: string | null;
 }
 
 export interface FeedLink {
@@ -242,7 +240,6 @@ function buildStatus(input: LayoutInput): StatusView | null {
 	const time = viewerTimeSettings(viewer);
 	const isAdmMod = isAnyModerator(viewer);
 	const pms = canUsePrivateMessages(viewer, config);
-	const unread = input.unreadPrivateMessages;
 
 	return {
 		username: viewer.username,
@@ -250,8 +247,8 @@ function buildStatus(input: LayoutInput): StatusView | null {
 		showAdminLink: isAdmMod,
 		pendingReports: isAdmMod && config.reportsByBoard && input.pendingReports,
 		maintenance: isAdmMod && config.maintenance,
+		// Les MP non lus ne sont signalés que par la pastille du menu (AvroBB), plus par un message.
 		privateMessageBox: pms ? privateMessageBox(viewer, lang) : null,
-		unreadPrivateMessages: pms && unread > 0 ? (unread === 1 ? lang.pms.newMessage : lang.pms.newMessages(unread)) : null,
 	};
 }
 

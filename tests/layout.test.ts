@@ -97,7 +97,6 @@ describe('buildLayout', () => {
 		const layout = buildLayout(input({ viewer: limited, config, unreadPrivateMessages: 2 }));
 
 		expect(layout.nav.find((item) => item.id === 'navpm')).toMatchObject({ label: 'MP', count: 2, abbrTitle: 'Messages privés' });
-		expect(layout.status?.unreadPrivateMessages).toBe('Vous avez 2 messages privés non lus !');
 		expect(layout.status?.privateMessageBox).toEqual({ kind: 'filled', percent: 20, text: 'Boîtes de messages privés pleines à 20 %' });
 
 		const full = viewer({ group: group({ privateMessageLimit: 10 }), privateMessageCount: 10 });

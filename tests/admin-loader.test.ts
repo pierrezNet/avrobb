@@ -137,3 +137,33 @@ describe('plugins de réglages', () => {
 		]);
 	});
 });
+
+describe('plugin Premium', () => {
+	const send = (server: FastifyInstance, fields: Record<string, string>) =>
+		server.inject({
+			method: 'POST',
+			url: '/admin_loader.php?plugin=AP_Premium.php',
+			headers: { cookie: cookies(2), 'content-type': 'application/x-www-form-urlencoded' },
+			payload: new URLSearchParams({ csrf_token: csrfToken(CSRF_SECRET, SEED, 2), ...fields }).toString(),
+		});
+
+	it('installation, ajout, temps restant, retrait et désinstallation', async () => {
+		const { server, fake } = await start();
+		expect((await get(server, 2, '/admin_loader.php?plugin=AP_Premium.php')).body).toContain('name="install"');
+		await send(server, { install: '1' });
+		const page = await get(server, 2, '/admin_loader.php?plugin=AP_Premium.php');
+		expect(page.body).toContain('<option value="6" selected>Premium</option>');
+		expect((await send(server, { add_user: '1', courriel: 'x@example.test', group_id_premium: '6', end_premium: 'dix' })).statusCode).toBe(
+			400,
+		);
+		expect((await send(server, { add_user: '1', courriel: 'x@ailleurs.test', group_id_premium: '6', end_premium: '3' })).body).toContain(
+			'Aucun membre',
+		);
+		await send(server, { add_user: '1', courriel: 'X@example.test', group_id_premium: '6', end_premium: '3' });
+		expect((await get(server, 2, '/admin_loader.php?plugin=AP_Premium.php')).body).toContain('3 jour(s)');
+		await send(server, { delete_user: '1', 'delete_prem[9]': '1' });
+		expect(fake.premiumMembers).toEqual([]);
+		await send(server, { cancel: '1' });
+		expect(fake.premiumMembers).toBeUndefined();
+	});
+});

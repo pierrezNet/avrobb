@@ -494,3 +494,27 @@ describe('plugins (config et groupes)', () => {
 		});
 	});
 });
+
+describe('PremiumAdminRepository (AP_Premium.php)', () => {
+	// CREATE et DROP TABLE valident implicitement : pas de transaction annulée ici, la table est supprimée à la fin.
+	it('installe la table, promeut puis rétablit un membre, désinstalle', async () => {
+		const { PremiumAdminRepository } = await import('../../src/repositories/PremiumAdminRepository.ts');
+		const store = new PremiumAdminRepository(db);
+		expect(await store.isInstalled()).toBe(false);
+		await store.install();
+		try {
+			expect(await store.isInstalled()).toBe(true);
+			expect(await store.addMember('nobody@example.test', 2, 1, 2)).toBe('notFound');
+			expect(await store.addMember('tessy@example.test', 2, 1782900000, 1783000000)).toBe('added');
+			expect(await store.addMember('tessy@example.test', 2, 1, 2)).toBe('already');
+			expect(await store.listMembers()).toEqual([
+				{ id: 3, username: 'Tessy', email: 'tessy@example.test', groupTitle: 'Modérateurs', endsAt: 1783000000 },
+			]);
+			expect(await db.selectFrom('users').select('group_id').where('id', '=', 3).executeTakeFirst()).toEqual({ group_id: 2 });
+		} finally {
+			await store.uninstall();
+		}
+		expect(await db.selectFrom('users').select('group_id').where('id', '=', 3).executeTakeFirst()).toEqual({ group_id: 4 });
+		expect(await store.isInstalled()).toBe(false);
+	});
+});

@@ -4,7 +4,8 @@
  * administrateurs, AMP_ aussi pour les modérateurs.
  *
  * Portés : AMP_Gestion_utilisateurs.php (ajout d'utilisateur ; l'élagage, désactivé par PV — formulaire
- * sans bouton —, n'est pas repris), AP_Sondage.php, AP_Private_messaging.php, AP_Plugile.php.
+ * sans bouton —, n'est pas repris), AP_Sondage.php, AP_Private_messaging.php, AP_Plugile.php, AP_Premium.php
+ * (sans retour automatique au groupe initial à l'échéance : le PHP ne le faisait pas non plus).
  */
 
 import type { FastifyReply, FastifyRequest } from 'fastify';
@@ -12,6 +13,7 @@ import type { Mailer } from '../adapters/mailer.ts';
 import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage } from '../http/layout.ts';
 import { ADMIN_PLUGINS } from '../presenters/adminMenu.ts';
+import { buildPremiumMembers } from '../presenters/adminPluginsPage.ts';
 import type { BanReader } from '../repositories/BanRepository.ts';
 import type { CensorReader } from '../repositories/CensorRepository.ts';
 import type { ConfigCache } from '../repositories/ConfigLoader.ts';
@@ -19,6 +21,7 @@ import type { ConfigStore } from '../repositories/ConfigRepository.ts';
 import type { GroupAdminStore } from '../repositories/GroupAdminRepository.ts';
 import type { MailTemplateReader } from '../repositories/MailTemplateFiles.ts';
 import type { PhpCacheStore } from '../repositories/PhpCacheFiles.ts';
+import type { PremiumAdminStore } from '../repositories/PremiumAdminRepository.ts';
 import type { RegistrationStore } from '../repositories/RegistrationRepository.ts';
 import { changedOptions } from '../services/adminOptions.ts';
 import { escapeHtml } from '../services/bbcode.ts';
@@ -40,6 +43,7 @@ export interface AdminLoaderControllerDeps extends LayoutDeps {
 	configStore: ConfigStore;
 	configCache: ConfigCache;
 	groupAdmin: GroupAdminStore;
+	premiumAdmin: PremiumAdminStore;
 }
 
 /** Plugins servis par Node ; les autres sont redirigés vers le PHP. */
@@ -48,6 +52,7 @@ const PORTED: ReadonlySet<string> = new Set([
 	'AP_Sondage.php',
 	'AP_Private_messaging.php',
 	'AP_Plugile.php',
+	'AP_Premium.php',
 ]);
 
 const PLUGILE_KEYS = ['o_plugile_version', 'o_plugile_menu', 'o_plugile_menu_name'] as const;
@@ -108,6 +113,8 @@ export class AdminLoaderController {
 					menuName: unescapeHtml(values.get('o_plugile_menu_name') ?? ''),
 				});
 			}
+			case 'AP_Premium.php':
+				return this.#renderPremium(request, reply, [], done ?? null);
 			default:
 				return this.#renderUserManagement(request, reply, [], done === 'created' ? t.userManagement.created : null);
 		}
@@ -134,6 +141,8 @@ export class AdminLoaderController {
 				return this.#savePrivateMessages(request, reply);
 			case 'AP_Plugile.php':
 				return this.#savePlugile(request, reply);
+			case 'AP_Premium.php':
+				return this.#savePremium(request, reply);
 			default:
 				return badRequest();
 		}
@@ -198,6 +207,69 @@ export class AdminLoaderController {
 			return done('saved');
 		}
 		return renderMessage(request, reply, this.deps, 400, this.deps.page.lang.common.badRequest);
+	}
+
+	async #renderPremium(
+		request: FastifyRequest,
+		reply: FastifyReply,
+		errors: string[],
+		done: string | null,
+		status = 200,
+	): Promise<FastifyReply> {
+		const { lang, clock } = this.deps.page;
+		const t = lang.adminPlugins.premium;
+		const store = this.deps.premiumAdmin;
+		const installed = await store.isInstalled();
+		const notices: Record<string, string> = { installed: t.installOk, uninstalled: t.uninstallOk, added: t.added, removed: t.removed };
+		reply.code(status);
+		return this.#renderSettings(request, reply, 'AP_Premium.php', 'admin_plugin_premium.njk', t.title, {
+			notice: notices[done ?? ''] ?? null,
+			errors,
+			installed,
+			groups: installed ? (await store.listGroups()).map((g) => ({ ...g, selected: g.title.toLowerCase() === 'premium' })) : [],
+			members: installed ? buildPremiumMembers(await store.listMembers(), clock(), lang) : [],
+		});
+	}
+
+	async #savePremium(request: FastifyRequest<{ Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> {
+		const { lang, clock } = this.deps.page;
+		const t = lang.adminPlugins.premium;
+		const { body } = request;
+		const store = this.deps.premiumAdmin;
+		const installed = await store.isInstalled();
+		const done = (name: string): FastifyReply => reply.redirect(`admin_loader.php?plugin=AP_Premium.php&done=${name}`, 303);
+		if (field(body, 'install') !== '' && !installed) {
+			await store.install();
+			return done('installed');
+		}
+		if (field(body, 'cancel') !== '' && installed) {
+			await store.uninstall();
+			return done('uninstalled');
+		}
+		if (!installed) return renderMessage(request, reply, this.deps, 400, lang.common.badRequest);
+		if (field(body, 'add_user') !== '') {
+			const email = field(body, 'courriel').trim().toLowerCase();
+			const groupId = Number.parseInt(field(body, 'group_id_premium'), 10);
+			const days = field(body, 'end_premium').trim();
+			if (email === '' || Number.isNaN(groupId) || days === '') return this.#renderPremium(request, reply, [t.allNeeded], null, 400);
+			if (!/^\d+(\.\d+)?$/.test(days)) return this.#renderPremium(request, reply, [t.invalidTime], null, 400);
+			if (!(await store.listGroups()).some((g) => g.id === groupId))
+				return renderMessage(request, reply, this.deps, 400, lang.common.badRequest);
+			const now = clock();
+			const result = await store.addMember(email, groupId, now, now + Math.round(Number(days) * 86400));
+			if (result === 'notFound') return this.#renderPremium(request, reply, [t.notFound], null, 400);
+			if (result === 'already') return this.#renderPremium(request, reply, [t.alreadyPremium], null, 400);
+			return done('added');
+		}
+		if (field(body, 'delete_user') !== '') {
+			const ids = Object.keys(body)
+				.map((name) => /^delete_prem\[(\d{1,10})\]$/.exec(name)?.[1])
+				.filter((id): id is string => id !== undefined)
+				.map(Number);
+			await store.removeMembers(ids);
+			return done('removed');
+		}
+		return renderMessage(request, reply, this.deps, 400, lang.common.badRequest);
 	}
 
 	#renderSettings(

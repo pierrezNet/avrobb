@@ -28,6 +28,7 @@ import { OnlineRepository } from '../../src/repositories/OnlineRepository.ts';
 import { PostEditRepository } from '../../src/repositories/PostEditRepository.ts';
 import { PostingRepository } from '../../src/repositories/PostingRepository.ts';
 import { PostRepository } from '../../src/repositories/PostRepository.ts';
+import { PremiumAdminRepository } from '../../src/repositories/PremiumAdminRepository.ts';
 import { PremiumRepository } from '../../src/repositories/PremiumRepository.ts';
 import { PrivateContactRepository } from '../../src/repositories/PrivateContactRepository.ts';
 import { PrivateMessageRepository } from '../../src/repositories/PrivateMessageRepository.ts';
@@ -498,6 +499,7 @@ describe('viewtopic de bout en bout', () => {
 			configStore: new ConfigRepository(db),
 			forumAdmin: new ForumAdminRepository(db),
 			maintenance: new MaintenanceRepository(db),
+			premiumAdmin: new PremiumAdminRepository(db),
 			groupAdmin: new GroupAdminRepository(db),
 			userAdmin: new UserAdminRepository(db),
 			banStore: new BanRepository(db),

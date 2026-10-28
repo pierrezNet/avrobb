@@ -72,6 +72,7 @@ import type { ModerationStore } from './repositories/ModerationRepository.ts';
 import type { PostEditStore } from './repositories/PostEditRepository.ts';
 import type { PostingStore } from './repositories/PostingRepository.ts';
 import type { PostReader } from './repositories/PostRepository.ts';
+import type { PremiumAdminStore } from './repositories/PremiumAdminRepository.ts';
 import type { PremiumStore } from './repositories/PremiumRepository.ts';
 import type { PrivateContactStore, SendingListStore } from './repositories/PrivateContactRepository.ts';
 import type { PrivateMessageStore } from './repositories/PrivateMessageRepository.ts';
@@ -145,6 +146,8 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	forumAdmin: ForumAdminStore;
 	/** Reconstruction de l'index et élagage (admin_maintenance.php). */
 	maintenance: MaintenanceStore;
+	/** Plugin AP_Premium.php (table premium). */
+	premiumAdmin: PremiumAdminStore;
 	/** Groupes d'utilisateurs (admin_groups.php). */
 	groupAdmin: GroupAdminStore;
 	/** Recherche d'utilisateurs et d'adresses IP (admin_users.php). */

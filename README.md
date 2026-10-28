@@ -108,6 +108,9 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
 - Plugins Sondage, Messagerie privée et Plugile : mêmes réglages que le PHP, avec jeton CSRF ; seules
   les clés modifiées sont écrites ; le plugin Sondage ne vide plus tous les caches PHP, seulement
   celui des réglages.
+- Plugin Premium (`AP_Premium.php`, table `premium` distincte de la boutique `apremium`) : table
+  créée en InnoDB (MyISAM dans le PHP) ; erreurs réaffichées dans la page ; pas de retour automatique
+  au groupe initial à l'échéance, comme dans le PHP malgré sa description.
 - Rédaction (`post.php`) : émojis conservés (le PHP remplaçait les caractères de 4 octets par « ? »,
   héritage d'une base en utf8 sur 3 octets) ; redirection immédiate vers le message ; boutons de
   préfixe du sujet en JavaScript et seulement pour une nouvelle discussion ; pas de réponse dans le

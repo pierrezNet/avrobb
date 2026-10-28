@@ -43,6 +43,7 @@ import type { ModerationStore } from '../src/repositories/ModerationRepository.t
 import type { OnlineWriter } from '../src/repositories/OnlineRepository.ts';
 import type { PostEditStore, PostUpdate } from '../src/repositories/PostEditRepository.ts';
 import type { NewReply, NewTopic, PostingStore } from '../src/repositories/PostingRepository.ts';
+import type { PremiumMember } from '../src/repositories/PremiumAdminRepository.ts';
 import type { ProfileStore } from '../src/repositories/ProfileRepository.ts';
 import type { NewUser } from '../src/repositories/RegistrationRepository.ts';
 import type { ReportTarget } from '../src/repositories/ReportRepository.ts';
@@ -394,6 +395,8 @@ export interface FakeData {
 	/** admin_maintenance.php : actions consignées, discussions élagables. */
 	maintenanceLog?: string[];
 	prunableCount?: number;
+	/** Plugin AP_Premium.php : undefined si la table n'est pas installée. */
+	premiumMembers?: PremiumMember[];
 	/** Signalements listés par admin_reports.php (modifiés en place quand ils sont traités). */
 	reportList?: Report[];
 	/** Messagerie privée en mémoire (créée vide au besoin). */
@@ -748,6 +751,32 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			},
 		},
 		forumAdmin: fakeForumAdmin(data),
+		premiumAdmin: {
+			isInstalled: async () => data.premiumMembers !== undefined,
+			install: async () => {
+				data.premiumMembers = [];
+			},
+			uninstall: async () => {
+				delete data.premiumMembers;
+			},
+			listMembers: async () => data.premiumMembers ?? [],
+			listGroups: async () => [
+				{ id: 4, title: 'Membres' },
+				{ id: 6, title: 'Premium' },
+			],
+			addMember: async (email, groupId, _start, end) => {
+				if (!email.endsWith('@example.test')) return 'notFound';
+				if ((data.premiumMembers ?? []).some((m) => m.email === email)) return 'already';
+				data.premiumMembers = [
+					...(data.premiumMembers ?? []),
+					{ id: 9, username: 'Nouveau', email, groupTitle: String(groupId), endsAt: end },
+				];
+				return 'added';
+			},
+			removeMembers: async (ids) => {
+				data.premiumMembers = (data.premiumMembers ?? []).filter((m) => !ids.includes(m.id));
+			},
+		},
 		maintenance: {
 			firstPostId: async () => 100,
 			emptySearchIndex: async () => {

@@ -33,6 +33,7 @@ import { PhpCacheFiles } from './repositories/PhpCacheFiles.ts';
 import { PostEditRepository } from './repositories/PostEditRepository.ts';
 import { PostingRepository } from './repositories/PostingRepository.ts';
 import { PostRepository } from './repositories/PostRepository.ts';
+import { PremiumAdminRepository } from './repositories/PremiumAdminRepository.ts';
 import { PremiumRepository } from './repositories/PremiumRepository.ts';
 import { PrivateContactRepository } from './repositories/PrivateContactRepository.ts';
 import { PrivateMessageRepository } from './repositories/PrivateMessageRepository.ts';
@@ -76,6 +77,7 @@ const app = await buildApp({
 	configCache: configLoader,
 	forumAdmin: new ForumAdminRepository(db),
 	maintenance: new MaintenanceRepository(db),
+	premiumAdmin: new PremiumAdminRepository(db),
 	groupAdmin: new GroupAdminRepository(db),
 	userAdmin: new UserAdminRepository(db),
 	users,

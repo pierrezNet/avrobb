@@ -322,6 +322,17 @@ ul.site-status__info li {
 	padding: 0.25rem 0;
 }
 
+/* MP non lus : sur mobile, la pastille du menu suffit ; le message revient sur grand écran. */
+ul.site-status__info li.site-status__pm {
+	display: none;
+}
+
+@media (min-width: 64em) {
+	ul.site-status__info li.site-status__pm {
+		display: inline-block;
+	}
+}
+
 .site-status__alert,
 a.site-status__alert {
 	font-weight: 700;

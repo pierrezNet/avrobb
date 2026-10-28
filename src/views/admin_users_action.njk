@@ -1,0 +1,61 @@
+{#- Confirmation d'une action groupée d'admin_users.php (changer de groupe, supprimer, bannir). Données : `view` (controllers/AdminUsersController.ts). -#}
+{% extends "layout.njk" %}
+{% import "partials/adminMenu.njk" as adminMenu %}
+{% import "partials/forms.njk" as forms %}
+
+{% block main %}
+{% set t = lang.adminUsers %}
+<h1 class="page-title">{{ view.heading }}</h1>
+<div class="side-layout">
+{{ adminMenu.menu(view.menu, lang) }}
+<div class="side-layout__content">
+<form id="bans2" class="form-box form" method="post" action="{{ url('admin_users.php') }}">
+	{{ forms.csrf(layout) }}
+	<input type="hidden" name="users" value="{{ view.users }}">
+	<p>{{ t.usersSelected(view.count) }}</p>
+	{% if view.action == 'move' %}
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ t.moveUsersSubhead }}</legend>
+		<p class="form__field">
+			<label for="new_group">{{ t.newGroup }}</label>
+			<select id="new_group" name="new_group" aria-describedby="new_group_help">
+				{% for g in view.groups %}<option value="{{ g.id }}">{{ g.title }}</option>{% endfor %}
+			</select>
+			<span id="new_group_help" class="form__help">{{ t.newGroupHelp }}</span>
+		</p>
+	</fieldset>
+	<p class="form__buttons"><button type="submit" class="button button--primary" name="move_users_comply" value="1">{{ t.confirm }}</button> <a class="button" href="{{ url('admin_users.php') }}">{{ t.goBack }}</a></p>
+	{% elif view.action == 'delete' %}
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ t.confirmDeleteLegend }}</legend>
+		<p>{{ t.confirmDeleteInfo }}</p>
+		<label class="form__choice"><input type="checkbox" name="delete_posts" value="1" checked> {{ t.deletePosts }}</label>
+		<p class="form__warning"><strong>{{ t.deleteWarning }}</strong></p>
+	</fieldset>
+	<p class="form__buttons"><button type="submit" class="button button--primary" name="delete_users_comply" value="1">{{ t.delete }}</button> <a class="button" href="{{ url('admin_users.php') }}">{{ t.goBack }}</a></p>
+	{% else %}
+	<fieldset class="form__fieldset options-form">
+		<legend class="form__legend">{{ t.messageExpirySubhead }}</legend>
+		<p class="form__field">
+			<label for="ban_message">{{ t.banMessage }}</label>
+			<input type="text" id="ban_message" name="ban_message" maxlength="255" aria-describedby="ban_message_help">
+			<span id="ban_message_help" class="form__help">{{ t.banMessageHelp }}</span>
+		</p>
+		<p class="form__field">
+			<label for="ban_expire">{{ t.expireDate }}</label>
+			<input type="date" id="ban_expire" name="ban_expire" aria-describedby="ban_expire_help">
+			<span id="ban_expire_help" class="form__help">{{ t.expireDateHelp }}</span>
+		</p>
+		<div class="form__field" role="radiogroup" aria-labelledby="label-ban_the_ip" aria-describedby="help-ban_the_ip">
+			<span id="label-ban_the_ip" class="form__label">{{ t.banIp }}</span>
+			<label class="form__choice"><input type="radio" name="ban_the_ip" value="1" checked> {{ t.yes }}</label>
+			<label class="form__choice"><input type="radio" name="ban_the_ip" value="0"> {{ t.no }}</label>
+			<span id="help-ban_the_ip" class="form__help">{{ t.banIpHelp }}</span>
+		</div>
+	</fieldset>
+	<p class="form__buttons"><button type="submit" class="button button--primary" name="ban_users_comply" value="1">{{ t.ban }}</button> <a class="button" href="{{ url('admin_users.php') }}">{{ t.goBack }}</a></p>
+	{% endif %}
+</form>
+</div>
+</div>
+{% endblock %}

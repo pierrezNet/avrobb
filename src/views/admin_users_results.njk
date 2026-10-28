@@ -1,6 +1,7 @@
 {#- Résultats d'admin_users.php (find_user, show_users). Données : `view` (presenters/adminUsersPage.ts). -#}
 {% extends "layout.njk" %}
 {% import "partials/adminMenu.njk" as adminMenu %}
+{% import "partials/forms.njk" as forms %}
 {% import "partials/navigation.njk" as nav %}
 
 {% block main %}
@@ -10,6 +11,8 @@
 {{ adminMenu.menu(view.menu, lang) }}
 <div class="side-layout__content">
 {{ nav.pagination(view.pagination, lang) }}
+{% set a = view.actions %}
+{% if a %}<form id="search-users-form" method="post" action="{{ url('admin_users.php') }}">{{ forms.csrf(layout) }}{% endif %}
 <section class="form-box">
 	{% if view.rows.length %}
 	<ul class="admin-rows">
@@ -24,6 +27,7 @@
 				<a href="mailto:{{ u.email }}">{{ u.email }}</a> · {{ t.posts }}&#160;: {{ u.posts }}{% if u.adminNote %} · {{ t.adminNote }}&#160;: {{ u.adminNote }}{% endif %}
 			</p>
 			<p><a href="{{ url(u.ipStatsHref) }}">{{ t.viewIp }}</a> · <a href="{{ url(u.postsHref) }}">{{ t.showPosts }}</a></p>
+			{% if a %}<label class="form__choice"><input type="checkbox" name="users[{{ u.id }}]" value="1"> {{ t.selectUser(u.username) }}</label>{% endif %}
 			{% endif %}
 		</li>
 		{% endfor %}
@@ -31,7 +35,15 @@
 	{% else %}
 	<p>{{ view.emptyText }}</p>
 	{% endif %}
+	{% if a %}
+	<p class="form__buttons">
+		{% if a.ban %}<button type="submit" class="button" name="ban_users" value="1">{{ t.ban }}</button>{% endif %}
+		{% if a.delete %}<button type="submit" class="button" name="delete_users" value="1">{{ t.delete }}</button>{% endif %}
+		{% if a.move %}<button type="submit" class="button" name="move_users" value="1">{{ t.changeGroup }}</button>{% endif %}
+	</p>
+	{% endif %}
 </section>
+{% if a %}</form>{% endif %}
 {{ nav.pagination(view.pagination, lang) }}
 </div>
 </div>

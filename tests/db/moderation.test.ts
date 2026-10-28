@@ -349,3 +349,46 @@ describe('UserAdminRepository (admin_users.php)', () => {
 		expect(sorted).toHaveLength(1);
 	});
 });
+
+describe('UserAdminRepository (actions groupées)', () => {
+	it('change de groupe un modérateur et le retire des listes de modérateurs', async () => {
+		const { UserAdminRepository } = await import('../../src/repositories/UserAdminRepository.ts');
+		await inRollback(async (trx) => {
+			const store = new UserAdminRepository(trx);
+			expect(await store.countPrivileged([2, 3, 5])).toEqual({ admins: 1, moderators: 1 });
+			expect((await store.listMoveTargets()).map((g) => g.id).sort()).toEqual([2, 4]);
+			await store.moveUsers([5], 4, false);
+			expect(await forumRow(trx, 2)).toBeDefined();
+			const forum = await trx.selectFrom('forums').select('moderators').where('id', '=', 2).executeTakeFirstOrThrow();
+			expect(forum.moderators).toBeNull();
+			expect(await trx.selectFrom('users').select('group_id').where('id', '=', 5).executeTakeFirst()).toEqual({ group_id: 4 });
+		});
+	});
+
+	it('supprime un membre et ses messages, ou les attribue à l’invité', async () => {
+		const { UserAdminRepository } = await import('../../src/repositories/UserAdminRepository.ts');
+		await inRollback(async (trx) => {
+			await new UserAdminRepository(trx).deleteUsers([5], true);
+			expect(await trx.selectFrom('posts').select('id').where('id', '=', 101).execute()).toEqual([]);
+			expect(await topicRow(trx, 10)).toMatchObject({ num_replies: 1 });
+			expect(await trx.selectFrom('users').select('id').where('id', '=', 5).execute()).toEqual([]);
+		});
+		await inRollback(async (trx) => {
+			await new UserAdminRepository(trx).deleteUsers([5], false);
+			expect(await trx.selectFrom('posts').select('poster_id').where('id', '=', 101).executeTakeFirst()).toEqual({ poster_id: 1 });
+		});
+	});
+
+	it('bannit avec l’adresse du dernier message', async () => {
+		const { UserAdminRepository } = await import('../../src/repositories/UserAdminRepository.ts');
+		await inRollback(async (trx) => {
+			await new UserAdminRepository(trx).banUsers([5], { message: 'Spam', expire: null, withIp: true, creatorId: 2 });
+			const bans = await trx
+				.selectFrom('bans')
+				.select(['username', 'ip', 'email', 'message', 'ban_creator'])
+				.where('username', '=', 'MaxDUO')
+				.execute();
+			expect(bans).toEqual([{ username: 'MaxDUO', ip: '192.0.2.5', email: 'max@example.test', message: 'Spam', ban_creator: 2 }]);
+		});
+	});
+});

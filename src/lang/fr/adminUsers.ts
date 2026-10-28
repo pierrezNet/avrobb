@@ -81,4 +81,47 @@ export const adminUsers = {
 	ban: 'Bannir',
 	delete: 'Supprimer',
 	changeGroup: 'Changer de groupe',
+
+	// Actions groupées
+	selectAll: 'Tout sélectionner',
+	noUsersSelected: 'Aucun utilisateur sélectionné.',
+	noMoveAdmins:
+		"Pour des raisons de sécurité, vous n'êtes pas autorisé(e) à déplacer plusieurs administrateurs vers un autre groupe. Si vous souhaitez déplacer ces administrateurs, vous pouvez le faire dans le profil de chacun.",
+	noDeleteAdmins:
+		"Les administrateurs ne peuvent être supprimés. Pour supprimer des administrateurs, vous devez d'abord les déplacer vers un autre groupe d'utilisateurs.",
+	noBanAdmins:
+		"Les administrateurs ne peuvent être bannis. Pour bannir des administrateurs, vous devez d'abord les déplacer vers un autre groupe d'utilisateurs.",
+	noBanMods:
+		"Les modérateurs ne peuvent être bannis. Pour bannir des modérateurs, vous devez d'abord les déplacer vers un autre groupe d'utilisateurs.",
+	moveUsers: "Changer le groupe d'utilisateurs",
+	moveUsersSubhead: "Choisir un nouveau groupe d'utilisateurs",
+	newGroup: 'Nouveau groupe',
+	newGroupHelp:
+		"Choisissez le groupe vers lequel le ou les utilisateurs sélectionnés seront déplacés. Pour des raisons de sécurité, il n'est pas possible de déplacer plusieurs utilisateurs vers le groupe des administrateurs.",
+	invalidGroup: 'ID de groupe invalide.',
+	moved: "Groupe d'utilisateur modifié.",
+	deleteUsers: 'Supprimer des utilisateurs',
+	confirmDeleteLegend: 'Important : lisez avant de supprimer des utilisateurs',
+	confirmDeleteInfo: 'Veuillez confirmer que vous souhaitez supprimer ces utilisateurs.',
+	deletePosts: 'Supprimer tous les messages et discussions que ces utilisateurs ont publiés.',
+	deleteWarning:
+		'Avertissement ! Des utilisateurs et/ou messages supprimés ne peuvent être récupérés. Si vous choisissez de ne pas supprimer les messages créés par ces utilisateurs, ils ne pourront être supprimés que manuellement ultérieurement.',
+	deleted: 'Utilisateurs supprimés.',
+	banUsers: 'Bannir des utilisateurs',
+	messageExpirySubhead: 'Message de bannissement et expiration',
+	banMessage: 'Message de bannissement',
+	banMessageHelp: "Un message qui s'affichera pour les utilisateurs bannis lorsqu'ils consulteront les forums.",
+	expireDate: "Date d'expiration",
+	expireDateHelp:
+		'La date à laquelle ces bannissements devront être automatiquement supprimés (format : aaaa-mm-jj). Laisser vide pour une suppression manuelle.',
+	banIp: "Bannissement d'adresse IP",
+	banIpHelp: 'Bannir également les adresses IP des utilisateurs bannis pour leur rendre une nouvelle création de compte plus difficile.',
+	invalidDate:
+		"Vous avez indiqué une date d'expiration invalide. Le format devrait correspondre à AAAA-MM-JJ et la date doit être définie à au moins un jour plus tard.",
+	banned: 'Utilisateurs bannis.',
+	yes: 'Oui',
+	no: 'Non',
+	confirm: 'Valider',
+	goBack: 'Retour',
+	usersSelected: (count: number) => `${count} utilisateur(s) sélectionné(s).`,
 };

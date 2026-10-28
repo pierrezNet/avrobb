@@ -387,6 +387,7 @@ export interface FakeData {
 	ipPosters?: Map<string, IpPoster[]>;
 	adminUserRows?: AdminUserRow[];
 	userSearches?: UserSearchCriteria[];
+	userActionLog?: string[];
 	/** Signalements listés par admin_reports.php (modifiés en place quand ils sont traités). */
 	reportList?: Report[];
 	/** Messagerie privée en mémoire (créée vide au besoin). */
@@ -741,6 +742,26 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			searchUsers: async (criteria, offset, limit) => {
 				data.userSearches = [...(data.userSearches ?? []), criteria];
 				return (data.adminUserRows ?? []).slice(offset, offset + limit);
+			},
+			countPrivileged: async (ids) => {
+				const groups = ids.map((id) => data.users.find((u) => u.viewer.id === id)?.viewer.group);
+				return {
+					admins: groups.filter((g) => g?.id === GroupId.Admin).length,
+					moderators: groups.filter((g) => g?.isModerator === true).length,
+				};
+			},
+			listMoveTargets: async () => [
+				{ id: 2, title: 'Modérateurs', isModerator: true },
+				{ id: 4, title: 'Membres', isModerator: false },
+			],
+			moveUsers: async (ids, groupId) => {
+				data.userActionLog = [...(data.userActionLog ?? []), `move ${ids.join(',')} -> ${groupId}`];
+			},
+			deleteUsers: async (ids, withPosts) => {
+				data.userActionLog = [...(data.userActionLog ?? []), `delete ${ids.join(',')}${withPosts ? ' +posts' : ''}`];
+			},
+			banUsers: async (ids, ban) => {
+				data.userActionLog = [...(data.userActionLog ?? []), `ban ${ids.join(',')} ${JSON.stringify(ban)}`];
 			},
 		},
 		groupAdmin: {

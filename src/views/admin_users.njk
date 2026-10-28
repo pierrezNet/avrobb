@@ -1,6 +1,7 @@
 {#- Recherche d'utilisateurs et d'IP (admin_users.php). Données : `view` (presenters/adminUsersPage.ts). -#}
 {% extends "layout.njk" %}
 {% import "partials/adminMenu.njk" as adminMenu %}
+{% import "partials/sideMenu.njk" as sideMenu %}
 
 {% block main %}
 {% set t = lang.adminUsers %}
@@ -8,6 +9,7 @@
 <div class="side-layout">
 {{ adminMenu.menu(view.menu, lang) }}
 <div class="side-layout__content">
+{{ sideMenu.notice(view.notice) }}
 <form id="find_user" class="form-box form" method="get" action="{{ url('admin_users.php') }}">
 	<h2 class="form-box__title">{{ t.userSearchHead }}</h2>
 	<p class="form__help">{{ t.userSearchInfo }}</p>

@@ -80,7 +80,7 @@ import type { SubscriptionStore } from './repositories/SubscriptionRepository.ts
 import type { ToolbarReader } from './repositories/ToolbarRepository.ts';
 import type { TopicLabelReader } from './repositories/TopicLabelRepository.ts';
 import type { TopicReader, TopicWriter } from './repositories/TopicRepository.ts';
-import type { UserAdminReader } from './repositories/UserAdminRepository.ts';
+import type { UserAdminReader, UserAdminWriter } from './repositories/UserAdminRepository.ts';
 import type { CredentialsStore, MemberListReader, PasswordResetStore, ProfileReader } from './repositories/UserRepository.ts';
 import type { UsersInfoReader } from './repositories/UsersInfoLoader.ts';
 import type { AvatarLocator, AvatarStore } from './services/avatars.ts';
@@ -138,7 +138,7 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	/** Groupes d'utilisateurs (admin_groups.php). */
 	groupAdmin: GroupAdminStore;
 	/** Recherche d'utilisateurs et d'adresses IP (admin_users.php). */
-	userAdmin: UserAdminReader;
+	userAdmin: UserAdminReader & UserAdminWriter;
 	toolbar: ToolbarReader;
 	avatars: AvatarLocator;
 	avatarStore: AvatarStore;
@@ -382,6 +382,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 
 	const adminUsers = new AdminUsersController(deps);
 	app.get<{ Querystring: AdminUsersQuery }>('/admin_users.php', { preHandler: authenticate }, adminUsers.show);
+	app.post<{ Body: FormBody }>('/admin_users.php', { preHandler: [authenticate, verifyCsrf] }, adminUsers.submit);
 
 	const adminReports = new AdminReportsController(deps);
 	app.get<{ Querystring: AdminReportsQuery }>('/admin_reports.php', { preHandler: authenticate }, adminReports.show);

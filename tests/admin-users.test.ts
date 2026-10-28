@@ -7,15 +7,21 @@ import type { FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
+import { csrfToken } from '../src/http/csrf.ts';
 import { buildLegacyCookie } from '../src/services/legacySession.ts';
+import { parseBanExpire, readUserIds } from '../src/services/userActions.ts';
 import { parseAdminDate, readUserSearch } from '../src/services/userSearch.ts';
 import { type FakeData, fakeDeps, group, guest, NOW, viewer } from './fixtures.ts';
 
 const SEED = 'graine-de-test';
+const CSRF_SECRET = '9'.repeat(64);
 const mod = viewer({ id: 5, username: 'MaxDUO', group: group({ id: GroupId.Moderator, isModerator: true }) });
+const banMod = viewer({ id: 6, username: 'Garde', group: group({ id: 6, isModerator: true, canModBanUsers: true }) });
+const admin = viewer({ id: 2, username: 'admin', group: group({ id: GroupId.Admin }) });
 const tessy = viewer();
-const hashes: Record<number, string> = { 5: 'h5', 3: 'h3' };
-const cookie = (userId: number): string => `punbb_cookie=${buildLegacyCookie(userId, hashes[userId] ?? '', NOW + 3600, SEED)}`;
+const hashes: Record<number, string> = { 5: 'h5', 3: 'h3', 6: 'h6', 2: 'h2' };
+const cookie = (userId: number): string =>
+	`punbb_cookie=${buildLegacyCookie(userId, hashes[userId] ?? '', NOW + 3600, SEED)}; punbb_cookie_csrf=${CSRF_SECRET}`;
 
 describe('critères de recherche', () => {
 	it('motifs avec joker, nombres, dates et tri', () => {
@@ -65,6 +71,8 @@ async function start(): Promise<{ server: FastifyInstance; fake: FakeData }> {
 			{ viewer: guest, passwordHash: '' },
 			{ viewer: mod, passwordHash: 'h5' },
 			{ viewer: tessy, passwordHash: 'h3' },
+			{ viewer: banMod, passwordHash: 'h6' },
+			{ viewer: admin, passwordHash: 'h2' },
 		],
 		topics: [],
 		posts: new Map(),
@@ -128,5 +136,58 @@ describe('admin_users.php', () => {
 		expect(res.body).toContain('Non vérifié');
 		expect(fake.userSearches?.[0]?.patterns).toEqual({ username: 'Nou%' });
 		expect((await get(server, 5, '/admin_users.php?find_user=&posts_less=x')).statusCode).toBe(400);
+	});
+});
+
+describe('actions groupées', () => {
+	it('lecture des comptes sélectionnés et de la date d’expiration', () => {
+		expect(readUserIds({ 'users[7]': '1', 'users[1]': '1', users: '8,x,0' })).toEqual([7, 8]);
+		const now = Date.UTC(2026, 9, 28) / 1000;
+		expect(parseBanExpire('', 0, now)).toBeNull();
+		expect(parseBanExpire('2026-11-01', 3600, now)).toBe(Date.UTC(2026, 10, 1) / 1000 - 3600);
+		expect(parseBanExpire('2026-10-01', 0, now)).toBe('invalid');
+		expect(parseBanExpire('01/11/2026', 0, now)).toBe('invalid');
+	});
+
+	const post = (server: FastifyInstance, userId: number, fields: Record<string, string>) =>
+		server.inject({
+			method: 'POST',
+			url: '/admin_users.php',
+			headers: { cookie: cookie(userId), 'content-type': 'application/x-www-form-urlencoded' },
+			payload: new URLSearchParams({ csrf_token: csrfToken(CSRF_SECRET, SEED, userId), ...fields }).toString(),
+		});
+
+	it('cases et boutons selon les droits', async () => {
+		const { server } = await start();
+		const asMod = await get(server, 5, '/admin_users.php?find_user=');
+		expect(asMod.body).not.toContain('name="users[7]"');
+		const asBanMod = await get(server, 6, '/admin_users.php?find_user=');
+		expect(asBanMod.body).toContain('name="users[7]"');
+		expect(asBanMod.body).toContain('name="ban_users"');
+		expect(asBanMod.body).not.toContain('name="delete_users"');
+		expect((await get(server, 2, '/admin_users.php?find_user=')).body).toContain('name="move_users"');
+	});
+
+	it('changer de groupe et supprimer : administrateurs seulement, après confirmation', async () => {
+		const { server, fake } = await start();
+		expect((await post(server, 6, { move_users: '1', 'users[3]': '1' })).statusCode).toBe(403);
+		const confirm = await post(server, 2, { move_users: '1', 'users[3]': '1' });
+		expect(confirm.body).toContain('name="users" value="3"');
+		expect(confirm.body).toContain('<option value="4">Membres</option>');
+		await post(server, 2, { move_users_comply: '1', users: '3', new_group: '4' });
+		expect((await post(server, 2, { move_users_comply: '1', users: '3', new_group: '1' })).statusCode).toBe(400);
+		expect((await post(server, 2, { delete_users: '1', 'users[2]': '1' })).body).toContain('Les administrateurs ne peuvent être supprimés');
+		const deleted = await post(server, 2, { delete_users_comply: '1', users: '3', delete_posts: '1' });
+		expect(deleted.headers.location).toBe('admin_users.php?done=deleted');
+		expect(fake.userActionLog).toEqual(['move 3 -> 4', 'delete 3 +posts']);
+	});
+
+	it('bannir : pas les modérateurs, date future', async () => {
+		const { server, fake } = await start();
+		expect((await post(server, 6, { ban_users: '1', 'users[5]': '1' })).body).toContain('Les modérateurs ne peuvent être bannis');
+		expect((await post(server, 6, { ban_users_comply: '1', users: '3', ban_expire: '2000-01-01' })).statusCode).toBe(400);
+		const done = await post(server, 6, { ban_users_comply: '1', users: '3', ban_message: ' Spam ', ban_expire: '', ban_the_ip: '1' });
+		expect(done.headers.location).toBe('admin_users.php?done=banned');
+		expect(fake.userActionLog).toEqual(['ban 3 {"message":"Spam","expire":null,"withIp":true,"creatorId":6}']);
 	});
 });

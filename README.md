@@ -86,6 +86,11 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   peuvent pas être déplacés vers les invités ; les valeurs oui/non sont enregistrées en 0/1 (le PHP
   gardait l'entier reçu). Les colonnes propres à PV (messagerie, renommée) gardent leurs valeurs par
   défaut à la création, comme avec le PHP.
+- Utilisateurs (`admin_users.php`) : résultats en cartes ; dates de recherche aux formats
+  aaaa-mm-jj ou jj-mm-aaaa (avec heure facultative), là où `strtotime()` acceptait aussi des formes
+  libres (« yesterday ») ; date d'expiration d'un bannissement au format aaaa-mm-jj seulement ; pas de
+  lien JavaScript « Tout sélectionner ». Changer de groupe, supprimer et bannir passent par les mêmes
+  étapes de confirmation que le PHP, avec jeton CSRF.
 - Rédaction (`post.php`) : émojis conservés (le PHP remplaçait les caractères de 4 octets par « ? »,
   héritage d'une base en utf8 sur 3 octets) ; redirection immédiate vers le message ; boutons de
   préfixe du sujet en JavaScript et seulement pour une nouvelle discussion ; pas de réponse dans le

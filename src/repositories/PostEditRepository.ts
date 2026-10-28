@@ -131,7 +131,7 @@ export class PostEditRepository implements PostEditStore {
 }
 
 /** delete_post() : le sujet reprend comme dernier message l'avant-dernier si c'était le dernier. */
-async function deletePost(trx: Kysely<Database>, postId: number, topicId: number): Promise<void> {
+export async function deletePost(trx: Kysely<Database>, postId: number, topicId: number): Promise<void> {
 	const [last, secondLast] = await trx
 		.selectFrom('posts')
 		.select(['id', 'poster', 'posted'])
@@ -161,7 +161,7 @@ async function deletePost(trx: Kysely<Database>, postId: number, topicId: number
 }
 
 /** delete_topic() : sujet, liens de déplacement, messages, index et abonnements. */
-async function deleteTopic(trx: Kysely<Database>, topicId: number): Promise<void> {
+export async function deleteTopic(trx: Kysely<Database>, topicId: number): Promise<void> {
 	await trx
 		.deleteFrom('topics')
 		.where((eb) => eb.or([eb('id', '=', topicId), eb('moved_to', '=', topicId)]))

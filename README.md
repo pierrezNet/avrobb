@@ -32,7 +32,10 @@ npm run test:db         # tests sur D1 et R2 locaux neufs (migrations + tests/db
 npm run screenshot -- 'http://localhost:8787/' --widths 320,1280 [--cookie avrobb_session=…]
 ```
 
-Base : D1 (SQLite), schéma dans `migrations/`. Les écritures en plusieurs requêtes passent par
+Base : D1 (SQLite), schéma dans `migrations/`. La base locale de `wrangler dev` est rangée sous
+l'identifiant `database_id` de `wrangler.jsonc` (`.wrangler/state/v3/d1/`) : le changer fait partir
+`wrangler dev` sur une base vide (l'ancienne reste dans son fichier, à recopier avec l'API de
+sauvegarde de SQLite). Les écritures en plusieurs requêtes passent par
 des lots atomiques (`db.batch()`, voir `src/db/database.ts`) : D1 n'a pas de transaction interactive.
 Les captures demandent un Chrome sans tête (`CHROME_BIN`, ou celui de Playwright s'il est installé).
 

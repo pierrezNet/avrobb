@@ -14,6 +14,7 @@ const forumInfo: ForumInfo = {
 	id: 2,
 	name: 'Captures',
 	redirectUrl: null,
+	links: { site: null, repository: null },
 	moderators: new Map(),
 	numTopics: 0,
 	sortBy: 'lastPost',

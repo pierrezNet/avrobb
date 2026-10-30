@@ -27,6 +27,9 @@ export interface AdminForum {
 	name: string;
 	description: string;
 	redirectUrl: string;
+	/** Liens du projet (chaîne vide : pas de lien). */
+	siteUrl: string;
+	repoUrl: string;
 	numTopics: number;
 	/** 0 : dernier message, 1 : début du sujet, 2 : sujet. */
 	sortBy: number;
@@ -38,6 +41,8 @@ export interface ForumDetails {
 	/** null : NULL en base, comme le PHP pour une chaîne vide. */
 	description: string | null;
 	redirectUrl: string | null;
+	siteUrl: string | null;
+	repoUrl: string | null;
 	sortBy: number;
 	categoryId: number;
 }
@@ -141,7 +146,7 @@ export class ForumAdminRepository implements ForumAdminStore {
 	async findForum(id: number): Promise<AdminForum | null> {
 		const row = await this.db
 			.selectFrom('forums')
-			.select(['id', 'forum_name', 'forum_desc', 'redirect_url', 'num_topics', 'sort_by', 'cat_id'])
+			.select(['id', 'forum_name', 'forum_desc', 'redirect_url', 'site_url', 'repo_url', 'num_topics', 'sort_by', 'cat_id'])
 			.where('id', '=', id)
 			.executeTakeFirst();
 		if (row === undefined) return null;
@@ -150,6 +155,8 @@ export class ForumAdminRepository implements ForumAdminStore {
 			name: row.forum_name,
 			description: row.forum_desc ?? '',
 			redirectUrl: row.redirect_url ?? '',
+			siteUrl: row.site_url ?? '',
+			repoUrl: row.repo_url ?? '',
 			numTopics: row.num_topics,
 			sortBy: row.sort_by,
 			categoryId: row.cat_id,
@@ -163,6 +170,8 @@ export class ForumAdminRepository implements ForumAdminStore {
 				forum_name: details.name,
 				forum_desc: details.description,
 				redirect_url: details.redirectUrl,
+				site_url: details.siteUrl,
+				repo_url: details.repoUrl,
 				sort_by: details.sortBy,
 				cat_id: details.categoryId,
 			})

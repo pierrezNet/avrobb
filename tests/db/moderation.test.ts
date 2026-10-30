@@ -197,6 +197,7 @@ describe('ConfigRepository (admin_options.php)', () => {
 describe('ForumAdminRepository (admin_categories.php, admin_forums.php)', () => {
 	it('liste, ajoute, modifie et ordonne', async () => {
 		const { ForumAdminRepository } = await import('../../src/repositories/ForumAdminRepository.ts');
+		const { ForumRepository } = await import('../../src/repositories/ForumRepository.ts');
 		await inRollback(async (trx) => {
 			const store = new ForumAdminRepository(trx);
 			expect((await store.listCategories()).map((cat) => cat.id)).toEqual([2, 1]);
@@ -205,8 +206,25 @@ describe('ForumAdminRepository (admin_categories.php, admin_forums.php)', () => 
 			await store.addCategory('Vide');
 			await store.updateForumPositions([{ id: 1, position: 9 }]);
 			expect((await store.listForums()).map((row) => row.forumName).at(-1)).toBe('Technique');
-			await store.updateForum(1, { name: 'Tech', description: null, redirectUrl: null, sortBy: 2, categoryId: 2 });
-			expect(await store.findForum(1)).toMatchObject({ name: 'Tech', description: '', sortBy: 2, categoryId: 2 });
+			await store.updateForum(1, {
+				name: 'Tech',
+				description: null,
+				redirectUrl: null,
+				siteUrl: 'https://example.test/tech',
+				repoUrl: null,
+				sortBy: 2,
+				categoryId: 2,
+			});
+			expect(await store.findForum(1)).toMatchObject({
+				name: 'Tech',
+				description: '',
+				siteUrl: 'https://example.test/tech',
+				repoUrl: '',
+				sortBy: 2,
+				categoryId: 2,
+			});
+			const forums = new ForumRepository(trx);
+			expect((await forums.findReadable(1, 4, null))?.links).toEqual({ site: 'https://example.test/tech', repository: null });
 			await store.updateCategories([{ id: 1, name: 'Simus', position: 0 }]);
 			expect((await store.listCategories()).map((cat) => cat.name).slice(0, 2)).toEqual(['Simus', 'Vide']);
 		});

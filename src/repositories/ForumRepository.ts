@@ -4,7 +4,7 @@
  */
 
 import type { Db } from '../db/database.ts';
-import type { ForumCategory, ForumInfo, IndexCategory, TopicSort } from '../domain/models.ts';
+import type { ForumCategory, ForumInfo, IndexCategory, ProjectLinks, TopicSort } from '../domain/models.ts';
 import { parseModerators } from '../services/moderators.ts';
 import { forumReadable } from './forumPermissions.ts';
 
@@ -65,6 +65,8 @@ export class ForumRepository implements ForumReader {
 				'f.forum_name',
 				'f.forum_desc',
 				'f.redirect_url',
+				'f.site_url',
+				'f.repo_url',
 				'f.moderators',
 				'f.num_topics',
 				'f.num_posts',
@@ -79,6 +81,7 @@ export class ForumRepository implements ForumReader {
 			name: row.forum_name,
 			descriptionHtml: row.forum_desc ?? '',
 			redirectUrl: (row.redirect_url ?? '') !== '' ? (row.redirect_url ?? '') : null,
+			links: projectLinks(row),
 			moderators: parseModerators(row.moderators),
 			numTopics: row.num_topics,
 			numPosts: row.num_posts,
@@ -98,6 +101,8 @@ export class ForumRepository implements ForumReader {
 				'f.id',
 				'f.forum_name',
 				'f.redirect_url',
+				'f.site_url',
+				'f.repo_url',
 				'f.moderators',
 				'f.num_topics',
 				'f.sort_by',
@@ -114,6 +119,7 @@ export class ForumRepository implements ForumReader {
 			id: row.id,
 			name: row.forum_name,
 			redirectUrl: (row.redirect_url ?? '') !== '' ? (row.redirect_url ?? '') : null,
+			links: projectLinks(row),
 			moderators: parseModerators(row.moderators),
 			numTopics: row.num_topics,
 			sortBy: SORTS[row.sort_by] ?? 'lastPost',
@@ -121,4 +127,9 @@ export class ForumRepository implements ForumReader {
 			isSubscribed: userId !== null && row.subscriber === userId,
 		};
 	}
+}
+
+/** Colonnes site_url et repo_url ; une chaîne vide vaut « pas de lien ». */
+function projectLinks(row: { site_url: string | null; repo_url: string | null }): ProjectLinks {
+	return { site: row.site_url || null, repository: row.repo_url || null };
 }

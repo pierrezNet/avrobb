@@ -51,6 +51,15 @@
 			<span id="redirect_url" class="form__help">{{ t.redirectHelp }}</span>
 			{% endif %}
 		</p>
+		<p class="form__field">
+			<label for="site_url">{{ t.siteUrl }}</label>
+			<input type="url" id="site_url" name="site_url" value="{{ f.siteUrl }}" maxlength="255" aria-describedby="project_links_help">
+		</p>
+		<p class="form__field">
+			<label for="repo_url">{{ t.repoUrl }}</label>
+			<input type="url" id="repo_url" name="repo_url" value="{{ f.repoUrl }}" maxlength="255" aria-describedby="project_links_help">
+			<span id="project_links_help" class="form__help">{{ t.projectLinksHelp }}</span>
+		</p>
 	</fieldset>
 	<fieldset class="form__fieldset">
 		<legend class="form__legend">{{ t.groupPermissionsSubhead }}</legend>

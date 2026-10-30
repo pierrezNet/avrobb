@@ -63,6 +63,7 @@ function data(overrides: Partial<FakeData> = {}): FakeData {
 				id: 2,
 				name: 'Captures',
 				redirectUrl: null,
+				links: { site: null, repository: null },
 				moderators: new Map(),
 				numTopics: 1,
 				sortBy: 'lastPost',

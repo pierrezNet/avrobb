@@ -63,11 +63,27 @@ describe('formulaires', () => {
 			name: 'Hangar',
 			description: 'a\nb',
 			redirectUrl: null,
+			siteUrl: null,
+			repoUrl: null,
 			sortBy: 1,
 			categoryId: 2,
 		});
 		expect(readForumDetails({ forum_name: ' ', cat_id: '2', sort_by: '0' })).toEqual({ kind: 'missingName' });
 		expect(readForumDetails({ forum_name: 'A', cat_id: '0', sort_by: '0' })).toEqual({ kind: 'badRequest' });
+	});
+
+	it('liens du projet : http(s) seulement, « www. » complété', () => {
+		const details = (site_url: string, repo_url = '') =>
+			readForumDetails({ forum_name: 'A', cat_id: '1', sort_by: '0', site_url, repo_url });
+		expect(details(' https://avrobb.example/ ', 'www.github.com/epierrez/avrobb')).toMatchObject({
+			kind: 'ok',
+			siteUrl: 'https://avrobb.example/',
+			repoUrl: 'https://www.github.com/epierrez/avrobb',
+		});
+		expect(details('javascript:alert(1)')).toEqual({ kind: 'badLink' });
+		expect(details('ftp://example.test/')).toEqual({ kind: 'badLink' });
+		expect(details('pas une adresse')).toEqual({ kind: 'badLink' });
+		expect(details(`https://example.test/${'a'.repeat(260)}`)).toEqual({ kind: 'badLink' });
 	});
 
 	it('permissions envoyées pour un groupe', () => {

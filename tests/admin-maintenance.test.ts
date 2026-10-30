@@ -25,7 +25,9 @@ async function start(): Promise<{ server: ForumApp; fake: FakeData }> {
 		posts: new Map([[10, [post(100), post(101), post(102)]]]),
 		forumAdmin: {
 			categories: [{ id: 1, name: 'Simulateurs', position: 1 }],
-			forums: [{ id: 7, name: 'Technique', description: '', redirectUrl: '', numTopics: 3, sortBy: 0, categoryId: 1 }],
+			forums: [
+				{ id: 7, name: 'Technique', description: '', redirectUrl: '', siteUrl: '', repoUrl: '', numTopics: 3, sortBy: 0, categoryId: 1 },
+			],
 			permissions: [],
 		},
 	};

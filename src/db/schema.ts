@@ -52,6 +52,9 @@ export interface ForumsTable {
 	forum_name: string;
 	forum_desc: string | null;
 	redirect_url: string | null;
+	/** Liens d'un forum de projet (migrations/0003_forum_links.sql). */
+	site_url: Generated<string | null>;
+	repo_url: Generated<string | null>;
 	/** Colonnes avec une valeur par défaut (0) : facultatives à la création d'un forum. */
 	num_topics: Generated<number>;
 	num_posts: Generated<number>;

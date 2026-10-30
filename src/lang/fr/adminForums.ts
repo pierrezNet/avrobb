@@ -42,6 +42,7 @@ export const adminForums = {
 	forumUpdated: 'Forum mis à jour.',
 	permsReverted: 'Rétablissement des permissions par défaut.',
 	forumMissingName: 'Vous devez indiquer un nom de forum.',
+	badProjectLink: 'Les liens du projet doivent être des adresses web complètes (https://…).',
 	addForumHead: 'Ajouter un forum',
 	addForumLabel: 'Ajouter le forum à une catégorie',
 	addForumHelp: 'Choisissez la catégorie à laquelle vous souhaitez ajouter un nouveau forum.',
@@ -64,6 +65,9 @@ export const adminForums = {
 	sortOptions: ['Dernier message', 'Début du sujet', 'Sujet'],
 	redirectUrl: 'URL de redirection',
 	redirectHelp: 'Uniquement disponible pour les forums vides',
+	siteUrl: 'Site du projet',
+	repoUrl: 'Dépôt du code',
+	projectLinksHelp: "Facultatifs : affichés sur l'index et en tête du forum.",
 	groupPermissionsSubhead: 'Modifier les permissions des groupes pour ce forum',
 	groupPermissionsInfo:
 		"Dans ce forum, vous pouvez définir les permissions spécifiques à différents groupes d'utilisateurs. Si vous n'avez fait aucune modification aux permissions de groupe de ce forum, ce que vous voyez ci-dessous sont les paramètres par défaut basés sur ceux proposés dans Groupes d'utilisateurs. Les administrateurs ont toujours toutes les permissions et sont donc exclus de ce paramétrage. Les permissions qui diffèrent de celles du groupe sont signalées « (modifié) ». La case « Lire le forum » est désactivée si le groupe ne peut pas lire le forum. Pour les forums redirigés, seule la permission de lecture est modifiable.",

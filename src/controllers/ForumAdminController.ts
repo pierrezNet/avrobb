@@ -199,6 +199,7 @@ export class ForumAdminController {
 		if (details.kind === 'badRequest') return renderMessage(request, reply, this.deps, 400, lang.common.badRequest);
 		if (details.kind === 'missingName')
 			return this.#renderForumEdit(request, reply, forumId, [lang.adminForums.forumMissingName], null, 400);
+		if (details.kind === 'badLink') return this.#renderForumEdit(request, reply, forumId, [lang.adminForums.badProjectLink], null, 400);
 		if (!(await store.listCategories()).some((cat) => cat.id === details.categoryId))
 			return renderMessage(request, reply, this.deps, 400, lang.common.badRequest);
 

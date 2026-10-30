@@ -74,7 +74,15 @@ export interface PermissionCellView {
 }
 
 export interface AdminForumEditView {
-	forum: { id: number; name: string; description: string; redirectUrl: string; redirectEditable: boolean };
+	forum: {
+		id: number;
+		name: string;
+		description: string;
+		redirectUrl: string;
+		redirectEditable: boolean;
+		siteUrl: string;
+		repoUrl: string;
+	};
 	formAction: string;
 	categories: { id: number; name: string; selected: boolean }[];
 	sortOptions: { value: number; selected: boolean }[];
@@ -105,6 +113,8 @@ export function buildAdminForumEdit(input: {
 			description: forum.description,
 			redirectUrl: forum.redirectUrl,
 			redirectEditable: forum.numTopics === 0,
+			siteUrl: forum.siteUrl,
+			repoUrl: forum.repoUrl,
 		},
 		formAction: `admin_forums.php?edit_forum=${forum.id}`,
 		categories: input.categories.map(({ id, name }) => ({ id, name, selected: id === forum.categoryId })),

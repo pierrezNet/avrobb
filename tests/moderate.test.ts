@@ -23,6 +23,7 @@ const forum: ForumInfo = {
 	id: 2,
 	name: 'Captures',
 	redirectUrl: null,
+	links: { site: null, repository: null },
 	moderators: new Map([['MaxDUO', 5]]),
 	numTopics: 3,
 	sortBy: 'lastPost',

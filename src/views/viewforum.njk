@@ -3,6 +3,7 @@
 {% import "partials/subject.njk" as subjectParts %}
 {% import "partials/navigation.njk" as navigation %}
 {% import "partials/actions.njk" as actions %}
+{% import "partials/projectLinks.njk" as projectLinks %}
 
 {% macro forumBar(view, lang) %}
 <div class="page-bar">
@@ -15,6 +16,7 @@
 {% block main %}
 {{ navigation.breadcrumbs(view.crumbs, lang) }}
 <h1 class="page-title">{{ view.forum.name }}{% if view.age and view.age.old %} — {{ lang.forum.oldTopicsTitle }}{% endif %}</h1>
+{{ projectLinks.list(view.forum.links, lang, 'page') }}
 {% if view.age and view.age.info %}<p class="page-intro">{{ view.age.info }}</p>{% endif %}
 {{ forumBar(view, lang) }}
 

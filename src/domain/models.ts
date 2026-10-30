@@ -348,6 +348,12 @@ export interface LastPost {
 	poster: string;
 }
 
+/** Liens d'un forum de projet (AvroBB) : site du projet et dépôt de code ; null s'il n'y en a pas. */
+export interface ProjectLinks {
+	site: string | null;
+	repository: string | null;
+}
+
 /** Forum tel qu'affiché dans la liste de l'index. */
 export interface ForumSummary {
 	id: number;
@@ -356,6 +362,7 @@ export interface ForumSummary {
 	descriptionHtml: string;
 	/** Forum de redirection : URL de destination, sinon null. */
 	redirectUrl: string | null;
+	links: ProjectLinks;
 	moderators: ReadonlyMap<string, number>;
 	numTopics: number;
 	numPosts: number;
@@ -395,6 +402,7 @@ export interface ForumInfo {
 	id: number;
 	name: string;
 	redirectUrl: string | null;
+	links: ProjectLinks;
 	moderators: ReadonlyMap<string, number>;
 	numTopics: number;
 	sortBy: TopicSort;

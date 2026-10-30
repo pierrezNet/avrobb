@@ -54,6 +54,7 @@ function forum(id: number, overrides: Partial<ForumSummary> = {}): ForumSummary 
 		name: `Forum ${id}`,
 		descriptionHtml: '',
 		redirectUrl: null,
+		links: { site: null, repository: null },
 		moderators: new Map(),
 		numTopics: 3,
 		numPosts: 12_345,
@@ -69,7 +70,7 @@ const categories: IndexCategory[] = [
 		forums: [
 			forum(1, { descriptionHtml: '<em>Réglages</em>', moderators: new Map([['MaxDUO', 5]]) }),
 			forum(2, { redirectUrl: 'https://example.test', lastPost: null }),
-			forum(3, { lastPost: null }),
+			forum(3, { lastPost: null, links: { site: 'https://www.avrobb.example/', repository: 'https://github.com/x/avrobb' } }),
 		],
 	},
 ];
@@ -109,6 +110,13 @@ describe('GET /index.php', () => {
 		expect(res.body).toContain('<title>Forum de test</title>');
 		expect(res.body).toContain('Simulateurs &lt;FS&gt;');
 		expect(res.body).toContain('<div class="forum-row__desc"><em>Réglages</em></div>');
+		expect(res.body).toContain(
+			'<a class="project-links__link" href="https://www.avrobb.example/" rel="external noopener">Site du projet <span class="project-links__host">avrobb.example</span></a>',
+		);
+		expect(res.body).toContain(
+			'href="https://github.com/x/avrobb" rel="external noopener">Dépôt <span class="project-links__host">github.com</span>',
+		);
+		expect(res.body.match(/class="project-links"/g)).toHaveLength(1);
 		expect(res.body).toContain('<a href="profile.php?id=5">MaxDUO</a>');
 		expect(res.body).toContain('<span class="forum-row__redirect">Lien vers :</span> <a href="https://example.test">Forum 2</a>');
 		expect(res.body).toContain('<dd>12.3 k</dd>');

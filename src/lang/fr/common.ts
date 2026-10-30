@@ -7,6 +7,11 @@
 export const common = {
 	langCode: 'fr',
 
+	// Liens d'un forum de projet (AvroBB)
+	projectLinks: 'Liens du projet',
+	projectSite: 'Site du projet',
+	projectRepository: 'Dépôt',
+
 	// Avis
 	badRequest: 'Erreur. Le lien que vous avez suivi est incorrect ou périmé.',
 	noView: "Vous n'êtes pas autorisé(e) à visiter ces forums.",

@@ -28,8 +28,8 @@ async function start(): Promise<{ server: ForumApp; fake: FakeData }> {
 				{ id: 2, name: 'Ateliers', position: 2 },
 			],
 			forums: [
-				{ id: 7, name: 'Technique', description: '', redirectUrl: '', numTopics: 3, sortBy: 0, categoryId: 1 },
-				{ id: 8, name: 'Vide', description: '', redirectUrl: '', numTopics: 0, sortBy: 0, categoryId: 2 },
+				{ id: 7, name: 'Technique', description: '', redirectUrl: '', siteUrl: '', repoUrl: '', numTopics: 3, sortBy: 0, categoryId: 1 },
+				{ id: 8, name: 'Vide', description: '', redirectUrl: '', siteUrl: '', repoUrl: '', numTopics: 0, sortBy: 0, categoryId: 2 },
 			],
 			permissions: [
 				{ groupId: 3, title: 'Invités', groupReadBoard: true, groupPostReplies: false, groupPostTopics: false, forum: null },
@@ -117,6 +117,8 @@ describe('admin_forums.php', () => {
 			save: '1',
 			forum_name: 'Technique',
 			forum_desc: '',
+			site_url: 'https://avrobb.example/',
+			repo_url: '',
 			cat_id: '1',
 			sort_by: '2',
 			'read_forum_old[3]': '1',
@@ -133,10 +135,20 @@ describe('admin_forums.php', () => {
 		});
 		expect(res.headers.location).toBe('admin_forums.php?done=saved');
 		expect(fake.forumAdminLog).toEqual([
-			'updateForum 7 {"name":"Technique","description":null,"redirectUrl":null,"sortBy":2,"categoryId":1}',
+			'updateForum 7 {"name":"Technique","description":null,"redirectUrl":null,"siteUrl":"https://avrobb.example/","repoUrl":null,"sortBy":2,"categoryId":1}',
 			'perm 7 3 {"readForum":true,"postReplies":true,"postTopics":false}',
 			'perm 7 4 null',
 		]);
+		const badLink = await post(server, 2, '/admin_forums.php?edit_forum=7', {
+			save: '1',
+			forum_name: 'Technique',
+			site_url: 'javascript:alert(1)',
+			cat_id: '1',
+			sort_by: '2',
+		});
+		expect(badLink.statusCode).toBe(400);
+		expect(badLink.body).toContain('Les liens du projet doivent être des adresses web complètes');
+		expect(fake.forumAdminLog).toHaveLength(3);
 		const reverted = await post(server, 2, '/admin_forums.php?edit_forum=7', { revert_perms: '1' });
 		expect(reverted.headers.location).toBe('admin_forums.php?edit_forum=7&done=reverted');
 	});

@@ -1,0 +1,8 @@
+{#- Liens d'un forum de projet (presenters/projectLinks.ts) : site et dépôt. -#}
+{% macro list(links, lang, modifier = '') %}
+{% if links.length %}
+<ul class="project-links{% if modifier %} project-links--{{ modifier }}{% endif %}" aria-label="{{ lang.common.projectLinks }}">
+	{% for link in links %}<li><a class="project-links__link" href="{{ link.href }}" rel="external noopener">{{ link.label }} <span class="project-links__host">{{ link.host }}</span></a></li>{% endfor %}
+</ul>
+{% endif %}
+{% endmacro %}

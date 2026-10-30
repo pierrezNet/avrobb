@@ -3,6 +3,7 @@
 {% import "partials/people.njk" as people %}
 {% import "partials/actions.njk" as actions %}
 {% import "partials/subject.njk" as subjectParts %}
+{% import "partials/projectLinks.njk" as projectLinks %}
 
 {% block main %}
 <h1 class="visually-hidden">{{ layout.boardTitle }}</h1>
@@ -27,6 +28,7 @@
 				</h3>
 				{#- forums.forum_desc : HTML saisi par l'administrateur, affiché tel quel comme dans index.php. #}
 				{% if forum.descriptionHtml %}<div class="forum-row__desc">{{ forum.descriptionHtml | safe }}</div>{% endif %}
+				{{ projectLinks.list(forum.links, lang) }}
 				{% if forum.moderators.length %}
 				<p class="forum-row__mods">(<em>{{ lang.index.moderatedBy }}</em> {% for moderator in forum.moderators %}{{ people.person(moderator) }}{% if not loop.last %}, {% endif %}{% endfor %})</p>
 				{% endif %}

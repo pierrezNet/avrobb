@@ -62,8 +62,18 @@ export function readForumPositions(fields: Fields): { id: number; position: numb
 }
 
 export type ForumDetailsForm =
-	| { kind: 'ok'; name: string; description: string | null; redirectUrl: string | null; sortBy: number; categoryId: number }
+	| {
+			kind: 'ok';
+			name: string;
+			description: string | null;
+			redirectUrl: string | null;
+			siteUrl: string | null;
+			repoUrl: string | null;
+			sortBy: number;
+			categoryId: number;
+	  }
 	| { kind: 'missingName' }
+	| { kind: 'badLink' }
 	| { kind: 'badRequest' };
 
 /** Détails du forum (admin_forums.php?edit_forum=…) ; l'URL de redirection n'est envoyée que pour un forum vide. */
@@ -73,16 +83,37 @@ export function readForumDetails(fields: Fields): ForumDetailsForm {
 	const categoryId = Number.parseInt(text(fields, 'cat_id'), 10);
 	const sortBy = Number.parseInt(text(fields, 'sort_by'), 10);
 	const redirectUrl = punTrim(text(fields, 'redirect_url'));
+	const siteUrl = projectLink(text(fields, 'site_url'));
+	const repoUrl = projectLink(text(fields, 'repo_url'));
 	if (name === '') return { kind: 'missingName' };
 	if (!(categoryId >= 1) || ![0, 1, 2].includes(sortBy)) return { kind: 'badRequest' };
+	if (siteUrl === undefined || repoUrl === undefined) return { kind: 'badLink' };
 	return {
 		kind: 'ok',
 		name,
 		description: description !== '' ? description : null,
 		redirectUrl: redirectUrl !== '' ? redirectUrl : null,
+		siteUrl,
+		repoUrl,
 		sortBy,
 		categoryId,
 	};
+}
+
+/**
+ * Lien d'un forum de projet (AvroBB) : vide → null ; sinon une adresse http(s) absolue (« www. »
+ * complété en https://), undefined si elle est refusée. Le lien est affiché à tous : aucun autre
+ * schéma (javascript:, ftp:…), pas d'identifiants dans l'adresse.
+ */
+function projectLink(input: string): string | null | undefined {
+	const value = punTrim(input);
+	if (value === '') return null;
+	const full = value.startsWith('www.') ? `https://${value}` : value;
+	if (full.length > 255 || /\s/.test(full) || !URL.canParse(full)) return undefined;
+	const url = new URL(full);
+	const valid =
+		(url.protocol === 'https:' || url.protocol === 'http:') && url.hostname.includes('.') && url.username === '' && url.password === '';
+	return valid ? full : undefined;
 }
 
 /** Valeurs d'un groupe : affichées à l'ouverture (*_old) et cochées à l'envoi (*_new) ; null si absentes. */

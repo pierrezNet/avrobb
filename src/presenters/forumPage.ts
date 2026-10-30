@@ -12,6 +12,7 @@ import { canPostTopic } from '../services/permissions.ts';
 import { type SubjectSegment, subjectSegments } from '../services/subjectTags.ts';
 import type { TrackedTopics } from '../services/trackedTopics.ts';
 import { type Crumb, crumbs, type PaginationLink, paginationLinks } from './navigation.ts';
+import { type ProjectLinkView, projectLinkViews } from './projectLinks.ts';
 import { topicUrl } from './topicPage.ts';
 
 /** Segment de sujet : texte simple ou pastille de balise colorée. */
@@ -39,7 +40,7 @@ export interface TopicRowView {
 }
 
 export interface ForumPageView {
-	forum: { id: number; name: string };
+	forum: { id: number; name: string; links: ProjectLinkView[] };
 	crumbs: Crumb[];
 	pagination: PaginationLink[];
 	postTopicUrl: string | null;
@@ -140,7 +141,7 @@ export function buildForumPage(input: ForumPageInput): ForumPageView {
 	const member = !viewer.isGuest;
 
 	return {
-		forum: { id: forum.id, name: forum.name },
+		forum: { id: forum.id, name: forum.name, links: projectLinkViews(forum.links, lang) },
 		crumbs: crumbs({ label: lang.common.index, href: 'index.php' }, { label: forum.name, href: forumUrl(forum.id) }),
 		pagination: paginationLinks(input.numPages, input.page, (page) => forumUrl(forum.id, page, input.age?.old ?? false)),
 		postTopicUrl: canPostTopic(viewer, forum) ? `post.php?fid=${forum.id}` : null,

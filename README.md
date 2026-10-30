@@ -95,6 +95,9 @@ Front-end : `public/css/base.css` (mobile d'abord) et un fichier de variables pa
   confirmation) ; enregistrer un forum qui contient des sujets conserve son URL de redirection (le
   PHP la vidait, le champ n'étant pas envoyé) ; une permission qui diffère du groupe est signalée
   « (modifié) » au lieu de la seule couleur.
+- Liens de projet (AvroBB) : chaque forum peut avoir un « Site du projet » et un « Dépôt » (colonnes
+  `forums.site_url` et `repo_url`, migration 0003), adresses http(s) uniquement, affichés en
+  pastilles sur l'index et en tête du forum.
 - Groupes (`admin_groups.php`) : erreurs réaffichées dans le formulaire ; la suppression ne se fait
   qu'en POST (le lien affiche la confirmation ou le choix du groupe d'accueil) ; les membres ne
   peuvent pas être déplacés vers les invités ; les valeurs oui/non sont enregistrées en 0/1 (le PHP

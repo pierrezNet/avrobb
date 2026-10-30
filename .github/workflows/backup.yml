@@ -1,0 +1,33 @@
+# Sauvegarde hebdomadaire de la base D1 distante, en plus de Time Travel (30 jours de retour arrière
+# sur l'offre payante) : export SQL compressé rangé dans le bucket R2 privé avrobb-backups (jamais en
+# artefact GitHub : la base contient des adresses e-mail). Restauration : voir README, « Sauvegardes ».
+name: Sauvegarde D1
+
+on:
+  schedule:
+    - cron: "23 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Export et envoi dans R2
+        run: |
+          name="avrobb-$(date -u +%Y-%m-%d).sql"
+          npx wrangler d1 export avrobb --remote --output "$name"
+          gzip -9 "$name"
+          npx wrangler r2 object put "avrobb-backups/d1/$name.gz" --file "$name.gz" --remote

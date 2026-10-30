@@ -20,7 +20,8 @@
 		"test:db": "node scripts/build.mjs && vitest run --config vitest.db.config.ts",
 		"db:migrate": "wrangler d1 migrations apply avrobb --local",
 		"db:seed:dev": "wrangler d1 execute avrobb --local --file scripts/dev-seed.sql",
-		"deploy": "node scripts/build.mjs && wrangler deploy"
+		"deploy": "node scripts/build.mjs && wrangler deploy",
+		"db:migrate:remote": "wrangler d1 migrations apply avrobb --remote"
 	},
 	"dependencies": {
 		"hono": "^4.13.14",

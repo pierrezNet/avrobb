@@ -15,7 +15,7 @@ Cible : **100 % Cloudflare**. Un Worker (Hono), D1 (SQLite), R2 (fichiers), Stat
 - `FAILLES_PHP.md` (non versionné) : failles du PHP d'origine, liste de contrôle à ne pas reproduire.
 - Projet voisin sur le même modèle (Workers + D1 + Hono) : `../donnetonpoint`.
 
-> **Transition en cours** : lots 1 à 6 bis terminés (héritage PV retiré, Hono, base D1, Worker et R2, SSO, images et e-mails, URL propres). Le forum tourne sous `wrangler dev`. Ce fichier décrit la **cible** : les cookies `__Host-`, la commande `npm run deploy` et le déploiement par GitHub Actions (lot 7) restent à faire.
+> **État** : lots 1 à 7 terminés côté code (héritage PV retiré, Hono, D1, Worker et R2, SSO, images et e-mails, URL propres, cache en bordure, CI et déploiement). Reste la mise en production (README, « Déploiement ») et le lot 8.
 
 ## Commandes
 
@@ -28,8 +28,8 @@ npm run typecheck  # tsc --noEmit (TypeScript strict)
 npm run lint       # Biome (lint + format, vérification seule)
 npm run format     # Biome : corrige le formatage et l'ordre des imports
 npm run check      # lint + typecheck + test : à lancer avant chaque commit
-npm run db:migrate # wrangler d1 migrations apply (base locale ; --remote au lot 7)
-npm run deploy     # build puis wrangler deploy (normalement fait par GitHub Actions)
+npm run db:migrate         # migrations sur la base locale ; db:migrate:remote pour la production
+npm run deploy     # build puis wrangler deploy (normalement fait par GitHub Actions sur main)
 npm run screenshot -- 'http://localhost:8787/viewtopic.php?id=4' --widths 320,375,768,1280
 ```
 

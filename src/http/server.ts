@@ -8,6 +8,7 @@ import type { Context, Hono } from 'hono';
 import type { BoardConfig, Viewer } from '../domain/models.ts';
 import type { FileStore } from '../repositories/FileStore.ts';
 import { AppReply, type AppReply as AppReplyType, type AppRequest, type Logger, parseCookieHeader, type RouteTypes } from './context.ts';
+import { PAGE_CACHE_CONTROL } from './edgeCache.ts';
 import { type FormBody, parseFormBody, readForm } from './forms.ts';
 import { securityHeaders } from './securityHeaders.ts';
 
@@ -146,6 +147,8 @@ export function useSecurityHeaders(app: ForumApp): void {
 		await next();
 		const response = new Response(c.res.body, c.res);
 		for (const [name, value] of Object.entries(securityHeaders(protocolOf(c) === 'https'))) response.headers.set(name, value);
+		// Pages : le navigateur revalide toujours (le cache en bordure des invités est dans edgeCache.ts).
+		if (!response.headers.has('cache-control')) response.headers.set('cache-control', PAGE_CACHE_CONTROL);
 		c.res = response;
 	});
 }

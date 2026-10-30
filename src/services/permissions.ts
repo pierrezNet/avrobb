@@ -47,7 +47,9 @@ export interface BannedWriteQuery {
  * et abonnements (misc.php hors e-mail et signalement). Rien qui publie.
  */
 export function canWriteWhileBanned(path: string, query: BannedWriteQuery): boolean {
-	return path === '/login.php' || (path === '/misc.php' && query.email === undefined && query.report === undefined);
+	return (
+		path === '/login.php' || path === '/connexion' || (path === '/misc.php' && query.email === undefined && query.report === undefined)
+	);
 }
 
 export function isAdmin(viewer: Viewer): boolean {

@@ -7,7 +7,7 @@
  */
 
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
-import type { CookieConfig } from '../config.ts';
+import { type CookieConfig, cookieName } from '../config.ts';
 import type { AppReply, AppRequest } from './context.ts';
 import { type FormBody, field } from './forms.ts';
 
@@ -15,12 +15,21 @@ import { type FormBody, field } from './forms.ts';
 export const CSRF_FIELD = 'csrf_token';
 
 export function csrfCookieName(cookie: CookieConfig): string {
-	return `${cookie.name}_csrf`;
+	return cookieName(cookie, 'csrf');
 }
 
 /** Jeton attendu dans les formulaires de ce navigateur pour ce visiteur. */
 export function csrfToken(browserSecret: string, appSecret: string, userId: number): string {
 	return createHmac('sha256', `${appSecret}|csrf`).update(`${browserSecret}|${userId}`).digest('hex');
+}
+
+/**
+ * Jeton du visiteur si son navigateur a déjà le cookie, sinon chaîne vide, sans rien poser : une
+ * page publique vue par un invité ne pose aucun cookie et peut être mise en cache en bordure.
+ */
+export function existingCsrfToken(request: AppRequest, cookie: CookieConfig, userId: number): string {
+	const secret = request.cookies[csrfCookieName(cookie)];
+	return secret !== undefined && /^[0-9a-f]{64}$/.test(secret) ? csrfToken(secret, cookie.secret, userId) : '';
 }
 
 /** Lit ou crée le secret du navigateur (cookie HttpOnly de session) et renvoie le jeton du visiteur. */

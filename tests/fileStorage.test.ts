@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { ScheduledTasks } from '../src/controllers/ScheduledTasks.ts';
-import { EDGE_TTL, type EdgeCache, withEdgeCache } from '../src/http/edgeCache.ts';
+import { EDGE_TTL, type EdgeCache, isEdgeCacheable, PAGE_CACHE_CONTROL, PAGE_TTL, withEdgeCache } from '../src/http/edgeCache.ts';
 import { AvatarFiles, avatarsDirectory } from '../src/repositories/AvatarFiles.ts';
 import { GalleryFiles } from '../src/repositories/GalleryFiles.ts';
 import { ORPHAN_MIN_AGE, orphanAvatarKeys, orphanGalleryKeys } from '../src/services/fileCleanup.ts';
@@ -174,6 +174,13 @@ describe('cache en bordure', () => {
 		};
 	}
 
+	const page =
+		(headers: Record<string, string> = {}) =>
+		async () =>
+			new Response('<p>page</p>', {
+				headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': PAGE_CACHE_CONTROL, ...headers },
+			});
+
 	it('fichiers /img/ en GET : gardés une heure en bordure, servis ensuite sans le Worker', async () => {
 		const cache = fakeCache();
 		const pending: Promise<unknown>[] = [];
@@ -182,32 +189,82 @@ describe('cache en bordure', () => {
 			calls += 1;
 			return new Response('image', { headers: { 'cache-control': 'public, max-age=604800' } });
 		};
-		const request = new Request('https://forum.test/img/gallery/1.jpg');
-		const first = await withEdgeCache(request, cache, (promise) => pending.push(promise), handler);
+		const request = new Request('https://forum.test/img/gallery/1.jpg', { headers: { cookie: 'avrobb_session=x' } });
+		const first = await withEdgeCache(request, cache, 'avrobb', (promise) => pending.push(promise), handler);
 		await Promise.all(pending);
 		expect(await first.text()).toBe('image');
 		expect(first.headers.get('cache-control')).toBe('public, max-age=604800');
 		expect(cache.stored.get(request.url)?.headers.get('cache-control')).toBe(`public, max-age=${EDGE_TTL}`);
-		expect(await (await withEdgeCache(request, cache, () => undefined, handler)).text()).toBe('image');
+		expect(await (await withEdgeCache(request, cache, 'avrobb', () => undefined, handler)).text()).toBe('image');
 		expect(calls).toBe(1);
 	});
 
-	it('pages, POST, erreurs et réponses avec cookie : jamais en cache', async () => {
+	it('page d’un visiteur sans cookie du forum : gardée une minute, le navigateur revalide toujours', async () => {
 		const cache = fakeCache();
-		const ok = async () => new Response('x', { headers: { 'cache-control': 'public, max-age=60' } });
-		await withEdgeCache(new Request('https://forum.test/index.php'), cache, () => undefined, ok);
-		await withEdgeCache(new Request('https://forum.test/img/a.png', { method: 'POST' }), cache, () => undefined, ok);
+		const pending: Promise<unknown>[] = [];
+		let calls = 0;
+		const handler = async () => {
+			calls += 1;
+			return page()();
+		};
+		const request = new Request('https://forum.test/sujet/4-vol', { headers: { cookie: 'autre=1' } });
+		const first = await withEdgeCache(request, cache, 'avrobb', (promise) => pending.push(promise), handler);
+		await Promise.all(pending);
+		expect(first.headers.get('cache-control')).toBe(PAGE_CACHE_CONTROL);
+		expect(cache.stored.get('https://forum.test/sujet/4-vol')?.headers.get('cache-control')).toBe(`public, max-age=${PAGE_TTL}`);
+		const second = await withEdgeCache(new Request('https://forum.test/sujet/4-vol'), cache, 'avrobb', () => undefined, handler);
+		expect(await second.text()).toBe('<p>page</p>');
+		expect(second.headers.get('cache-control')).toBe(PAGE_CACHE_CONTROL);
+		expect(calls).toBe(1);
+	});
+
+	it('membre, jeton CSRF ou suivi de lecture (préfixe __Host- compris) : ni servi par le cache, ni gardé', async () => {
+		const cache = fakeCache();
+		cache.stored.set('https://forum.test/', new Response('version invité'));
+		for (const cookie of ['avrobb_session=1', '__Host-avrobb_csrf=2', 'x=1; avrobb_track=3']) {
+			const request = new Request('https://forum.test/', { headers: { cookie } });
+			expect(isEdgeCacheable(request, 'avrobb'), cookie).toBe(false);
+			expect(
+				await (
+					await withEdgeCache(
+						request,
+						cache,
+						'avrobb',
+						() => undefined,
+						async () => new Response('membre'),
+					)
+				).text(),
+			).toBe('membre');
+		}
+		expect(cache.stored.size).toBe(1);
+	});
+
+	it('POST, erreurs, réponses qui posent un cookie ou interdites de cache : jamais gardées', async () => {
+		const cache = fakeCache();
+		const ok = page();
+		await withEdgeCache(new Request('https://forum.test/index.php', { method: 'POST', body: 'x' }), cache, 'avrobb', () => undefined, ok);
 		await withEdgeCache(
-			new Request('https://forum.test/img/b.png'),
+			new Request('https://forum.test/a'),
 			cache,
+			'avrobb',
 			() => undefined,
 			async () => new Response('', { status: 404 }),
 		);
+		await withEdgeCache(new Request('https://forum.test/b'), cache, 'avrobb', () => undefined, page({ 'set-cookie': 'avrobb_csrf=1' }));
+		await withEdgeCache(new Request('https://forum.test/c'), cache, 'avrobb', () => undefined, page({ 'cache-control': 'no-store' }));
 		await withEdgeCache(
-			new Request('https://forum.test/img/c.png'),
+			new Request('https://forum.test/d.json'),
 			cache,
+			'avrobb',
 			() => undefined,
-			async () => new Response('x', { headers: { 'cache-control': 'public', 'set-cookie': 'a=b' } }),
+			async () => Response.json({}),
+		);
+		await withEdgeCache(
+			new Request('https://forum.test/img/e.png'),
+			cache,
+			'avrobb',
+			() => undefined,
+			async () => new Response('x'),
 		);
 		expect(cache.stored.size).toBe(0);
 	});

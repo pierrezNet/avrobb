@@ -6,7 +6,11 @@
 import type { OAuthCredentials } from './adapters/oauth.ts';
 import { type OAuthProviderId, parseAdminAccounts } from './services/oauth.ts';
 
-/** Cookies du forum : `<name>_session`, `<name>_csrf`, `<name>_track`, tous sur le chemin /. */
+/**
+ * Cookies du forum : `<name>_session`, `<name>_csrf`, `<name>_track`, tous sur le chemin /. En HTTPS,
+ * préfixés de `__Host-` (Secure, chemin /, sans Domain : ni un sous-domaine ni une page en HTTP ne
+ * peuvent les poser ou les écraser) ; voir cookieName().
+ */
 export interface CookieConfig {
 	name: string;
 	/** Secret des signatures (session, jeton CSRF) : SESSION_SECRET, au moins 32 caractères. */
@@ -27,6 +31,16 @@ export interface AppConfig {
 	adminAccounts: ReadonlySet<string>;
 	/** Envoi des e-mails par Resend (RESEND_API_KEY, MAIL_FROM) ; null : e-mails seulement journalisés. */
 	mail: { apiKey: string; from: string } | null;
+}
+
+/**
+ * Nom complet d'un cookie du forum. `__Host-` exige Secure et le chemin / ; un cookie limité à un
+ * chemin (connexion SSO, /auth/) prend `__Secure-`.
+ */
+export function cookieName(cookie: CookieConfig, suffix: string, rootPath = true): string {
+	const name = `${cookie.name}_${suffix}`;
+	if (!cookie.secure) return name;
+	return rootPath ? `__Host-${name}` : `__Secure-${name}`;
 }
 
 /** Variables texte du Worker (les liaisons D1, R2… sont à côté, ignorées ici). */

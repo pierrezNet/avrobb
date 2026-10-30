@@ -10,8 +10,9 @@ schéma FluxBB. Cible : **Cloudflare** (Workers, D1, R2). Le plan de portage est
 
 ## État actuel
 
-Lots 1 à 6 bis terminés (retrait de l'héritage PV, Hono et gabarits précompilés, base D1, Worker et
-R2, connexion SSO, images et e-mails, URL propres). L'application est un **Worker Cloudflare** (`src/worker.ts`), lancé en local par
+Lots 1 à 7 terminés côté code (retrait de l'héritage PV, Hono et gabarits précompilés, base D1,
+Worker et R2, connexion SSO, images et e-mails, URL propres, cache en bordure et déploiement
+automatique) ; la mise en production suit la section « Déploiement ». L'application est un **Worker Cloudflare** (`src/worker.ts`), lancé en local par
 `wrangler dev` avec D1 et R2 locaux (`.wrangler/state`). Comptes par **GitHub** (Google en option) :
 créer une application OAuth (URL de retour `http://localhost:8787/auth/github/callback`) et
 renseigner `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` et `ADMIN_ACCOUNTS` dans `.dev.vars`. La
@@ -44,6 +45,42 @@ servi par le Worker sous `/img/` avec ETag et cache en bordure d'une heure. Tant
 bannière n'a été envoyé, l'en-tête affiche ceux d'AvroBB (`public/assets/img/`, régénérés par
 `scripts/brand.py`). Une tâche planifiée nocturne (`triggers` de `wrangler.jsonc`) purge la table
 `online` et efface les fichiers orphelins ; en local : `curl 'http://localhost:8787/cdn-cgi/handler/scheduled'`.
+
+## Déploiement
+
+Une fois pour toutes (compte Cloudflare sur l'offre **Workers Paid**, `npx wrangler login`) :
+
+1. Base et fichiers : `npx wrangler d1 create avrobb --location weur` (copier l'identifiant dans
+   `wrangler.jsonc`, `database_id`), `npx wrangler r2 bucket create avrobb-files`,
+   `npx wrangler r2 bucket create avrobb-backups` (sauvegardes, privé).
+2. Schéma : `npm run db:migrate:remote`.
+3. Secrets : `npx wrangler secret put` pour `SESSION_SECRET` (`openssl rand -hex 32`),
+   `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`,
+   `ADMIN_ACCOUNTS` (`github:…,google:…`), `RESEND_API_KEY`, `MAIL_FROM`.
+4. Domaine : décommenter `routes` dans `wrangler.jsonc` avec le nom choisi (zone gérée par ce compte
+   Cloudflare ; HTTPS et certificat automatiques).
+5. Premier déploiement : `npm run deploy`, puis l'adresse du forum dans la base :
+   `npx wrangler d1 execute avrobb --remote --command "UPDATE config SET conf_value = 'https://forum.example.org' WHERE conf_name = 'o_base_url'"`.
+6. Applications OAuth de production (GitHub : nouvelle application ; Google : ajouter l'URI) avec
+   l'adresse de retour `https://<domaine>/auth/github/callback` (et `/auth/google/callback`).
+7. GitHub : secrets `CLOUDFLARE_API_TOKEN` (jeton limité au compte : Workers Scripts, D1, Workers R2
+   Storage, en écriture) et `CLOUDFLARE_ACCOUNT_ID` dans l'environnement `production` du dépôt.
+
+Ensuite, chaque envoi sur `main` passe `npm run check` et `npm run test:db`, applique les
+migrations à la base distante puis déploie (`.github/workflows/ci.yml`). Une migration doit rester
+compatible avec la version en ligne : ajouter une colonne, puis ne la retirer que plus tard.
+
+**Sauvegardes** : D1 Time Travel (retour à n'importe quelle minute des 30 derniers jours,
+`npx wrangler d1 time-travel restore avrobb --timestamp …`) et export hebdomadaire compressé dans le
+bucket `avrobb-backups` (`.github/workflows/backup.yml`). Restaurer un export : le décompresser puis
+`npx wrangler d1 execute avrobb --remote --file avrobb-AAAA-MM-JJ.sql` sur une base vide.
+
+**Suivi** : journaux et métriques dans le tableau de bord Cloudflare (Workers → avrobb →
+Observabilité), ou `npx wrangler tail`. Une page doit rester sous ~50 ms de CPU.
+
+**Cache en bordure** : les pages vues sans aucun cookie du forum sont gardées 60 s en bordure
+(`src/http/edgeCache.ts`), les fichiers envoyés une heure. Un invité ne reçoit de cookie que sur les
+pages de formulaire (connexion). Les cookies prennent le préfixe `__Host-` en HTTPS.
 
 ## Organisation
 

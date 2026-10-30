@@ -4,7 +4,7 @@
  * (check_bans()) et purge des présents (update_users_online()).
  */
 
-import type { CookieConfig } from '../config.ts';
+import { type CookieConfig, cookieName } from '../config.ts';
 import { type BoardConfig, GroupId, GUEST_USER_ID, type Viewer } from '../domain/models.ts';
 import type { BanReader, BanWriter } from '../repositories/BanRepository.ts';
 import type { OnlineWriter } from '../repositories/OnlineRepository.ts';
@@ -31,11 +31,11 @@ export interface SessionOptions {
 export type SessionBlock = { kind: 'maintenance' } | { kind: 'banned'; expire: number | null; message: string };
 
 export function sessionCookieName(cookie: CookieConfig): string {
-	return `${cookie.name}_session`;
+	return cookieName(cookie, 'session');
 }
 
 export function trackCookieName(cookie: CookieConfig): string {
-	return `${cookie.name}_track`;
+	return cookieName(cookie, 'track');
 }
 
 /** Pose un cookie du forum (HttpOnly, SameSite=Lax, chemin /) ; durée de vie comme forum_setcookie(). */
@@ -76,7 +76,8 @@ export function setSessionCookie(
 }
 
 export function clearSessionCookie(reply: AppReply, deps: Pick<SessionDeps, 'cookie'>): void {
-	reply.clearCookie(sessionCookieName(deps.cookie), { path: '/' });
+	// Secure aussi à l'effacement : sinon le navigateur refuse l'en-tête d'un cookie __Host-.
+	reply.clearCookie(sessionCookieName(deps.cookie), { path: '/', secure: deps.cookie.secure, httpOnly: true, sameSite: 'lax' });
 }
 
 /** set_tracked_topics(null) : vide le cookie de suivi des sujets lus. */

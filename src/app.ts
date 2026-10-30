@@ -48,10 +48,11 @@ import { TopicController, type TopicQuery } from './controllers/TopicController.
 import { UserlistController, type UserlistParams } from './controllers/UserlistController.ts';
 import type { BoardConfig, Viewer } from './domain/models.ts';
 import type { AppReply, AppRequest, Logger } from './http/context.ts';
-import { ensureCsrfToken, isValidCsrf } from './http/csrf.ts';
+import { ensureCsrfToken, existingCsrfToken, isValidCsrf } from './http/csrf.ts';
 import { type FormBody, FormError } from './http/forms.ts';
 import { type LayoutDeps, renderBlock, renderMessage, renderMinimalMessage } from './http/layout.ts';
 import { silentLogger } from './http/log.ts';
+import { rateLimited } from './http/rateLimit.ts';
 import { createRouter, type ForumApp, type Router, serveStoredFiles, useSecurityHeaders } from './http/server.ts';
 import { checkAccess, purgeOnline, type SessionDeps, startSession, trackCookieName as trackCookieOf } from './http/session.ts';
 import { createViews, type PrecompiledTemplates } from './http/views.ts';
@@ -111,8 +112,10 @@ export interface AppDeps extends Omit<LayoutDeps, 'views'>, SessionDeps {
 	adminAccounts: ReadonlySet<string>;
 	/** Comptes SSO : création, sessions, suppression par le membre. */
 	accountStore: AccountStore;
-	/** Liaison Rate Limiting de Workers sur /auth/* ; absente dans les tests. */
+	/** Liaisons Rate Limiting de Workers ; absentes dans les tests. Connexion (/auth/*), écritures, recherche. */
 	authRateLimiter?: RateLimiter;
+	writeRateLimiter?: RateLimiter;
+	searchRateLimiter?: RateLimiter;
 	mailTemplates: MailTemplateReader;
 	mailer: Mailer;
 	profiles: ProfileReader;
@@ -201,13 +204,25 @@ export async function buildApp(input: AppDeps): Promise<ForumApp> {
 	// Équivalent de common.php : réglages, visiteur et présence, maintenance, bannissements. Déclaré
 	// par route (et non globalement) pour que les fichiers statiques ne coûtent aucune requête SQL.
 	const session =
-		(options: { quiet?: boolean | ((request: AppRequest) => boolean); allowDuringMaintenance?: boolean } = {}) =>
+		(
+			options: {
+				quiet?: boolean | ((request: AppRequest) => boolean);
+				allowDuringMaintenance?: boolean;
+				/** La page présente un formulaire POST à un invité (connexion, rédaction) : cookie CSRF posé. */
+				guestForms?: boolean;
+			} = {},
+		) =>
 		async (request: AppRequest, reply: AppReply): Promise<AppReply | undefined> => {
 			const now = deps.page.clock();
 			request.board = await deps.config.load();
 			const quiet = typeof options.quiet === 'function' ? options.quiet(request) : (options.quiet ?? false);
 			request.viewer = await startSession(request, reply, deps, request.board, now, { quiet });
-			request.csrfToken = ensureCsrfToken(request, reply, deps.cookie, request.viewer.id);
+			// Un invité ne reçoit le cookie CSRF que là où il peut envoyer un formulaire : les autres pages
+			// publiques ne posent aucun cookie et peuvent être mises en cache en bordure (worker.ts).
+			request.csrfToken =
+				!request.viewer.isGuest || options.guestForms === true
+					? ensureCsrfToken(request, reply, deps.cookie, request.viewer.id)
+					: existingCsrfToken(request, deps.cookie, request.viewer.id);
 
 			const block = await checkAccess(request, deps, request.viewer, request.board, now, options.allowDuringMaintenance ?? false);
 			// Banni : lecture seule (AvroBB) ; les écritures sont refusées par verifyCsrf.
@@ -231,6 +246,9 @@ export async function buildApp(input: AppDeps): Promise<ForumApp> {
 		return undefined;
 	};
 	const quietSession = session({ quiet: true });
+	// Limitation de débit (liaisons Rate Limiting) : écritures (messages, fichiers, profil, MP) et recherche.
+	const writeLimit = rateLimited(deps.writeRateLimiter, 'write', deps);
+	const searchLimit = rateLimited(deps.searchRateLimiter, 'search', deps);
 
 	router.notFound([authenticate], async (request, reply) => renderMessage(request, reply, deps, 404, deps.page.lang.common.badRequest));
 
@@ -249,7 +267,7 @@ export async function buildApp(input: AppDeps): Promise<ForumApp> {
 	router.get<{ Querystring: ForumQuery }>('/viewforum.php', [authenticate], forums.show);
 
 	const search = new SearchController({ ...deps, trackCookieName });
-	router.get<{ Querystring: SearchQuery }>('/search.php', [authenticate], search.show);
+	router.get<{ Querystring: SearchQuery }>('/search.php', [authenticate, searchLimit], search.show);
 
 	const userlist = new UserlistController(deps);
 	router.get<{ Querystring: UserlistParams }>('/userlist.php', [authenticate], userlist.show);
@@ -259,11 +277,15 @@ export async function buildApp(input: AppDeps): Promise<ForumApp> {
 
 	const gallery = new GalleryController(deps);
 	router.get<{ Querystring: GalleryQuery }>('/gallery.php', [authenticate], gallery.show);
-	router.post<{ Querystring: GalleryQuery; Body: FormBody }>('/gallery.php', [authenticate, verifyCsrf], gallery.submit);
+	router.post<{ Querystring: GalleryQuery; Body: FormBody }>('/gallery.php', [authenticate, verifyCsrf, writeLimit], gallery.submit);
 
 	// login.php : visite discrète dès qu'une action est demandée (PUN_QUIET_VISIT), et accessible en
 	// maintenance pour qu'un administrateur puisse se connecter.
-	const loginSession = session({ quiet: (request) => (request.query as LoginQuery).action !== undefined, allowDuringMaintenance: true });
+	const loginSession = session({
+		quiet: (request) => (request.query as LoginQuery).action !== undefined,
+		allowDuringMaintenance: true,
+		guestForms: true,
+	});
 	const login = new LoginController(deps);
 	router.get<{ Querystring: LoginQuery }>('/login.php', [loginSession], login.show);
 	router.post<{ Querystring: LoginQuery; Body: FormBody }>('/login.php', [loginSession, verifyCsrf], (request, reply) => {
@@ -304,7 +326,7 @@ export async function buildApp(input: AppDeps): Promise<ForumApp> {
 
 	const profiles = new ProfileController(deps);
 	router.get<{ Querystring: ProfileQuery }>('/profile.php', [authenticate], profiles.show);
-	router.post<{ Querystring: ProfileQuery; Body: FormBody }>('/profile.php', [authenticate, verifyCsrf], profiles.submit);
+	router.post<{ Querystring: ProfileQuery; Body: FormBody }>('/profile.php', [authenticate, verifyCsrf, writeLimit], profiles.submit);
 
 	const moderate = new ModerateController({ ...deps, trackCookieName });
 	router.get<{ Querystring: ModerateQuery }>('/moderate.php', [authenticate], moderate.show);
@@ -395,17 +417,22 @@ export async function buildApp(input: AppDeps): Promise<ForumApp> {
 
 	const pmSend = new PrivateMessageSendController(deps);
 	router.get<{ Querystring: PrivateMessageSendQuery }>('/pms_send.php', [authenticate], pmSend.form);
-	router.post<{ Querystring: PrivateMessageSendQuery; Body: FormBody }>('/pms_send.php', [authenticate, verifyCsrf], pmSend.send);
+	router.post<{ Querystring: PrivateMessageSendQuery; Body: FormBody }>(
+		'/pms_send.php',
+		[authenticate, verifyCsrf, writeLimit],
+		pmSend.send,
+	);
 
 	const post = new PostController({ ...deps, trackCookieName });
-	router.get<{ Querystring: PostQuery }>('/post.php', [authenticate], post.show);
-	router.post<{ Querystring: PostQuery; Body: FormBody }>('/post.php', [authenticate, verifyCsrf], (request, reply) =>
+	// Rédaction : formulaire présenté à un invité si son groupe peut écrire (désactivé dans AvroBB).
+	router.get<{ Querystring: PostQuery }>('/post.php', [session({ guestForms: true })], post.show);
+	router.post<{ Querystring: PostQuery; Body: FormBody }>('/post.php', [authenticate, verifyCsrf, writeLimit], (request, reply) =>
 		request.query.brouillon !== undefined ? post.publishDraft(request, reply) : post.submit(request, reply),
 	);
 
 	const edit = new EditController(deps);
 	router.get<{ Querystring: EditQuery }>('/edit.php', [authenticate], edit.show);
-	router.post<{ Querystring: EditQuery; Body: FormBody }>('/edit.php', [authenticate, verifyCsrf], edit.submit);
+	router.post<{ Querystring: EditQuery; Body: FormBody }>('/edit.php', [authenticate, verifyCsrf, writeLimit], edit.submit);
 
 	const drafts = new DraftController(deps);
 	router.get<{ Querystring: DraftQuery }>('/draft_list.php', [authenticate], drafts.list);

@@ -11,10 +11,11 @@
 
 import type { OAuthClient, OAuthCredentials } from '../adapters/oauth.ts';
 import { createPkce, randomState } from '../adapters/oauth.ts';
-import type { CookieConfig } from '../config.ts';
+import { type CookieConfig, cookieName } from '../config.ts';
 import { GroupId } from '../domain/models.ts';
 import type { AppReply, AppRequest } from '../http/context.ts';
 import { type LayoutDeps, renderMessage } from '../http/layout.ts';
+import type { RateLimiter } from '../http/rateLimit.ts';
 import { setForumCookie, setSessionCookie, trackCookieName } from '../http/session.ts';
 import type { AccountStore } from '../repositories/AccountRepository.ts';
 import type { BanReader } from '../repositories/BanRepository.ts';
@@ -37,10 +38,7 @@ import {
 } from '../services/oauth.ts';
 import { safeRedirect } from '../services/redirects.ts';
 
-/** Liaison Rate Limiting de Workers (sous-ensemble). */
-export interface RateLimiter {
-	limit(options: { key: string }): Promise<{ success: boolean }>;
-}
+export type { RateLimiter } from '../http/rateLimit.ts';
 
 export interface AuthControllerDeps extends LayoutDeps {
 	oauthClient: OAuthClient;
@@ -74,7 +72,7 @@ export class AuthController {
 	constructor(private readonly deps: AuthControllerDeps) {}
 
 	stateCookieName(): string {
-		return `${this.deps.cookie.name}_oauth`;
+		return cookieName(this.deps.cookie, 'oauth', false);
 	}
 
 	start = async (request: AuthRequest, reply: AppReply, provider: OAuthProviderId): Promise<AppReply> => {
@@ -117,7 +115,12 @@ export class AuthController {
 			now,
 		});
 		// Une tentative ne sert qu'une fois, réussie ou non.
-		reply.clearCookie(this.stateCookieName(), { path: STATE_COOKIE_PATH });
+		reply.clearCookie(this.stateCookieName(), {
+			path: STATE_COOKIE_PATH,
+			secure: this.deps.cookie.secure,
+			httpOnly: true,
+			sameSite: 'lax',
+		});
 		if (request.query.error !== undefined) return renderMessage(request, reply, this.deps, 200, lang.login.ssoCancelled);
 		if (attempt === null || request.query.code === undefined || request.query.code === '')
 			return renderMessage(request, reply, this.deps, 400, lang.login.ssoExpired);

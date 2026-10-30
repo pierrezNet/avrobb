@@ -8,6 +8,7 @@
  * calculé au chargement du module.
  */
 
+import type { ExecutionContext } from 'hono';
 import { createAssetUrl } from './adapters/assetUrls.ts';
 import { DohHostResolver } from './adapters/hostResolver.ts';
 import { LogMailer, ResendMailer } from './adapters/mailer.ts';
@@ -77,6 +78,9 @@ export interface Env {
 	ASSETS: AssetsBinding;
 	/** Limite de tentatives de connexion SSO (liaison Rate Limiting). */
 	AUTH_LIMITER?: RateLimiter;
+	/** Écritures (messages, fichiers, profil, MP) et recherche. */
+	WRITE_LIMITER?: RateLimiter;
+	SEARCH_LIMITER?: RateLimiter;
 	SESSION_SECRET?: string;
 	COOKIE_SECURE?: string;
 	DEV_LOGIN?: string;
@@ -90,15 +94,15 @@ export interface Env {
 	MAIL_FROM?: string;
 }
 
-/** Sous-ensemble d'ExecutionContext. */
-interface ExecutionContextLike {
-	waitUntil(promise: Promise<unknown>): void;
-}
+/** Sous-ensemble d'ExecutionContext (celui de Hono : waitUntil, passThroughOnException). */
+type ExecutionContextLike = ExecutionContext;
 
 /** Cache par défaut de Cloudflare (absent des types de la bibliothèque standard). */
 declare const caches: { default: EdgeCache };
 
 const clock = (): number => Math.floor(Date.now() / 1000);
+/** Préfixe des cookies du forum (config.ts, CookieConfig.name) : un visiteur qui en porte un n'est pas servi par le cache. */
+const COOKIE_PREFIX = 'avrobb';
 
 /** Dépendances partagées par les requêtes d'un isolat (caches courts de la configuration, des avatars…). */
 interface Services {
@@ -156,6 +160,8 @@ async function createApp(env: Env, services: Services): Promise<ForumApp> {
 		adminAccounts: config.adminAccounts,
 		accountStore: new AccountRepository(db),
 		...(env.AUTH_LIMITER !== undefined ? { authRateLimiter: env.AUTH_LIMITER } : {}),
+		...(env.WRITE_LIMITER !== undefined ? { writeRateLimiter: env.WRITE_LIMITER } : {}),
+		...(env.SEARCH_LIMITER !== undefined ? { searchRateLimiter: env.SEARCH_LIMITER } : {}),
 		mailTemplates: { load: async (name) => mail[name] },
 		mailer: config.mail !== null ? new ResendMailer(config.mail.apiKey, config.mail.from) : new LogMailer(consoleLogger),
 		profiles: users,
@@ -230,8 +236,10 @@ export default {
 		return withEdgeCache(
 			request,
 			caches.default,
+			COOKIE_PREFIX,
 			(promise) => ctx.waitUntil(promise),
-			async () => forum.fetch(request, {}),
+			// Le contexte d'exécution passe à Hono : request.waitUntil (envoi des e-mails après la réponse).
+			async () => forum.fetch(request, {}, ctx),
 		);
 	},
 

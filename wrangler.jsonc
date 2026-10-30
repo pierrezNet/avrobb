@@ -18,7 +18,7 @@
 		{
 			"binding": "DB",
 			"database_name": "avrobb",
-			// Identifiant de la base distante, à renseigner au lot 7 (wrangler d1 create avrobb).
+			// Identifiant de la base distante, donné par « wrangler d1 create avrobb --location weur » (README, Déploiement).
 			"database_id": "00000000-0000-0000-0000-000000000000",
 			"migrations_dir": "migrations"
 		}
@@ -30,9 +30,16 @@
 	// Production : cookies Secure, connexion de développement toujours refusée (config.ts).
 	// Secrets : SESSION_SECRET, GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET (et GOOGLE_* en option), ADMIN_ACCOUNTS.
 	"vars": { "COOKIE_SECURE": "1", "ENVIRONMENT": "production" },
-	// Tentatives de connexion SSO : 10 par minute et par adresse IP (controllers/AuthController.ts).
-	"ratelimits": [{ "name": "AUTH_LIMITER", "namespace_id": "1001", "simple": { "limit": 10, "period": 60 } }],
+	// Limitation de débit par minute : connexion SSO par adresse IP (controllers/AuthController.ts),
+	// écritures (messages, fichiers, profil, MP) et recherche par membre ou adresse (http/rateLimit.ts).
+	"ratelimits": [
+		{ "name": "AUTH_LIMITER", "namespace_id": "1001", "simple": { "limit": 10, "period": 60 } },
+		{ "name": "WRITE_LIMITER", "namespace_id": "1002", "simple": { "limit": 20, "period": 60 } },
+		{ "name": "SEARCH_LIMITER", "namespace_id": "1003", "simple": { "limit": 30, "period": 60 } }
+	],
 	"observability": { "enabled": true },
+	// Domaine du forum (README, Déploiement) : à décommenter avec le vrai nom, dans une zone de ce compte.
+	// "routes": [{ "pattern": "forum.example.org", "custom_domain": true }],
 	// Port fixe : o_base_url et l'URL de retour OAuth (http://localhost:8787/auth/github/callback) en
 	// dépendent ; un port occupé doit être une erreur, pas un glissement silencieux vers 8788.
 	"dev": { "port": 8787 }

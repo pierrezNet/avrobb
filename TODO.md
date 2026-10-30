@@ -177,15 +177,18 @@ Vigilance :
 - [x] Anciennes adresses : **pas de redirection** (décidé : rien n'est encore publié). Elles restent servies sous les mêmes routes, mais plus aucun lien ne les produit, `robots.txt` les exclut et l'URL canonique désigne l'adresse propre
 - [x] `robots.txt`, `sitemap.xml` (avec slugs), URL canoniques, tests (dont l'exploration des liens internes)
 
-## Lot 7 — Déploiement : Wrangler, GitHub Actions, domaine, cache · 2 jours
+## Lot 7 — Déploiement : Wrangler, GitHub Actions, domaine, cache · 2 jours · code terminé le 2026-10-30
 
-- [ ] Ressources Cloudflare : base D1 (région Europe), bucket R2, Worker, secrets (`SESSION_SECRET`, identifiants OAuth, clé Resend)
-- [ ] GitHub Actions : `npm run check` et `test:db` sur chaque push et PR ; sur `main`, `wrangler d1 migrations apply --remote` puis `wrangler deploy` (jeton d'API limité au compte et aux ressources du projet, en secret du dépôt)
-- [ ] Domaine personnalisé sur le Worker, HTTPS, HSTS
-- [ ] **Cache en bordure** : middleware Cache API pour les `GET` sans cookie de session, durée courte (60 s), en-tête `Cache-Control` adapté ; aucune réponse avec `Set-Cookie` mise en cache ; vérifier qu'aucune page publique ne pose de cookie
-- [ ] Observabilité : journaux Workers activés, alerte en cas d'erreurs, mesure du CPU par page
-- [ ] Sauvegardes : D1 Time Travel (30 jours sur Paid) ; export hebdomadaire par une Action (`wrangler d1 export`, sans la table FTS5, recréée à la restauration) vers un artefact privé ou R2
-- [ ] Limitation de débit (liaison Rate Limiting) sur connexion, publication, envoi de fichiers et recherche
+- [x] **Cache en bordure** (`http/edgeCache.ts`) : pages `GET` d'un visiteur sans aucun cookie du forum gardées 60 s, fichiers une heure ; aucune réponse avec `Set-Cookie`, `no-store` ou en erreur gardée ; le navigateur revalide toujours une page (`private, no-cache`). Un invité ne reçoit plus le cookie CSRF que sur les pages de formulaire (connexion, rédaction) ; testé
+- [x] Cookies `__Host-` en HTTPS (`__Secure-` pour le cookie d'état OAuth, limité à `/auth/`), effacés avec `Secure`
+- [x] Limitation de débit (liaisons Rate Limiting) : connexion SSO (10/min par IP), écritures — messages, fichiers, profil, MP — (20/min par membre) et recherche (30/min par membre ou IP)
+- [x] Contexte d'exécution transmis à Hono : `request.waitUntil` (e-mails après la réponse) fonctionne dans le Worker
+- [x] GitHub Actions (`.github/workflows/ci.yml`) : `npm run check` et `test:db` à chaque envoi et PR ; sur `main`, migrations D1 distantes puis `npm run deploy`, dans l'environnement `production`
+- [x] Sauvegardes : D1 Time Travel, et export hebdomadaire compressé vers le bucket privé `avrobb-backups` (`.github/workflows/backup.yml`, jamais en artefact GitHub)
+- [x] Observabilité activée (`wrangler.jsonc`), procédure de suivi dans le README
+- [x] Membre banni : la déconnexion par `/connexion` (adresse propre) reste permise
+- [ ] **À faire par Emmanuel** (README, « Déploiement ») : base D1 (`--location weur`) et buckets R2, `database_id`, secrets, domaine dans `routes`, `o_base_url`, applications OAuth de production, jeton Cloudflare et secrets du dépôt GitHub
+- [ ] Alerte en cas d'erreurs (notifications Cloudflare sur le taux d'erreur du Worker) et mesure du CPU par page, une fois en ligne
 
 Vigilance :
 - Le jeton Cloudflare de la CI ne doit pas pouvoir toucher d'autres zones ou comptes.
@@ -210,7 +213,7 @@ Vigilance :
   - Workers AI : modèle de traduction (`@cf/meta/m2m100-1.2b`) ou un LLM pour un meilleur rendu, dans le forfait Workers Paid (10 000 neurones par jour gratuits) ;
   - traduire **une fois à l'écriture** (`waitUntil`), garder la traduction en base (table `post_translations` : message, langue, texte, empreinte du source pour invalider à l'édition), jamais à chaque affichage ;
   - langue détectée à l'écriture, BBCode protégé (traduire le texte entre les balises, pas les balises ni les citations de code) ;
-  - affichage dans la langue du lecteur (`Accept-Language` ou préférence du profil) avec « Voir l'original » ; URL distinctes par langue (`/en/topic/4-…`) et `hreflang` pour le référencement ;
+  - affichage dans la langue du lecteur (`Accept-Language` ou préférence du profil) avec « Voir l'original » ; français sans préfixe (`/sujet/4-premier-sujet`, inchangé), anglais sous `/en/` avec des mots anglais (`/en/topic/4-first-subject`, `/en/member/3`) : le mot seul ne suffit pas (`/forum`, `/message`, `/faq` sont identiques) ; `hreflang` entre les deux versions ;
   - interface : `src/lang/en/` à écrire (tous les textes sont déjà centralisés dans `src/lang/fr/`) ;
   - mention « traduit automatiquement » sur chaque message traduit.
     Estimation : 4 à 6 jours après la mise en ligne.

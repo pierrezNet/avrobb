@@ -14,6 +14,7 @@ export const common = {
 
 	// Avis
 	badRequest: 'Erreur. Le lien que vous avez suivi est incorrect ou périmé.',
+	tooManyRequests: 'Trop de demandes en peu de temps. Patientez une minute avant de recommencer.',
 	noView: "Vous n'êtes pas autorisé(e) à visiter ces forums.",
 	badCsrf: "Mauvais hachage CSRF. Vous avez été renvoyé vers cette page à partir d'une source non autorisée.",
 	noPermission: "Vous n'êtes pas autorisé(e) à afficher cette page.",

@@ -19,7 +19,7 @@ const cookies = (userId: number): string => `${sessionCookie(userId)}; avrobb_cs
 let app: FastifyInstance | undefined;
 afterEach(async () => app?.close());
 
-async function start(): Promise<{ server: FastifyInstance; fake: FakeData; invalidated: string[] }> {
+async function start(): Promise<{ server: FastifyInstance; fake: FakeData }> {
 	const fake: FakeData = {
 		users: [{ viewer: guest }, { viewer: mod }, { viewer: admin }],
 		topics: [],
@@ -46,18 +46,8 @@ async function start(): Promise<{ server: FastifyInstance; fake: FakeData; inval
 			],
 		},
 	};
-	const invalidated: string[] = [];
-	app = await buildApp(
-		fakeDeps(fake, {
-			phpCache: {
-				version: async () => null,
-				read: async () => null,
-				invalidate: async () => {},
-				invalidateFamily: async (family) => void invalidated.push(family),
-			},
-		}),
-	);
-	return { server: app, fake, invalidated };
+	app = await buildApp(fakeDeps(fake));
+	return { server: app, fake };
 }
 
 const get = (server: FastifyInstance, userId: number, url: string) => server.inject({ url, headers: { cookie: cookies(userId) } });
@@ -85,7 +75,7 @@ describe('admin_categories.php', () => {
 	});
 
 	it('suppression après confirmation, mise à jour des noms et positions', async () => {
-		const { server, fake, invalidated } = await start();
+		const { server, fake } = await start();
 		const confirm = await post(server, 2, '/admin_categories.php', { del_cat: '1', cat_to_delete: '2' });
 		expect(confirm.body).toContain('name="del_cat_comply"');
 		expect(confirm.body).toContain('Ateliers');
@@ -94,7 +84,6 @@ describe('admin_categories.php', () => {
 		expect(bad.body).toContain('nombre entier positif');
 		await post(server, 2, '/admin_categories.php', { update: '1', 'cat[1][name]': 'Simus', 'cat[1][order]': '3' });
 		expect(fake.forumAdminLog).toEqual(['deleteCategory 2', 'updateCategories 1:Simus:3']);
-		expect(invalidated).toEqual(['quickjump', 'quickjump']);
 	});
 });
 

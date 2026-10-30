@@ -67,7 +67,7 @@ describe('règles AvroBB', () => {
 	});
 
 	it('logo et bannière : version dans l’adresse après un remplacement', () => {
-		expect(headerImageHref('logo', 0)).toBe('img/logo.png');
-		expect(headerImageHref('banner', 42)).toBe('style/imports/img/banner.jpg?v=42');
+		expect(headerImageHref('logo', 0)).toBe('/img/logo.png');
+		expect(headerImageHref('banner', 42)).toBe('/img/banner.jpg?v=42');
 	});
 });

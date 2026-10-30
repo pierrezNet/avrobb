@@ -1,6 +1,6 @@
 /**
  * En-têtes de sécurité (http/securityHeaders.ts) : CSP sans script en ligne, vidéos autorisées,
- * formulaires vers l'installation PHP, HSTS seulement en HTTPS ; présents sur toutes les réponses.
+ * formulaires vers le forum seulement, HSTS seulement en HTTPS ; présents sur toutes les réponses.
  */
 
 import type { FastifyInstance } from 'fastify';
@@ -14,18 +14,17 @@ afterEach(async () => app?.close());
 
 describe('en-têtes de sécurité', () => {
 	it('politique de contenu', () => {
-		const csp = contentSecurityPolicy('http://php.test/forum');
+		const csp = contentSecurityPolicy();
 		expect(csp).toContain("script-src 'self';");
 		expect(csp).not.toMatch(/script-src[^;]*unsafe/);
 		expect(csp).toContain("frame-src 'self' https://www.youtube-nocookie.com https://www.dailymotion.com;");
-		expect(csp).toContain("form-action 'self' http://php.test;");
+		expect(csp).toContain("form-action 'self';");
 		expect(csp).toContain("frame-ancestors 'self'");
-		expect(contentSecurityPolicy('')).toContain("form-action 'self';");
 	});
 
 	it('HSTS seulement en HTTPS', () => {
-		expect(securityHeaders('', false)).not.toHaveProperty('Strict-Transport-Security');
-		expect(securityHeaders('', true)['Strict-Transport-Security']).toContain('max-age=');
+		expect(securityHeaders(false)).not.toHaveProperty('Strict-Transport-Security');
+		expect(securityHeaders(true)['Strict-Transport-Security']).toContain('max-age=');
 	});
 
 	it('sur les pages et les fichiers statiques', async () => {

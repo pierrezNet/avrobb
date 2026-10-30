@@ -1,6 +1,6 @@
 /**
- * Fichiers de la galerie de PV : img/gallery/<horodatage><ext>, sa vignette mini_<…> et, pour les
- * images converties en WebP, sa variante mobile mobile_<…>, dans l'installation PHP, qui les sert.
+ * Fichiers de la galerie : img/gallery/<horodatage><ext>, sa vignette mini_<…> et, pour les images
+ * converties en WebP, sa variante mobile mobile_<…>, dans le stockage local (servi sous /img/).
  */
 
 import { mkdir, rm, stat, writeFile } from 'node:fs/promises';
@@ -8,7 +8,7 @@ import path from 'node:path';
 import type { GalleryExtension } from '../domain/models.ts';
 import { MOBILE_PREFIX } from '../services/imageVariants.ts';
 
-/** Dossier des images, relatif à la racine du PHP ($rep_upload de gallery.php). */
+/** Dossier des images, relatif au stockage ($rep_upload de gallery.php). */
 export const GALLERY_DIR = 'img/gallery';
 
 export interface GalleryFileStore {
@@ -21,10 +21,10 @@ export interface GalleryFileStore {
 }
 
 export class GalleryFiles implements GalleryFileStore {
-	constructor(private readonly legacyRoot: string) {}
+	constructor(private readonly storageRoot: string) {}
 
 	async save(addedAt: number, extension: GalleryExtension, files: { image: Buffer; thumbnail: Buffer; mobile: Buffer }): Promise<number> {
-		const dir = path.join(this.legacyRoot, GALLERY_DIR);
+		const dir = path.join(this.storageRoot, GALLERY_DIR);
 		await mkdir(dir, { recursive: true });
 		let stamp = Math.trunc(addedAt);
 		while ((await stat(path.join(dir, `${stamp}${extension}`)).catch(() => null)) !== null) stamp += 1;
@@ -37,7 +37,7 @@ export class GalleryFiles implements GalleryFileStore {
 	}
 
 	async delete(addedAt: number, extension: GalleryExtension): Promise<void> {
-		const dir = path.join(this.legacyRoot, GALLERY_DIR);
+		const dir = path.join(this.storageRoot, GALLERY_DIR);
 		const name = `${Math.trunc(addedAt)}${extension}`;
 		await Promise.all([name, `mini_${name}`, `${MOBILE_PREFIX}${name}`].map((file) => rm(path.join(dir, file), { force: true })));
 	}

@@ -116,10 +116,10 @@ describe('misc.php', () => {
 		expect(setCookie(forum?.headers['set-cookie'], 'avrobb_track')).toContain(`f2%3D${NOW}`);
 	});
 
-	it('règles affichées si activées ; action inconnue renvoyée au PHP', async () => {
+	it('règles affichées si activées ; action inconnue refusée', async () => {
 		app = await buildApp(deps({ rules: true }));
 		expect((await app.inject('/misc.php?action=rules')).body).toContain('<p>Soyez <em>courtois</em>.</p>');
-		expect((await app.inject('/misc.php?action=autre')).headers.location).toBe('http://php.test/misc.php?action=autre');
+		expect((await app.inject('/misc.php?action=autre')).statusCode).toBe(400);
 		await app.close();
 		app = await buildApp(deps());
 		expect((await app.inject('/misc.php?action=rules')).statusCode).toBe(404);

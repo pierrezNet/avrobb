@@ -45,10 +45,5 @@ export const adminMaintenance = {
 	continue: 'Continuer',
 	rebuilt: 'Index de recherche reconstruit.',
 	perCycleNotInteger: 'Le nombre de messages par cycle doit être une valeur entière positive.',
-	cacheSubhead: 'Vider les caches',
-	cacheInfo:
-		'Supprime les fichiers de cache du forum (réglages, bannissements, censure, listes « Atteindre », flux…). Ils sont recréés automatiquement à la visite suivante. Utile après une modification faite directement dans la base de données.',
-	clearCache: 'Vider les caches',
-	cacheCleared: 'Caches vidés.',
 	goBack: 'Retour',
 };

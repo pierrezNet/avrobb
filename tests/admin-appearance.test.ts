@@ -62,8 +62,8 @@ describe('admin_appearance.php', () => {
 		const page = await server.inject({ url: '/admin_appearance.php', headers: { cookie: cookies(2) } });
 		expect(page.statusCode).toBe(200);
 		expect(page.body).toContain('href="admin_appearance.php"');
-		expect(page.body).toContain('src="http://php.test/img/logo.png"');
-		expect(page.body).toContain('src="http://php.test/style/imports/img/banner.jpg"');
+		expect(page.body).toContain('src="/img/logo.png"');
+		expect(page.body).toContain('src="/img/banner.jpg"');
 		expect(page.body).not.toContain('value="restore"');
 		expect((await send(server, 5, { kind: 'logo' }, png)).statusCode).toBe(403);
 	});
@@ -74,7 +74,7 @@ describe('admin_appearance.php', () => {
 		expect((await send(server, 2, { kind: 'autre' }, png)).statusCode).toBe(400);
 		const replaced = await send(server, 2, { kind: 'logo' }, png);
 		expect(replaced.headers.location).toBe('admin_appearance.php?done=replaced');
-		expect(fake.headerImageLog).toEqual([`replace logo png1200x308:${png.length}`]);
+		expect(fake.headerImageLog).toEqual([`replace logo png1204x308:${png.length}`]);
 		expect(fake.configValues?.get('o_header_version')).toBe(String(NOW));
 
 		const banner = await send(server, 2, { kind: 'banner' }, png);
@@ -91,8 +91,8 @@ describe('admin_appearance.php', () => {
 		const fake: FakeData = { users: [{ viewer: guest }], topics: [], posts: new Map(), config: { headerVersion: 42 } };
 		app = await buildApp(fakeDeps(fake));
 		const page = await app.inject('/index.php');
-		expect(page.body).toContain('src="http://php.test/img/logo.png?v=42"');
-		expect(page.body).toContain("--header-banner: url('http://php.test/style/imports/img/banner.jpg?v=42')");
+		expect(page.body).toContain('src="/img/logo.png?v=42"');
+		expect(page.body).toContain("--header-banner: url('/img/banner.jpg?v=42')");
 	});
 });
 
@@ -123,7 +123,7 @@ describe('SharpImageProcessor.fit', () => {
 			.png()
 			.toBuffer();
 		const processor = new SharpImageProcessor();
-		const logo = await processor.fit(source, { format: 'png', maxWidth: 1200, maxHeight: 308 });
+		const logo = await processor.fit(source, { format: 'png', maxWidth: 1204, maxHeight: 308 });
 		expect(logo).toMatchObject({ width: 924, height: 308 });
 		expect((await sharp(logo?.data).metadata()).hasAlpha).toBe(true);
 		const banner = await processor.fit(source, { format: 'jpeg', maxWidth: 2560, maxHeight: 800 });

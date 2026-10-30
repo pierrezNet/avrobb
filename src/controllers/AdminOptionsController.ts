@@ -10,14 +10,12 @@ import { type LayoutDeps, renderMessage } from '../http/layout.ts';
 import { buildAdminOptions } from '../presenters/adminOptionsPage.ts';
 import type { ConfigCache } from '../repositories/ConfigLoader.ts';
 import type { ConfigStore } from '../repositories/ConfigRepository.ts';
-import type { PhpCacheStore } from '../repositories/PhpCacheFiles.ts';
 import { changedOptions, OPTION_SECTIONS, type OptionsError, readOptionsForm } from '../services/adminOptions.ts';
 import { adminDenied, renderAdminPage } from './adminPage.ts';
 
 export interface AdminOptionsControllerDeps extends LayoutDeps {
 	configStore: ConfigStore;
 	configCache: ConfigCache;
-	phpCache: PhpCacheStore | null;
 }
 
 export interface AdminOptionsQuery {
@@ -57,7 +55,6 @@ export class AdminOptionsController {
 			await this.deps.configStore.updateValues(changes);
 			await this.deps.configCache.invalidate();
 		}
-		await this.deps.phpCache?.invalidateFamily('feed');
 		return reply.redirect('admin_options.php?done=updated', 303);
 	};
 

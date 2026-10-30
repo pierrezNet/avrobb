@@ -10,7 +10,6 @@ import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage } from '../http/layout.ts';
 import { paginationLinks } from '../presenters/navigation.ts';
 import type { BanStore } from '../repositories/BanRepository.ts';
-import type { PhpCacheStore } from '../repositories/PhpCacheFiles.ts';
 import { BAN_SEARCH_FIELDS, BAN_SEARCH_ORDERS, readBanForm, readBanSearch, withLastIp } from '../services/banForm.ts';
 import { formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
 import { isAdmin } from '../services/permissions.ts';
@@ -22,7 +21,6 @@ const PER_PAGE = 50;
 
 export interface AdminBansControllerDeps extends LayoutDeps {
 	banStore: BanStore;
-	phpCache: PhpCacheStore | null;
 }
 
 export type AdminBansQuery = Record<string, string | undefined>;
@@ -112,7 +110,6 @@ export class AdminBansController {
 			if (ban === null || field(body, 'del_ban_comply') === '')
 				return renderMessage(request, reply, this.deps, 400, lang.common.badRequest);
 			await store.removeBan(ban.id);
-			await this.deps.phpCache?.invalidate('bans');
 			return reply.redirect('admin_bans.php?done=removed', 303);
 		}
 
@@ -146,7 +143,6 @@ export class AdminBansController {
 				return renderMessage(request, reply, this.deps, 400, lang.common.badRequest);
 			await store.updateBan(banId, result.ban);
 		} else await store.addBan(result.ban, request.viewer.id);
-		await this.deps.phpCache?.invalidate('bans');
 		return reply.redirect(`admin_bans.php?done=${mode === 'edit' ? 'edited' : 'added'}`, 303);
 	};
 

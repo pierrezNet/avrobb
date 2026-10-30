@@ -15,7 +15,6 @@ import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { buildProfileEditPage, sectionTitle } from '../presenters/profileEditPage.ts';
 import type { BanReader } from '../repositories/BanRepository.ts';
 import type { CensorReader } from '../repositories/CensorRepository.ts';
-import type { PhpCacheStore } from '../repositories/PhpCacheFiles.ts';
 import { normalizeUsername, usernameSkeleton } from '../services/accounts.ts';
 import type { AvatarLocator } from '../services/avatars.ts';
 import { buildCensor, type Censor } from '../services/censor.ts';
@@ -38,7 +37,6 @@ export interface ProfileEditControllerDeps extends LayoutDeps, ProfileAccessDeps
 	bans: BanReader;
 	censorship: CensorReader;
 	avatars: AvatarLocator;
-	phpCache: PhpCacheStore | null;
 }
 
 type EditRequest = FastifyRequest<{ Querystring: ProfileQuery; Body?: FormBody }>;
@@ -82,8 +80,6 @@ export class ProfileEditController {
 		else {
 			const { bansUpdated } = await this.deps.profileStore.renameUser(profile.id, profile.username, rename, result.changes);
 			// generate_users_info_cache() et, si un bannissement a suivi le pseudo, generate_bans_cache().
-			await this.deps.phpCache?.invalidate('users_info');
-			if (bansUpdated) await this.deps.phpCache?.invalidate('bans');
 		}
 		return reply.redirect(`profile.php?section=${section}&id=${profile.id}&updated=1`, 303);
 	};

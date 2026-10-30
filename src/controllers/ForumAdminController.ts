@@ -9,7 +9,6 @@ import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage } from '../http/layout.ts';
 import { buildAdminCategories, buildAdminForumEdit, buildAdminForumList } from '../presenters/adminForumsPage.ts';
 import type { AdminCategory, ForumAdminStore } from '../repositories/ForumAdminRepository.ts';
-import type { PhpCacheStore } from '../repositories/PhpCacheFiles.ts';
 import { readCategoryUpdates, readForumDetails, readForumPositions, readGroupPermission } from '../services/forumAdminForms.ts';
 import { permissionChange } from '../services/forumPermissions.ts';
 import { punTrim } from '../services/phpString.ts';
@@ -18,7 +17,6 @@ import { positiveInt } from './params.ts';
 
 export interface ForumAdminControllerDeps extends LayoutDeps {
 	forumAdmin: ForumAdminStore;
-	phpCache: PhpCacheStore | null;
 }
 
 export interface AdminForumsQuery {
@@ -266,7 +264,5 @@ export class ForumAdminController {
 	}
 
 	/** generate_quickjump_cache() du PHP : ses listes « Atteindre » seront régénérées. */
-	async #forumsChanged(): Promise<void> {
-		await this.deps.phpCache?.invalidateFamily('quickjump');
-	}
+	async #forumsChanged(): Promise<void> {}
 }

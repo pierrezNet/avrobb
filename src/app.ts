@@ -74,7 +74,6 @@ import type { GroupAdminStore } from './repositories/GroupAdminRepository.ts';
 import type { HeaderImageStore } from './repositories/HeaderImageFiles.ts';
 import type { HomeActivityReader } from './repositories/HomeActivityRepository.ts';
 import type { LabelAdminStore } from './repositories/LabelAdminRepository.ts';
-import type { MailTemplateReader } from './repositories/MailTemplateFiles.ts';
 import type { MaintenanceStore } from './repositories/MaintenanceRepository.ts';
 import type { MemberSuggestReader } from './repositories/MemberSuggestRepository.ts';
 import type { UploadStore } from './repositories/MemberUploadFiles.ts';
@@ -100,6 +99,7 @@ import type { UploadileAdminStore, UserAdminReader, UserAdminWriter } from './re
 import type { AccountLookup, MemberListReader, ProfileReader } from './repositories/UserRepository.ts';
 import type { UsersInfoReader } from './repositories/UsersInfoLoader.ts';
 import type { AvatarLocator, AvatarStore } from './services/avatars.ts';
+import type { MailTemplateReader } from './services/mail.ts';
 import { type BannedWriteQuery, canWriteWhileBanned, readOnlyViewer } from './services/permissions.ts';
 
 declare module 'fastify' {
@@ -188,87 +188,32 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	galleryFiles: GalleryFileStore;
 	stopwords: StopwordsReader;
 	usersInfo: UsersInfoReader;
-	/** URL de l'installation PHP : les liens vers les pages non portées y renvoient. */
-	legacyBaseUrl: string;
 	/**
-	 * Dossier img/ de l'installation PHP, servi sous /img/ (images seulement) : o_base_url peut
-	 * désigner Node, et les images insérées dans les messages (galerie, uploads) y pointent.
+	 * Dossier img/ du stockage local (STORAGE_DIR), servi sous /img/ (images seulement) : galerie,
+	 * avatars, logo et bannière. R2 le remplacera au lot 4.
 	 */
-	legacyImagesRoot?: string;
+	imagesRoot?: string;
 	/** Derrière un reverse proxy : l'IP du client est lue dans X-Forwarded-For. */
 	trustProxy?: boolean;
 	logger?: boolean;
 }
 
-/** Fichiers de img/ que Node accepte de servir. */
-const LEGACY_IMAGE_PATH = /\.(?:gif|jpe?g|png|webp|ico)$/i;
-
-/** Pages déjà servies par Node ; les autres liens partent vers l'installation PHP. */
-const PORTED_PAGES = new Set([
-	'admin_appearance.php',
-	'faq.php',
-	'stats.php',
-	'privacy.php',
-	'terms.php',
-	'admin_bans.php',
-	'admin_pages.php',
-	'admin_categories.php',
-	'admin_censoring.php',
-	'admin_forums.php',
-	'admin_groups.php',
-	'admin_index.php',
-	'admin_loader.php',
-	'admin_maintenance.php',
-	'admin_options.php',
-	'admin_permissions.php',
-	'admin_reports.php',
-	'admin_users.php',
-	'member_suggest.php',
-	'topic_prefixes.php',
-	'admin_statistics.php',
-	'delete.php',
-	'draft_edit.php',
-	'draft_list.php',
-	'edit.php',
-	'extern.php',
-	'gallery.php',
-	'gestionnaire.php',
-	'help.php',
-	'index.php',
-	'login.php',
-	'misc.php',
-	'moderate.php',
-	'pms_contacts.php',
-	'pms_inbox.php',
-	'pms_send.php',
-	'pms_sending_lists.php',
-	'pms_view.php',
-	'post.php',
-	'profile.php',
-	'reputation.php',
-	'search.php',
-	'userlist.php',
-	'viewforum.php',
-	'viewtopic.php',
-]);
+/** Fichiers de img/ que le forum accepte de servir. */
+const IMAGE_PATH = /\.(?:gif|jpe?g|png|webp|ico)$/i;
 
 const ROOT_DIR = path.join(import.meta.dirname, '..');
 
 export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 	const app = Fastify({ logger: deps.logger ?? false, trustProxy: deps.trustProxy ?? false });
 
-	// url('profile.php?id=2') : lien local si la page est portée, sinon vers l'installation PHP.
-	// Les URL absolues (http:, mailto:…) sont laissées telles quelles.
-	const url = (target: string): string => {
-		const page = target.split(/[?#]/)[0] ?? '';
-		const keep = /^[a-z][a-z0-9+.-]*:/i.test(target) || PORTED_PAGES.has(page) || deps.legacyBaseUrl === '';
-		return keep ? target : `${deps.legacyBaseUrl}/${target}`;
-	};
+	// url('profile.php?id=2') dans les vues : point de passage unique des liens internes, pour
+	// pouvoir passer à des URL propres sans retoucher chaque gabarit.
+	const url = (target: string): string => target;
 	const asset = createAssetUrl(path.join(ROOT_DIR, 'public'));
 
 	// En-têtes de sécurité sur toutes les réponses, fichiers statiques compris (http/securityHeaders.ts).
 	app.addHook('onSend', async (request, reply) => {
-		reply.headers(securityHeaders(deps.legacyBaseUrl, request.protocol === 'https'));
+		reply.headers(securityHeaders(request.protocol === 'https'));
 	});
 	await app.register(fastifyCookie);
 	registerFormParser(app);
@@ -291,15 +236,15 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 		maxAge: '30d',
 		immutable: true,
 	});
-	if (deps.legacyImagesRoot !== undefined) {
+	if (deps.imagesRoot !== undefined) {
 		await app.register(fastifyStatic, {
-			root: deps.legacyImagesRoot,
+			root: deps.imagesRoot,
 			prefix: '/img/',
 			decorateReply: false,
 			index: false,
 			maxAge: '7d',
-			// Rien d'autre que des images : le dossier contient aussi des .html et des Thumbs.db.
-			allowedPath: (pathname) => LEGACY_IMAGE_PATH.test(pathname),
+			// Rien d'autre que des images, même si un autre fichier se trouvait dans le dossier.
+			allowedPath: (pathname) => IMAGE_PATH.test(pathname),
 		});
 	}
 

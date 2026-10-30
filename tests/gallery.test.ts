@@ -95,13 +95,13 @@ describe('GET /gallery.php', () => {
 		expect(none.body).toContain('<input type="hidden" name="mine" value="1">');
 	});
 
-	it('affiche 20 images par page, titres échappés, liens vers les fichiers du PHP', async () => {
+	it('affiche 20 images par page, titres échappés, liens vers les fichiers du stockage', async () => {
 		app = await buildApp(fakeDeps(data()));
 		const res = await app.inject('/gallery.php');
 		expect(res.statusCode).toBe(200);
 		expect(res.body.match(/class="gallery__item"/g)).toHaveLength(20);
 		expect(res.body).toContain('&lt;b&gt;Image 1&lt;/b&gt;');
-		expect(res.body).toContain('src="http://php.test/img/gallery/mini_1705145503.jpg"');
+		expect(res.body).toContain('src="img/gallery/mini_1705145503.jpg"');
 		expect(res.body).toContain('<em>Belle</em> vue');
 		expect(res.body).toContain('href="gallery.php?p=2"');
 		expect(res.body).not.toContain('info=new');
@@ -270,7 +270,7 @@ describe('Images de l’installation PHP (/img/)', () => {
 		await mkdir(path.join(root, 'gallery'));
 		await writeFile(path.join(root, 'gallery', '1.webp'), 'RIFF');
 		await writeFile(path.join(root, 'gallery', 'index.html'), '<p>');
-		const app = await buildApp(fakeDeps(data(), { legacyImagesRoot: root }));
+		const app = await buildApp(fakeDeps(data(), { imagesRoot: root }));
 		try {
 			const ok = await app.inject({ url: '/img/gallery/1.webp' });
 			expect(ok.statusCode).toBe(200);

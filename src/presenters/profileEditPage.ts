@@ -14,14 +14,14 @@ import { parseSignature } from '../services/bbcode.ts';
 import type { Censor } from '../services/censor.ts';
 import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
 import { forumNumberFormat } from '../services/numberFormat.ts';
-import { canRenameUsers, canSeeProfileAdmin, canUsePrivatePlugiles, isAdmin, isAnyModerator } from '../services/permissions.ts';
+import { canRenameUsers, canUsePrivatePlugiles, isAdmin, isAnyModerator } from '../services/permissions.ts';
 import { displayOptions, type ProfileSection } from '../services/profileForms.ts';
 import { THEMES } from '../services/themes.ts';
 import { signatureParserOptions } from './parserOptions.ts';
 import { type BbcodeStatus, signatureBbcodeStatus } from './postPage.ts';
 
 /** Pages du profil : les sections et les plugiles de PV. */
-export type ProfilePage = ProfileSection | 'admin' | 'biography' | 'subscriptions' | 'uploads';
+export type ProfilePage = ProfileSection | 'biography' | 'subscriptions' | 'uploads';
 
 /**
  * Plugiles de PV avec leur fichier PHP d'origine (paramètre plugin=), dans l'ordre du menu PHP
@@ -59,7 +59,6 @@ export function buildProfileMenu(viewer: Viewer, config: BoardConfig, userId: nu
 		...(config.avatars || config.signatures ? [section('personality', t.sectionPersonality)] : []),
 		section('display', t.sectionDisplay),
 		section('privacy', t.sectionPrivacy),
-		...(canSeeProfileAdmin(viewer) ? [section('admin', t.sectionAdmin)] : []),
 	];
 	const labels: Record<(typeof PLUGILES)[number]['page'], string> = {
 		biography: t.myBiography,

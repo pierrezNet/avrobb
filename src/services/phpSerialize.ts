@@ -8,7 +8,9 @@
  * la lecture se fait donc sur le Buffer UTF-8.
  */
 
-import type { PhpArray, PhpValue } from './phpVarExport.ts';
+/** Valeur PHP désérialisée : tableau associatif (Map) ou scalaire. */
+export type PhpValue = string | number | boolean | null | PhpArray;
+export type PhpArray = Map<string | number, PhpValue>;
 
 class Reader {
 	#pos = 0;

@@ -1,6 +1,6 @@
 /**
- * Fichiers du logo et de la bannière dans l'installation PHP (services/headerImages.ts) : écriture
- * avec copie de l'image précédente, et retour à cette copie.
+ * Fichiers du logo et de la bannière dans le stockage local (services/headerImages.ts) : écriture
+ * avec copie de l'image précédente, retour à cette copie, et installation des images par défaut.
  */
 
 import { copyFile, mkdir, rename, stat, writeFile } from 'node:fs/promises';
@@ -18,18 +18,28 @@ export interface HeaderImageStore {
 const exists = async (file: string): Promise<boolean> => (await stat(file).catch(() => null)) !== null;
 
 export class HeaderImageFiles implements HeaderImageStore {
-	constructor(private readonly legacyRoot: string) {}
+	constructor(private readonly storageRoot: string) {}
 
 	#paths(kind: HeaderImageKind): { current: string; previous: string } {
 		const spec = HEADER_IMAGES[kind];
-		return { current: path.join(this.legacyRoot, spec.path), previous: path.join(this.legacyRoot, spec.previousPath) };
+		return { current: path.join(this.storageRoot, spec.path), previous: path.join(this.storageRoot, spec.previousPath) };
+	}
+
+	/** Au démarrage : copie les images d'AvroBB (dossier public/) là où le stockage n'en a pas. */
+	async installDefaults(publicDir: string): Promise<void> {
+		for (const kind of Object.keys(HEADER_IMAGES) as HeaderImageKind[]) {
+			const { current } = this.#paths(kind);
+			if (await exists(current)) continue;
+			await mkdir(path.dirname(current), { recursive: true });
+			await copyFile(path.join(publicDir, HEADER_IMAGES[kind].defaultPath), current);
+		}
 	}
 
 	async replace(kind: HeaderImageKind, data: Buffer): Promise<void> {
 		const { current, previous } = this.#paths(kind);
 		await mkdir(path.dirname(current), { recursive: true });
 		if (await exists(current)) await copyFile(current, previous);
-		// Fichier temporaire puis renommage : le PHP ne sert jamais une image à moitié écrite.
+		// Fichier temporaire puis renommage : on ne sert jamais une image à moitié écrite.
 		const temporary = `${current}.tmp`;
 		await writeFile(temporary, data);
 		await rename(temporary, current);

@@ -2,6 +2,8 @@
  * Configuration de l'application, lue depuis l'environnement (.env).
  */
 
+import path from 'node:path';
+
 /** Cookies du forum : `<name>_session`, `<name>_csrf`, `<name>_track`, tous sur le chemin /. */
 export interface CookieConfig {
 	name: string;
@@ -23,10 +25,8 @@ export interface AppConfig {
 	cookie: CookieConfig;
 	/** Connexion sans fournisseur SSO, pour le développement (DEV_LOGIN=1, depuis la machine seulement). */
 	devLogin: boolean;
-	/** URL de l'installation PHP, pour les pages pas encore portées. */
-	legacyBaseUrl: string;
-	/** Racine de l'installation PHP sur le disque (avatars, fichiers de cache) ; vide si inaccessible. */
-	legacyRoot: string;
+	/** Stockage local des fichiers (galerie, avatars, logo, bannière) ; R2 au lot 4. */
+	storageDir: string;
 	/** Node est derrière un reverse proxy (IP du client lue dans X-Forwarded-For). */
 	trustProxy: boolean;
 	/** Sans SMTP configuré : dossier où écrire les e-mails (.eml) au lieu de sendmail ; null sinon. */
@@ -60,8 +60,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
 		},
 		cookie: { name: 'avrobb', secret: sessionSecret(env), secure: env.COOKIE_SECURE === '1' },
 		devLogin: env.DEV_LOGIN === '1',
-		legacyBaseUrl: (env.LEGACY_BASE_URL ?? '').replace(/\/$/, ''),
-		legacyRoot: env.LEGACY_ROOT ?? '',
+		// Chemin absolu : le service des fichiers statiques l'exige.
+		storageDir: path.resolve(env.STORAGE_DIR !== undefined && env.STORAGE_DIR !== '' ? env.STORAGE_DIR : 'storage'),
 		trustProxy: env.TRUST_PROXY === '1',
 		mailOutbox: env.MAIL_OUTBOX !== undefined && env.MAIL_OUTBOX !== '' ? env.MAIL_OUTBOX : null,
 	};

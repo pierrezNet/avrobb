@@ -7,7 +7,7 @@
  * - styles : fichiers du forum, et attributs style (couleurs des balises, bannière…) ;
  * - images : de partout en http(s), car les messages affichent des images d'autres sites ;
  * - cadres : vidéos YouTube (youtube-nocookie) et Dailymotion seulement ;
- * - formulaires : vers le forum, ou vers l'installation PHP tant qu'elle cohabite ;
+ * - formulaires : vers le forum seulement ;
  * - aucune intégration du forum dans un cadre d'un autre site (frame-ancestors, X-Frame-Options).
  *
  * HSTS seulement en HTTPS (derrière un proxy, TRUST_PROXY doit être activé pour le savoir).
@@ -15,17 +15,7 @@
 
 const VIDEO_FRAMES = ['https://www.youtube-nocookie.com', 'https://www.dailymotion.com'];
 
-/** Origine (schéma, hôte, port) d'une URL, ou null si elle n'en a pas. */
-function originOf(url: string): string | null {
-	try {
-		return new URL(url).origin;
-	} catch {
-		return null;
-	}
-}
-
-export function contentSecurityPolicy(legacyBaseUrl: string): string {
-	const legacy = originOf(legacyBaseUrl);
+export function contentSecurityPolicy(): string {
 	const directives: Record<string, string[]> = {
 		'default-src': ["'self'"],
 		'script-src': ["'self'"],
@@ -34,7 +24,7 @@ export function contentSecurityPolicy(legacyBaseUrl: string): string {
 		'font-src': ["'self'"],
 		'connect-src': ["'self'"],
 		'frame-src': ["'self'", ...VIDEO_FRAMES],
-		'form-action': ["'self'", ...(legacy !== null ? [legacy] : [])],
+		'form-action': ["'self'"],
 		'frame-ancestors': ["'self'"],
 		'base-uri': ["'self'"],
 		'object-src': ["'none'"],
@@ -44,9 +34,9 @@ export function contentSecurityPolicy(legacyBaseUrl: string): string {
 		.join('; ');
 }
 
-export function securityHeaders(legacyBaseUrl: string, https: boolean): Record<string, string> {
+export function securityHeaders(https: boolean): Record<string, string> {
 	return {
-		'Content-Security-Policy': contentSecurityPolicy(legacyBaseUrl),
+		'Content-Security-Policy': contentSecurityPolicy(),
 		'X-Content-Type-Options': 'nosniff',
 		'X-Frame-Options': 'SAMEORIGIN',
 		'Referrer-Policy': 'strict-origin-when-cross-origin',

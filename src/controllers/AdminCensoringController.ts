@@ -7,13 +7,11 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage } from '../http/layout.ts';
 import type { CensorStore } from '../repositories/CensorRepository.ts';
-import type { PhpCacheStore } from '../repositories/PhpCacheFiles.ts';
 import { punTrim } from '../services/phpString.ts';
 import { adminDenied, renderAdminPage } from './adminPage.ts';
 
 export interface AdminCensoringControllerDeps extends LayoutDeps {
 	censorship: CensorStore;
-	phpCache: PhpCacheStore | null;
 }
 
 export interface AdminCensoringQuery {
@@ -65,7 +63,6 @@ export class AdminCensoringController {
 			done = 'removed';
 		} else return renderMessage(request, reply, this.deps, 400, lang.common.badRequest);
 
-		await this.deps.phpCache?.invalidate('censoring');
 		return reply.redirect(`admin_censoring.php?done=${done}`, 303);
 	};
 

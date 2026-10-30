@@ -14,13 +14,12 @@ import type { ConfigCache } from '../../repositories/ConfigLoader.ts';
 import type { ConfigStore } from '../../repositories/ConfigRepository.ts';
 import type { GroupAdminStore } from '../../repositories/GroupAdminRepository.ts';
 import type { LabelAdminStore } from '../../repositories/LabelAdminRepository.ts';
-import type { MailTemplateReader } from '../../repositories/MailTemplateFiles.ts';
 import type { UploadStore } from '../../repositories/MemberUploadFiles.ts';
-import type { PhpCacheStore } from '../../repositories/PhpCacheFiles.ts';
 import type { ProfileStore } from '../../repositories/ProfileRepository.ts';
 import type { SubjectPrefixStore } from '../../repositories/SubjectPrefixRepository.ts';
 import type { UploadileAdminStore } from '../../repositories/UserAdminRepository.ts';
 import { changedOptions } from '../../services/adminOptions.ts';
+import type { MailTemplateReader } from '../../services/mail.ts';
 import { renderAdminPage } from '../adminPage.ts';
 
 export interface AdminLoaderControllerDeps extends LayoutDeps {
@@ -28,8 +27,6 @@ export interface AdminLoaderControllerDeps extends LayoutDeps {
 	censorship: CensorReader;
 	mailTemplates: MailTemplateReader;
 	mailer: Mailer;
-	phpCache: PhpCacheStore | null;
-	legacyBaseUrl: string;
 	configStore: ConfigStore;
 	configCache: ConfigCache;
 	groupAdmin: GroupAdminStore;

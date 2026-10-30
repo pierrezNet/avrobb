@@ -221,11 +221,6 @@ export function canRenameUsers(viewer: Viewer): boolean {
 	return isAdmin(viewer) || (viewer.group.isModerator && viewer.group.canModRenameUsers);
 }
 
-/** Lien « Administration » du menu du profil (generate_profile_menu()). */
-export function canSeeProfileAdmin(viewer: Viewer): boolean {
-	return isAdmin(viewer) || (viewer.group.isModerator && viewer.group.canModBanUsers);
-}
-
 /** Plugiles privés (UPP_*) : « visibles par le membre et les administrateurs ». */
 export function canUsePrivatePlugiles(viewer: Viewer, targetId: number): boolean {
 	return (!viewer.isGuest && viewer.id === targetId) || isAdmin(viewer);

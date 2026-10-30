@@ -19,25 +19,15 @@ const cookies = (userId: number): string => `${sessionCookie(userId)}; avrobb_cs
 let app: FastifyInstance | undefined;
 afterEach(async () => app?.close());
 
-async function start(): Promise<{ server: FastifyInstance; fake: FakeData; invalidated: string[] }> {
+async function start(): Promise<{ server: FastifyInstance; fake: FakeData }> {
 	const fake: FakeData = {
 		users: [{ viewer: guest }, { viewer: mod }, { viewer: admin }],
 		topics: [],
 		posts: new Map(),
 		censoredWords: [{ searchFor: 'zut', replaceWith: '***' }],
 	};
-	const invalidated: string[] = [];
-	app = await buildApp(
-		fakeDeps(fake, {
-			phpCache: {
-				version: async () => null,
-				read: async () => null,
-				invalidate: async (name) => void invalidated.push(name),
-				invalidateFamily: async () => {},
-			},
-		}),
-	);
-	return { server: app, fake, invalidated };
+	app = await buildApp(fakeDeps(fake));
+	return { server: app, fake };
 }
 
 function post(server: FastifyInstance, fields: Record<string, string>) {
@@ -51,7 +41,7 @@ function post(server: FastifyInstance, fields: Record<string, string>) {
 
 describe('admin_censoring.php', () => {
 	it('réservé aux administrateurs ; ajout, modification, suppression et cache PHP', async () => {
-		const { server, fake, invalidated } = await start();
+		const { server, fake } = await start();
 		expect((await server.inject({ url: '/admin_censoring.php', headers: { cookie: cookies(5) } })).statusCode).toBe(403);
 		const page = await server.inject({ url: '/admin_censoring.php', headers: { cookie: cookies(2) } });
 		expect(page.body).toContain('name="search_for[1]" value="zut"');
@@ -61,6 +51,5 @@ describe('admin_censoring.php', () => {
 		const removed = await post(server, { 'remove[2]': '1' });
 		expect(removed.headers.location).toBe('admin_censoring.php?done=removed');
 		expect(fake.censoredWords).toEqual([{ searchFor: 'zut*', replaceWith: '!!!' }]);
-		expect(invalidated).toEqual(['censoring', 'censoring', 'censoring']);
 	});
 });

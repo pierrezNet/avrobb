@@ -102,11 +102,4 @@ describe('admin_maintenance.php', () => {
 		expect(fake.configLog).toEqual(['replace o_cold_topic_days']);
 		expect((await send(server, 5, { action: 'cold', cold_days: '30' })).statusCode).toBe(403);
 	});
-
-	it('vidage des caches', async () => {
-		const { server, fake } = await start();
-		const res = await send(server, 2, { action: 'clear_cache' });
-		expect(res.headers.location).toBe('admin_maintenance.php?done=cleared');
-		expect(fake.configInvalidations).toBe(1);
-	});
 });

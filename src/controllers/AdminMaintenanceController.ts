@@ -22,7 +22,6 @@ import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import type { ConfigCache } from '../repositories/ConfigLoader.ts';
 import type { ConfigStore } from '../repositories/ConfigRepository.ts';
 import type { MaintenanceStore } from '../repositories/MaintenanceRepository.ts';
-import type { PhpCacheName, PhpCacheStore } from '../repositories/PhpCacheFiles.ts';
 import type { StopwordsReader } from '../repositories/StopwordsLoader.ts';
 import { changedOptions, readColdTopicsForm, readMaintenanceForm } from '../services/adminOptions.ts';
 import { indexWords } from '../services/searchIndex.ts';
@@ -34,10 +33,7 @@ export interface AdminMaintenanceControllerDeps extends LayoutDeps {
 	stopwords: StopwordsReader;
 	configStore: ConfigStore;
 	configCache: ConfigCache;
-	phpCache: PhpCacheStore | null;
 }
-
-const PHP_CACHES: readonly PhpCacheName[] = ['config', 'bans', 'censoring', 'forums', 'smilies', 'users_info', 'admins'];
 
 export interface AdminMaintenanceQuery {
 	done?: string;
@@ -55,7 +51,6 @@ export class AdminMaintenanceController {
 		const t = this.deps.page.lang.adminMaintenance;
 		const notices: Record<string, string> = {
 			rebuilt: t.rebuilt,
-			cleared: t.cacheCleared,
 			mode: request.board.maintenance ? t.modeEnabled : t.modeDisabled,
 			cold: t.coldSaved,
 		};
@@ -85,13 +80,6 @@ export class AdminMaintenanceController {
 		if (action === 'rebuild') return this.#rebuild(request, reply);
 		if (action === 'mode') return this.#saveMode(request, reply);
 		if (action === 'cold') return this.#saveColdTopics(request, reply);
-		if (action === 'clear_cache') {
-			for (const name of PHP_CACHES) await this.deps.phpCache?.invalidate(name);
-			await this.deps.phpCache?.invalidateFamily('quickjump');
-			await this.deps.phpCache?.invalidateFamily('feed');
-			await this.deps.configCache.invalidate();
-			return reply.redirect('admin_maintenance.php?done=cleared', 303);
-		}
 		return renderMessage(request, reply, this.deps, 400, this.deps.page.lang.common.badRequest);
 	};
 

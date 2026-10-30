@@ -423,7 +423,7 @@ describe('balises, bannissements, censure', () => {
 
 describe('ConfigLoader sur la table config', () => {
 	it('lit et convertit les options, NULL compris', async () => {
-		const loader = new ConfigLoader(new ConfigRepository(db), null, () => NOW);
+		const loader = new ConfigLoader(new ConfigRepository(db), () => NOW);
 		expect(await loader.load()).toMatchObject({
 			boardTitle: 'Forum de test',
 			defaultPostsPerPage: 2,
@@ -439,7 +439,7 @@ describe('viewtopic de bout en bout', () => {
 
 	async function app() {
 		return buildApp({
-			config: new ConfigLoader(new ConfigRepository(db), null, () => NOW),
+			config: new ConfigLoader(new ConfigRepository(db), () => NOW),
 			users: new UserRepository(db),
 			members: new UserRepository(db),
 			accounts: new UserRepository(db),
@@ -494,7 +494,7 @@ describe('viewtopic de bout en bout', () => {
 			homeActivity: new HomeActivityRepository(db),
 			sitemap: new SitemapRepository(db),
 			stopwords: { load: async () => new Set<string>() },
-			usersInfo: new UsersInfoLoader(new StatsRepository(db), null, () => NOW),
+			usersInfo: new UsersInfoLoader(new StatsRepository(db), () => NOW),
 			avatars: { urlFor: async () => null },
 			avatarStore: { save: async () => undefined, delete: async () => undefined },
 			uploads: {
@@ -508,8 +508,6 @@ describe('viewtopic de bout en bout', () => {
 			page: { lang: fr, dateWords: frDateWords, clock: () => NOW },
 			cookie: { name: 'avrobb', secret: seed, secure: false },
 			online: new OnlineRepository(db),
-			phpCache: null,
-			legacyBaseUrl: 'http://php.test',
 		});
 	}
 

@@ -9,7 +9,6 @@ import type { CookieConfig } from '../config.ts';
 import { type BoardConfig, GroupId, GUEST_USER_ID, type Viewer } from '../domain/models.ts';
 import type { BanReader, BanWriter } from '../repositories/BanRepository.ts';
 import type { OnlineWriter } from '../repositories/OnlineRepository.ts';
-import type { PhpCacheStore } from '../repositories/PhpCacheFiles.ts';
 import type { UserReader, ViewerRecord } from '../repositories/UserRepository.ts';
 import { checkBans } from '../services/bans.ts';
 import { isAnyModerator } from '../services/permissions.ts';
@@ -20,8 +19,6 @@ export interface SessionDeps {
 	users: UserReader;
 	online: OnlineWriter;
 	bans: BanReader & BanWriter;
-	/** Pour invalider cache_bans.php quand des bannissements échus sont supprimés ; null sans PHP. */
-	phpCache: PhpCacheStore | null;
 	cookie: CookieConfig;
 }
 
@@ -183,7 +180,6 @@ export async function checkAccess(
 	const { ban, expiredIds } = checkBans(await deps.bans.listBans(), viewer.username, request.ip, now);
 	if (expiredIds.length > 0) {
 		await deps.bans.deleteBans(expiredIds);
-		await deps.phpCache?.invalidate('bans');
 	}
 
 	if (ban === null) return null;

@@ -457,7 +457,7 @@ describe('profile.php : sections', () => {
 		expect(fake.profileUpdates).toBeUndefined();
 	});
 
-	it('un modérateur autorisé modifie un membre, mais pas un administrateur ; Administration reste en PHP', async () => {
+	it('un modérateur autorisé modifie un membre, mais pas un administrateur ; plus de section Administration', async () => {
 		const fake = data();
 		const server = await start(fake);
 		const res = await get(server, fake, 5, '/profile.php?id=6');
@@ -466,24 +466,12 @@ describe('profile.php : sections', () => {
 		expect(res.body).toContain('moderate.php?get_host=192.0.2.7');
 		expect((await get(server, fake, 5, '/profile.php?id=2')).body).toContain('Profil de admin');
 
-		const asAdmin = await get(server, fake, 2, '/profile.php?section=admin&id=6');
-		expect(asAdmin.statusCode).toBe(302);
-		expect(asAdmin.headers.location).toBe('http://php.test/profile.php?section=admin&id=6');
+		expect((await get(server, fake, 2, '/profile.php?section=admin&id=6')).statusCode).toBe(404);
 	});
 
-	it("l'administrateur renomme : effets de bord et caches PHP", async () => {
+	it("l'administrateur renomme : effets de bord", async () => {
 		const fake = data({ bans: [{ id: 1, username: 'valdefsx', ip: '', email: '', message: '', expire: null }] });
-		const invalidated: string[] = [];
-		app = await buildApp(
-			fakeDeps(fake, {
-				phpCache: {
-					version: async () => null,
-					read: async () => null,
-					invalidate: async (name) => void invalidated.push(name),
-					invalidateFamily: async () => {},
-				},
-			}),
-		);
+		app = await buildApp(fakeDeps(fake));
 		const res = await post(app, fake, 2, '/profile.php?section=essentials&id=6', {
 			form_sent: '1',
 			req_username: 'Valentin',
@@ -495,7 +483,6 @@ describe('profile.php : sections', () => {
 		expect(res.statusCode).toBe(303);
 		expect(fake.renames).toEqual([{ id: 6, from: 'valdefsx', to: 'Valentin' }]);
 		expect(fake.profileUpdates?.[0]?.changes).toMatchObject({ numPosts: 40, email: 'val@example.com' });
-		expect(invalidated).toEqual(['users_info', 'bans']);
 	});
 
 	it('Affichage et Vie privée : thèmes, cases conditionnelles', async () => {

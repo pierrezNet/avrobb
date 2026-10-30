@@ -1194,7 +1194,6 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			},
 		},
 		online: fakeOnline(data.online ?? []),
-		phpCache: null,
 		censorship: {
 			listWords: async () => data.censoredWords ?? [],
 			listEntries: async () => (data.censoredWords ?? []).map((word, index) => ({ id: index + 1, ...word })),
@@ -1214,7 +1213,6 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 		},
 		page: { lang: fr, dateWords: frDateWords, clock: () => NOW },
 		cookie: { name: 'avrobb', secret: COOKIE_SECRET, secure: false },
-		legacyBaseUrl: 'http://php.test',
 		...overrides,
 	};
 }

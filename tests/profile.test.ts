@@ -95,7 +95,7 @@ describe('GET /profile.php', () => {
 		expect(res.body).toContain('Ce membre n&#39;a pas écrit sa biographie');
 	});
 
-	it('Node sert la modification ; seule la section Administration repart vers le PHP', async () => {
+	it('modification servie par le forum ; plus de section Administration', async () => {
 		app = await buildApp(deps());
 		const own = await app.inject({ url: '/profile.php?id=3', headers: { cookie: cookie(3, 'hash-tessy') } });
 		expect(own.statusCode).toBe(200);
@@ -103,8 +103,9 @@ describe('GET /profile.php', () => {
 
 		const asMod = await app.inject({ url: '/profile.php?id=6', headers: { cookie: cookie(5, 'hash-mod') } });
 		expect(asMod.body).toContain('valdefsx - Principal');
+		// La section Administration de FluxBB n'existe plus : admin_users.php la remplace.
 		const admin = await app.inject({ url: '/profile.php?section=admin&id=6', headers: { cookie: cookie(5, 'hash-mod') } });
-		expect(admin.headers.location).toBe('http://php.test/profile.php?section=admin&id=6');
+		expect(admin.statusCode).toBe(404);
 
 		// Un lecteur qui ne peut pas modifier consulte, quelle que soit la section ou le plugile.
 		expect((await app.inject('/profile.php?section=personal&id=6')).body).toContain('Profil de valdefsx');

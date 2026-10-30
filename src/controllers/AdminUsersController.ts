@@ -12,7 +12,6 @@ import { type LayoutDeps, renderMessage } from '../http/layout.ts';
 import { buildIpPosters, buildIpStats, buildUserResults, buildUserSearchForm } from '../presenters/adminUsersPage.ts';
 import type { BanReader } from '../repositories/BanRepository.ts';
 import type { GroupAdminStore } from '../repositories/GroupAdminRepository.ts';
-import type { PhpCacheStore } from '../repositories/PhpCacheFiles.ts';
 import type { UserAdminReader, UserAdminWriter } from '../repositories/UserAdminRepository.ts';
 import type { AvatarStore } from '../services/avatars.ts';
 import { isIpAddress } from '../services/hosts.ts';
@@ -30,7 +29,6 @@ export interface AdminUsersControllerDeps extends LayoutDeps {
 	groupAdmin: GroupAdminStore;
 	bans: Pick<BanReader, 'listBannedUsernames'>;
 	avatarStore: AvatarStore;
-	phpCache: PhpCacheStore | null;
 }
 
 /** Droits des actions groupées, ou null si aucune n'est permise ($can_action du PHP). */
@@ -192,7 +190,6 @@ export class AdminUsersController {
 		await this.deps.userAdmin.deleteUsers(ids, field(request.body, 'delete_posts') !== '');
 		for (const id of ids) await this.deps.avatarStore.delete(id, request.board.avatarsDir);
 		// generate_users_info_cache() : nombre de membres et dernier inscrit.
-		await this.deps.phpCache?.invalidate('users_info');
 		return reply.redirect('admin_users.php?done=deleted', 303);
 	}
 
@@ -210,7 +207,6 @@ export class AdminUsersController {
 			withIp: positiveInt(field(body, 'ban_the_ip')) !== 0,
 			creatorId: viewer.id,
 		});
-		await this.deps.phpCache?.invalidate('bans');
 		return reply.redirect('admin_users.php?done=banned', 303);
 	}
 

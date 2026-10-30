@@ -26,8 +26,6 @@ export type { ProfileQuery } from './profileAccess.ts';
 
 export interface ProfileControllerDeps extends LayoutDeps, ProfileEditControllerDeps, AvatarControllerDeps, PlugileControllerDeps {
 	profiles: ProfileReader;
-	/** Installation PHP, qui garde la section « Administration ». */
-	legacyBaseUrl: string;
 }
 
 type ProfileRequest = FastifyRequest<{ Querystring: ProfileQuery }>;
@@ -69,7 +67,6 @@ export class ProfileController {
 				if (query.plugin === 'UPP_Mes_uploads.php') return this.#plugiles.uploads(request, reply);
 				return renderMessage(request, reply, this.deps, 404, lang.common.badRequest);
 			}
-			if (query.section === 'admin') return this.toLegacy(request, reply);
 			const section = query.section ?? 'essentials';
 			if (!isProfileSection(section)) return renderMessage(request, reply, this.deps, 404, lang.common.badRequest);
 			return this.#edit.show(request, reply, section);
@@ -134,13 +131,5 @@ export class ProfileController {
 		if (AVATAR_UPLOAD.has(action)) return this.#avatar.uploadForm(request, reply);
 		if (action === 'delete_avatar') return this.#avatar.deleteForm(request, reply);
 		return renderMessage(request, reply, this.deps, 404, this.deps.page.lang.common.badRequest);
-	}
-
-	/** Section « Administration » : même adresse sur l'installation PHP, si elle est configurée. */
-	private async toLegacy(request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply> {
-		// Sans installation PHP (LEGACY_BASE_URL vide), rediriger bouclerait sur Node.
-		if (this.deps.legacyBaseUrl === '') return renderMessage(request, reply, this.deps, 404, this.deps.page.lang.common.badRequest);
-		const search = request.url.includes('?') ? request.url.slice(request.url.indexOf('?')) : '';
-		return reply.redirect(`${this.deps.legacyBaseUrl}/profile.php${search}`);
 	}
 }

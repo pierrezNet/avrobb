@@ -11,7 +11,6 @@ import { buildAdminGroupForm, buildAdminGroupList } from '../presenters/adminGro
 import type { ConfigCache } from '../repositories/ConfigLoader.ts';
 import type { ConfigStore } from '../repositories/ConfigRepository.ts';
 import type { GroupAdminStore } from '../repositories/GroupAdminRepository.ts';
-import type { PhpCacheStore } from '../repositories/PhpCacheFiles.ts';
 import { type AdminGroup, readGroupForm } from '../services/adminGroups.ts';
 import { adminDenied, renderAdminPage } from './adminPage.ts';
 import { positiveInt } from './params.ts';
@@ -20,7 +19,6 @@ export interface AdminGroupsControllerDeps extends LayoutDeps {
 	groupAdmin: GroupAdminStore;
 	configStore: ConfigStore;
 	configCache: ConfigCache;
-	phpCache: PhpCacheStore | null;
 }
 
 export interface AdminGroupsQuery {
@@ -109,7 +107,6 @@ export class AdminGroupsController {
 		const groupId = mode === 'edit' ? target.id : await store.addGroup(settings, target.id);
 		if (mode === 'edit') await store.updateGroup(target.id, settings);
 		// generate_quickjump_cache($group_id) : la liste « Atteindre » de ce groupe sera régénérée.
-		await this.deps.phpCache?.invalidate(`quickjump_${groupId}`);
 		return reply.redirect(`admin_groups.php?done=${mode === 'edit' ? 'edited' : 'added'}`, 303);
 	}
 

@@ -43,13 +43,6 @@
 	<p class="form__field"><label for="cold_days">{{ t.coldDays }}</label><input type="number" id="cold_days" name="cold_days" value="{{ view.coldTopicDays }}" min="0" max="9999" inputmode="numeric" required aria-describedby="cold_days_help"><span id="cold_days_help" class="form__help">{{ t.coldDaysHelp }}</span></p>
 	<p class="form__buttons"><button type="submit" class="button button--primary">{{ t.modeSave }}</button></p>
 </form>
-<form class="form-box form" method="post" action="{{ url('admin_maintenance.php') }}">
-	{{ forms.csrf(layout) }}
-	<input type="hidden" name="action" value="clear_cache">
-	<h2 class="form-box__title">{{ t.cacheSubhead }}</h2>
-	<p class="form__help">{{ t.cacheInfo }}</p>
-	<p class="form__buttons"><button type="submit" class="button button--primary">{{ t.clearCache }}</button></p>
-</form>
 </div>
 </div>
 {% endblock %}

@@ -116,7 +116,6 @@ export const profile = {
 	sectionEssentials: 'Principal',
 	sectionDisplay: 'Affichage',
 	sectionPrivacy: 'Vie privée',
-	sectionAdmin: 'Administration',
 	sectionHeading: (username: string, section: string) => `${username} - ${section}`,
 	profileError: profileErrorText,
 	formErrors: 'Erreurs dans le profil',

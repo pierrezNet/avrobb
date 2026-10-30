@@ -1,7 +1,6 @@
 /**
- * Avatars FluxBB : un fichier <id>.(gif|jpg|png) dans o_avatars_dir de l'installation PHP.
- * Le chemin trouvé est mis en cache, oublié quand Node remplace ou efface l'avatar (un avatar
- * changé par le PHP n'apparaît qu'au redémarrage).
+ * Avatars, comme dans FluxBB : un fichier <id>.(gif|jpg|png|webp) dans o_avatars_dir, sous le
+ * stockage local. Le chemin trouvé est mis en cache, oublié quand l'avatar est remplacé ou effacé.
  */
 
 import { mkdir, rename, rm, stat, writeFile } from 'node:fs/promises';
@@ -25,14 +24,8 @@ export interface AvatarStore {
 export class FileAvatarLocator implements AvatarLocator, AvatarStore {
 	readonly #cache = new Map<number, string | null>();
 
-	/**
-	 * @param legacyRoot racine de l'installation PHP sur le disque
-	 * @param legacyBaseUrl URL publique de cette installation
-	 */
-	constructor(
-		private readonly legacyRoot: string,
-		private readonly legacyBaseUrl: string,
-	) {}
+	/** @param storageRoot dossier de stockage local (STORAGE_DIR), dont img/ est servi sous /img/ */
+	constructor(private readonly storageRoot: string) {}
 
 	async urlFor(userId: number, avatarsDir: string): Promise<string | null> {
 		if (this.#cache.has(userId)) return this.#cache.get(userId) ?? null;
@@ -42,9 +35,9 @@ export class FileAvatarLocator implements AvatarLocator, AvatarStore {
 		for (const ext of EXTENSIONS) {
 			const relative = `${avatarsDir.replace(/\/$/, '')}/${userId}.${ext}`;
 			try {
-				const info = await stat(path.join(this.legacyRoot, relative));
+				const info = await stat(path.join(this.storageRoot, relative));
 				// « ?m= » + date du fichier, comme generate_avatar_markup() : un nouvel avatar n'est pas masqué par le cache.
-				url = `${this.legacyBaseUrl}/${relative}?m=${Math.floor(info.mtimeMs / 1000)}`;
+				url = `/${relative}?m=${Math.floor(info.mtimeMs / 1000)}`;
 				break;
 			} catch {
 				// Pas d'avatar avec cette extension.
@@ -71,9 +64,9 @@ export class FileAvatarLocator implements AvatarLocator, AvatarStore {
 		this.#cache.delete(userId);
 	}
 
-	/** Dossier des avatars, obligatoirement sous la racine du PHP (o_avatars_dir vient de la base). */
+	/** Dossier des avatars, obligatoirement sous le stockage (o_avatars_dir vient de la base). */
 	#directory(avatarsDir: string): string {
-		const root = path.resolve(this.legacyRoot);
+		const root = path.resolve(this.storageRoot);
 		const dir = path.resolve(root, avatarsDir);
 		if (dir !== root && !dir.startsWith(`${root}${path.sep}`)) throw new Error('o_avatars_dir sort de la racine du forum');
 		return dir;

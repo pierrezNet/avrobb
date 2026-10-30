@@ -1,6 +1,6 @@
 /**
- * Point d'entrée : câble les vraies dépendances (base MariaDB partagée avec le PHP, fichiers de
- * l'installation PHP) et démarre le serveur.
+ * Point d'entrée : câble les vraies dépendances (base MariaDB, stockage local des fichiers) et
+ * démarre le serveur. Remplacé par un Worker Cloudflare au lot 3.
  */
 
 import path from 'node:path';
@@ -12,6 +12,7 @@ import { buildApp } from './app.ts';
 import { loadConfig } from './config.ts';
 import { createDatabase } from './db/database.ts';
 import { fr, frDateWords } from './lang/fr/index.ts';
+import { mail } from './lang/fr/mail.ts';
 import { AdminStatsRepository } from './repositories/AdminStatsRepository.ts';
 import { BanRepository } from './repositories/BanRepository.ts';
 import { CensorRepository } from './repositories/CensorRepository.ts';
@@ -28,13 +29,11 @@ import { GroupAdminRepository } from './repositories/GroupAdminRepository.ts';
 import { HeaderImageFiles } from './repositories/HeaderImageFiles.ts';
 import { HomeActivityRepository } from './repositories/HomeActivityRepository.ts';
 import { LabelAdminRepository } from './repositories/LabelAdminRepository.ts';
-import { MailTemplateFiles } from './repositories/MailTemplateFiles.ts';
 import { MaintenanceRepository } from './repositories/MaintenanceRepository.ts';
 import { MemberSuggestRepository } from './repositories/MemberSuggestRepository.ts';
 import { MemberUploadFiles } from './repositories/MemberUploadFiles.ts';
 import { ModerationRepository } from './repositories/ModerationRepository.ts';
 import { OnlineRepository } from './repositories/OnlineRepository.ts';
-import { PhpCacheFiles } from './repositories/PhpCacheFiles.ts';
 import { PostEditRepository } from './repositories/PostEditRepository.ts';
 import { PostingRepository } from './repositories/PostingRepository.ts';
 import { PostRepository } from './repositories/PostRepository.ts';
@@ -46,7 +45,7 @@ import { ReputationRepository } from './repositories/ReputationRepository.ts';
 import { SearchRepository } from './repositories/SearchRepository.ts';
 import { SitemapRepository } from './repositories/SitemapRepository.ts';
 import { StatsRepository } from './repositories/StatsRepository.ts';
-import { StopwordsLoader } from './repositories/StopwordsLoader.ts';
+import { BuiltinStopwords } from './repositories/StopwordsLoader.ts';
 import { SubjectPrefixRepository } from './repositories/SubjectPrefixRepository.ts';
 import { SubscriptionRepository } from './repositories/SubscriptionRepository.ts';
 import { ToolbarRepository } from './repositories/ToolbarRepository.ts';
@@ -60,20 +59,21 @@ import { FileAvatarLocator } from './services/avatars.ts';
 const config = loadConfig();
 const db = createDatabase(config.db);
 const clock = (): number => Math.floor(Date.now() / 1000);
-const phpCache = config.legacyRoot !== '' ? new PhpCacheFiles(path.join(config.legacyRoot, 'cache')) : null;
 
 const stats = new StatsRepository(db);
 const users = new UserRepository(db);
 const topics = new TopicRepository(db);
 const reports = new ReportRepository(db);
 const search = new SearchRepository(db);
-const avatars = new FileAvatarLocator(config.legacyRoot, config.legacyBaseUrl);
+const avatars = new FileAvatarLocator(config.storageDir);
 const privateMessages = new PrivateMessageRepository(db);
 const privateContacts = new PrivateContactRepository(db);
 
 const bans = new BanRepository(db);
 const configStore = new ConfigRepository(db);
-const configLoader = new ConfigLoader(configStore, phpCache, clock);
+const configLoader = new ConfigLoader(configStore, clock);
+const headerImages = new HeaderImageFiles(config.storageDir);
+await headerImages.installDefaults(path.join(import.meta.dirname, '..', 'public'));
 
 const app = await buildApp({
 	config: configLoader,
@@ -91,7 +91,7 @@ const app = await buildApp({
 	members: users,
 	accounts: users,
 	devLogin: config.devLogin,
-	mailTemplates: new MailTemplateFiles(config.legacyRoot),
+	mailTemplates: { load: async (name) => mail[name] },
 	mailer: new NodeMailer(config.mailOutbox),
 	profiles: users,
 	profileStore: new ProfileRepository(db),
@@ -120,7 +120,6 @@ const app = await buildApp({
 	bans,
 	banStore: bans,
 	online: new OnlineRepository(db),
-	phpCache,
 	censorship: new CensorRepository(db),
 	topicLabels: new TopicLabelRepository(db),
 	stats,
@@ -128,19 +127,18 @@ const app = await buildApp({
 	searchWriter: search,
 	feeds: new FeedRepository(db),
 	gallery: new GalleryRepository(db),
-	galleryFiles: new GalleryFiles(config.legacyRoot),
-	headerImages: new HeaderImageFiles(config.legacyRoot),
+	galleryFiles: new GalleryFiles(config.storageDir),
+	headerImages,
 	homeActivity: new HomeActivityRepository(db),
 	sitemap: new SitemapRepository(db),
-	stopwords: new StopwordsLoader(config.legacyRoot),
-	usersInfo: new UsersInfoLoader(stats, phpCache, clock),
+	stopwords: new BuiltinStopwords(),
+	usersInfo: new UsersInfoLoader(stats, clock),
 	avatars,
 	avatarStore: avatars,
-	uploads: new MemberUploadFiles(config.legacyRoot, config.legacyBaseUrl),
+	uploads: new MemberUploadFiles(config.storageDir, ''),
 	page: { lang: fr, dateWords: frDateWords, clock },
 	cookie: config.cookie,
-	legacyBaseUrl: config.legacyBaseUrl,
-	...(config.legacyRoot !== '' ? { legacyImagesRoot: path.join(config.legacyRoot, 'img') } : {}),
+	imagesRoot: path.join(config.storageDir, 'img'),
 	trustProxy: config.trustProxy,
 	logger: true,
 });

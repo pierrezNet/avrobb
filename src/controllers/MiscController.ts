@@ -1,7 +1,6 @@
 /**
  * Contrôleur de misc.php pour les règles, « marquer comme lu » et les abonnements aux sujets et
- * forums. L'e-mail à un membre et le signalement sont dans ContactController ; une action
- * inconnue est renvoyée au PHP.
+ * forums. L'e-mail à un membre et le signalement sont dans ContactController.
  *
  * Écart assumé : « marquer comme lu » et les abonnements se font par un formulaire POST (jeton
  * CSRF) ; un ancien lien GET (pages PHP, lien de désabonnement des e-mails) affiche une
@@ -21,7 +20,6 @@ import { positiveInt } from './params.ts';
 export interface MiscControllerDeps extends LayoutDeps {
 	online: OnlineWriter;
 	cookie: CookieConfig;
-	legacyBaseUrl: string;
 	trackCookieName: string;
 	subscriptions: SubscriptionStore;
 }
@@ -106,11 +104,6 @@ export class MiscController {
 			);
 		}
 
-		// Action inconnue de Node : le PHP répond.
-		if (this.deps.legacyBaseUrl !== '') {
-			const search = request.url.includes('?') ? request.url.slice(request.url.indexOf('?')) : '';
-			return reply.redirect(`${this.deps.legacyBaseUrl}/misc.php${search}`);
-		}
 		return renderMessage(request, reply, this.deps, 400, lang.common.badRequest);
 	};
 

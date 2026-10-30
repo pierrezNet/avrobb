@@ -165,9 +165,9 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	sitemap: SitemapReader;
 	/** Activité de la semaine affichée à l'accueil (discussions, nouveaux membres, projets). */
 	homeActivity: HomeActivityReader;
-	/** Logo et bannière de l'en-tête (fichiers de l'installation PHP), page Apparence. */
+	/** Logo et bannière de l'en-tête (stockage local), page Apparence. */
 	headerImages: HeaderImageStore;
-	/** Fichiers de la galerie (img/gallery/ de l'installation PHP). */
+	/** Fichiers de la galerie (img/gallery/ du stockage local). */
 	galleryFiles: GalleryFileStore;
 	stopwords: StopwordsReader;
 	usersInfo: UsersInfoReader;

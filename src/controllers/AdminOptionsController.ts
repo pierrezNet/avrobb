@@ -1,7 +1,6 @@
 /**
  * Options du forum (admin_options.php), réservées aux administrateurs. L'enregistrement n'écrit que
- * les clés modifiées, puis supprime cache_config.php et les flux en cache (generate_config_cache()
- * et clear_feed_cache() du PHP).
+ * les clés modifiées, puis vide le cache des réglages (generate_config_cache() du PHP).
  */
 
 import type { FastifyReply, FastifyRequest } from 'fastify';

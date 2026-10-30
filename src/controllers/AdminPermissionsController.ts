@@ -1,6 +1,6 @@
 /**
  * Permissions du forum (admin_permissions.php, clés p_* de config), réservées aux administrateurs.
- * Comme le PHP : seules les clés modifiées sont écrites, puis cache_config.php est supprimé.
+ * Comme le PHP : seules les clés modifiées sont écrites, puis le cache des réglages est vidé.
  */
 
 import type { FastifyReply, FastifyRequest } from 'fastify';

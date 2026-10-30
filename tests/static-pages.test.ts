@@ -21,7 +21,7 @@ const deps = (config = {}, readBoard = true) =>
 
 describe('pages d’information', () => {
 	it.each([
-		['/terms.php', 'Termes et règles', 'Droits d’auteur et piratage'],
+		['/terms.php', 'Termes et règles', 'Droits d’auteur'],
 		['/privacy.php', 'Politique de confidentialité', 'Vos droits'],
 		['/faq.php', 'Aide', 'Mentionner un membre'],
 	])('%s : rubriques, contact, sans formulaire', async (url, title, section) => {

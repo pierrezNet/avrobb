@@ -1,6 +1,7 @@
 /**
- * Parité du parseur BBCode avec le PHP de PV : chaque cas de cases.json est comparé à la sortie
- * du vrai include/parser.php (reference.json, régénéré par `npm run bbcode:reference`).
+ * Non-régression du parseur BBCode : chaque cas de cases.json est comparé à reference.json, sortie
+ * du include/parser.php de FluxBB/PV relevée une fois pour toutes (instantané figé : le PHP n'est
+ * plus disponible). Un changement voulu du rendu se reporte à la main dans reference.json.
  *
  * Les écarts volontaires (voir l'en-tête de src/services/bbcode.ts) sont listés dans DEVIATIONS et
  * vérifiés par des assertions dédiées ; tout le reste doit être identique au caractère près.

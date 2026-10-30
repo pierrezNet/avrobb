@@ -1,6 +1,5 @@
 /**
- * Lecture brute de la table config (clés o_* et p_*), source de vérité dont PHP tire cache_config.php,
- * et écriture des options modifiées dans l'administration.
+ * Lecture brute de la table config (clés o_* et p_*), source de vérité des réglages, et écriture des options modifiées dans l'administration.
  */
 
 import type { Db } from '../db/database.ts';

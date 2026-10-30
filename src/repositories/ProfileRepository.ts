@@ -16,8 +16,7 @@ export interface ProfileStore {
 	/**
 	 * Enregistrement de la section Principal avec renommage (profile.php et
 	 * plugins/apms/profile_add6.php), en une transaction : bannissements, messages, sujets, forums,
-	 * présence, listes de modérateurs, messagerie privée. Indique si des bannissements ont changé
-	 * (cache_bans.php à régénérer).
+	 * présence, listes de modérateurs, messagerie privée. Indique si des bannissements ont changé.
 	 */
 	renameUser(userId: number, oldUsername: string, newUsername: string, changes: ProfileChanges): Promise<{ bansUpdated: boolean }>;
 	/** Autre membre au pseudo identique ou ressemblant (check_username() avec l'id du membre renommé). */

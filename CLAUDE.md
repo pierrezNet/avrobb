@@ -15,7 +15,7 @@ Cible : **100 % Cloudflare**. Un Worker (Hono), D1 (SQLite), R2 (fichiers), Stat
 - `FAILLES_PHP.md` (non versionné) : failles du PHP d'origine, liste de contrôle à ne pas reproduire.
 - Projet voisin sur le même modèle (Workers + D1 + Hono) : `../donnetonpoint`.
 
-> **Transition en cours** : tant que les lots 1 à 3 de `TODO.md` ne sont pas terminés, le code tourne encore sur Fastify et MariaDB avec l'héritage PV (session FluxBB, caches PHP…). Ce fichier décrit la **cible**. Un lot terminé met à jour la section « Commandes » s'il en change.
+> **Transition en cours** : l'héritage PV est retiré (lot 1), mais tant que les lots 2 et 3 de `TODO.md` ne sont pas terminés, le code tourne encore sur **Fastify, Node et MariaDB** (schéma FluxBB, conteneur `pv_db` sur le port 3307), avec un stockage local des fichiers (`STORAGE_DIR`). Ce fichier décrit la **cible**. Commandes actuelles : `npm run dev` (tsx, port `PORT` de `.env`), `npm run check`, `npm run test:db` (base `pv_forum_test` sur MariaDB), `npm run screenshot`. Un lot terminé met à jour la section « Commandes » s'il en change.
 
 ## Commandes
 
@@ -127,10 +127,10 @@ Principes :
 
 ## Skills du projet
 
-Dans `.claude/skills/` (encore rédigés pour pv-forum, à réécrire au lot 1) :
+Dans `.claude/skills/` :
+- **`new-page`** : procédure pour ajouter ou refondre une page ou une fonctionnalité.
 - **`mvc-review`** : grille de relecture (couches, sécurité, contraintes Workers et D1, tests) à passer avant de considérer un lot terminé.
 - **`responsive-ui`** : règles CSS et gabarits pour les vues.
-- **`port-page`** : procédure de portage depuis le PHP, devenue sans objet ; à remplacer par une procédure « nouvelle page ».
 
 ## Environnement
 

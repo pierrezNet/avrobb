@@ -1,5 +1,5 @@
 /**
- * Conversion des options brutes du forum (table config ou cache_config.php, clés o_* et p_*)
+ * Conversion des options brutes du forum (table config, clés o_* et p_*)
  * en réglages typés du domaine. Fonction pure : la source des valeurs est choisie ailleurs
  * (repositories/ConfigLoader.ts).
  */

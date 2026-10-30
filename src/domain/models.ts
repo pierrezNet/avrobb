@@ -375,7 +375,7 @@ export interface RecentTopic {
 	lastPost: number;
 }
 
-/** cache_users_info.php : nombre de membres et dernier inscrit. */
+/** Nombre de membres et dernier inscrit (cache_users_info.php du PHP). */
 export interface UsersInfo {
 	totalUsers: number;
 	newestUser: { id: number; username: string } | null;

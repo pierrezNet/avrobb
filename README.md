@@ -1,40 +1,39 @@
-# pv-forum — prototype
+# AvroBB
 
-Réécriture Node.js (TypeScript, MVC) du forum Pilote-Virtuel, page par page, sur la base FluxBB existante.
-Ce prototype ne sert que `viewtopic.php`, en lecture seule ; les autres liens renvoient vers l'installation PHP.
+Forum personnel d'Emmanuel Pierrez, lieu d'échange autour de ses projets. Lecture publique, écriture
+réservée aux membres, comptes par SSO (GitHub, Google en option).
+
+Le code vient de **pv-forum**, réécriture Node.js/TypeScript du forum Pilote-Virtuel (FluxBB 1.5.4),
+dont AvroBB est désormais indépendant : plus de cohabitation avec un PHP ni de compatibilité de
+schéma FluxBB. Cible : **Cloudflare** (Workers, D1, R2). Le plan de portage est dans
+[`TODO.md`](TODO.md), les règles de travail dans [`CLAUDE.md`](CLAUDE.md).
+
+## État actuel
+
+Lot 1 terminé (retrait de l'héritage PV). L'application tourne encore sur **Node, Fastify et
+MariaDB** au schéma FluxBB ; Hono arrive au lot 2, D1 et le Worker au lot 3. Les comptes SSO
+arrivent au lot 5 : d'ici là, la **connexion de développement** (`DEV_LOGIN=1`) permet de se
+connecter sous le nom d'un membre existant, depuis la machine seulement.
 
 ## Lancer
 
 ```bash
-cp .env.example .env    # renseigner LEGACY_COOKIE_SEED ($cookie_seed du config PHP)
+cp .env.example .env    # SESSION_SECRET : openssl rand -hex 32
 npm install
-npm run dev             # http://localhost:3000/viewtopic.php?id=4
+npm run dev             # http://localhost:3000
 npm run check           # lint (Biome) + typecheck + tests rapides
 npm run test:db         # tests sur une vraie base (pv_forum_test, recréée à chaque fois)
-npm run parity -- 'viewtopic.php?id=4'     # compare le texte et les liens avec la page PHP
-npm run screenshot -- 'http://localhost:3000/viewtopic.php?id=4' --widths 320,1280
+npm run screenshot -- 'http://localhost:3000/index.php' --widths 320,1280 [--cookie avrobb_session=…]
 ```
 
-### Production
+Base de développement : le conteneur MariaDB `pv_db` (port 3307) de la pile Docker héritée de
+pv-forum. Variables des tests sur base : `TEST_DB_HOST`, `TEST_DB_PORT`, `TEST_DB_USER`,
+`TEST_DB_PASSWORD` (par défaut `root`/`root`), `TEST_DB_NAME` (doit finir par `_test`). Les captures
+demandent un Chrome sans tête (`CHROME_BIN`, ou celui de Playwright s'il est installé).
 
-Le serveur de production exécute du JavaScript compilé, sans `tsx` :
-
-```bash
-npm ci                  # sur le serveur lui-même : sharp y installe son module natif
-npm run build           # src/ → dist/ (tsc, imports .ts réécrits en .js) + copie des vues
-npm prune --omit=dev    # facultatif : retire les outils de développement
-npm run start           # node dist/server.js, avec le .env du serveur
-```
-
-`public/` est servi depuis la racine du projet et `dist/views` depuis `dist/`. `dist/` n'est pas
-versionné : on le reconstruit à chaque déploiement.
-
-Variables des tests sur base : `TEST_DB_HOST`, `TEST_DB_PORT`, `TEST_DB_USER`, `TEST_DB_PASSWORD`
-(par défaut le conteneur `pv_db`, `root`/`root`), `TEST_DB_NAME` (doit finir par `_test`).
-Les captures demandent un Chrome sans tête (`CHROME_BIN`, ou celui de Playwright s'il est installé).
-
-Le conteneur `pv_db` de PiloteVirtuel doit tourner (port 3307). Un membre connecté sur
-http://localhost:8080 est reconnu par le prototype : le cookie de session PHP est lu et vérifié.
+Fichiers envoyés (galerie, avatars, logo, bannière) : dossier `STORAGE_DIR` (`storage/` par défaut),
+servi sous `/img/` ; R2 le remplacera au lot 4. Le logo et la bannière d'AvroBB (`public/img/`) y
+sont copiés au premier démarrage ; `scripts/brand.py` les régénère.
 
 ## Organisation
 
@@ -46,17 +45,18 @@ http://localhost:8080 est reconnu par le prototype : le cookie de session PHP es
 | Contrôleur   | `src/controllers/`                 | Requête → repositories → presenter → réponse ; ni SQL ni HTML               |
 | Vue          | `src/views/`                       | Nunjucks (syntaxe proche de Twig), échappement automatique                  |
 
-Le préfixe des tables (`fo_`) est ajouté par `TablePrefixPlugin` : les requêtes utilisent les noms nus.
+Le préfixe des tables (`fo_`) est ajouté par `TablePrefixPlugin` : les requêtes utilisent les noms
+nus (jusqu'au schéma SQLite neuf du lot 3).
 
 Front-end : `public/css/base.css` (mobile d'abord) et un fichier de variables par thème dans
 `public/css/themes/` ; le contraste AA de chaque thème est vérifié par `tests/themes.test.ts`.
-Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il existe (comme `common.php`).
 
-## Écarts connus avec FluxBB
+## Différences avec FluxBB
 
 - BBCode : écarts volontaires listés en tête de `src/services/bbcode.ts` (émojis au lieu des images,
   `[video]` en lecteur intégré, `[spoiler]` en `<details>`, liens `[topic]`… corrigés, balises
-  déséquilibrées laissées en texte). Tout le reste est comparé au parseur PHP (`tests/bbcode/`).
+  déséquilibrées laissées en texte). Le reste est comparé aux sorties du parseur PHP relevées une
+  fois pour toutes (`tests/bbcode/`, instantanés figés).
 - Affichage des messages : adresses en texte brut (`http://…`, `www.…`) transformées en liens, y
   compris dans les anciens messages (PV avait désactivé ce [url] de `do_clickable()`) ; un retour à
   la ligne simple est suivi d'un demi-interligne d'espace (`<span class="bbcode-gap">`).
@@ -71,9 +71,8 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
 - Site web du profil : préfixé de `http://` s'il n'a pas de schéma (le PHP laissait passer `javascript:`).
 - Textes en français seulement.
 - Liens de modération du pied de page affichés : PV les masque visuellement (`sr-only`) sans autre accès.
-  Fermer, épingler et poser ou retirer une balise de PV (`balises_modo`) passent par un bouton POST
-  avec jeton CSRF (le PHP écrivait sur un lien GET, vérifié par le seul Referer) ; un ancien lien
-  GET mène à une confirmation.
+  Fermer et épingler passent par un bouton POST avec jeton CSRF (le PHP écrivait sur un lien GET,
+  vérifié par le seul Referer) ; un ancien lien GET mène à une confirmation.
 - Modération (`moderate.php`) : toutes les actions en POST avec jeton CSRF ; le premier message
   d'un sujet n'est jamais supprimé ni scindé, même par une requête forgée ; un modérateur ne peut
   pas supprimer un sujet ou un message où un administrateur a écrit ; les erreurs s'affichent dans
@@ -82,8 +81,8 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
 - Signalements (`admin_reports.php`) : bouton « Marquer comme traité » en POST avec jeton CSRF ;
   les 10 derniers signalements traités sont conservés, comme le PHP.
 - Accueil de l'administration : pas de vérification de mise à jour (`action=check_upgrade`, le
-  service de fluxbb.org n'existe plus). Statistiques du serveur : charge et visiteurs actifs pour
-  tous, environnement Node.js et base de données pour les administrateurs ; pas de `phpinfo()`.
+  service de fluxbb.org n'existe plus). Statistiques : membres en ligne pour tous, base de données
+  pour les administrateurs ; ni charge du serveur, ni environnement, ni `phpinfo()`.
 - Options (`admin_options.php`) : erreurs de saisie réaffichées dans le formulaire (toutes à la fois,
   le PHP s'arrêtait à la première) ; mot de passe SMTP jamais renvoyé au navigateur (le PHP y mettait
   une valeur factice) ; fuseau, langue et style limités aux listes proposées ; une URL de base au
@@ -93,8 +92,7 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   page ; la suppression d'un forum se confirme par un bouton POST (le lien GET n'affiche que la
   confirmation) ; enregistrer un forum qui contient des sujets conserve son URL de redirection (le
   PHP la vidait, le champ n'étant pas envoyé) ; une permission qui diffère du groupe est signalée
-  « (modifié) » au lieu de la seule couleur. Les listes « Atteindre » du PHP sont supprimées après
-  chaque modification, il les régénère.
+  « (modifié) » au lieu de la seule couleur.
 - Groupes (`admin_groups.php`) : erreurs réaffichées dans le formulaire ; la suppression ne se fait
   qu'en POST (le lien affiche la confirmation ou le choix du groupe d'accueil) ; les membres ne
   peuvent pas être déplacés vers les invités ; les valeurs oui/non sont enregistrées en 0/1 (le PHP
@@ -105,14 +103,10 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   libres (« yesterday ») ; date d'expiration d'un bannissement au format aaaa-mm-jj seulement ; pas de
   lien JavaScript « Tout sélectionner ». Changer de groupe, supprimer et bannir passent par les mêmes
   étapes de confirmation que le PHP, avec jeton CSRF.
-- Pages propres à PV (`admin_loader.php?plugin=…`, mêmes URL que le PHP) : AvroBB n'a pas de
+- Pages servies par `admin_loader.php?plugin=…` (mêmes URL que le PHP) : AvroBB n'a pas de
   système de plugins, elles figurent dans le menu d'administration comme les autres pages (plus de
-  « Menu des plugins ») : Ajouter un membre (AMP, aussi pour les modérateurs), Balises, Messagerie
-  privée, Fichiers des membres. Un ancien plugin abandonné renvoie une erreur 400. « Ajouter un
-  membre » (AMP_Gestion_utilisateurs) : seul l'ajout est repris (l'élagage était
-  désactivé par PV : formulaire sans bouton) ; mot de passe de 6 caractères au moins comme ailleurs
-  dans Node (4 dans le plugin) ; erreurs réaffichées dans le formulaire ; e-mails d'alerte et de
-  bienvenue tirés des modèles du PHP.
+  « Menu des plugins ») : Balises (balises du sujet) et Messagerie privée. Un ancien plugin
+  abandonné renvoie une erreur 400.
 - Bannissements (`admin_bans.php`) : suppression par bouton POST après confirmation (le PHP
   supprimait sur un lien GET) ; erreurs réaffichées dans le formulaire ; un octet « 000 » d'une IP
   devient « 0 » (le PHP le vidait) ; dates de recherche aux formats proposés (aaaa-mm-jj).
@@ -122,9 +116,8 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   **Un banni lit le forum mais n'y écrit plus** (FluxBB lui fermait tout le forum) : ses droits
   d'écriture sont retirés (messages, modification, suppression, e-mail, messagerie, renommée, balises
   du sujet), un bandeau rappelle l'échéance et le motif, et tout envoi de formulaire est refusé sauf
-  connexion/déconnexion, « marquer comme lu » et abonnements. Le PHP, lui, bloque encore tout.
-- Censure (`admin_censoring.php`) : identique au PHP, avec jeton CSRF ; `cache_censoring.php` est
-  supprimé après chaque modification.
+  connexion/déconnexion, « marquer comme lu » et abonnements.
+- Censure (`admin_censoring.php`) : identique au PHP, avec jeton CSRF.
 - Maintenance (`admin_maintenance.php`) : chaque lot de la reconstruction de l'index est envoyé en
   POST avec jeton CSRF (le PHP enchaînait des GET qui écrivaient), un script enchaîne les étapes et
   un bouton « Continuer » le remplace sans JavaScript. **Pas d'élagage** (suppression définitive des
@@ -132,39 +125,25 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   clé propre à AvroBB, 0 = désactivé). Au-delà, une discussion non épinglée quitte la liste de son
   forum pour la page « Anciennes discussions » (`viewforum.php?id=…&old=1`, bouton en haut de la
   liste, masqué s'il n'y en a aucune) ; rien n'est supprimé, la recherche et les liens les trouvent.
-  Ajout : « Vider les caches » supprime les fichiers `cache/cache_*.php`, que le PHP régénère.
   Le **mode maintenance** (interrupteur et message, `o_maintenance*`) se règle dans cette page et
   non plus dans les Options, avec un aperçu de la page vue par les membres
   (`admin_maintenance.php?preview=1`) ; l'alerte « mode maintenance activé » de l'en-tête y mène.
   Un message vide reprend le texte par défaut sans désactiver le mode.
 - Apparence (`admin_appearance.php`, page propre à AvroBB, administrateurs) : remplacement du logo
-  et de la bannière. Les images remplacent les fichiers du PHP (`img/logo.png`,
-  `style/imports/img/banner.jpg`), pour que les deux forums affichent les mêmes ; type lu dans le
-  contenu, réduction et réencodage par sharp (PNG pour le logo, JPEG pour la bannière) ; l'image
-  précédente est gardée (`*.previous.*`) et peut être rétablie ; `o_header_version` (clé AvroBB)
-  versionne les adresses pour contourner les caches. Sur grand écran, la bannière est affichée
-  derrière le logo, menu en dessous, comme l'en-tête du PHP.
+  et de la bannière, rangés dans le stockage (`img/logo.png`, `img/banner.jpg`) ; type lu dans le
+  contenu, réduction et réencodage (PNG pour le logo, JPEG pour la bannière) ; l'image précédente
+  est gardée (`*.previous.*`) et peut être rétablie ; `o_header_version` (clé AvroBB) versionne les
+  adresses pour contourner les caches. Sur grand écran, la bannière est affichée derrière le logo,
+  menu en dessous.
 - Messagerie privée : mêmes réglages que le PHP, avec jeton CSRF ; seules les clés modifiées sont
   écrites.
-- Fichiers des membres (Uploadile) : réglages comme le PHP, sans la miniaturisation
-  (`o_uploadile_thumb*` n'est plus ni lu ni écrit : une image envoyée a une variante mobile WebP, qui
-  sert d'aperçu) ; la suppression vise le fichier d'un membre précis (le PHP supprimait le même nom
-  chez tous les membres), emporte variante mobile et ancienne miniature, et recalcule l'espace utilisé.
-- Plugin PunBalise (`AP_Balises.php`) : ajout, édition et suppression des balises (avec la colonne
-  `bal<id>` de `balises_modo`, hors transaction car l'ALTER TABLE valide implicitement) ; le nom d'une
-  balise se modifie (le PHP le figeait), sans doublon nom et type ; sélecteur de couleur natif du navigateur ; couleur
-  vérifiée (#RRGGBB) avant affichage. L'installation, la mise à jour et la désinstallation du mod
-  restent sur le PHP.
-- AvroBB est un projet à part, apparenté à FluxBB : ce qui ne lui sert pas est retiré. Plugins Sondage
-  (sans objet dans PV) et Mod Installer (il modifie les fichiers PHP) absents, ainsi que FluxToolBar
-  (la barre d'outils est définie par AvroBB), Plugile (il ne réglait que le titre d'un bloc du menu
-  du profil : les plugiles suivent désormais les sections), Smilies (même le PHP n'affiche plus les
-  images de la table `smilies` : 18 codes en dur, rendus en émojis par Node) et AP_Premium
-  (promotion temporaire dans un groupe ; sa table `premium` n'a jamais été installée sur PV) ; plus
-  d'installation
-  ni de désinstallation de mods (PunBalise, Plugile, Uploadile) ; options sans effet retirées du
-  formulaire et jamais écrites (compression GZip, formats de date et d'heure, langue par défaut,
-  numéro de version) ; plus de numéro de version FluxBB (pied de page, accueil, générateur des flux).
+- AvroBB est un projet à part, apparenté à FluxBB : ce qui ne lui sert pas est retiré. Plus de
+  comptes locaux (mot de passe, inscription, mot de passe oublié, ajout de membre par
+  l'administration : les comptes viendront du SSO), plus de plugins de PV (Sondage, Mod Installer,
+  FluxToolBar, Plugile, Uploadile, PunBalise, Smilies, AP_Premium), plus de contacts ni de listes
+  d'envoi dans la messagerie, plus de section « Administration » dans le profil (admin_users.php la
+  remplace) ; options sans effet retirées du formulaire et jamais écrites (compression GZip, formats
+  de date et d'heure, langue par défaut, numéro de version) ; plus de numéro de version FluxBB.
 - « Citer » ne reprend que le passage sélectionné dans le message, s'il y en a un
   (`public/js/quote-selection.js` ajoute `qtext=` au lien `post.php?tid=…&qid=…`, sous le nom de
   l'auteur) ; sans sélection ni JavaScript, le message entier comme dans FluxBB. Le passage est
@@ -179,19 +158,19 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   du forum ou http(s)), enregistrés en JSON dans `config` (`o_page_<page>`, clés AvroBB), texte
   toujours échappé ; retour possible au texte par défaut. Lisibles en mode maintenance et sans droit
   de lecture du forum.
-- Nouvelle discussion sans balise de simulateur : le formulaire est réaffiché avec un avertissement
-  (saisie conservée) ; un second « Valider » publie tel quel (`no_tag_ok`), pour les rares sujets
-  qui ne concernent aucun simulateur. Pas d'avertissement pour un brouillon ni pour une réponse.
+- Nouvelle discussion sans balise de projet : le formulaire est réaffiché avec un avertissement
+  (saisie conservée) ; un second « Valider » publie tel quel (`no_tag_ok`), pour les sujets qui ne
+  concernent aucun projet. Pas d'avertissement pour un brouillon ni pour une réponse.
 - Accueil : le bloc « Informations sur les forums » est remplacé par l'activité de la semaine
   (7 jours glissants) : « En ce moment » (membres en ligne avec avatar ou initiale, nombre d'invités),
   « Bienvenue à » (inscrits de la semaine), « Ça discute cette semaine » (4 discussions les plus
   commentées, en cartes avec la dernière image publiée, variante mobile si c'est une image du
-  forum), « Simulateurs de la semaine » (discussions actives par balise de simulateur). Les totaux
+  forum), « Projets de la semaine » (discussions actives par balise de projet). Les totaux
   sont sur la page Statistiques (`stats.php`, pied de page). « Marquer toutes les discussions comme
   lues » n'apparaît que s'il reste des nouveaux messages.
 - En-têtes de sécurité sur toutes les réponses (FluxBB n'en envoyait pas) : CSP sans script en
   ligne (`script-src 'self'`), styles en ligne permis (couleurs des balises), images de partout en
-  http(s), vidéos YouTube/Dailymotion seulement, formulaires vers le forum ou l'installation PHP,
+  http(s), vidéos YouTube/Dailymotion seulement, formulaires vers le forum seulement,
   pas d'intégration dans un autre site ; `nosniff`, `Referrer-Policy`, `Permissions-Policy`, HSTS
   en HTTPS (`TRUST_PROXY` derrière un proxy). Un script collé dans l'annonce ou les liens du menu
   par l'administrateur ne s'exécute plus.
@@ -201,47 +180,41 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   discussion, icône du forum sinon), `robots.txt` (formulaires et administration exclus) et
   `sitemap.xml` (accueil, pages d'information, forums et discussions lisibles par un invité).
 - Icônes : favicon SVG, PNG de secours, icône d'écran d'accueil iOS et manifeste (`public/icons`,
-  `public/manifest.json`) ; `/favicon.ico` redirige vers la nouvelle icône.
+  `public/manifest.json`), aux couleurs d'AvroBB ; `/favicon.ico` redirige vers la nouvelle icône.
 - Pas de flux Atom : `extern.php?type=atom` sert le flux RSS (les anciens abonnements continuent de
   fonctionner) ; l'option « Flux par défaut » ne propose plus que Aucun ou RSS, et l'ancien choix
   Atom (`o_feed_type` = 2, celui de PV) n'affiche plus de lien de flux. Pas de flux des discussions
   actives à l'accueil ; avec RSS, liens de flux du forum et de la discussion.
 - Pagination discrète (liens simples, page courante soulignée) et masquée quand il n'y a qu'une
   page (FluxBB affichait « Pages : 1 »).
-- Page Balises de l'administration : balises du sujet (nom, groupe simulateur ou autre, couleur de
+- Page Balises de l'administration : balises du sujet (nom, groupe projet ou autre, couleur de
   fond, ordre ; renommer une balise la renomme dans les sujets existants, sans refaire l'index de
-  recherche) et balises de modération, toutes en pastilles. Liste des balises du sujet enregistrée
-  dans `config` (`o_subject_tags`, ignorée par le PHP).
+  recherche), en pastilles. Liste enregistrée dans `config` (`o_subject_tags`, clé AvroBB).
 - Balises du sujet (PV, « préfixes » dans le PHP) : page `topic_prefixes.php`, propre à Node (le PHP n'a pas d'équivalent),
   ouverte par un bouton de viewtopic pour l'auteur de la discussion et les modérateurs du forum ; les
   préfixes connus sont réécrits dans l'ordre des listes, séparés du titre par une espace.
 - Mentions de membres (ajout, propre à Node) : dans les zones de message (rédaction, réponse rapide,
   messagerie), « @ » suivi du début d'un nom propose des membres (`member_suggest.php`, réservé aux
   groupes qui voient la liste des membres) ; le choix insère `[url=<base>/profile.php?id=N]@Nom[/url]`,
-  que le PHP affiche aussi comme un lien. Les champs de destinataires et de contacts de la messagerie
-  complètent les noms de la même façon. À la publication d'un nouveau message, chaque membre
+  que le PHP affiche aussi comme un lien. Le champ des destinataires de la messagerie
+  complète les noms de la même façon. À la publication d'un nouveau message, chaque membre
   mentionné (5 au plus) reçoit un message privé avec le lien vers le message, s'il peut lire la
-  discussion et recevoir des messages privés (messagerie active, boîte non pleine, auteur non
-  bloqué) ; l'auteur n'en garde pas de copie. Rien n'est envoyé pour une modification ou un brouillon.
-- Balises en tête de sujet (`[MSFS]`, `[Résolu]`, `[BETA]`…, et les balises PunBalise des
-  modérateurs) affichées en pastilles colorées sans crochets dans les listes de sujets, la recherche et
-  le titre de viewtopic. Affichage seulement : le sujet enregistré garde ses crochets, que le PHP
-  affiche tels quels. Couleur fixe pour les balises proposées, couleur stable tirée du nom pour les
-  autres, couleur réglée dans PunBalise pour les balises des modérateurs (texte clair ou foncé selon
-  le fond).
+  discussion et recevoir des messages privés (messagerie active, boîte non pleine) ; l'auteur n'en garde pas de copie. Rien n'est envoyé pour une modification ou un brouillon.
+- Balises en tête de sujet (`[AvroBB]`, `[Résolu]`, `[BETA]`…) affichées en pastilles colorées sans
+  crochets dans les listes de sujets, la recherche et le titre de viewtopic. Affichage seulement : le
+  sujet enregistré garde ses crochets. Couleur réglée pour chaque balise proposée (texte clair ou
+  foncé selon le fond).
 - Balises du sujet, seules les balises proposées sont gardées : à l'enregistrement d'un sujet
   (nouvelle discussion, modification, brouillon, page « Balises du sujet »), les balises inventées en
   tête (`[BETA]`) sont retirées et les doublons supprimés ; un sujet réduit à des balises est refusé.
   Les anciens sujets ne sont pas réécrits, mais leurs balises inventées et doublons ne sont plus
   affichés par Node (le PHP les montre toujours). Les boutons du formulaire ajoutent une balise ou la
   retirent si elle y est déjà.
-- Images envoyées (fichiers Uploadile et galerie) : converties en WebP par sharp, plus grand côté
-  limité à 1024 px, avec une variante mobile de 640 px (`mobile_<fichier>`, masquée des listes et
-  supprimée avec l'image) et, pour la galerie ou si les miniatures Uploadile sont activées, une
-  vignette `mini_` calculée par le serveur (le navigateur ne la calcule plus). Les limites de poids
-  portent sur l'image convertie. Dans les messages, une image WebP du forum est servie dans un
-  `<picture>` qui donne la variante mobile aux écrans de 640 px au plus ; toutes les images sont
-  chargées à la demande (`loading="lazy"`, équivalent natif de bLazy, sans JavaScript).
+- Images envoyées (galerie) : converties en WebP par sharp (le navigateur s'en chargera au lot 6),
+  plus grand côté limité à 1024 px, avec une variante mobile de 640 px (`mobile_<fichier>`) et une
+  vignette `mini_`. Les limites de poids portent sur l'image convertie. Dans les messages, une image
+  WebP du forum est servie dans un `<picture>` qui donne la variante mobile aux écrans de 640 px au
+  plus ; toutes les images sont chargées à la demande (`loading="lazy"`).
 - Avatar : une image trop grande ou trop lourde est recadrée automatiquement aux dimensions permises
   (centre d'intérêt de l'image), au lieu d'être refusée ; elle garde le format GIF, JPEG ou PNG, les
   seuls que le PHP affiche, et passe en JPEG plus compressé si son poids dépasse encore la limite.
@@ -249,7 +222,7 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   héritage d'une base en utf8 sur 3 octets) ; redirection immédiate vers le message ; boutons de
   préfixe du sujet en JavaScript et seulement pour une nouvelle discussion ; pas de réponse dans le
   lien d'un sujet déplacé ; un échec d'envoi des notifications n'annule pas le message ; modèles
-  d'e-mail en français pour tous.
+  d'e-mail en français (`src/lang/fr/mail.ts`).
 - Modification (`edit.php`) : un membre peut modifier son message pendant 30 minutes, comme PV le
   voulait (son code comparait `strtotime()` d'un timestamp, toujours faux : seuls les modérateurs
   pouvaient modifier) ; le lien « Modifier » de viewtopic suit la même règle. Le lien « Supprimer »
@@ -263,52 +236,33 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   menait qu'après un enregistrement) ; la case est proposée à tout membre (le PHP la cachait quand
   les abonnements aux sujets étaient désactivés).
 - Le menu mobile est un `<details>` sans JavaScript (PV : bouton burger en JS) ; pas d'icônes rapides.
-- `profile.php` : Node sert la consultation, les sections de modification, le mot de passe,
-  l'adresse, l'avatar et les plugiles ; seule la section « Administration » (groupe, modération,
-  bannissement, suppression) est redirigée vers `LEGACY_BASE_URL` (lot Administration).
-- Biographie affichée directement sur le profil (le PHP la cache derrière `?plugin=UP_Ma_biographie.php`).
+- `profile.php` : consultation, sections de modification et avatar ; pas de section
+  « Administration » (groupe, bannissement, suppression : voir admin_users.php).
 - Modification du profil : seuls les champs affichés sont enregistrés (le PHP remettait `use_pm` ou
   `reputation_enable` à 0 quand la messagerie ou la renommée étaient désactivées) ; les erreurs
   réaffichent le formulaire, un enregistrement redirige avec un avis « Profil mis à jour » ;
   longueurs vérifiées par le serveur ; pas de choix des formats de date et d'heure (PV les ignore)
-  ni de la langue ; les plugiles « UP_ » ne sont plus recopiés dans la section Principal ; un simple
-  membre qui change son adresse dans Principal (`o_regs_verify` désactivé) suit les règles
-  d'adresse bannie ou déjà utilisée.
-- Mot de passe : l'ancien est toujours demandé pour changer le sien, modérateur compris ;
-  6 caractères au moins. Une clé d'activation n'active que ce qu'elle annonce (hash ou adresse).
-  Les liens d'activation reçus par e-mail (mot de passe, adresse) écrivent en GET, comme le PHP.
+  ni de la langue ; l'adresse e-mail se modifie directement dans la section Principal (sans mot de
+  passe, pas de lien de confirmation à envoyer), avec les règles d'adresse bannie ou déjà utilisée.
 - Avatar : effacement confirmé en POST (le PHP effaçait sur un lien GET) ; mêmes droits que la
   modification du profil ; type lu dans le contenu du fichier ; l'URL porte `?m=<date>`.
-- Plugiles privés (`UPP_Suivile`, `UPP_Mes_uploads`) réservés au membre et aux administrateurs (le
-  PHP ne contrôlait rien : n'importe qui pouvait désabonner un membre ou supprimer ses fichiers).
-- Uploadile : nom de fichier réduit à lettres, chiffres et tirets ; extensions exécutables ou
-  interprétées par le navigateur (php, html, svg, js…) toujours refusées ; pas de miniature créée
-  (celles qui existent restent affichées ; sinon l'image elle-même sert d'aperçu) ; formulaires
-  limités à 16 Mio. Gestionnaire (`gestionnaire.php`) dans la mise en page commune ; « Insérer »
-  ajoute une image en `[img]` et un autre fichier en lien, à la position du curseur du message
-  (le PHP insérait un lien « Votre texte ici » pour une image sans miniature).
 - Renommage : les destinataires des MP sont remplacés élément par élément (le `REPLACE()` du PHP
   renommait aussi « MaxDUO » en renommant « Max ») ; le renommage et les autres champs sont
   enregistrés dans une même transaction.
-- Messagerie privée (APMS) : tables `messages`, `contacts`, `sending_lists` absentes de la base
-  locale, reconstituées d'après le code PHP (`tests/db/schema.sql`). Toutes les actions écrivent en
-  POST avec jeton CSRF ; les anciens liens GET (« Ajouter aux contacts » du profil, suppression ou
-  changement de droits d'un contact, suppression d'une liste) mènent à une confirmation. Une
-  réponse va aux participants qui détiennent encore la conversation (lus en base, pas dans un champ
-  caché) ; on ne répond, ne cite, ne modifie et ne supprime que dans sa propre boîte ; « supprimer
-  pour tous » (modérateurs) vise les copies du message, plus le texte identique dans toute la base ;
-  quitter une conversation en retire tous les messages et marque « (supprimé) » chez les autres ;
-  sujet ou message tout en capitales ramené en minuscules pour un simple membre (condition inversée
-  dans le PHP) ; anti-flood sur `users.last_post` au lieu d'une session PHP ; une liste d'envoi aux
-  destinataires invalides est refusée (le PHP l'enregistrait) ; après une réponse, on revient au
-  message dans la conversation.
-- Recherche : résultats mémorisés dans `search_cache` (lisibles par le PHP) et anti-flood
+- Messagerie privée (APMS, simplifiée) : conversations seulement, sans contacts, listes d'envoi ni
+  blocage d'expéditeur. Table `messages` absente de la base locale, reconstituée d'après le code PHP
+  (`tests/db/schema.sql`). Toutes les actions écrivent en POST avec jeton CSRF. Une réponse va aux
+  participants qui détiennent encore la conversation (lus en base, pas dans un champ caché) ; on ne
+  répond, ne cite, ne modifie et ne supprime que dans sa propre boîte ; « supprimer pour tous »
+  (modérateurs) vise les copies du message, plus le texte identique dans toute la base ; quitter une
+  conversation en retire tous les messages et marque « (supprimé) » chez les autres ; sujet ou
+  message tout en capitales ramené en minuscules pour un simple membre (condition inversée dans le
+  PHP) ; anti-flood sur `users.last_post` au lieu d'une session PHP ; après une réponse, on revient
+  au message dans la conversation.
+- Recherche : résultats mémorisés dans `search_cache` et anti-flood
   `g_search_flood`, comme le PHP ; le formulaire reste en GET et écrit donc `last_search` et le cache.
   Pas de recherche « CJK » par LIKE (inutile sur un forum francophone). Refus pour flood en 429.
-- Premium (`premium.php`) : non repris. Le statut acheté par code (PV15/PV365, boutique Digiseller,
-  dons Tipeee) n'avait aucun effet dans le forum et la page n'était liée nulle part. Les tables
-  `apremium`, `acodes15` et `acodes365` restent dans la base, intactes ; `premium.php` sera supprimé
-  du PHP à la bascule. Le soutien financier est à repenser (voir TODO).
+- Premium (`premium.php`) : non repris (statut sans effet dans le forum PV).
 - Galerie : recherche dans le titre et la description (`?q=`, conservée par la pagination et le filtre « Mes images », page non indexée) ; informations visibles sous chaque vignette (le PHP les montrait au survol, inaccessible
   au clavier et au toucher), vignette collée en haut de la tuile ; filtre « Mes images » (`?mine=1`).
   Envoi : PNG accepté en plus du JPEG et du GIF, type lu dans le contenu ; vignette (150 px, JPEG)
@@ -326,19 +280,15 @@ Les réglages du forum sont lus dans `cache/cache_config.php` du PHP quand il ex
   le lien « Images de la galerie » reste sous le formulaire. Une image de la galerie insérée avec
   son titre et sa description s'affiche en carte (`<figure>` : image, titre, légende) ; le PHP
   montre le même BBCode en titre gras, image et texte.
-- Images de l'installation PHP (`img/`) servies aussi par Node sous `/img/` (images seulement :
-  gif, jpg, png, webp, ico), puisque `o_base_url` peut désigner Node et que les images insérées
-  dans les messages y pointent.
+- Fichiers du stockage local (`STORAGE_DIR/img/`) servis sous `/img/`, images seulement (gif, jpg,
+  png, webp, ico).
 - extern.php : pas d'authentification HTTP Basic ni de cache des flux (`o_feed_ttl`).
-- Connexion : jeton CSRF, adresse de retour limitée aux pages du forum (le PHP permettait une
-  redirection ouverte), redirection immédiate sans page « Redirection… », page accessible en
-  maintenance (le PHP empêchait un administrateur déconnecté de revenir).
-- Inscription : mot de passe de 6 caractères au moins, comme l'annonce le formulaire (le code PHP
-  en acceptait 4) ; pas de choix de la langue (une seule installée).
+- Connexion : pas de mot de passe (SSO au lot 5, connexion de développement d'ici là) ; jeton CSRF,
+  adresse de retour limitée aux pages du forum, redirection immédiate, page accessible en
+  maintenance. Session dans un cookie signé (HMAC-SHA256), prolongée une fois par jour ;
+  déconnexion par un bouton POST avec jeton CSRF.
 - E-mail à un membre et signalement (`misc.php`) : les erreurs réaffichent le formulaire au lieu
   d'une page de message ; adresse de retour limitée aux pages du forum ; signaler exige de pouvoir
   lire le message.
-- « Marquer comme lu » et abonnements (sujet, forum) : formulaire POST ; un ancien lien GET (pages
-  PHP, lien de désabonnement des e-mails) affiche une confirmation.
-- Le jeton du lien « Déconnexion » dépend de l'IP vue par le serveur : derrière un proxy, régler
-  `TRUST_PROXY=1` (et `FORUM_BEHIND_REVERSE_PROXY` côté PHP) pour que les deux voient la même.
+- « Marquer comme lu » et abonnements (sujet, forum) : formulaire POST ; un ancien lien GET (lien de
+  désabonnement des e-mails) affiche une confirmation.

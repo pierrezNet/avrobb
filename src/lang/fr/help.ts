@@ -1,7 +1,7 @@
 /**
  * Textes de l'aide BBCode. Source : lang/French/help.php (le HTML des chaînes d'origine, comme
- * « <strong>img</strong> », est remplacé par des guillemets). La section « Balises de
- * Pilote-Virtuel » est un ajout : le PHP ne documente pas les balises de son mod FluxToolBar.
+ * « <strong>img</strong> », est remplacé par des guillemets). La section « Balises
+ * supplémentaires » est un ajout : le PHP ne documente pas les balises du mod FluxToolBar.
  */
 
 export const help = {
@@ -53,7 +53,7 @@ export const help = {
 	listText1: 'Exemple de premier élément de liste.',
 	listText2: 'Exemple de deuxième élément de liste.',
 	listText3: 'Exemple de troisième élément de liste.',
-	pvTags: 'Balises de Pilote-Virtuel',
+	pvTags: 'Balises supplémentaires',
 	pvTagsInfo: 'Le forum reconnaît aussi ces balises, proposées par la barre d’outils de rédaction :',
 	centeredText: 'Texte centré',
 	hiddenText: 'Fin du film : le pilote atterrit.',

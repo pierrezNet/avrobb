@@ -1,7 +1,6 @@
 /**
  * Bannissements (admin_bans.php), pour les administrateurs et les modérateurs autorisés à bannir :
  * ajout (depuis un pseudo ou le lien « Bannir » d'un profil), modification, suppression et recherche.
- * Après chaque écriture, cache_bans.php est supprimé (generate_bans_cache() du PHP).
  */
 
 import type { FastifyReply, FastifyRequest } from 'fastify';

@@ -1,7 +1,6 @@
 /**
  * Mots censurés (table censoring), lus à chaque page qui en a besoin et seulement si o_censoring
- * est activé : la table est petite, et on évite ainsi d'avoir à suivre cache_censoring.php.
- * Modification dans l'administration (admin_censoring.php) : l'appelant supprime ensuite ce cache PHP.
+ * est activé : la table est petite.
  */
 
 import type { Db } from '../db/database.ts';

@@ -1,8 +1,8 @@
 {
-	"name": "pv-forum",
+	"name": "avrobb",
 	"version": "0.1.0",
 	"private": true,
-	"description": "Prototype de forum Node.js (MVC) sur le schéma FluxBB de Pilote-Virtuel",
+	"description": "AvroBB, forum d'échange autour de projets personnels (Node/TypeScript, MVC) ; cible Cloudflare Workers",
 	"license": "GPL-2.0-or-later",
 	"type": "module",
 	"engines": {
@@ -18,9 +18,7 @@
 		"format": "biome check --write .",
 		"check": "biome check . && tsc --noEmit && vitest run",
 		"screenshot": "tsx scripts/screenshot.ts",
-		"test:db": "vitest run --config vitest.db.config.ts",
-		"parity": "tsx scripts/parity.ts",
-		"bbcode:reference": "tsx scripts/bbcode-reference.ts"
+		"test:db": "vitest run --config vitest.db.config.ts"
 	},
 	"dependencies": {
 		"@fastify/cookie": "^11.1.3",

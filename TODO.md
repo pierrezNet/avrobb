@@ -32,21 +32,26 @@ Budget : Workers Paid à 5 $/mois (~4,60 €) inclut 10 M de requêtes, 25 G de 
 
 ---
 
-## Lot 1 — Retrait de l'héritage PV · 2 à 3 jours
+## Lot 1 — Retrait de l'héritage PV · 2 à 3 jours · terminé le 2026-10-30
 
 Le code tourne encore sur Fastify et MariaDB (base locale, plus partagée avec personne). On retire, on ne déplace pas.
 
-- [ ] Cohabitation PHP : `LEGACY_BASE_URL`, `LEGACY_ROOT`, `PORTED_PAGES` et les redirections vers le PHP des cas non portés, `legacyImagesRoot`
-- [ ] Caches PHP : `PhpCacheFiles`, `phpVarExport`, `UsersInfoLoader` (cache `users_info`), invalidations dans l'administration (la page « vider les caches » de la Maintenance disparaît)
-- [ ] Session FluxBB (`legacySession.ts`, cookie `punbb_cookie`) remplacée par un **cookie signé** provisoire, avec une **connexion de développement** (`DEV_LOGIN=1`) pour pouvoir se connecter jusqu'au lot 5
-- [ ] Mots de passe et comptes locaux : `passwords.ts` (SHA-1), connexion par formulaire, inscription (`register.php`, règles), mot de passe oublié, changement de mot de passe et d'adresse dans le profil, envoi de mot de passe par l'administration
-- [ ] Gabarits d'e-mails lus dans les fichiers du PHP (`MailTemplateFiles`) : déplacés dans `src/lang/fr/`
-- [ ] Plugins PV : PunBalise (`balises_modo`, `TopicLabel*`, `LabelAdmin*`, page d'administration), Plugile (`PlugileController`, page de profil), Uploadile et le gestionnaire de fichiers (`FileManagerController`, `MemberUploadFiles`, `uploadActions`) : les images passent toutes par la galerie
-- [ ] Messagerie privée (APMS) **simplifiée** : on garde les conversations, on retire contacts, listes d'envoi et plugin d'administration. Elle reste le canal des notifications de mention
-- [ ] Spécificités PV restantes : simulateurs de l'activité de la semaine, bannière et textes PV, `toolbar_conf`/`toolbar_tags` (barre d'outils fixée dans le code), tables Premium et sondages, `hostResolver` (DNS inverse) et `serverInfo` (`node:os`)
-- [ ] Outils de parité : `scripts/parity.ts`, `scripts/bbcode-reference.*` (les cas de `tests/bbcode/` restent comme tests de non-régression), `AdminStatsRepository` (`SHOW TABLE STATUS`)
-- [ ] `package.json` (nom `avrobb`, description), `README.md` réécrit, `.env.example` épuré, skills `mvc-review` et `responsive-ui` réécrits, `port-page` remplacé par `new-page`
-- [ ] Textes « Pilote-Virtuel » restants dans `src/lang/fr/` et les pages d'information → AvroBB
+- [x] Cohabitation PHP : `LEGACY_BASE_URL`, `LEGACY_ROOT`, `PORTED_PAGES` et les redirections vers le PHP des cas non portés ; fichiers dans un stockage local (`STORAGE_DIR`, servi sous `/img/`) en attendant R2
+- [x] Caches PHP : `PhpCacheFiles`, `phpVarExport`, invalidations dans l'administration ; réglages et statistiques des membres en cache mémoire court ; « Vider les caches » retiré de la Maintenance
+- [x] Session FluxBB remplacée par un **cookie signé** (HMAC-SHA256, `SESSION_SECRET`), avec une **connexion de développement** (`DEV_LOGIN=1`, depuis la machine seulement) ; déconnexion en POST
+- [x] Mots de passe et comptes locaux : SHA-1, connexion par formulaire, inscription, mot de passe oublié, changement de mot de passe et d'adresse par lien, ajout de membre par l'administration ; l'adresse se modifie directement dans le profil
+- [x] Modèles d'e-mails et mots vides de la recherche dans `src/lang/fr/`
+- [x] Plugins PV : PunBalise, Plugile (biographie et Suivile compris), Uploadile et le gestionnaire de fichiers ; section « Administration » du profil retirée (admin_users.php la remplace)
+- [x] Messagerie privée simplifiée : conversations gardées ; contacts, listes d'envoi et blocage d'expéditeur retirés. La page d'administration est **gardée** (activation, notifications, droits par groupe)
+- [x] Spécificités PV restantes : « simulateurs » devenus « projets » (balises du sujet, activité de la semaine), barre d'outils fixée dans le code avec ses propres icônes SVG, statistiques serveur (`node:os`) retirées
+- [x] Outils de parité retirés ; les cas de `tests/bbcode/` restent comme instantanés figés
+- [x] `package.json`, `README.md`, `.env.example`, skills (`new-page` remplace `port-page`), textes des pages d'information pour AvroBB
+- [x] Identité visuelle : logo, bannière (d'après pierrez.net), favicons, manifeste ; générateur `scripts/brand.py`
+
+Reporté :
+- `hostResolver` (DNS inverse de la consultation d'IP) : l'interface reste, l'adaptateur passera en DNS sur HTTPS au lot 3.
+- `AdminStatsRepository` (`SHOW TABLE STATUS`) : à réécrire pour D1 au lot 3.
+- Colonnes et tables FluxBB devenues inutiles (`password`, `activate_*`, `balises*`, `contacts`, `sending_lists`, `toolbar_*`, `upload`, `biographie`…) : absentes du schéma neuf du lot 3.
 
 Vigilance :
 - Retirer **avec les tests** : supprimer les tests des fonctions retirées, pas les affaiblir. Le nombre de tests baisse, la couverture de ce qui reste ne doit pas baisser.
@@ -168,7 +173,9 @@ Vigilance :
 
 - [ ] **URL propres** (`/sujet/4`, `/forum/2`) : à faire **avant** la mise en ligne si on la veut. Il n'y a aucun lien externe à préserver aujourd'hui ; après l'ouverture, il faudrait des redirections. Recommandation : oui, en fin de lot 3 ou entre les lots 7 et 8 (1 à 2 jours).
 - [ ] **Éditeur WYSIWYG** (SCEditor, mode source BBCode) : repris de la TODO de pv-forum, après la mise en ligne (2 à 3 jours).
-- [ ] Réputation : utile sur un forum personnel ? À trancher au lot 1 ; on la garde par défaut.
+- [ ] Réputation : utile sur un forum personnel ? Gardée pour l'instant.
+- [ ] Biographie du membre (retirée avec Plugile) : la remettre comme champ de la section Personnalité du profil ?
+- [ ] Thème aux couleurs d'AvroBB (bordeaux et or du logo) comme thème par défaut, à la place d'Air (bleu), qui jure avec la bannière.
 - [ ] Notifications sur le site (page « Notifications ») à la place des messages privés pour les mentions, si la messagerie se révèle inutile.
 
 ## Estimation globale

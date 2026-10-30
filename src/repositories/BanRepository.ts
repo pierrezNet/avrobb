@@ -18,7 +18,7 @@ export interface BanReader {
 }
 
 export interface BanWriter {
-	/** Supprime des bannissements échus (check_bans()) ; l'appelant invalide cache_bans.php. */
+	/** Supprime des bannissements échus (check_bans()). */
 	deleteBans(ids: readonly number[]): Promise<void>;
 }
 
@@ -37,7 +37,7 @@ export interface BanListItem extends BanValues {
 	creator: { id: number; username: string } | null;
 }
 
-/** Bannissements gérés dans l'administration ; l'appelant supprime ensuite cache_bans.php. */
+/** Bannissements gérés dans l'administration. */
 export interface BanStore {
 	findBan(id: number): Promise<(BanValues & { id: number }) | null>;
 	addBan(ban: BanValues, creatorId: number): Promise<void>;

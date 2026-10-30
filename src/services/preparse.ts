@@ -5,7 +5,7 @@
  *
  * Le texte produit est celui que le PHP enregistrerait : balises en minuscules, imbrications
  * simples réparées, listes normalisées, liens « www. » balisés, balises vides retirées. La parité
- * est vérifiée contre le vrai PHP (`npm run bbcode:reference`, cas « preparse »).
+ * est vérifiée par les instantanés du PHP de tests/bbcode/ (cas « preparse »).
  *
  * Fonctions pures. Les erreurs sont typées ; leur texte vient de src/lang (formatPreparseError()).
  */

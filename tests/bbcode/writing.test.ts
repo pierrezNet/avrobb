@@ -1,7 +1,7 @@
 /**
- * Parité du pré-traitement BBCode (preparse_bbcode()) et des mots indexés (search_idx.php) avec le
- * PHP de PV : chaque cas de writing-cases.json est comparé à la sortie du vrai PHP
- * (writing-reference.json, régénéré par `npm run bbcode:reference`).
+ * Non-régression du pré-traitement BBCode (preparse_bbcode()) et des mots indexés (search_idx.php) :
+ * chaque cas de writing-cases.json est comparé à writing-reference.json, sortie du PHP de FluxBB/PV
+ * relevée une fois pour toutes (instantané figé : le PHP n'est plus disponible).
  */
 
 import { readFileSync } from 'node:fs';

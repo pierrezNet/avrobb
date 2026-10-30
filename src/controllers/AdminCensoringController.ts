@@ -1,6 +1,6 @@
 /**
  * Mots censurés (admin_censoring.php), réservés aux administrateurs : ajout, modification et
- * suppression, puis suppression de cache_censoring.php (generate_censoring_cache() du PHP).
+ * suppression.
  */
 
 import type { FastifyReply, FastifyRequest } from 'fastify';

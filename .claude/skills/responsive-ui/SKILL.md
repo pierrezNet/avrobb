@@ -1,14 +1,14 @@
 ---
 
 name: responsive-ui
-description: Règles de front-end de pv-forum pour les vues Nunjucks et le CSS (mobile d'abord, thèmes FluxBB en variables CSS, accessibilité, JS en amélioration progressive). À utiliser pour écrire ou modifier une vue `.njk`, une feuille de style ou un script côté navigateur.
+description: Règles de front-end d'AvroBB pour les vues Nunjucks et le CSS (mobile d'abord, thèmes en variables CSS, accessibilité, JS en amélioration progressive). À utiliser pour écrire ou modifier une vue `.njk`, une feuille de style ou un script côté navigateur.
 ---
 
 # Vues et CSS responsive
 
 ## Principes
 
-- **Rendu serveur**, page complète et fonctionnelle **sans JavaScript**. Le JS (barre d'outils BBCode, réponse rapide, aperçu) n'est qu'une amélioration progressive, chargé en `defer`, sans framework.
+- **Rendu serveur**, page complète et fonctionnelle **sans JavaScript**. Le JS (barre d'outils BBCode, mentions, sélecteur d'images, conversion des images en WebP avant l'envoi) n'est qu'une amélioration progressive, chargé en `defer`, sans framework, et sans script en ligne (CSP `script-src 'self'`).
 - **Mobile d'abord** : les styles de base ciblent un écran de 320 à 480 px, puis on élargit avec `@media (min-width: 48em)` (tablette) et `@media (min-width: 64em)` (bureau). Pas de `max-width` pour casser la mise en page.
 - Aucun défilement horizontal à 320 px. Les contenus larges (blocs `code`, images, tableaux du BBCode) ont `max-width: 100%` ou `overflow-x: auto` sur leur conteneur.
 
@@ -29,9 +29,10 @@ description: Règles de front-end de pv-forum pour les vues Nunjucks et le CSS (
   :root { --color-bg: …; --color-text: …; --color-accent: …; --color-border: …; --color-header-bg: …; }
   ```
 
-  Les 6 thèmes FluxBB (Air, Lagon, GreenDeal, GreenDark, GlowingRed, fiftyGrey) sont convertis à partir de `/var/www/html/PiloteVirtuel/style/*.css`.
+  Les 6 thèmes hérités de FluxBB (Air, Lagon, GreenDeal, GreenDark, GlowingRed, fiftyGrey) sont dans `public/css/themes/` ; leur contraste AA est vérifié par `tests/themes.test.ts`.
 - Unités relatives (`rem`, `em`, `%`, `ch`) ; taille de base 16 px ; longueur de ligne des messages limitée à environ 75 ch sur grand écran.
-- Classes nommées par composant (`.post`, `.post__author`, `.topic-list`, `.pagination`) et non par apparence. Pas de `!important`, pas de styles en ligne.
+- Classes nommées par composant (`.post`, `.post__author`, `.topic-list`, `.pagination`) et non par apparence. Pas de `!important` ; un style en ligne seulement pour une valeur venue des données (couleur d'une balise, bannière), validée par le service.
+- Icônes : SVG de `public/img/`, appliquées en masque CSS (`mask` + `background: currentColor`) quand elles doivent suivre la couleur du thème.
 - Images : `max-width: 100%; height: auto;`, avec `loading="lazy"` sur les avatars et les images des messages.
 
 ## Accessibilité

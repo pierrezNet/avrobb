@@ -3,8 +3,8 @@
  * existe et le lecteur a le droit de modifier son profil, sinon une page d'erreur est renvoyée.
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { EditableProfile } from '../domain/models.ts';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import { type LayoutDeps, renderMessage } from '../http/layout.ts';
 import type { ProfileStore } from '../repositories/ProfileRepository.ts';
 import { canEditProfile } from '../services/permissions.ts';
@@ -27,11 +27,11 @@ export interface ProfileQuery {
  * générale (canEditProfile()) pour les actions qui ont la leur (mot de passe, adresse).
  */
 export async function loadEditableProfile(
-	request: FastifyRequest<{ Querystring: ProfileQuery }>,
-	reply: FastifyReply,
+	request: AppRequest<{ Querystring: ProfileQuery }>,
+	reply: AppReply,
 	deps: ProfileAccessDeps,
 	allow: (profile: EditableProfile) => boolean = (profile) => canEditProfile(request.viewer, profile),
-): Promise<EditableProfile | FastifyReply> {
+): Promise<EditableProfile | AppReply> {
 	const { lang } = deps.page;
 	const id = positiveInt(request.query.id);
 	if (id < 2) return renderMessage(request, reply, deps, 404, lang.common.badRequest);
@@ -44,4 +44,4 @@ export async function loadEditableProfile(
 }
 
 /** Garde de type : loadEditableProfile() a-t-il renvoyé un profil ou une réponse ? */
-export const isProfile = (value: EditableProfile | FastifyReply): value is EditableProfile => 'registrationIp' in value;
+export const isProfile = (value: EditableProfile | AppReply): value is EditableProfile => 'registrationIp' in value;

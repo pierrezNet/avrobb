@@ -1,14 +1,14 @@
 /**
- * extern.php : formats de flux (services/feeds.ts) et réponses via app.inject().
+ * extern.php : formats de flux (services/feeds.ts) et réponses via inject(app, ).
  */
 
-import type { FastifyInstance } from 'fastify';
-import { afterEach, describe, expect, it } from 'vitest';
-import { buildApp } from '../src/app.ts';
+import { describe, expect, it } from 'vitest';
+import { buildApp, type ForumApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
 import type { FeedReader, FeedTopicRow } from '../src/repositories/FeedRepository.ts';
 import { type Feed, iso8601, renderHtmlList, renderRss, rfc2822 } from '../src/services/feeds.ts';
 import { fakeDeps, group, guest, NOW } from './fixtures.ts';
+import { inject } from './inject.ts';
 
 const feed: Feed = {
 	title: 'Forum / Sujet ]]> piégé',
@@ -75,8 +75,7 @@ function feeds(overrides: Partial<FeedReader> = {}): FeedReader {
 	};
 }
 
-let app: FastifyInstance | undefined;
-afterEach(async () => app?.close());
+let app: ForumApp | undefined;
 
 describe('GET /extern.php', () => {
 	const deps = (users = [{ viewer: guest }]) => ({
@@ -86,7 +85,7 @@ describe('GET /extern.php', () => {
 
 	it('flux RSS des discussions actives, sans e-mail pour un invité', async () => {
 		app = await buildApp(deps());
-		const res = await app.inject('/extern.php?action=feed&type=rss&fid=2');
+		const res = await inject(app, '/extern.php?action=feed&type=rss&fid=2');
 		expect(res.headers['content-type']).toBe('application/xml; charset=utf-8');
 		expect(res.body).toContain('<title><![CDATA[Forum de test / Captures]]></title>');
 		expect(res.body).toContain('<link>http://forum.test/viewtopic.php?id=10&amp;action=new</link>');
@@ -97,26 +96,25 @@ describe('GET /extern.php', () => {
 	it('flux d’une discussion, liste HTML par défaut, sujet inconnu', async () => {
 		app = await buildApp(deps());
 		// Ancienne adresse Atom : le flux est servi en RSS.
-		const atom = await app.inject('/extern.php?action=feed&type=atom&tid=10');
+		const atom = await inject(app, '/extern.php?action=feed&type=atom&tid=10');
 		expect(atom.headers['content-type']).toBe('application/xml; charset=utf-8');
 		expect(atom.body).toContain('<rss version="2.0"');
 		expect(atom.body).not.toContain('<feed xmlns');
 
-		const html = await app.inject('/extern.php');
+		const html = await inject(app, '/extern.php');
 		expect(html.body).toBe(
 			'<li><a href="http://forum.test/viewtopic.php?id=10&amp;action=new" title="Sujet &lt;10&gt;">Sujet &lt;10&gt;</a></li>\n',
 		);
-		expect((await app.inject('/extern.php?action=feed&tid=99')).body).toBe('Erreur. Le lien que vous avez suivi est incorrect ou périmé.');
+		expect((await inject(app, '/extern.php?action=feed&tid=99')).body).toBe('Erreur. Le lien que vous avez suivi est incorrect ou périmé.');
 	});
 
 	it('statistiques et présents en HTML, 401 sans g_read_board', async () => {
 		app = await buildApp(deps());
-		expect((await app.inject('/extern.php?action=stats')).body).toContain('Nombre total de messages : 56 789<br />');
-		expect((await app.inject('/extern.php?action=online')).body).toContain('Membres en ligne : 0<br />');
-		await app.close();
+		expect((await inject(app, '/extern.php?action=stats')).body).toContain('Nombre total de messages : 56 789<br />');
+		expect((await inject(app, '/extern.php?action=online')).body).toContain('Membres en ligne : 0<br />');
 
 		app = await buildApp(deps([{ viewer: { ...guest, group: group({ id: GroupId.Guest, canReadBoard: false }) } }]));
-		const denied = await app.inject('/extern.php');
+		const denied = await inject(app, '/extern.php');
 		expect(denied.statusCode).toBe(401);
 		expect(denied.headers['www-authenticate']).toContain('External Syndication');
 	});

@@ -7,8 +7,8 @@
  * confirmation au lieu d'écrire.
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { CookieConfig } from '../config.ts';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { setForumCookie } from '../http/session.ts';
@@ -30,7 +30,7 @@ export interface MiscQuery {
 	tid?: string;
 }
 
-type MiscRequest = FastifyRequest<{ Querystring: MiscQuery; Body?: FormBody }>;
+type MiscRequest = AppRequest<{ Querystring: MiscQuery; Body?: FormBody }>;
 type SubscriptionAction = 'subscribe' | 'unsubscribe';
 
 const isSubscriptionAction = (action: string | undefined): action is SubscriptionAction =>
@@ -39,7 +39,7 @@ const isSubscriptionAction = (action: string | undefined): action is Subscriptio
 export class MiscController {
 	constructor(private readonly deps: MiscControllerDeps) {}
 
-	show = async (request: FastifyRequest<{ Querystring: MiscQuery }>, reply: FastifyReply): Promise<FastifyReply> => {
+	show = async (request: AppRequest<{ Querystring: MiscQuery }>, reply: AppReply): Promise<AppReply> => {
 		const { viewer, board: config } = request;
 		const { lang } = this.deps.page;
 		const { action } = request.query;
@@ -108,10 +108,7 @@ export class MiscController {
 	};
 
 	/** POST misc.php?action=subscribe|unsubscribe&tid=…|fid=… (jeton CSRF vérifié en amont). */
-	subscription = async (
-		request: FastifyRequest<{ Querystring: MiscQuery; Body: FormBody }>,
-		reply: FastifyReply,
-	): Promise<FastifyReply> => {
+	subscription = async (request: AppRequest<{ Querystring: MiscQuery; Body: FormBody }>, reply: AppReply): Promise<AppReply> => {
 		const { action } = request.query;
 		if (!isSubscriptionAction(action)) return renderMessage(request, reply, this.deps, 400, this.deps.page.lang.common.badRequest);
 		const target = await this.subscriptionTarget(request, reply, action);
@@ -128,9 +125,9 @@ export class MiscController {
 	 */
 	private async subscriptionTarget(
 		request: MiscRequest,
-		reply: FastifyReply,
+		reply: AppReply,
 		action: SubscriptionAction,
-	): Promise<SubscriptionTarget | FastifyReply> {
+	): Promise<SubscriptionTarget | AppReply> {
 		const { viewer, board: config } = request;
 		const t = this.deps.page.lang;
 		if (viewer.isGuest) return renderMessage(request, reply, this.deps, 403, t.common.noPermission);
@@ -162,7 +159,7 @@ export class MiscController {
 	}
 
 	/** POST misc.php?action=markread | markforumread&fid=… (jeton CSRF vérifié en amont). */
-	markRead = async (request: FastifyRequest<{ Querystring: MiscQuery; Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> => {
+	markRead = async (request: AppRequest<{ Querystring: MiscQuery; Body: FormBody }>, reply: AppReply): Promise<AppReply> => {
 		const { viewer, board: config } = request;
 		const { lang } = this.deps.page;
 		const now = this.deps.page.clock();

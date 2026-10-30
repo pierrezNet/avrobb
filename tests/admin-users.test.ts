@@ -3,14 +3,14 @@
  * (services/userSearch.ts) et pages de bout en bout avec les doublures.
  */
 
-import type { FastifyInstance } from 'fastify';
-import { afterEach, describe, expect, it } from 'vitest';
-import { buildApp } from '../src/app.ts';
+import { describe, expect, it } from 'vitest';
+import { buildApp, type ForumApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
 import { parseBanExpire, readUserIds } from '../src/services/userActions.ts';
 import { parseAdminDate, readUserSearch } from '../src/services/userSearch.ts';
 import { type FakeData, fakeDeps, group, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
+import { inject } from './inject.ts';
 
 const SEED = 'graine-de-test';
 const CSRF_SECRET = '9'.repeat(64);
@@ -59,10 +59,9 @@ describe('critères de recherche', () => {
 	});
 });
 
-let app: FastifyInstance | undefined;
-afterEach(async () => app?.close());
+let app: ForumApp | undefined;
 
-async function start(): Promise<{ server: FastifyInstance; fake: FakeData }> {
+async function start(): Promise<{ server: ForumApp; fake: FakeData }> {
 	const fake: FakeData = {
 		users: [{ viewer: guest }, { viewer: mod }, { viewer: tessy }, { viewer: banMod }, { viewer: admin }],
 		topics: [],
@@ -98,7 +97,7 @@ async function start(): Promise<{ server: FastifyInstance; fake: FakeData }> {
 	return { server: app, fake };
 }
 
-const get = (server: FastifyInstance, userId: number, url: string) => server.inject({ url, headers: { cookie: cookie(userId) } });
+const get = (server: ForumApp, userId: number, url: string) => inject(server, { url, headers: { cookie: cookie(userId) } });
 
 describe('admin_users.php', () => {
 	it('réservé aux administrateurs et modérateurs', async () => {
@@ -140,8 +139,8 @@ describe('actions groupées', () => {
 		expect(parseBanExpire('01/11/2026', 0, now)).toBe('invalid');
 	});
 
-	const post = (server: FastifyInstance, userId: number, fields: Record<string, string>) =>
-		server.inject({
+	const post = (server: ForumApp, userId: number, fields: Record<string, string>) =>
+		inject(server, {
 			method: 'POST',
 			url: '/admin_users.php',
 			headers: { cookie: cookie(userId), 'content-type': 'application/x-www-form-urlencoded' },

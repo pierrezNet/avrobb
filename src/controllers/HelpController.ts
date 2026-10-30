@@ -2,14 +2,14 @@
  * Contrôleur de help.php : aide BBCode et émoticônes.
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { buildHelpPage } from '../presenters/helpPage.ts';
 
 export class HelpController {
 	constructor(private readonly deps: LayoutDeps) {}
 
-	show = async (request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply> => {
+	show = async (request: AppRequest, reply: AppReply): Promise<AppReply> => {
 		const { viewer, board: config } = request;
 		const { lang } = this.deps.page;
 

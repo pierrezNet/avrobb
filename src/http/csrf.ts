@@ -7,8 +7,8 @@
  */
 
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
-import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { CookieConfig } from '../config.ts';
+import type { AppReply, AppRequest } from './context.ts';
 import { type FormBody, field } from './forms.ts';
 
 /** Nom du champ caché des formulaires. */
@@ -24,7 +24,7 @@ export function csrfToken(browserSecret: string, appSecret: string, userId: numb
 }
 
 /** Lit ou crée le secret du navigateur (cookie HttpOnly de session) et renvoie le jeton du visiteur. */
-export function ensureCsrfToken(request: FastifyRequest, reply: FastifyReply, cookie: CookieConfig, userId: number): string {
+export function ensureCsrfToken(request: AppRequest, reply: AppReply, cookie: CookieConfig, userId: number): string {
 	const name = csrfCookieName(cookie);
 	let secret = request.cookies[name];
 
@@ -39,7 +39,7 @@ export function ensureCsrfToken(request: FastifyRequest, reply: FastifyReply, co
 }
 
 /** L'en-tête Origin, s'il existe, désigne-t-il l'hôte de la requête ? */
-function sameOrigin(request: FastifyRequest): boolean {
+function sameOrigin(request: AppRequest): boolean {
 	const origin = request.headers.origin;
 	if (origin === undefined || origin === 'null') return origin === undefined;
 	try {
@@ -50,7 +50,7 @@ function sameOrigin(request: FastifyRequest): boolean {
 }
 
 /** Vérifie le jeton d'un formulaire POST. */
-export function isValidCsrf(request: FastifyRequest, cookie: CookieConfig, userId: number): boolean {
+export function isValidCsrf(request: AppRequest, cookie: CookieConfig, userId: number): boolean {
 	const secret = request.cookies[csrfCookieName(cookie)];
 	const sent = field(request.body as FormBody | undefined, CSRF_FIELD);
 	if (secret === undefined || sent === '' || !sameOrigin(request)) return false;

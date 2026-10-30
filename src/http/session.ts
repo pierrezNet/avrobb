@@ -4,7 +4,6 @@
  * (check_bans()) et purge des présents (update_users_online()).
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { CookieConfig } from '../config.ts';
 import { type BoardConfig, GroupId, GUEST_USER_ID, type Viewer } from '../domain/models.ts';
 import type { BanReader, BanWriter } from '../repositories/BanRepository.ts';
@@ -14,6 +13,7 @@ import { checkBans } from '../services/bans.ts';
 import { isAnyModerator } from '../services/permissions.ts';
 import { memberPresenceUpdate, planOnlinePurge } from '../services/presence.ts';
 import { buildSessionCookie, cookieMaxAge, readSessionCookie, SESSION_SECONDS, shouldRenewSession } from '../services/session.ts';
+import type { AppReply, AppRequest } from './context.ts';
 
 export interface SessionDeps {
 	users: UserReader;
@@ -40,7 +40,7 @@ export function trackCookieName(cookie: CookieConfig): string {
 
 /** Pose un cookie du forum (HttpOnly, SameSite=Lax, chemin /) ; durée de vie comme forum_setcookie(). */
 export function setForumCookie(
-	reply: FastifyReply,
+	reply: AppReply,
 	cookie: CookieConfig,
 	name: string,
 	value: string,
@@ -59,7 +59,7 @@ export function setForumCookie(
 }
 
 /** Ouvre (ou prolonge) la session du membre pour SESSION_SECONDS. */
-export function setSessionCookie(reply: FastifyReply, deps: Pick<SessionDeps, 'cookie'>, userId: number, now: number): void {
+export function setSessionCookie(reply: AppReply, deps: Pick<SessionDeps, 'cookie'>, userId: number, now: number): void {
 	const expires = now + SESSION_SECONDS;
 	reply.setCookie(sessionCookieName(deps.cookie), buildSessionCookie(userId, expires, deps.cookie.secret), {
 		path: '/',
@@ -70,22 +70,17 @@ export function setSessionCookie(reply: FastifyReply, deps: Pick<SessionDeps, 'c
 	});
 }
 
-export function clearSessionCookie(reply: FastifyReply, deps: Pick<SessionDeps, 'cookie'>): void {
+export function clearSessionCookie(reply: AppReply, deps: Pick<SessionDeps, 'cookie'>): void {
 	reply.clearCookie(sessionCookieName(deps.cookie), { path: '/' });
 }
 
 /** set_tracked_topics(null) : vide le cookie de suivi des sujets lus. */
-function resetTrackedTopics(reply: FastifyReply, deps: SessionDeps, now: number, timeoutVisit: number): void {
+function resetTrackedTopics(reply: AppReply, deps: SessionDeps, now: number, timeoutVisit: number): void {
 	setForumCookie(reply, deps.cookie, trackCookieName(deps.cookie), '', now + timeoutVisit, now, timeoutVisit);
 }
 
 /** Membre authentifié par son cookie de session, ou null s'il faut traiter le visiteur en invité. */
-async function authenticateMember(
-	request: FastifyRequest,
-	reply: FastifyReply,
-	deps: SessionDeps,
-	now: number,
-): Promise<ViewerRecord | null> {
+async function authenticateMember(request: AppRequest, reply: AppReply, deps: SessionDeps, now: number): Promise<ViewerRecord | null> {
 	const raw = request.cookies[sessionCookieName(deps.cookie)];
 	if (raw === undefined) return null;
 
@@ -103,8 +98,8 @@ async function authenticateMember(
 
 /** Présence d'un membre (check_cookie()) ; renvoie le début de sa visite et sa dernière visite. */
 async function trackMember(
-	request: FastifyRequest,
-	reply: FastifyReply,
+	request: AppRequest,
+	reply: AppReply,
 	deps: SessionDeps,
 	record: ViewerRecord,
 	config: BoardConfig,
@@ -133,7 +128,7 @@ async function trackMember(
 }
 
 /** set_default_user() : l'invité, repéré par son adresse IP dans la liste des présents. */
-async function trackGuest(request: FastifyRequest, deps: SessionDeps, now: number): Promise<Viewer> {
+async function trackGuest(request: AppRequest, deps: SessionDeps, now: number): Promise<Viewer> {
 	const guest = await deps.users.findViewer(GUEST_USER_ID);
 	if (guest === null) throw new Error(`Utilisateur invité (id ${GUEST_USER_ID}) absent de la base`);
 
@@ -152,8 +147,8 @@ async function trackGuest(request: FastifyRequest, deps: SessionDeps, now: numbe
 
 /** Identifie le visiteur et met à jour sa présence ; pose ou renouvelle les cookies. */
 export async function startSession(
-	request: FastifyRequest,
-	reply: FastifyReply,
+	request: AppRequest,
+	reply: AppReply,
 	deps: SessionDeps,
 	config: BoardConfig,
 	now: number,
@@ -165,7 +160,7 @@ export async function startSession(
 
 /** Maintenance puis bannissements, dans l'ordre de common.php ; null si la page peut s'afficher. */
 export async function checkAccess(
-	request: FastifyRequest,
+	request: AppRequest,
 	deps: SessionDeps,
 	viewer: Viewer,
 	config: BoardConfig,

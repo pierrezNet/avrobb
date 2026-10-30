@@ -1,10 +1,9 @@
 /**
  * Lecture des formulaires HTML sans dépendance : application/x-www-form-urlencoded, et
- * multipart/form-data pour les envois de fichiers (Request.formData() de Node). Un champ répété
- * (cases à cocher « forums ») donne un tableau, comme dans la chaîne de requête.
+ * multipart/form-data pour les envois de fichiers (Request.formData(), API Web disponible sous Node
+ * comme dans un Worker). Un champ répété (cases à cocher « forums ») donne un tableau, comme dans la
+ * chaîne de requête.
  */
-
-import type { FastifyInstance, FastifyRequest } from 'fastify';
 
 export type FormBody = Record<string, string | string[]>;
 
@@ -36,13 +35,6 @@ export interface UploadedFile {
 	data: Buffer;
 }
 
-declare module 'fastify' {
-	interface FastifyRequest {
-		/** Fichiers d'un formulaire multipart, par nom de champ (vide sinon). */
-		uploads: ReadonlyMap<string, UploadedFile>;
-	}
-}
-
 /** Champs texte et fichiers d'un corps multipart/form-data. */
 export async function parseMultipartBody(body: Buffer, contentType: string): Promise<{ form: FormBody; files: Map<string, UploadedFile> }> {
 	const data = await new Request('http://localhost/', {
@@ -64,33 +56,47 @@ export async function parseMultipartBody(body: Buffer, contentType: string): Pro
 	return { form, files };
 }
 
-export function registerFormParser(app: FastifyInstance): void {
-	app.decorateRequest('uploads', null as unknown as ReadonlyMap<string, UploadedFile>);
-	app.addHook('onRequest', async (request) => {
-		request.uploads = new Map();
-	});
-	app.addContentTypeParser(
-		'multipart/form-data',
-		{ parseAs: 'buffer', bodyLimit: MAX_UPLOAD_BYTES },
-		(request: FastifyRequest, body: Buffer | string, done) => {
-			parseMultipartBody(Buffer.isBuffer(body) ? body : Buffer.from(body), request.headers['content-type'] ?? '').then(
-				({ form, files }) => {
-					request.uploads = files;
-					done(null, form);
-				},
-				(error: unknown) => {
-					const failure = error instanceof Error ? error : new Error(String(error));
-					done(Object.assign(failure, { statusCode: 400 }), undefined);
-				},
-			);
-		},
-	);
+/** Erreur de lecture d'un formulaire, avec le statut HTTP à renvoyer. */
+export class FormError extends Error {
+	constructor(
+		readonly statusCode: 400 | 413 | 415,
+		message: string,
+	) {
+		super(message);
+	}
+}
 
-	app.addContentTypeParser(
-		'application/x-www-form-urlencoded',
-		{ parseAs: 'string', bodyLimit: MAX_FORM_BYTES },
-		(_request, body, done) => {
-			done(null, parseFormBody(String(body)));
-		},
-	);
+/** Corps lu, au plus `limit` octets ; au-delà, 413 (le PHP s'arrêtait à PUN_MAX_POSTSIZE). */
+async function readLimited(request: Request, limit: number): Promise<Uint8Array> {
+	const declared = Number(request.headers.get('content-length') ?? '0');
+	if (declared > limit) throw new FormError(413, 'Formulaire trop volumineux');
+	const data = new Uint8Array(await request.arrayBuffer());
+	if (data.byteLength > limit) throw new FormError(413, 'Formulaire trop volumineux');
+	return data;
+}
+
+/**
+ * Formulaire d'une requête : champs et fichiers. Sans corps, ou pour une méthode sans corps, rien.
+ * Un type de contenu inconnu est refusé (415), un multipart illisible aussi (400).
+ */
+export async function readForm(request: Request): Promise<{ form: FormBody | undefined; files: Map<string, UploadedFile> }> {
+	const files = new Map<string, UploadedFile>();
+	if (request.method === 'GET' || request.method === 'HEAD' || request.body === null) return { form: undefined, files };
+
+	const contentType = request.headers.get('content-type') ?? '';
+	const mediaType = contentType.split(';')[0]?.trim().toLowerCase() ?? '';
+	if (mediaType === 'application/x-www-form-urlencoded') {
+		const data = await readLimited(request, MAX_FORM_BYTES);
+		return { form: parseFormBody(new TextDecoder().decode(data)), files };
+	}
+	if (mediaType === 'multipart/form-data') {
+		const data = await readLimited(request, MAX_UPLOAD_BYTES);
+		try {
+			return await parseMultipartBody(Buffer.from(data), contentType);
+		} catch {
+			throw new FormError(400, 'Formulaire multipart illisible');
+		}
+	}
+	if (mediaType === '') return { form: {}, files };
+	throw new FormError(415, `Type de contenu non pris en charge : ${mediaType}`);
 }

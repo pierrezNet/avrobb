@@ -2,6 +2,9 @@
  * Doublures en mémoire des repositories et objets de test.
  */
 
+import path from 'node:path';
+import { createAssetUrl } from '../src/adapters/assetUrls.ts';
+import { DirectoryFiles } from '../src/adapters/directoryFiles.ts';
 import type { AppDeps } from '../src/app.ts';
 import {
 	type BoardConfig,
@@ -34,6 +37,7 @@ import {
 	type UserProfile,
 	type Viewer,
 } from '../src/domain/models.ts';
+import templates from '../src/generated/templates.js';
 import { fr, frDateWords } from '../src/lang/fr/index.ts';
 import type { Recipient, SenderLimits } from '../src/repositories/ContactRepository.ts';
 import type { DraftStore, NewDraft } from '../src/repositories/DraftRepository.ts';
@@ -59,6 +63,8 @@ import type { UserSearchCriteria } from '../src/services/userSearch.ts';
 import { fakePrivateMessageStore, type PmData, pmData } from './fakePrivateMessages.ts';
 
 export const NOW = 1_782_900_000;
+
+const PUBLIC_DIR = path.join(import.meta.dirname, '..', 'public');
 
 /**
  * Balises du sujet des tests : des projets (groupe « project ») et des balises d'état, avec les
@@ -1149,6 +1155,9 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 		},
 		page: { lang: fr, dateWords: frDateWords, clock: () => NOW },
 		cookie: { name: 'avrobb', secret: COOKIE_SECRET, secure: false },
+		templates,
+		assetUrl: createAssetUrl(PUBLIC_DIR),
+		assets: new DirectoryFiles(PUBLIC_DIR),
 		...overrides,
 	};
 }

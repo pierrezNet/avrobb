@@ -3,8 +3,8 @@
  * de base), modification, groupe par défaut et suppression avec déplacement des membres.
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
 import { GroupId } from '../domain/models.ts';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage } from '../http/layout.ts';
 import { buildAdminGroupForm, buildAdminGroupList } from '../presenters/adminGroupsPage.ts';
@@ -32,7 +32,7 @@ type Notice = 'added' | 'edited' | 'removed' | 'default';
 export class AdminGroupsController {
 	constructor(private readonly deps: AdminGroupsControllerDeps) {}
 
-	show = async (request: FastifyRequest<{ Querystring: AdminGroupsQuery }>, reply: FastifyReply): Promise<FastifyReply> => {
+	show = async (request: AppRequest<{ Querystring: AdminGroupsQuery }>, reply: AppReply): Promise<AppReply> => {
 		const denied = adminDenied(request, reply, this.deps, true);
 		if (denied !== null) return denied;
 		const { lang } = this.deps.page;
@@ -50,16 +50,13 @@ export class AdminGroupsController {
 		return this.#renderList(request, reply, groups, [], notices[request.query.done as Notice] ?? null);
 	};
 
-	submit = async (
-		request: FastifyRequest<{ Querystring: AdminGroupsQuery; Body: FormBody }>,
-		reply: FastifyReply,
-	): Promise<FastifyReply> => {
+	submit = async (request: AppRequest<{ Querystring: AdminGroupsQuery; Body: FormBody }>, reply: AppReply): Promise<AppReply> => {
 		const denied = adminDenied(request, reply, this.deps, true);
 		if (denied !== null) return denied;
 		const { lang } = this.deps.page;
 		const { body } = request;
 		const groups = await this.deps.groupAdmin.listGroups();
-		const badRequest = (): Promise<FastifyReply> => renderMessage(request, reply, this.deps, 400, lang.common.badRequest);
+		const badRequest = (): Promise<AppReply> => renderMessage(request, reply, this.deps, 400, lang.common.badRequest);
 
 		if (request.query.del_group !== undefined) {
 			const id = positiveInt(field(body, 'group_to_delete') || request.query.del_group);
@@ -86,7 +83,7 @@ export class AdminGroupsController {
 		return badRequest();
 	};
 
-	async #save(request: FastifyRequest<{ Body: FormBody }>, reply: FastifyReply, groups: readonly AdminGroup[]): Promise<FastifyReply> {
+	async #save(request: AppRequest<{ Body: FormBody }>, reply: AppReply, groups: readonly AdminGroup[]): Promise<AppReply> {
 		const { lang } = this.deps.page;
 		const { body } = request;
 		const store = this.deps.groupAdmin;
@@ -111,12 +108,12 @@ export class AdminGroupsController {
 
 	/** Suppression : confirmation, ou choix du groupe d'accueil des membres, puis effet (POST seulement). */
 	async #deleteStep(
-		request: FastifyRequest,
-		reply: FastifyReply,
+		request: AppRequest,
+		reply: AppReply,
 		groups: readonly AdminGroup[],
 		id: number,
 		body: FormBody | null,
-	): Promise<FastifyReply> {
+	): Promise<AppReply> {
 		const { lang } = this.deps.page;
 		const t = lang.adminGroups;
 		const group = groups.find((g) => g.id === id);
@@ -154,12 +151,12 @@ export class AdminGroupsController {
 	}
 
 	#renderList(
-		request: FastifyRequest,
-		reply: FastifyReply,
+		request: AppRequest,
+		reply: AppReply,
 		groups: readonly AdminGroup[],
 		errors: string[],
 		notice: string | null,
-	): Promise<FastifyReply> {
+	): Promise<AppReply> {
 		return renderAdminPage(
 			request,
 			reply,
@@ -170,14 +167,14 @@ export class AdminGroupsController {
 	}
 
 	#renderForm(
-		request: FastifyRequest,
-		reply: FastifyReply,
+		request: AppRequest,
+		reply: AppReply,
 		mode: 'add' | 'edit',
 		group: AdminGroup,
 		groups: readonly AdminGroup[],
 		errors: string[],
 		status = 200,
-	): Promise<FastifyReply> {
+	): Promise<AppReply> {
 		const { lang } = this.deps.page;
 		reply.code(status);
 		return renderAdminPage(

@@ -2,8 +2,8 @@
  * Contrôleur de userlist.php : liste des membres, filtrée et triée.
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { MemberSort } from '../domain/models.ts';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { buildUserlistPage, type UserlistQuery, userlistUrl } from '../presenters/userlistPage.ts';
 import type { BanReader } from '../repositories/BanRepository.ts';
@@ -33,7 +33,7 @@ const MAX_USERNAME = 25;
 export class UserlistController {
 	constructor(private readonly deps: UserlistControllerDeps) {}
 
-	show = async (request: FastifyRequest<{ Querystring: UserlistParams }>, reply: FastifyReply): Promise<FastifyReply> => {
+	show = async (request: AppRequest<{ Querystring: UserlistParams }>, reply: AppReply): Promise<AppReply> => {
 		const { viewer, board: config } = request;
 		const { lang } = this.deps.page;
 

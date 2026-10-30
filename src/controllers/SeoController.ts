@@ -4,7 +4,7 @@
  * et discussions lisibles par un invité).
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import { forumUrl } from '../presenters/forumPage.ts';
 import { sitemapXml } from '../presenters/sitemap.ts';
 import { topicUrl } from '../presenters/topicPage.ts';
@@ -24,12 +24,12 @@ const SITEMAP_MAX = 50000;
 export class SeoController {
 	constructor(private readonly deps: SeoControllerDeps) {}
 
-	robots = async (_request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply> => {
+	robots = async (_request: AppRequest, reply: AppReply): Promise<AppReply> => {
 		const config = await this.deps.config.load();
 		return reply.type('text/plain; charset=utf-8').send(robotsTxt(config.baseUrl));
 	};
 
-	sitemap = async (_request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply> => {
+	sitemap = async (_request: AppRequest, reply: AppReply): Promise<AppReply> => {
 		const config = await this.deps.config.load();
 		const forums = await this.deps.sitemap.listForums();
 		const topics = await this.deps.sitemap.listTopics(SITEMAP_MAX - forums.length - STATIC_PAGE_IDS.length - 1);

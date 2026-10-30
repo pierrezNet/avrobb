@@ -4,7 +4,7 @@
  * moment, sans toucher au message, même après les 30 minutes de modification.
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { topicUrl } from '../presenters/topicPage.ts';
@@ -31,16 +31,13 @@ export interface SubjectPrefixQuery {
 export class SubjectPrefixController {
 	constructor(private readonly deps: SubjectPrefixControllerDeps) {}
 
-	show = async (request: FastifyRequest<{ Querystring: SubjectPrefixQuery }>, reply: FastifyReply): Promise<FastifyReply> => {
+	show = async (request: AppRequest<{ Querystring: SubjectPrefixQuery }>, reply: AppReply): Promise<AppReply> => {
 		const topic = await this.#topic(request, reply);
 		if (!('subject' in topic)) return topic;
 		return this.#render(request, reply, topic, splitPrefixes(topic.subject, request.board.subjectTags).prefixes, null);
 	};
 
-	submit = async (
-		request: FastifyRequest<{ Querystring: SubjectPrefixQuery; Body: FormBody }>,
-		reply: FastifyReply,
-	): Promise<FastifyReply> => {
+	submit = async (request: AppRequest<{ Querystring: SubjectPrefixQuery; Body: FormBody }>, reply: AppReply): Promise<AppReply> => {
 		const topic = await this.#topic(request, reply);
 		if (!('subject' in topic)) return topic;
 		const tags = request.board.subjectTags;
@@ -57,7 +54,7 @@ export class SubjectPrefixController {
 	};
 
 	/** Discussion lisible et modifiable par le lecteur, ou la réponse d'erreur. */
-	async #topic(request: FastifyRequest<{ Querystring: SubjectPrefixQuery }>, reply: FastifyReply) {
+	async #topic(request: AppRequest<{ Querystring: SubjectPrefixQuery }>, reply: AppReply) {
 		const { lang } = this.deps.page;
 		const id = positiveInt(request.query.id);
 		const topic = id > 0 ? await this.deps.topics.findReadable(id, request.viewer.group.id, request.viewer.id) : null;
@@ -67,13 +64,13 @@ export class SubjectPrefixController {
 	}
 
 	#render(
-		request: FastifyRequest,
-		reply: FastifyReply,
+		request: AppRequest,
+		reply: AppReply,
 		topic: { id: number; subject: string },
 		selected: readonly string[],
 		error: string | null,
 		status = 200,
-	): Promise<FastifyReply> {
+	): Promise<AppReply> {
 		const { lang } = this.deps.page;
 		const choices = (group: 'project' | 'other') =>
 			request.board.subjectTags

@@ -3,12 +3,12 @@
  * confirmation, avec les doublures.
  */
 
-import type { FastifyInstance } from 'fastify';
-import { afterEach, describe, expect, it } from 'vitest';
-import { buildApp } from '../src/app.ts';
+import { describe, expect, it } from 'vitest';
+import { buildApp, type ForumApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
 import { type FakeData, fakeDeps, group, guest, post, sessionCookie, viewer } from './fixtures.ts';
+import { inject } from './inject.ts';
 
 const SEED = 'graine-de-test';
 const CSRF_SECRET = '9'.repeat(64);
@@ -16,10 +16,9 @@ const admin = viewer({ id: 2, username: 'admin', group: group({ id: GroupId.Admi
 const mod = viewer({ id: 5, username: 'MaxDUO', group: group({ id: GroupId.Moderator, isModerator: true }) });
 const cookies = (userId: number): string => `${sessionCookie(userId)}; avrobb_csrf=${CSRF_SECRET}`;
 
-let app: FastifyInstance | undefined;
-afterEach(async () => app?.close());
+let app: ForumApp | undefined;
 
-async function start(): Promise<{ server: FastifyInstance; fake: FakeData }> {
+async function start(): Promise<{ server: ForumApp; fake: FakeData }> {
 	const fake: FakeData = {
 		users: [{ viewer: guest }, { viewer: admin }, { viewer: mod }],
 		topics: [],
@@ -34,10 +33,10 @@ async function start(): Promise<{ server: FastifyInstance; fake: FakeData }> {
 	return { server: app, fake };
 }
 
-const get = (server: FastifyInstance, userId: number, url: string) => server.inject({ url, headers: { cookie: cookies(userId) } });
+const get = (server: ForumApp, userId: number, url: string) => inject(server, { url, headers: { cookie: cookies(userId) } });
 
-function send(server: FastifyInstance, userId: number, fields: Record<string, string>) {
-	return server.inject({
+function send(server: ForumApp, userId: number, fields: Record<string, string>) {
+	return inject(server, {
 		method: 'POST',
 		url: '/admin_maintenance.php',
 		headers: { cookie: cookies(userId), 'content-type': 'application/x-www-form-urlencoded' },
@@ -48,8 +47,8 @@ function send(server: FastifyInstance, userId: number, fields: Record<string, st
 describe('admin_maintenance.php', () => {
 	it('réservé aux administrateurs', async () => {
 		const { server } = await start();
-		expect((await server.inject({ url: '/admin_maintenance.php', headers: { cookie: cookies(5) } })).statusCode).toBe(403);
-		const page = await server.inject({ url: '/admin_maintenance.php', headers: { cookie: cookies(2) } });
+		expect((await inject(server, { url: '/admin_maintenance.php', headers: { cookie: cookies(5) } })).statusCode).toBe(403);
+		const page = await inject(server, { url: '/admin_maintenance.php', headers: { cookie: cookies(2) } });
 		expect(page.body).toContain('name="i_start_at" value="100"');
 		expect(page.body).toContain('id="cold-topics"');
 		expect(page.body).not.toContain('prune');
@@ -87,7 +86,7 @@ describe('admin_maintenance.php', () => {
 		expect(preview.body).toContain('<b>Pause</b>');
 		expect(preview.body).toContain('Aperçu');
 		expect((await get(server, 2, '/index.php')).body).toContain('href="admin_maintenance.php#maintenance-mode"');
-		const blocked = await server.inject({ url: '/index.php' });
+		const blocked = await inject(server, { url: '/index.php' });
 		expect(blocked.statusCode).toBe(503);
 		expect(blocked.body).not.toContain('Aperçu');
 	});

@@ -2,18 +2,17 @@
  * Aide BBCode : exemples rendus par le vrai parseur, émoticônes regroupées.
  */
 
-import type { FastifyInstance } from 'fastify';
-import { afterEach, describe, expect, it } from 'vitest';
-import { buildApp } from '../src/app.ts';
+import { describe, expect, it } from 'vitest';
+import { buildApp, type ForumApp } from '../src/app.ts';
 import { fakeDeps, guest } from './fixtures.ts';
+import { inject } from './inject.ts';
 
-let app: FastifyInstance | undefined;
-afterEach(async () => app?.close());
+let app: ForumApp | undefined;
 
 describe('GET /help.php', () => {
 	it('montre chaque balise et son rendu réel, et les émoticônes en émojis', async () => {
 		app = await buildApp(fakeDeps({ users: [{ viewer: guest }], topics: [], posts: new Map() }));
-		const res = await app.inject('/help.php');
+		const res = await inject(app, '/help.php');
 
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('<title>Aide / Forum de test</title>');

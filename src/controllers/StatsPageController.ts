@@ -3,7 +3,7 @@
  * « Informations sur les forums » de l'index, remplacé par l'activité de la semaine.
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { buildStatsPage } from '../presenters/statsPage.ts';
 import type { StatsReader } from '../repositories/StatsRepository.ts';
@@ -17,7 +17,7 @@ export interface StatsPageControllerDeps extends LayoutDeps {
 export class StatsPageController {
 	constructor(private readonly deps: StatsPageControllerDeps) {}
 
-	show = async (request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply> => {
+	show = async (request: AppRequest, reply: AppReply): Promise<AppReply> => {
 		const { viewer, board: config } = request;
 		const { lang } = this.deps.page;
 		if (!viewer.group.canReadBoard) return renderMessage(request, reply, this.deps, 403, lang.common.noView);

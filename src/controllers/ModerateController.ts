@@ -10,8 +10,8 @@
  * scindé, même par une requête forgée ; les erreurs s'affichent dans la page.
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { ForumInfo } from '../domain/models.ts';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { buildForumChoice, buildModerateForum, buildModerateTopic } from '../presenters/moderatePage.ts';
@@ -58,8 +58,8 @@ export interface ModerateQuery {
 	done?: string;
 }
 
-type ModerateRequest = FastifyRequest<{ Querystring: ModerateQuery; Body?: FormBody }>;
-type ModeratePost = FastifyRequest<{ Querystring: ModerateQuery; Body: FormBody }>;
+type ModerateRequest = AppRequest<{ Querystring: ModerateQuery; Body?: FormBody }>;
+type ModeratePost = AppRequest<{ Querystring: ModerateQuery; Body: FormBody }>;
 
 /** Actions sur un seul sujet, désigné dans l'adresse (liens du pied de viewtopic). */
 const SINGLE_ACTIONS = ['open', 'close', 'stick', 'unstick'] as const;
@@ -83,7 +83,7 @@ interface ModerateFormView {
 export class ModerateController {
 	constructor(private readonly deps: ModerateControllerDeps) {}
 
-	show = async (request: ModerateRequest, reply: FastifyReply): Promise<FastifyReply> => {
+	show = async (request: ModerateRequest, reply: AppReply): Promise<AppReply> => {
 		const { query } = request;
 		if (query.get_host !== undefined) return this.hostInfo(request, reply);
 		const forum = await this.moderatedForum(request, reply);
@@ -100,7 +100,7 @@ export class ModerateController {
 		return this.forumView(request, reply, forum, []);
 	};
 
-	submit = async (request: ModeratePost, reply: FastifyReply): Promise<FastifyReply> => {
+	submit = async (request: ModeratePost, reply: AppReply): Promise<AppReply> => {
 		const { query, body } = request;
 		const forum = await this.moderatedForum(request, reply);
 		if (!('moderators' in forum)) return forum;
@@ -125,7 +125,7 @@ export class ModerateController {
 	// ——— Accès ———
 
 	/** Forum désigné par fid, que le lecteur modère ; sinon la réponse d'erreur. */
-	private async moderatedForum(request: ModerateRequest, reply: FastifyReply): Promise<ForumInfo | FastifyReply> {
+	private async moderatedForum(request: ModerateRequest, reply: AppReply): Promise<ForumInfo | AppReply> {
 		const { viewer } = request;
 		const { lang } = this.deps.page;
 		const fid = positiveInt(request.query.fid);
@@ -135,7 +135,7 @@ export class ModerateController {
 		return forum;
 	}
 
-	private badRequest(request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply> {
+	private badRequest(request: AppRequest, reply: AppReply): Promise<AppReply> {
 		return renderMessage(request, reply, this.deps, 400, this.deps.page.lang.common.badRequest);
 	}
 
@@ -147,13 +147,13 @@ export class ModerateController {
 		return null;
 	}
 
-	private async censor(request: FastifyRequest): Promise<Censor | null> {
+	private async censor(request: AppRequest): Promise<Censor | null> {
 		return request.board.censoring ? buildCensor(await this.deps.censorship.listWords()) : null;
 	}
 
 	// ——— get_host ———
 
-	private async hostInfo(request: ModerateRequest, reply: FastifyReply): Promise<FastifyReply> {
+	private async hostInfo(request: ModerateRequest, reply: AppReply): Promise<AppReply> {
 		const { lang } = this.deps.page;
 		if (!isAnyModerator(request.viewer)) return renderMessage(request, reply, this.deps, 403, lang.common.noPermission);
 		const value = request.query.get_host ?? '';
@@ -173,7 +173,7 @@ export class ModerateController {
 
 	// ——— Forum ———
 
-	private async forumView(request: ModerateRequest, reply: FastifyReply, forum: ForumInfo, errors: string[]): Promise<FastifyReply> {
+	private async forumView(request: ModerateRequest, reply: AppReply, forum: ForumInfo, errors: string[]): Promise<AppReply> {
 		const { viewer, board: config } = request;
 		const { lang } = this.deps.page;
 		const perPage = viewer.topicsPerPage ?? config.defaultTopicsPerPage;
@@ -220,7 +220,7 @@ export class ModerateController {
 		return this.deps.moderation.findTopic(positiveInt(request.query.tid), forum.id, request.viewer.group.id);
 	}
 
-	private async topicView(request: ModerateRequest, reply: FastifyReply, forum: ForumInfo, errors: string[]): Promise<FastifyReply> {
+	private async topicView(request: ModerateRequest, reply: AppReply, forum: ForumInfo, errors: string[]): Promise<AppReply> {
 		const { viewer, board: config } = request;
 		const { lang } = this.deps.page;
 		const topic = await this.findTopic(request, forum);
@@ -266,7 +266,7 @@ export class ModerateController {
 	}
 
 	/** Suppression ou scission de messages d'un sujet (avec confirmation). */
-	private async postActions(request: ModeratePost, reply: FastifyReply, forum: ForumInfo): Promise<FastifyReply> {
+	private async postActions(request: ModeratePost, reply: AppReply, forum: ForumInfo): Promise<AppReply> {
 		const { viewer, body } = request;
 		const { lang } = this.deps.page;
 		const t = lang.moderate;
@@ -330,12 +330,12 @@ export class ModerateController {
 
 	private async moveForm(
 		request: ModerateRequest,
-		reply: FastifyReply,
+		reply: AppReply,
 		forum: ForumInfo,
 		topics: readonly number[],
 		single: boolean,
 		errors: string[],
-	): Promise<FastifyReply> {
+	): Promise<AppReply> {
 		const t = this.deps.page.lang.moderate;
 		const targets = (await this.deps.moderation.listTargetForums(request.viewer.group.id)).filter((target) => target.forumId !== forum.id);
 		if (targets.length === 0) return renderMessage(request, reply, this.deps, 200, t.nowhereToMove);
@@ -355,7 +355,7 @@ export class ModerateController {
 		});
 	}
 
-	private async moveTopics(request: ModeratePost, reply: FastifyReply, forum: ForumInfo): Promise<FastifyReply> {
+	private async moveTopics(request: ModeratePost, reply: AppReply, forum: ForumInfo): Promise<AppReply> {
 		const { body, viewer } = request;
 		const t = this.deps.page.lang.moderate;
 		const topics = idList(body, 'topics');
@@ -368,7 +368,7 @@ export class ModerateController {
 		return reply.redirect(`viewforum.php?id=${target}`, 303);
 	}
 
-	private async mergeTopics(request: ModeratePost, reply: FastifyReply, forum: ForumInfo): Promise<FastifyReply> {
+	private async mergeTopics(request: ModeratePost, reply: AppReply, forum: ForumInfo): Promise<AppReply> {
 		const { body } = request;
 		const t = this.deps.page.lang.moderate;
 		const topics = idList(body, 'topics');
@@ -392,7 +392,7 @@ export class ModerateController {
 		return reply.redirect(`moderate.php?fid=${forum.id}&done=merged`, 303);
 	}
 
-	private async deleteTopics(request: ModeratePost, reply: FastifyReply, forum: ForumInfo): Promise<FastifyReply> {
+	private async deleteTopics(request: ModeratePost, reply: AppReply, forum: ForumInfo): Promise<AppReply> {
 		const { body, viewer } = request;
 		const t = this.deps.page.lang.moderate;
 		const topics = idList(body, 'topics');
@@ -431,11 +431,7 @@ export class ModerateController {
 		return labels[action];
 	}
 
-	private confirmSingle(
-		request: ModerateRequest,
-		reply: FastifyReply,
-		single: { action: SingleAction; topicId: number },
-	): Promise<FastifyReply> {
+	private confirmSingle(request: ModerateRequest, reply: AppReply, single: { action: SingleAction; topicId: number }): Promise<AppReply> {
 		if (single.topicId < 1) return this.badRequest(request, reply);
 		const search = request.url.includes('?') ? request.url.slice(request.url.indexOf('?')) : '';
 		const label = this.singleLabel(single.action);
@@ -456,10 +452,10 @@ export class ModerateController {
 
 	private async applySingle(
 		request: ModeratePost,
-		reply: FastifyReply,
+		reply: AppReply,
 		forum: ForumInfo,
 		single: { action: SingleAction; topicId: number },
-	): Promise<FastifyReply> {
+	): Promise<AppReply> {
 		const { topicId, action } = single;
 		if (topicId < 1) return this.badRequest(request, reply);
 		const store = this.deps.moderation;
@@ -470,7 +466,7 @@ export class ModerateController {
 		return reply.redirect(`viewtopic.php?id=${topicId}`, 303);
 	}
 
-	private renderForm(request: FastifyRequest, reply: FastifyReply, view: ModerateFormView): Promise<FastifyReply> {
+	private renderForm(request: AppRequest, reply: AppReply, view: ModerateFormView): Promise<AppReply> {
 		const { lang } = this.deps.page;
 		return renderPage(
 			request,

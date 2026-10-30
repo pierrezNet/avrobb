@@ -9,7 +9,7 @@
  * réaffichées dans le formulaire.
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { buildReputationPage, buildVoteForm } from '../presenters/reputationPage.ts';
@@ -33,8 +33,8 @@ export interface ReputationQuery {
 	done?: string;
 }
 
-type ReputationRequest = FastifyRequest<{ Querystring: ReputationQuery; Body?: FormBody }>;
-type ReputationPost = FastifyRequest<{ Querystring: ReputationQuery; Body: FormBody }>;
+type ReputationRequest = AppRequest<{ Querystring: ReputationQuery; Body?: FormBody }>;
+type ReputationPost = AppRequest<{ Querystring: ReputationQuery; Body: FormBody }>;
 
 /** Sens du vote : 1 = positif, 2 = négatif ; null si invalide. */
 function voteDirection(method: string | undefined): boolean | null {
@@ -44,24 +44,24 @@ function voteDirection(method: string | undefined): boolean | null {
 export class ReputationController {
 	constructor(private readonly deps: ReputationControllerDeps) {}
 
-	show = async (request: ReputationRequest, reply: FastifyReply): Promise<FastifyReply> => {
+	show = async (request: ReputationRequest, reply: AppReply): Promise<AppReply> => {
 		const denied = this.denied(request, reply);
 		if (denied !== null) return denied;
 		return request.query.method === undefined ? this.history(request, reply, []) : this.voteForm(request, reply);
 	};
 
-	submit = async (request: ReputationPost, reply: FastifyReply): Promise<FastifyReply> => {
+	submit = async (request: ReputationPost, reply: AppReply): Promise<AppReply> => {
 		const denied = this.denied(request, reply);
 		if (denied !== null) return denied;
 		return request.body.delete_rep !== undefined ? this.deleteVotes(request, reply) : this.vote(request, reply);
 	};
 
-	private denied(request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply> | null {
+	private denied(request: AppRequest, reply: AppReply): Promise<AppReply> | null {
 		const error = reputationAccessError(request.viewer, request.board);
 		return error !== null ? renderMessage(request, reply, this.deps, 403, this.deps.page.lang.reputation.accessError(error)) : null;
 	}
 
-	private async history(request: ReputationRequest, reply: FastifyReply, errors: string[]): Promise<FastifyReply> {
+	private async history(request: ReputationRequest, reply: AppReply, errors: string[]): Promise<AppReply> {
 		const { viewer, board: config } = request;
 		const { lang } = this.deps.page;
 		const member = await this.deps.reputation.findMember(positiveInt(request.query.uid));
@@ -108,7 +108,7 @@ export class ReputationController {
 	/** Contrôles communs au formulaire et à l'enregistrement d'un vote ; renvoie la cible ou une réponse d'erreur. */
 	private async checkVote(
 		request: ReputationRequest,
-		reply: FastifyReply,
+		reply: AppReply,
 		postId: number,
 		plus: boolean | null,
 		expectedAuthor: number | null,
@@ -129,14 +129,14 @@ export class ReputationController {
 		return { target, plus };
 	}
 
-	private async voteForm(request: ReputationRequest, reply: FastifyReply): Promise<FastifyReply> {
+	private async voteForm(request: ReputationRequest, reply: AppReply): Promise<AppReply> {
 		const { query } = request;
 		const checked = await this.checkVote(request, reply, positiveInt(query.pid), voteDirection(query.method), positiveInt(query.uid));
 		if (!('target' in checked)) return checked;
 		return this.renderVoteForm(request, reply, checked.target.postId, checked.plus, checked.target.authorName, '', []);
 	}
 
-	private async vote(request: ReputationPost, reply: FastifyReply): Promise<FastifyReply> {
+	private async vote(request: ReputationPost, reply: AppReply): Promise<AppReply> {
 		const { viewer, board: config, body } = request;
 		const { lang } = this.deps.page;
 		const checked = await this.checkVote(request, reply, positiveInt(field(body, 'pid')), voteDirection(field(body, 'method')), null);
@@ -178,7 +178,7 @@ export class ReputationController {
 		return reply.redirect(`viewtopic.php?pid=${target.postId}#p${target.postId}`, 303);
 	}
 
-	private async deleteVotes(request: ReputationPost, reply: FastifyReply): Promise<FastifyReply> {
+	private async deleteVotes(request: ReputationPost, reply: AppReply): Promise<AppReply> {
 		const { lang } = this.deps.page;
 		if (!canDeleteReputation(request.viewer)) return renderMessage(request, reply, this.deps, 403, lang.common.noPermission);
 		const uid = positiveInt(request.query.uid);
@@ -193,13 +193,13 @@ export class ReputationController {
 
 	private renderVoteForm(
 		request: ReputationRequest,
-		reply: FastifyReply,
+		reply: AppReply,
 		postId: number,
 		plus: boolean,
 		target: string,
 		reason: string,
 		errors: string[],
-	): Promise<FastifyReply> {
+	): Promise<AppReply> {
 		const { lang } = this.deps.page;
 		const view = buildVoteForm({ viewer: request.viewer, postId, plus, target, reason, errors, lang });
 		return renderPage(

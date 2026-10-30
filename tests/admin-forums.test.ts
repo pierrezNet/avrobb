@@ -2,12 +2,12 @@
  * Catégories (admin_categories.php) et forums (admin_forums.php) de bout en bout avec les doublures.
  */
 
-import type { FastifyInstance } from 'fastify';
-import { afterEach, describe, expect, it } from 'vitest';
-import { buildApp } from '../src/app.ts';
+import { describe, expect, it } from 'vitest';
+import { buildApp, type ForumApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
 import { type FakeData, fakeDeps, group, guest, sessionCookie, viewer } from './fixtures.ts';
+import { inject } from './inject.ts';
 
 const SEED = 'graine-de-test';
 const CSRF_SECRET = '9'.repeat(64);
@@ -15,10 +15,9 @@ const mod = viewer({ id: 5, username: 'MaxDUO', group: group({ id: GroupId.Moder
 const admin = viewer({ id: 2, username: 'admin', group: group({ id: GroupId.Admin }) });
 const cookies = (userId: number): string => `${sessionCookie(userId)}; avrobb_csrf=${CSRF_SECRET}`;
 
-let app: FastifyInstance | undefined;
-afterEach(async () => app?.close());
+let app: ForumApp | undefined;
 
-async function start(): Promise<{ server: FastifyInstance; fake: FakeData }> {
+async function start(): Promise<{ server: ForumApp; fake: FakeData }> {
 	const fake: FakeData = {
 		users: [{ viewer: guest }, { viewer: mod }, { viewer: admin }],
 		topics: [],
@@ -49,11 +48,11 @@ async function start(): Promise<{ server: FastifyInstance; fake: FakeData }> {
 	return { server: app, fake };
 }
 
-const get = (server: FastifyInstance, userId: number, url: string) => server.inject({ url, headers: { cookie: cookies(userId) } });
+const get = (server: ForumApp, userId: number, url: string) => inject(server, { url, headers: { cookie: cookies(userId) } });
 
-function post(server: FastifyInstance, userId: number, url: string, fields: Record<string, string>) {
+function post(server: ForumApp, userId: number, url: string, fields: Record<string, string>) {
 	const body = new URLSearchParams({ csrf_token: csrfToken(CSRF_SECRET, SEED, userId), ...fields });
-	return server.inject({
+	return inject(server, {
 		method: 'POST',
 		url,
 		headers: { cookie: cookies(userId), 'content-type': 'application/x-www-form-urlencoded' },

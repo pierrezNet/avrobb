@@ -9,9 +9,9 @@
  * modification, on revient au message dans la conversation.
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { Mailer } from '../adapters/mailer.ts';
 import type { PrivateMessage, PrivateRecipient } from '../domain/models.ts';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { buildSendForm, conversationUrl } from '../presenters/privateMessagesPage.ts';
@@ -41,7 +41,7 @@ export interface PrivateMessageSendQuery {
 	tid?: string;
 }
 
-type SendRequest = FastifyRequest<{ Querystring: PrivateMessageSendQuery; Body?: FormBody }>;
+type SendRequest = AppRequest<{ Querystring: PrivateMessageSendQuery; Body?: FormBody }>;
 
 /** Ce qu'on écrit : nouvelle conversation, réponse à une conversation, ou modification. */
 type Mode =
@@ -59,7 +59,7 @@ interface FormState {
 export class PrivateMessageSendController {
 	constructor(private readonly deps: PrivateMessageSendControllerDeps) {}
 
-	form = async (request: SendRequest, reply: FastifyReply): Promise<FastifyReply> => {
+	form = async (request: SendRequest, reply: AppReply): Promise<AppReply> => {
 		const denied = privateMessagesDenied(request, reply, this.deps);
 		if (denied !== null) return denied;
 		const mode = await this.mode(request);
@@ -80,10 +80,7 @@ export class PrivateMessageSendController {
 		return this.render(request, reply, mode, state, [], null);
 	};
 
-	send = async (
-		request: FastifyRequest<{ Querystring: PrivateMessageSendQuery; Body: FormBody }>,
-		reply: FastifyReply,
-	): Promise<FastifyReply> => {
+	send = async (request: AppRequest<{ Querystring: PrivateMessageSendQuery; Body: FormBody }>, reply: AppReply): Promise<AppReply> => {
 		const denied = privateMessagesDenied(request, reply, this.deps);
 		if (denied !== null) return denied;
 		const { viewer, board: config, body } = request;
@@ -191,7 +188,7 @@ export class PrivateMessageSendController {
 		return { kind: 'new' };
 	}
 
-	private async ownMessage(request: FastifyRequest, messageId: number): Promise<PrivateMessage | null> {
+	private async ownMessage(request: AppRequest, messageId: number): Promise<PrivateMessage | null> {
 		if (messageId <= 0) return null;
 		const message = await this.deps.privateMessageStore.findMessage(messageId);
 		return message !== null && message.ownerId === request.viewer.id ? message : null;
@@ -213,7 +210,7 @@ export class PrivateMessageSendController {
 
 	/** Alertes par e-mail (o_pms_notification), sauf à l'expéditeur. */
 	private async notify(
-		request: FastifyRequest,
+		request: AppRequest,
 		recipients: readonly PrivateRecipient[],
 		sharedId: number,
 		copies: SentCopies,
@@ -243,12 +240,12 @@ export class PrivateMessageSendController {
 
 	private async render(
 		request: SendRequest,
-		reply: FastifyReply,
+		reply: AppReply,
 		mode: Mode,
 		state: FormState,
 		errors: string[],
 		preview: string | null,
-	): Promise<FastifyReply> {
+	): Promise<AppReply> {
 		const { viewer, board: config } = request;
 		const { lang } = this.deps.page;
 		const formAction =

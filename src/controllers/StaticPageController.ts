@@ -5,7 +5,7 @@
  * accessibles à tous, même sans le droit de lire le forum.
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import { type LayoutDeps, renderPage } from '../http/layout.ts';
 import { buildStaticPage, type StaticPageId } from '../presenters/staticPage.ts';
 
@@ -14,7 +14,7 @@ export class StaticPageController {
 
 	show =
 		(id: StaticPageId) =>
-		(request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply> => {
+		(request: AppRequest, reply: AppReply): Promise<AppReply> => {
 			const { lang, dateWords, clock } = this.deps.page;
 			const view = buildStaticPage({
 				id,

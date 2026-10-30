@@ -3,7 +3,7 @@
  * destinataires, et droits de chaque groupe (g_pm, g_pm_limit).
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { AppReply, AppRequest } from '../../http/context.ts';
 import { type FormBody, field } from '../../http/forms.ts';
 import { readGroupPrivateMessageRights, readPrivateMessageSettings } from '../../services/adminPlugins.ts';
 import {
@@ -17,7 +17,7 @@ import {
 export class PrivateMessagesPlugin implements PluginHandler {
 	constructor(private readonly deps: AdminLoaderControllerDeps) {}
 
-	async show(request: FastifyRequest<{ Querystring: AdminLoaderQuery }>, reply: FastifyReply): Promise<FastifyReply> {
+	async show(request: AppRequest<{ Querystring: AdminLoaderQuery }>, reply: AppReply): Promise<AppReply> {
 		const t = this.deps.page.lang.adminPlugins.privateMessages;
 		const values = await this.deps.configStore.loadValues();
 		return renderPlugin(this.deps, request, reply, 'AP_Private_messaging.php', 'admin_plugin_pms.njk', t.title, {
@@ -30,7 +30,7 @@ export class PrivateMessagesPlugin implements PluginHandler {
 		});
 	}
 
-	async submit(request: FastifyRequest<{ Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> {
+	async submit(request: AppRequest<{ Body: FormBody }>, reply: AppReply): Promise<AppReply> {
 		const read = (name: string): string => field(request.body, name);
 		await saveConfigChanges(this.deps, readPrivateMessageSettings(read));
 		for (const group of await this.deps.groupAdmin.listPrivateMessageRights()) {

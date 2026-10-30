@@ -3,8 +3,8 @@
  * ajout (depuis un pseudo ou le lien « Bannir » d'un profil), modification, suppression et recherche.
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
 import { GroupId } from '../domain/models.ts';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage } from '../http/layout.ts';
 import { paginationLinks } from '../presenters/navigation.ts';
@@ -25,7 +25,7 @@ export interface AdminBansControllerDeps extends LayoutDeps {
 export type AdminBansQuery = Record<string, string | undefined>;
 
 /** Décalage horaire du lecteur, en secondes ($pun_user['timezone'] + dst). */
-const viewerOffset = (viewer: FastifyRequest['viewer']): number => (viewer.timezone + (viewer.dst ? 1 : 0)) * 3600;
+const viewerOffset = (viewer: AppRequest['viewer']): number => (viewer.timezone + (viewer.dst ? 1 : 0)) * 3600;
 
 /** Date d'expiration affichée dans le formulaire (gmdate('Y-m-d') au fuseau du lecteur). */
 function expireInput(expire: number | null, offset: number): string {
@@ -35,13 +35,13 @@ function expireInput(expire: number | null, offset: number): string {
 export class AdminBansController {
 	constructor(private readonly deps: AdminBansControllerDeps) {}
 
-	#denied(request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply> | null {
+	#denied(request: AppRequest, reply: AppReply): Promise<AppReply> | null {
 		const { viewer } = request;
 		const allowed = isAdmin(viewer) || (viewer.group.isModerator && viewer.group.canModBanUsers);
 		return allowed ? null : renderMessage(request, reply, this.deps, 403, this.deps.page.lang.common.noPermission);
 	}
 
-	show = async (request: FastifyRequest<{ Querystring: AdminBansQuery }>, reply: FastifyReply): Promise<FastifyReply> => {
+	show = async (request: AppRequest<{ Querystring: AdminBansQuery }>, reply: AppReply): Promise<AppReply> => {
 		const denied = this.#denied(request, reply);
 		if (denied !== null) return denied;
 		const { lang } = this.deps.page;
@@ -96,7 +96,7 @@ export class AdminBansController {
 		);
 	};
 
-	submit = async (request: FastifyRequest<{ Querystring: AdminBansQuery; Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> => {
+	submit = async (request: AppRequest<{ Querystring: AdminBansQuery; Body: FormBody }>, reply: AppReply): Promise<AppReply> => {
 		const denied = this.#denied(request, reply);
 		if (denied !== null) return denied;
 		const { lang, clock } = this.deps.page;
@@ -154,7 +154,7 @@ export class AdminBansController {
 	}
 
 	/** Formulaire complet d'un nouveau bannissement, prérempli d'après le compte visé s'il est donné. */
-	async #startAdd(request: FastifyRequest, reply: FastifyReply, by: { id: number } | { username: string } | null): Promise<FastifyReply> {
+	async #startAdd(request: AppRequest, reply: AppReply, by: { id: number } | { username: string } | null): Promise<AppReply> {
 		const t = this.deps.page.lang.adminBans;
 		const empty = { username: '', ip: '', email: '', message: '', expireText: '' };
 		if (by === null) return this.#renderForm(request, reply, 'add', null, empty, null, []);
@@ -179,8 +179,8 @@ export class AdminBansController {
 	}
 
 	#renderForm(
-		request: FastifyRequest,
-		reply: FastifyReply,
+		request: AppRequest,
+		reply: AppReply,
 		mode: 'add' | 'edit',
 		banId: number | null,
 		values: { username: string | null; ip: string | null; email: string | null; message: string | null; expireText: string },
@@ -188,7 +188,7 @@ export class AdminBansController {
 		errors: string[],
 		status = 200,
 		lastIp: string | null = null,
-	): Promise<FastifyReply> {
+	): Promise<AppReply> {
 		reply.code(status);
 		return renderAdminPage(
 			request,
@@ -212,7 +212,7 @@ export class AdminBansController {
 		);
 	}
 
-	async #results(request: FastifyRequest<{ Querystring: AdminBansQuery }>, reply: FastifyReply): Promise<FastifyReply> {
+	async #results(request: AppRequest<{ Querystring: AdminBansQuery }>, reply: AppReply): Promise<AppReply> {
 		const { lang, dateWords, clock } = this.deps.page;
 		const t = lang.adminBans;
 		const search = readBanSearch((name) => request.query[name] ?? '');

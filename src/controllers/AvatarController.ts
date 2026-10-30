@@ -8,8 +8,8 @@
  * jamais dans l'en-tête envoyé par le navigateur.
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { ImageProcessor } from '../adapters/imageProcessor.ts';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import type { FormBody } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { buildProfileMenu } from '../presenters/profileEditPage.ts';
@@ -23,15 +23,15 @@ export interface AvatarControllerDeps extends LayoutDeps, ProfileAccessDeps {
 	avatarStore: AvatarStore;
 }
 
-type AvatarRequest = FastifyRequest<{ Querystring: ProfileQuery; Body?: FormBody }>;
+type AvatarRequest = AppRequest<{ Querystring: ProfileQuery; Body?: FormBody }>;
 
 export class AvatarController {
 	constructor(private readonly deps: AvatarControllerDeps) {}
 
-	uploadForm = async (request: AvatarRequest, reply: FastifyReply): Promise<FastifyReply> =>
+	uploadForm = async (request: AvatarRequest, reply: AppReply): Promise<AppReply> =>
 		this.withProfile(request, reply, (id, username) => this.renderUpload(request, reply, id, username, []));
 
-	upload = async (request: AvatarRequest, reply: FastifyReply): Promise<FastifyReply> =>
+	upload = async (request: AvatarRequest, reply: AppReply): Promise<AppReply> =>
 		this.withProfile(request, reply, async (id, username) => {
 			const config = request.board;
 			const limits = { maxBytes: config.avatarMaxBytes, maxWidth: config.avatarMaxWidth, maxHeight: config.avatarMaxHeight };
@@ -60,7 +60,7 @@ export class AvatarController {
 		return fitted?.data ?? data;
 	}
 
-	deleteForm = async (request: AvatarRequest, reply: FastifyReply): Promise<FastifyReply> =>
+	deleteForm = async (request: AvatarRequest, reply: AppReply): Promise<AppReply> =>
 		this.withProfile(request, reply, (id) => {
 			const { lang } = this.deps.page;
 			return renderPage(
@@ -78,7 +78,7 @@ export class AvatarController {
 			);
 		});
 
-	delete = async (request: AvatarRequest, reply: FastifyReply): Promise<FastifyReply> =>
+	delete = async (request: AvatarRequest, reply: AppReply): Promise<AppReply> =>
 		this.withProfile(request, reply, async (id) => {
 			await this.deps.avatarStore.delete(id, request.board.avatarsDir);
 			return reply.redirect(`profile.php?section=personality&id=${id}&updated=1`, 303);
@@ -87,16 +87,16 @@ export class AvatarController {
 	/** Avatars activés et profil modifiable par le lecteur. */
 	private async withProfile(
 		request: AvatarRequest,
-		reply: FastifyReply,
-		body: (userId: number, username: string) => Promise<FastifyReply>,
-	): Promise<FastifyReply> {
+		reply: AppReply,
+		body: (userId: number, username: string) => Promise<AppReply>,
+	): Promise<AppReply> {
 		if (!request.board.avatars) return renderMessage(request, reply, this.deps, 404, this.deps.page.lang.profile.avatarsDisabled);
 		const profile = await loadEditableProfile(request, reply, this.deps);
 		if (!isProfile(profile)) return profile;
 		return body(profile.id, profile.username);
 	}
 
-	private renderUpload(request: AvatarRequest, reply: FastifyReply, id: number, username: string, errors: string[]): Promise<FastifyReply> {
+	private renderUpload(request: AvatarRequest, reply: AppReply, id: number, username: string, errors: string[]): Promise<AppReply> {
 		const { board: config } = request;
 		const { lang } = this.deps.page;
 		return renderPage(

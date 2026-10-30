@@ -6,13 +6,13 @@
 import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import type { FastifyInstance } from 'fastify';
-import { afterEach, describe, expect, it } from 'vitest';
-import { buildApp } from '../src/app.ts';
+import { describe, expect, it } from 'vitest';
+import { buildApp, type ForumApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
 import { HeaderImageFiles } from '../src/repositories/HeaderImageFiles.ts';
 import { type FakeData, fakeDeps, group, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
+import { inject } from './inject.ts';
 
 const SEED = 'graine-de-test';
 const CSRF_SECRET = '7'.repeat(64);
@@ -27,10 +27,9 @@ const png = Buffer.concat([
 png.writeUInt32BE(800, 16);
 png.writeUInt32BE(200, 20);
 
-let app: FastifyInstance | undefined;
-afterEach(async () => app?.close());
+let app: ForumApp | undefined;
 
-async function start(): Promise<{ server: FastifyInstance; fake: FakeData }> {
+async function start(): Promise<{ server: ForumApp; fake: FakeData }> {
 	const fake: FakeData = {
 		users: [{ viewer: guest }, { viewer: admin }, { viewer: mod }],
 		topics: [],
@@ -40,13 +39,13 @@ async function start(): Promise<{ server: FastifyInstance; fake: FakeData }> {
 	return { server: app, fake };
 }
 
-async function send(server: FastifyInstance, userId: number, fields: Record<string, string>, file?: Buffer) {
+async function send(server: ForumApp, userId: number, fields: Record<string, string>, file?: Buffer) {
 	const form = new FormData();
 	form.append('csrf_token', csrfToken(CSRF_SECRET, SEED, userId));
 	for (const [name, value] of Object.entries(fields)) form.append(name, value);
 	if (file !== undefined) form.append('image', new Blob([new Uint8Array(file)]), 'image.png');
 	const request = new Request('http://x/', { method: 'POST', body: form });
-	return server.inject({
+	return inject(server, {
 		method: 'POST',
 		url: '/admin_appearance.php',
 		headers: { cookie: cookies(userId), 'content-type': request.headers.get('content-type') ?? '' },
@@ -57,8 +56,8 @@ async function send(server: FastifyInstance, userId: number, fields: Record<stri
 describe('admin_appearance.php', () => {
 	it('réservé aux administrateurs ; dans le menu ; aperçus des deux images', async () => {
 		const { server } = await start();
-		expect((await server.inject({ url: '/admin_appearance.php', headers: { cookie: cookies(5) } })).statusCode).toBe(403);
-		const page = await server.inject({ url: '/admin_appearance.php', headers: { cookie: cookies(2) } });
+		expect((await inject(server, { url: '/admin_appearance.php', headers: { cookie: cookies(5) } })).statusCode).toBe(403);
+		const page = await inject(server, { url: '/admin_appearance.php', headers: { cookie: cookies(2) } });
 		expect(page.statusCode).toBe(200);
 		expect(page.body).toContain('href="admin_appearance.php"');
 		expect(page.body).toContain('src="/img/logo.png"');
@@ -80,7 +79,7 @@ describe('admin_appearance.php', () => {
 		expect(banner.headers.location).toBe('admin_appearance.php?done=replaced');
 		expect(fake.headerImageLog?.at(-1)).toBe(`replace banner jpeg2560x800:${png.length}`);
 
-		expect((await server.inject({ url: '/admin_appearance.php', headers: { cookie: cookies(2) } })).body).toContain('value="restore"');
+		expect((await inject(server, { url: '/admin_appearance.php', headers: { cookie: cookies(2) } })).body).toContain('value="restore"');
 		const restored = await send(server, 2, { kind: 'logo', action: 'restore' });
 		expect(restored.headers.location).toBe('admin_appearance.php?done=restored');
 		expect(fake.headerImageLog?.at(-1)).toBe('restore logo');
@@ -89,7 +88,7 @@ describe('admin_appearance.php', () => {
 	it('version dans les adresses du logo et de la bannière de l’en-tête', async () => {
 		const fake: FakeData = { users: [{ viewer: guest }], topics: [], posts: new Map(), config: { headerVersion: 42 } };
 		app = await buildApp(fakeDeps(fake));
-		const page = await app.inject('/index.php');
+		const page = await inject(app, '/index.php');
 		expect(page.body).toContain('src="/img/logo.png?v=42"');
 		expect(page.body).toContain("--header-banner: url('/img/banner.jpg?v=42')");
 	});

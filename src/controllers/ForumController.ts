@@ -2,8 +2,8 @@
  * Contrôleur de viewforum.php : liste paginée des sujets d'un forum.
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { TopicAgeFilter } from '../domain/models.ts';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { buildForumPage, forumUrl } from '../presenters/forumPage.ts';
 import type { CensorReader } from '../repositories/CensorRepository.ts';
@@ -31,7 +31,7 @@ export interface ForumQuery {
 export class ForumController {
 	constructor(private readonly deps: ForumControllerDeps) {}
 
-	show = async (request: FastifyRequest<{ Querystring: ForumQuery }>, reply: FastifyReply): Promise<FastifyReply> => {
+	show = async (request: AppRequest<{ Querystring: ForumQuery }>, reply: AppReply): Promise<AppReply> => {
 		const { viewer, board: config } = request;
 		const { lang } = this.deps.page;
 

@@ -8,8 +8,8 @@
  * modérateurs) ; les erreurs réaffichent le formulaire.
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { ImageProcessor } from '../adapters/imageProcessor.ts';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { buildGalleryPage, buildGalleryPicker, galleryUrl } from '../presenters/galleryPage.ts';
@@ -44,7 +44,7 @@ export interface GalleryQuery {
 	embed?: string;
 }
 
-type GalleryRequest = FastifyRequest<{ Querystring: GalleryQuery; Body?: FormBody }>;
+type GalleryRequest = AppRequest<{ Querystring: GalleryQuery; Body?: FormBody }>;
 
 /** 5 lignes de 4 images, comme gallery.php. */
 const PER_PAGE = 20;
@@ -67,7 +67,7 @@ const EMPTY_FORM: FormState = { title: '', description: '', errors: [] };
 export class GalleryController {
 	constructor(private readonly deps: GalleryControllerDeps) {}
 
-	show = async (request: GalleryRequest, reply: FastifyReply): Promise<FastifyReply> => {
+	show = async (request: GalleryRequest, reply: AppReply): Promise<AppReply> => {
 		const { viewer } = request;
 		const { lang } = this.deps.page;
 		const { query } = request;
@@ -81,7 +81,7 @@ export class GalleryController {
 		return this.list(request, reply);
 	};
 
-	submit = async (request: FastifyRequest<{ Querystring: GalleryQuery; Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> => {
+	submit = async (request: AppRequest<{ Querystring: GalleryQuery; Body: FormBody }>, reply: AppReply): Promise<AppReply> => {
 		const { viewer } = request;
 		const { lang } = this.deps.page;
 		if (!viewer.group.canReadBoard) return renderMessage(request, reply, this.deps, 403, lang.common.noView);
@@ -91,7 +91,7 @@ export class GalleryController {
 		return this.upload(request, reply);
 	};
 
-	private async list(request: GalleryRequest, reply: FastifyReply): Promise<FastifyReply> {
+	private async list(request: GalleryRequest, reply: AppReply): Promise<AppReply> {
 		const { viewer, board: config, query } = request;
 		const { lang } = this.deps.page;
 		const mine = query.mine !== undefined && !viewer.isGuest;
@@ -137,7 +137,7 @@ export class GalleryController {
 		);
 	}
 
-	private async upload(request: FastifyRequest<{ Querystring: GalleryQuery; Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> {
+	private async upload(request: AppRequest<{ Querystring: GalleryQuery; Body: FormBody }>, reply: AppReply): Promise<AppReply> {
 		const { viewer, body } = request;
 		const { lang } = this.deps.page;
 		const fromPicker = request.query.from === 'pick';
@@ -186,7 +186,7 @@ export class GalleryController {
 	}
 
 	/** Image désignée par ?id=, si le lecteur peut la supprimer ; sinon la réponse d'erreur. */
-	private async deletable(request: GalleryRequest, reply: FastifyReply) {
+	private async deletable(request: GalleryRequest, reply: AppReply) {
 		const { lang } = this.deps.page;
 		const image = await this.deps.gallery.findImage(positiveInt(request.query.id));
 		if (image === null) return renderMessage(request, reply, this.deps, 404, lang.common.badRequest);
@@ -194,7 +194,7 @@ export class GalleryController {
 		return image;
 	}
 
-	private async confirmDelete(request: GalleryRequest, reply: FastifyReply): Promise<FastifyReply> {
+	private async confirmDelete(request: GalleryRequest, reply: AppReply): Promise<AppReply> {
 		const image = await this.deletable(request, reply);
 		if (!('extension' in image)) return image;
 		const { lang } = this.deps.page;
@@ -213,7 +213,7 @@ export class GalleryController {
 		);
 	}
 
-	private async delete(request: GalleryRequest, reply: FastifyReply): Promise<FastifyReply> {
+	private async delete(request: GalleryRequest, reply: AppReply): Promise<AppReply> {
 		const image = await this.deletable(request, reply);
 		if (!('extension' in image)) return image;
 		await this.deps.gallery.deleteImage(image.id);
@@ -221,7 +221,7 @@ export class GalleryController {
 		return reply.redirect('gallery.php?done=deleted', 303);
 	}
 
-	private renderForm(request: GalleryRequest, reply: FastifyReply, form: FormState): Promise<FastifyReply> {
+	private renderForm(request: GalleryRequest, reply: AppReply, form: FormState): Promise<AppReply> {
 		const { lang } = this.deps.page;
 		return renderPage(
 			request,
@@ -233,7 +233,7 @@ export class GalleryController {
 		);
 	}
 
-	private async renderPicker(request: GalleryRequest, reply: FastifyReply, form: FormState): Promise<FastifyReply> {
+	private async renderPicker(request: GalleryRequest, reply: AppReply, form: FormState): Promise<AppReply> {
 		const { viewer, board: config, query } = request;
 		const { lang } = this.deps.page;
 		const search = searchText(query.q);

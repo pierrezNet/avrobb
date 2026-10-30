@@ -3,15 +3,14 @@
  * description, canonique absolue et aperçu de partage (Open Graph) des pages.
  */
 
-import type { FastifyInstance } from 'fastify';
-import { afterEach, describe, expect, it } from 'vitest';
-import { buildApp } from '../src/app.ts';
+import { describe, expect, it } from 'vitest';
+import { buildApp, type ForumApp } from '../src/app.ts';
 import { sitemapXml } from '../src/presenters/sitemap.ts';
 import { firstImageUrl, plainExcerpt, robotsTxt } from '../src/services/seo.ts';
 import { fakeDeps, guest, post, topic } from './fixtures.ts';
+import { inject } from './inject.ts';
 
-let app: FastifyInstance | undefined;
-afterEach(async () => app?.close());
+let app: ForumApp | undefined;
 
 describe('référencement : fonctions pures', () => {
 	it('extrait sans BBCode, citations, images ni HTML, coupé sur un mot', () => {
@@ -53,19 +52,19 @@ describe('référencement : pages', () => {
 
 	it('robots.txt et sitemap.xml servis', async () => {
 		app = await buildApp(deps());
-		const robots = await app.inject('/robots.txt');
+		const robots = await inject(app, '/robots.txt');
 		expect(robots.headers['content-type']).toContain('text/plain');
 		expect(robots.body).toContain('Sitemap: http://forum.test/sitemap.xml');
-		const sitemap = await app.inject('/sitemap.xml');
+		const sitemap = await inject(app, '/sitemap.xml');
 		expect(sitemap.headers['content-type']).toContain('application/xml');
 		expect(sitemap.body).toContain('<loc>http://forum.test/viewtopic.php?id=10</loc>');
 		expect(sitemap.body).toContain('<loc>http://forum.test/terms.php</loc>');
-		expect((await app.inject('/favicon.ico')).statusCode).toBe(301);
+		expect((await inject(app, '/favicon.ico')).statusCode).toBe(301);
 	});
 
 	it('discussion : description, canonique absolue, aperçu de partage avec sa première image', async () => {
 		app = await buildApp(deps());
-		const page = await app.inject('/viewtopic.php?id=10');
+		const page = await inject(app, '/viewtopic.php?id=10');
 		expect(page.body).toContain('<link rel="canonical" href="http://forum.test/viewtopic.php?id=10">');
 		expect(page.body).toContain('<meta name="description" content="Bonjour à tous">');
 		expect(page.body).toContain('<meta property="og:type" content="article">');
@@ -74,10 +73,10 @@ describe('référencement : pages', () => {
 
 	it('accueil : description du forum, image par défaut ; page non indexée sans aperçu', async () => {
 		app = await buildApp(deps());
-		const index = await app.inject('/index.php');
+		const index = await inject(app, '/index.php');
 		expect(index.body).toContain('<meta name="description" content="Le forum de test">');
 		expect(index.body).toContain('<meta property="og:image" content="http://forum.test/assets/icons/icon-512.png">');
-		const login = await app.inject('/login.php');
+		const login = await inject(app, '/login.php');
 		expect(login.body).not.toContain('og:title');
 	});
 });

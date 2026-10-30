@@ -59,23 +59,22 @@ Vigilance :
 - `legacySession` est importé par 48 fichiers (surtout des tests) : introduire d'abord la nouvelle session derrière la même interface, puis supprimer l'ancienne.
 - Le schéma MariaDB ne change pas encore : des tables deviennent inutilisées, elles disparaîtront au lot 3.
 
-## Lot 2 — Couche HTTP Hono · 3 à 4 jours
+## Lot 2 — Couche HTTP Hono · 3 à 4 jours · terminé le 2026-10-30
 
 Toujours sur Node et MariaDB (`@hono/node-server` provisoire), mais avec le code qui tournera dans le Worker.
 
-- [ ] Contexte de requête maison (`src/http/`) : `query`, `form`, `uploads`, `viewer`, `board`, `ip` (`CF-Connecting-IP` derrière Cloudflare), `cookies`, et un résultat (`page`, `redirect`, `message`) que l'adaptateur Hono transforme en `Response`
-- [ ] Contrôleurs basculés de `FastifyRequest`/`FastifyReply` vers ce contexte (changement surtout mécanique)
-- [ ] Middlewares Hono : authentification, CSRF, en-têtes de sécurité, lecture des formulaires (`application/x-www-form-urlencoded` et multipart, limites de taille), gestion des erreurs (pages 404 et 500 en français)
-- [ ] **Gabarits précompilés** : `scripts/build-templates.mjs` → `src/generated/templates.js`, `PrecompiledLoader`, globals `url` et `asset` ; en développement, recompilation par `--watch`
-- [ ] Manifeste des ressources (`src/generated/assets.json`) à la place de `fs.readFileSync` dans `http/assets.ts`
-- [ ] Tests : `app.inject()` remplacé par `app.request()` (petit utilitaire de test pour garder des assertions lisibles)
-- [ ] Retrait de `fastify`, `@fastify/*`, `node:path` du code applicatif
+- [x] Contexte de requête maison (`src/http/context.ts`) : `AppRequest` (`query`, `body`, `uploads`, `viewer`, `board`, `ip`, `cookies`…) et `AppReply` (`code`, `redirect`, `setCookie`, `json`…), de la même forme que ce que les contrôleurs utilisaient de Fastify ; `http/server.ts` en fait une `Response`
+- [x] Contrôleurs basculés vers ce contexte (types seulement)
+- [x] Hono (`http/server.ts`) : routes avec étapes préalables (session, CSRF), lecture des formulaires (urlencoded et multipart, limites 1 Mio et 16 Mio, 413/415), erreurs, page 404, en-têtes de sécurité sur toutes les réponses, fichiers statiques
+- [x] **Gabarits précompilés** : `scripts/build-templates.mjs` → `src/generated/templates.js` (non versionné), runtime `nunjucks-slim` avec `PrecompiledLoader`, `throwOnUndefined` actif ; `npm run dev` les recompile à chaque modification
+- [x] Ressources et fichiers derrière des dépendances injectées (`assetUrl`, `assets`, `images`) : adaptateurs Node (`adapters/assetUrls.ts`, `adapters/directoryFiles.ts`) en attendant le manifeste de build et Static Assets (lot 3), puis R2 (lot 4)
+- [x] Tests : utilitaire `tests/inject.ts` (même forme de réponse que `app.inject()` de Fastify), sur `app.fetch`
+- [x] Retrait de `fastify` et `@fastify/*` ; `app.ts` et `http/` n'importent plus rien de Node
+- [x] Rendu comparé avant et après sur 56 pages (28 adresses, en invité et en membre) : identique
 
-Vigilance :
-- Les paramètres de requête typés par Fastify (`Querystring`, champs décorés comme `sortDir` ou `showAs`) : les remplacer par des fonctions de lecture validées, pas par des `as`.
-- Comparer le HTML rendu avant et après (instantanés de quelques pages : index, viewforum, viewtopic, post, profil, administration) pour détecter un écart de rendu des gabarits précompilés.
-- `throwOnUndefined` doit rester actif en précompilé.
-- Ordre des middlewares : la CSP et les en-têtes doivent s'appliquer aussi aux pages d'erreur et aux redirections.
+Reporté :
+- Manifeste des ressources (`src/generated/assets.json`) : avec le Worker, au lot 3 (l'adaptateur Node le remplace d'ici là).
+- Paramètres de requête : les types restent déclaratifs, comme sous Fastify (valeurs validées dans les contrôleurs par `positiveInt` et consorts). Des lecteurs validés par route restent souhaitables.
 
 ## Lot 3 — D1 : schéma SQLite neuf et migrations · 6 à 8 jours
 

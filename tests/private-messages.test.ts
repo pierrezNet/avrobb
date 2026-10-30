@@ -3,14 +3,14 @@
  * de bout en bout avec la messagerie en mémoire (tests/fakePrivateMessages.ts).
  */
 
-import type { FastifyInstance } from 'fastify';
-import { afterEach, describe, expect, it } from 'vitest';
-import { buildApp } from '../src/app.ts';
+import { describe, expect, it } from 'vitest';
+import { buildApp, type ForumApp } from '../src/app.ts';
 import { GroupId, type PrivateRecipient } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
 import { markParticipantDeleted, parseParticipants, parseUsernames, validateSend } from '../src/services/privateMessages.ts';
 import { pmData } from './fakePrivateMessages.ts';
 import { type FakeData, fakeDeps, group, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
+import { inject } from './inject.ts';
 
 const SEED = 'graine-de-test';
 const CSRF_SECRET = 'b'.repeat(64);
@@ -123,20 +123,19 @@ function data(overrides: Partial<FakeData> = {}): FakeData {
 
 const cookies = (userId: number): string => `${sessionCookie(userId)}; avrobb_csrf=${CSRF_SECRET}`;
 
-let app: FastifyInstance | undefined;
-afterEach(async () => app?.close());
+let app: ForumApp | undefined;
 
-async function start(fake: FakeData): Promise<FastifyInstance> {
+async function start(fake: FakeData): Promise<ForumApp> {
 	app = await buildApp(fakeDeps(fake));
 	return app;
 }
 
-const get = (server: FastifyInstance, userId: number, url: string) => server.inject({ url, headers: { cookie: cookies(userId) } });
+const get = (server: ForumApp, userId: number, url: string) => inject(server, { url, headers: { cookie: cookies(userId) } });
 
-function post(server: FastifyInstance, userId: number, url: string, fields: Record<string, string | string[]>) {
+function post(server: ForumApp, userId: number, url: string, fields: Record<string, string | string[]>) {
 	const body = new URLSearchParams({ csrf_token: csrfToken(CSRF_SECRET, SEED, userId) });
 	for (const [name, value] of Object.entries(fields)) for (const item of [value].flat()) body.append(name, item);
-	return server.inject({
+	return inject(server, {
 		method: 'POST',
 		url,
 		headers: { cookie: cookies(userId), 'content-type': 'application/x-www-form-urlencoded' },
@@ -145,7 +144,7 @@ function post(server: FastifyInstance, userId: number, url: string, fields: Reco
 }
 
 /** Tessy écrit à MaxDUO et valdefsx ; renvoie la conversation. */
-async function startConversation(server: FastifyInstance, fake: FakeData) {
+async function startConversation(server: ForumApp, fake: FakeData) {
 	const res = await post(server, 3, '/pms_send.php', {
 		form_sent: '1',
 		p_username: 'MaxDUO, valdefsx',
@@ -159,8 +158,7 @@ async function startConversation(server: FastifyInstance, fake: FakeData) {
 describe('accès à la messagerie', () => {
 	it('refusée aux invités et quand la messagerie est désactivée', async () => {
 		const server = await start(data());
-		expect((await server.inject('/pms_inbox.php')).statusCode).toBe(403);
-		await server.close();
+		expect((await inject(server, '/pms_inbox.php')).statusCode).toBe(403);
 		const off = await start(data({ config: { privateMessagesEnabled: false } }));
 		expect((await get(off, 3, '/pms_send.php')).statusCode).toBe(403);
 	});

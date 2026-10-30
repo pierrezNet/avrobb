@@ -3,12 +3,12 @@
  * de rédaction.
  */
 
-import type { FastifyInstance } from 'fastify';
-import { afterEach, describe, expect, it } from 'vitest';
-import { buildApp } from '../src/app.ts';
+import { describe, expect, it } from 'vitest';
+import { buildApp, type ForumApp } from '../src/app.ts';
 import { fr } from '../src/lang/fr/index.ts';
 import { TOOLBAR, type ToolbarSettings, toolbarButtons } from '../src/services/toolbar.ts';
 import { fakeDeps, guest, post, sessionCookie, topic, viewer } from './fixtures.ts';
+import { inject } from './inject.ts';
 
 const all = { bbcode: true, imgTag: true, smilies: true };
 const names = (settings: ToolbarSettings, options = all, form: 'form' | 'quickform' = 'form'): string[] =>
@@ -49,8 +49,7 @@ describe('toolbarButtons (generate_ftb_cache())', () => {
 	});
 });
 
-let app: FastifyInstance | undefined;
-afterEach(async () => app?.close());
+let app: ForumApp | undefined;
 
 describe('pages de rédaction', () => {
 	const cookie = `${sessionCookie(3)}`;
@@ -63,7 +62,7 @@ describe('pages de rédaction', () => {
 	it('place la barre (masquée sans JavaScript) au-dessus du message', async () => {
 		app = await buildApp(fakeDeps(data()));
 		for (const url of ['/post.php?tid=10', '/viewtopic.php?id=10']) {
-			const res = await app.inject({ url, headers: { cookie } });
+			const res = await inject(app, { url, headers: { cookie } });
 			expect(res.body).toMatch(/<div class="bbcode-toolbar" data-toolbar="\{&quot;label&quot;:/);
 			expect(res.body).toContain('data-toolbar-images="/assets/img/toolbar/"');
 			expect(res.body).toContain('/assets/js/toolbar.js?v=');

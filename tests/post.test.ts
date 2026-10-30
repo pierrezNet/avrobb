@@ -3,14 +3,14 @@
  * (droits, prévisualisation, erreurs, enregistrement, notifications, CSRF).
  */
 
-import type { FastifyInstance } from 'fastify';
-import { afterEach, describe, expect, it } from 'vitest';
-import { buildApp } from '../src/app.ts';
+import { describe, expect, it } from 'vitest';
+import { buildApp, type ForumApp } from '../src/app.ts';
 import type { ForumInfo, PostingTarget } from '../src/domain/models.ts';
 import { buildCensor } from '../src/services/censor.ts';
 import { canPostIn } from '../src/services/permissions.ts';
 import { type PostContext, type PostForm, promotionGroup, quoteText, subscriptionChange, validatePost } from '../src/services/posting.ts';
 import { type FakeData, fakeDeps, group, guest, NOW, post, sessionCookie, TEST_SUBJECT_TAGS, topic, viewer } from './fixtures.ts';
+import { inject } from './inject.ts';
 
 const form = (overrides: Partial<PostForm> = {}): PostForm => ({
 	subject: null,
@@ -194,19 +194,18 @@ function data(overrides: Partial<FakeData> = {}): FakeData {
 	};
 }
 
-let app: FastifyInstance | undefined;
-afterEach(async () => app?.close());
+let app: ForumApp | undefined;
 
 /** Ouvre le formulaire puis l'envoie avec le jeton CSRF reçu. */
-async function submit(server: FastifyInstance, url: string, fields: Record<string, string>, cookie = memberCookie) {
-	const page = await server.inject({ url, headers: { cookie } });
+async function submit(server: ForumApp, url: string, fields: Record<string, string>, cookie = memberCookie) {
+	const page = await inject(server, { url, headers: { cookie } });
 	const csrf =
 		[page.headers['set-cookie']]
 			.flat()
 			.find((c) => c?.startsWith('avrobb_csrf='))
 			?.split(';')[0] ?? '';
 	const token = /name="csrf_token" value="([0-9a-f]+)"/.exec(page.body)?.[1] ?? '';
-	return server.inject({
+	return inject(server, {
 		method: 'POST',
 		url: url.replace('post.php?', 'post.php?action=post&'),
 		headers: { cookie: `${cookie}; ${csrf}`, 'content-type': 'application/x-www-form-urlencoded' },
@@ -217,7 +216,7 @@ async function submit(server: FastifyInstance, url: string, fields: Record<strin
 describe('GET /post.php', () => {
 	it('affiche le formulaire de réponse avec le rappel de la discussion', async () => {
 		app = await buildApp(fakeDeps(data()));
-		const res = await app.inject({ url: '/post.php?tid=10', headers: { cookie: memberCookie } });
+		const res = await inject(app, { url: '/post.php?tid=10', headers: { cookie: memberCookie } });
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('<title>Répondre / Forum de test</title>');
 		expect(res.body).toContain('action="post.php?action=post&amp;tid=10"');
@@ -231,7 +230,7 @@ describe('GET /post.php', () => {
 
 	it('nouvelle discussion : sujet et préfixes PV', async () => {
 		app = await buildApp(fakeDeps(data()));
-		const res = await app.inject({ url: '/post.php?fid=2', headers: { cookie: memberCookie } });
+		const res = await inject(app, { url: '/post.php?fid=2', headers: { cookie: memberCookie } });
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('name="req_subject"');
 		expect(res.body).toContain('data-prefix="[MSFS]"');
@@ -241,25 +240,25 @@ describe('GET /post.php', () => {
 
 	it('cite un message du sujet, sans ses images', async () => {
 		app = await buildApp(fakeDeps(data()));
-		const res = await app.inject({ url: '/post.php?tid=10&qid=100', headers: { cookie: memberCookie } });
+		const res = await inject(app, { url: '/post.php?tid=10&qid=100', headers: { cookie: memberCookie } });
 		expect(res.body).toContain('>[quote=Tessy]Premier http://a.fr/i.png[/quote]\n</textarea>');
-		expect((await app.inject({ url: '/post.php?tid=10&qid=999', headers: { cookie: memberCookie } })).statusCode).toBe(404);
+		expect((await inject(app, { url: '/post.php?tid=10&qid=999', headers: { cookie: memberCookie } })).statusCode).toBe(404);
 	});
 
 	it('cite seulement le passage sélectionné (qtext), sous le nom de l’auteur du message', async () => {
 		app = await buildApp(fakeDeps(data()));
-		const res = await app.inject({ url: '/post.php?tid=10&qid=100&qtext=%20Premier%20<b>%20', headers: { cookie: memberCookie } });
+		const res = await inject(app, { url: '/post.php?tid=10&qid=100&qtext=%20Premier%20<b>%20', headers: { cookie: memberCookie } });
 		expect(res.body).toContain('>[quote=Tessy]Premier &lt;b&gt;[/quote]\n</textarea>');
 		// Sélection vide : message entier ; message d'un autre sujet : refusé.
-		expect((await app.inject({ url: '/post.php?tid=10&qid=100&qtext=', headers: { cookie: memberCookie } })).body).toContain(
+		expect((await inject(app, { url: '/post.php?tid=10&qid=100&qtext=', headers: { cookie: memberCookie } })).body).toContain(
 			'[quote=Tessy]Premier http://a.fr/i.png[/quote]',
 		);
-		expect((await app.inject({ url: '/post.php?tid=10&qid=999&qtext=x', headers: { cookie: memberCookie } })).statusCode).toBe(404);
+		expect((await inject(app, { url: '/post.php?tid=10&qid=999&qtext=x', headers: { cookie: memberCookie } })).statusCode).toBe(404);
 	});
 
 	it('refuse les demandes invalides et les écritures interdites', async () => {
 		app = await buildApp(fakeDeps(data()));
-		const status = async (url: string, cookie = memberCookie) => (await app?.inject({ url, headers: { cookie } }))?.statusCode;
+		const status = async (url: string, cookie = memberCookie) => (await inject(app!, { url, headers: { cookie } }))?.statusCode;
 		expect(await status('/post.php')).toBe(404);
 		expect(await status('/post.php?tid=10&fid=2')).toBe(404);
 		expect(await status('/post.php?tid=99')).toBe(404);
@@ -273,7 +272,7 @@ describe('POST /post.php', () => {
 	it('exige le jeton CSRF', async () => {
 		const fake = data();
 		app = await buildApp(fakeDeps(fake));
-		const res = await app.inject({
+		const res = await inject(app, {
 			method: 'POST',
 			url: '/post.php?action=post&tid=10',
 			headers: { cookie: memberCookie, 'content-type': 'application/x-www-form-urlencoded' },

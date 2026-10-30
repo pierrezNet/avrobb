@@ -1,13 +1,15 @@
 /**
  * URL des ressources statiques de public/, suffixées d'une empreinte de leur contenu (`?v=…`) :
  * le navigateur peut les garder longtemps en cache et recharge dès qu'elles changent.
+ *
+ * Adaptateur Node : l'empreinte est calculée en lisant le fichier. Dans le Worker (lot 3), un
+ * manifeste calculé au build la remplacera.
  */
 
 import { createHash } from 'node:crypto';
 import { readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
-
-export const ASSETS_PREFIX = '/assets/';
+import { ASSETS_PREFIX } from '../http/server.ts';
 
 export function createAssetUrl(publicDir: string): (file: string) => string {
 	const root = path.resolve(publicDir);

@@ -3,12 +3,12 @@
  * envoi, droits).
  */
 
-import type { FastifyInstance } from 'fastify';
-import { afterEach, describe, expect, it } from 'vitest';
-import { buildApp } from '../src/app.ts';
+import { describe, expect, it } from 'vitest';
+import { buildApp, type ForumApp } from '../src/app.ts';
 import { validateEmail, validateReport } from '../src/services/contact.ts';
 import { floodWait } from '../src/services/flood.ts';
 import { boardConfig, type FakeData, fakeDeps, group, guest, NOW, post, sessionCookie, topic, viewer } from './fixtures.ts';
+import { inject } from './inject.ts';
 
 const tessy = `${sessionCookie(3)}`;
 
@@ -38,8 +38,7 @@ describe('règles des formulaires', () => {
 	});
 });
 
-let app: FastifyInstance | undefined;
-afterEach(async () => app?.close());
+let app: ForumApp | undefined;
 
 function data(overrides: Partial<FakeData> = {}): FakeData {
 	return {
@@ -54,8 +53,8 @@ function data(overrides: Partial<FakeData> = {}): FakeData {
 	};
 }
 
-async function submit(server: FastifyInstance, url: string, fields: Record<string, string>, headers: Record<string, string> = {}) {
-	const page = await server.inject({ url, headers: { cookie: tessy, host: 'forum.test', ...headers } });
+async function submit(server: ForumApp, url: string, fields: Record<string, string>, headers: Record<string, string> = {}) {
+	const page = await inject(server, { url, headers: { cookie: tessy, host: 'forum.test', ...headers } });
 	const csrf =
 		[page.headers['set-cookie']]
 			.flat()
@@ -63,7 +62,7 @@ async function submit(server: FastifyInstance, url: string, fields: Record<strin
 			?.split(';')[0] ?? '';
 	const token = /name="csrf_token" value="([0-9a-f]+)"/.exec(page.body)?.[1] ?? '';
 	const redirect = /name="redirect_url" value="([^"]*)"/.exec(page.body)?.[1]?.replaceAll('&amp;', '&');
-	return server.inject({
+	return inject(server, {
 		method: 'POST',
 		url,
 		headers: { cookie: `${tessy}; ${csrf}`, 'content-type': 'application/x-www-form-urlencoded', host: headers.host ?? 'forum.test' },
@@ -110,12 +109,11 @@ describe('misc.php?email=', () => {
 
 	it('droits : invité, groupe sans e-mail, formulaire désactivé (sauf modérateur), destinataire inconnu', async () => {
 		app = await buildApp(fakeDeps(data()));
-		const status = async (url: string, cookie = tessy) => (await app?.inject({ url, headers: { cookie } }))?.statusCode;
+		const status = async (url: string, cookie = tessy) => (await inject(app!, { url, headers: { cookie } }))?.statusCode;
 		expect(await status('/misc.php?email=5', '')).toBe(403);
 		expect(await status('/misc.php?email=6')).toBe(403);
 		expect(await status('/misc.php?email=1')).toBe(404);
 		expect(await status('/misc.php?email=99')).toBe(404);
-		await app.close();
 		app = await buildApp(
 			fakeDeps(
 				data({
@@ -123,8 +121,7 @@ describe('misc.php?email=', () => {
 				}),
 			),
 		);
-		expect((await app.inject({ url: '/misc.php?email=5', headers: { cookie: tessy } })).statusCode).toBe(403);
-		await app.close();
+		expect((await inject(app, { url: '/misc.php?email=5', headers: { cookie: tessy } })).statusCode).toBe(403);
 		app = await buildApp(
 			fakeDeps(
 				data({
@@ -132,7 +129,7 @@ describe('misc.php?email=', () => {
 				}),
 			),
 		);
-		expect((await app.inject({ url: '/misc.php?email=6', headers: { cookie: tessy } })).statusCode).toBe(200);
+		expect((await inject(app, { url: '/misc.php?email=6', headers: { cookie: tessy } })).statusCode).toBe(200);
 	});
 });
 
@@ -140,7 +137,7 @@ describe('misc.php?report=', () => {
 	it('enregistre le signalement et revient au forum', async () => {
 		const fake = data();
 		app = await buildApp(fakeDeps(fake));
-		const page = await app.inject({ url: '/misc.php?report=100', headers: { cookie: tessy } });
+		const page = await inject(app, { url: '/misc.php?report=100', headers: { cookie: tessy } });
 		expect(page.body).toContain('Sujet signalé');
 		const res = await submit(app, '/misc.php?report=100', { req_reason: 'Hors sujet' });
 		expect(res.headers.location).toBe('viewforum.php?id=2');
@@ -166,8 +163,8 @@ describe('misc.php?report=', () => {
 	it('refuse un invité, un message inconnu et un motif vide', async () => {
 		const fake = data();
 		app = await buildApp(fakeDeps(fake));
-		expect((await app.inject('/misc.php?report=100')).statusCode).toBe(403);
-		expect((await app.inject({ url: '/misc.php?report=999', headers: { cookie: tessy } })).statusCode).toBe(404);
+		expect((await inject(app, '/misc.php?report=100')).statusCode).toBe(403);
+		expect((await inject(app, { url: '/misc.php?report=999', headers: { cookie: tessy } })).statusCode).toBe(404);
 		const res = await submit(app, '/misc.php?report=100', { req_reason: ' ' });
 		expect(res.body).toContain('Vous devez indiquer un motif.');
 		expect(fake.createdReports).toBeUndefined();

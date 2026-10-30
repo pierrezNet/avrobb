@@ -9,7 +9,7 @@
  * tous ses messages de sa boîte (le PHP ne retirait que la première ligne).
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import type { FormBody } from '../http/forms.ts';
 import { field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
@@ -40,10 +40,10 @@ export interface PrivateMessageQuery {
 	done?: string;
 }
 
-type PmRequest = FastifyRequest<{ Querystring: PrivateMessageQuery; Body?: FormBody }>;
+type PmRequest = AppRequest<{ Querystring: PrivateMessageQuery; Body?: FormBody }>;
 
 /** Accès à la messagerie : membre, messagerie activée pour le forum, son groupe et lui-même. */
-export function privateMessagesDenied(request: FastifyRequest, reply: FastifyReply, deps: LayoutDeps): Promise<FastifyReply> | null {
+export function privateMessagesDenied(request: AppRequest, reply: AppReply, deps: LayoutDeps): Promise<AppReply> | null {
 	return canUsePrivateMessages(request.viewer, request.board)
 		? null
 		: renderMessage(request, reply, deps, 403, deps.page.lang.common.noPermission);
@@ -52,7 +52,7 @@ export function privateMessagesDenied(request: FastifyRequest, reply: FastifyRep
 export class PrivateMessageController {
 	constructor(private readonly deps: PrivateMessageControllerDeps) {}
 
-	inbox = async (request: PmRequest, reply: FastifyReply, errors: string[] = []): Promise<FastifyReply> => {
+	inbox = async (request: PmRequest, reply: AppReply, errors: string[] = []): Promise<AppReply> => {
 		const denied = privateMessagesDenied(request, reply, this.deps);
 		if (denied !== null) return denied;
 		const { viewer, board: config } = request;
@@ -98,10 +98,7 @@ export class PrivateMessageController {
 	};
 
 	/** Actions de la boîte : marquer lus ou non lus, supprimer (après confirmation). */
-	inboxAction = async (
-		request: FastifyRequest<{ Querystring: PrivateMessageQuery; Body: FormBody }>,
-		reply: FastifyReply,
-	): Promise<FastifyReply> => {
+	inboxAction = async (request: AppRequest<{ Querystring: PrivateMessageQuery; Body: FormBody }>, reply: AppReply): Promise<AppReply> => {
 		const denied = privateMessagesDenied(request, reply, this.deps);
 		if (denied !== null) return denied;
 		const { viewer, body } = request;
@@ -143,7 +140,7 @@ export class PrivateMessageController {
 		return renderMessage(request, reply, this.deps, 400, lang.common.badRequest);
 	};
 
-	view = async (request: PmRequest, reply: FastifyReply): Promise<FastifyReply> => {
+	view = async (request: PmRequest, reply: AppReply): Promise<AppReply> => {
 		const denied = privateMessagesDenied(request, reply, this.deps);
 		if (denied !== null) return denied;
 		if (request.query.action === 'delete') return this.confirmDelete(request, reply);
@@ -210,7 +207,7 @@ export class PrivateMessageController {
 		return message !== null && message.ownerId === request.viewer.id ? message : null;
 	}
 
-	private async confirmDelete(request: PmRequest, reply: FastifyReply): Promise<FastifyReply> {
+	private async confirmDelete(request: PmRequest, reply: AppReply): Promise<AppReply> {
 		const { viewer, board: config } = request;
 		const { lang } = this.deps.page;
 		const message = await this.ownMessage(request);
@@ -236,10 +233,7 @@ export class PrivateMessageController {
 		);
 	}
 
-	delete = async (
-		request: FastifyRequest<{ Querystring: PrivateMessageQuery; Body: FormBody }>,
-		reply: FastifyReply,
-	): Promise<FastifyReply> => {
+	delete = async (request: AppRequest<{ Querystring: PrivateMessageQuery; Body: FormBody }>, reply: AppReply): Promise<AppReply> => {
 		const denied = privateMessagesDenied(request, reply, this.deps);
 		if (denied !== null) return denied;
 		const { viewer, body } = request;

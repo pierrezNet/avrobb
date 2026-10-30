@@ -3,8 +3,8 @@
  * s'il l'ouvre (delete_post() / delete_topic() et update_forum()).
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { EditablePost } from '../domain/models.ts';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import type { FormBody } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { buildDeletePage } from '../presenters/deletePage.ts';
@@ -23,12 +23,12 @@ export interface DeleteQuery {
 	id?: string;
 }
 
-type DeleteRequest = FastifyRequest<{ Querystring: DeleteQuery; Body?: FormBody }>;
+type DeleteRequest = AppRequest<{ Querystring: DeleteQuery; Body?: FormBody }>;
 
 export class DeleteController {
 	constructor(private readonly deps: DeleteControllerDeps) {}
 
-	show = async (request: FastifyRequest<{ Querystring: DeleteQuery }>, reply: FastifyReply): Promise<FastifyReply> => {
+	show = async (request: AppRequest<{ Querystring: DeleteQuery }>, reply: AppReply): Promise<AppReply> => {
 		const post = await this.resolvePost(request, reply);
 		if (!('topic' in post)) return post;
 		const { viewer, board: config } = request;
@@ -53,7 +53,7 @@ export class DeleteController {
 		);
 	};
 
-	confirm = async (request: FastifyRequest<{ Querystring: DeleteQuery; Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> => {
+	confirm = async (request: AppRequest<{ Querystring: DeleteQuery; Body: FormBody }>, reply: AppReply): Promise<AppReply> => {
 		const post = await this.resolvePost(request, reply);
 		if (!('topic' in post)) return post;
 		// Comme le PHP, il faut le bouton « Supprimer » : sinon on réaffiche la confirmation.
@@ -67,7 +67,7 @@ export class DeleteController {
 		return reply.redirect(previous !== null ? `viewtopic.php?pid=${previous}#p${previous}` : `viewtopic.php?id=${post.topic.id}`);
 	};
 
-	private async resolvePost(request: DeleteRequest, reply: FastifyReply): Promise<EditablePost | FastifyReply> {
+	private async resolvePost(request: DeleteRequest, reply: AppReply): Promise<EditablePost | AppReply> {
 		const { viewer } = request;
 		const { lang } = this.deps.page;
 		if (!viewer.group.canReadBoard) return renderMessage(request, reply, this.deps, 403, lang.common.noView);

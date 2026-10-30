@@ -10,8 +10,9 @@ schéma FluxBB. Cible : **Cloudflare** (Workers, D1, R2). Le plan de portage est
 
 ## État actuel
 
-Lot 1 terminé (retrait de l'héritage PV). L'application tourne encore sur **Node, Fastify et
-MariaDB** au schéma FluxBB ; Hono arrive au lot 2, D1 et le Worker au lot 3. Les comptes SSO
+Lots 1 et 2 terminés (retrait de l'héritage PV, passage à Hono et aux gabarits précompilés).
+L'application tourne encore sous **Node** (`@hono/node-server`) avec **MariaDB** au schéma FluxBB ;
+D1 et le Worker arrivent au lot 3. Les comptes SSO
 arrivent au lot 5 : d'ici là, la **connexion de développement** (`DEV_LOGIN=1`) permet de se
 connecter sous le nom d'un membre existant, depuis la machine seulement.
 
@@ -20,7 +21,7 @@ connecter sous le nom d'un membre existant, depuis la machine seulement.
 ```bash
 cp .env.example .env    # SESSION_SECRET : openssl rand -hex 32
 npm install
-npm run dev             # http://localhost:3000
+npm run dev             # http://localhost:3000 (PORT de .env) ; gabarits recompilés à chaque modification
 npm run check           # lint (Biome) + typecheck + tests rapides
 npm run test:db         # tests sur une vraie base (pv_forum_test, recréée à chaque fois)
 npm run screenshot -- 'http://localhost:3000/index.php' --widths 320,1280 [--cookie avrobb_session=…]
@@ -43,7 +44,8 @@ sont copiés au premier démarrage ; `scripts/brand.py` les régénère.
 | Services     | `src/services/`                    | Règles pures et testables : permissions, BBCode, dates, pagination, session |
 | Présentation | `src/presenters/`                  | Domaine → modèle de vue (fonction pure)                                     |
 | Contrôleur   | `src/controllers/`                 | Requête → repositories → presenter → réponse ; ni SQL ni HTML               |
-| Vue          | `src/views/`                       | Nunjucks (syntaxe proche de Twig), échappement automatique                  |
+| HTTP         | `src/http/`                        | Hono, contexte de requête, session, CSRF, formulaires, mise en page         |
+| Vue          | `src/views/`                       | Nunjucks, précompilé dans `src/generated/` ; échappement automatique        |
 
 Le préfixe des tables (`fo_`) est ajouté par `TablePrefixPlugin` : les requêtes utilisent les noms
 nus (jusqu'au schéma SQLite neuf du lot 3).

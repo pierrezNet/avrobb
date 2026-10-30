@@ -4,30 +4,25 @@
  * page de l'administration, avec son menu.
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { type AdminPage, buildAdminMenu } from '../presenters/adminMenu.ts';
 import { isAdmin, isAnyModerator } from '../services/permissions.ts';
 
 /** Réponse 403 si le lecteur n'est ni administrateur ni modérateur (ou pas administrateur si `adminOnly`). */
-export function adminDenied(
-	request: FastifyRequest,
-	reply: FastifyReply,
-	deps: LayoutDeps,
-	adminOnly: boolean,
-): Promise<FastifyReply> | null {
+export function adminDenied(request: AppRequest, reply: AppReply, deps: LayoutDeps, adminOnly: boolean): Promise<AppReply> | null {
 	const allowed = adminOnly ? isAdmin(request.viewer) : isAnyModerator(request.viewer);
 	return allowed ? null : renderMessage(request, reply, deps, 403, deps.page.lang.common.noPermission);
 }
 
 /** Rend une page d'administration : `view` reçoit en plus `menu` (menu d'administration). */
 export function renderAdminPage(
-	request: FastifyRequest,
-	reply: FastifyReply,
+	request: AppRequest,
+	reply: AppReply,
 	deps: LayoutDeps,
 	options: { active: AdminPage; template: string; title: string },
 	view: object,
-): Promise<FastifyReply> {
+): Promise<AppReply> {
 	const { lang } = deps.page;
 	const menu = buildAdminMenu(request.viewer, request.board, options.active, lang);
 	return renderPage(

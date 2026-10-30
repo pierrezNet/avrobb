@@ -7,10 +7,10 @@
  * Écart assumé : publier un brouillon repris le supprime (le PHP le laissait dans la liste).
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { Mailer } from '../adapters/mailer.ts';
 import type { CookieConfig } from '../config.ts';
 import type { BoardConfig, PostingTarget } from '../domain/models.ts';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { setForumCookie } from '../http/session.ts';
@@ -65,14 +65,14 @@ export interface PostQuery {
 	id?: string;
 }
 
-type PostRequest = FastifyRequest<{ Querystring: PostQuery; Body?: FormBody }>;
+type PostRequest = AppRequest<{ Querystring: PostQuery; Body?: FormBody }>;
 
 const checked = (body: FormBody | undefined, name: string): boolean => body?.[name] !== undefined;
 
 export class PostController {
 	constructor(private readonly deps: PostControllerDeps) {}
 
-	show = async (request: FastifyRequest<{ Querystring: PostQuery }>, reply: FastifyReply): Promise<FastifyReply> => {
+	show = async (request: AppRequest<{ Querystring: PostQuery }>, reply: AppReply): Promise<AppReply> => {
 		const { viewer } = request;
 		if (request.query.brouillon !== undefined) return this.resumeDraft(request, reply);
 
@@ -105,10 +105,10 @@ export class PostController {
 	 * Brouillon de son auteur : prévisualisé dans le formulaire (GET post.php?brouillon&id=…), ou
 	 * publié directement par le bouton « Poster » de draft_list.php (POST, jeton CSRF vérifié).
 	 */
-	publishDraft = (request: FastifyRequest<{ Querystring: PostQuery; Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> =>
+	publishDraft = (request: AppRequest<{ Querystring: PostQuery; Body: FormBody }>, reply: AppReply): Promise<AppReply> =>
 		this.resumeDraft(request, reply, true);
 
-	private async resumeDraft(request: PostRequest, reply: FastifyReply, publish = false): Promise<FastifyReply> {
+	private async resumeDraft(request: PostRequest, reply: AppReply, publish = false): Promise<AppReply> {
 		const { viewer } = request;
 		const { lang } = this.deps.page;
 		const id = positiveInt(request.query.id);
@@ -148,7 +148,7 @@ export class PostController {
 		};
 	}
 
-	submit = async (request: FastifyRequest<{ Querystring: PostQuery; Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> => {
+	submit = async (request: AppRequest<{ Querystring: PostQuery; Body: FormBody }>, reply: AppReply): Promise<AppReply> => {
 		const { viewer, board: config, body } = request;
 		const target = await this.resolveTarget(request, reply, this.queryIds(request));
 		if (!('forum' in target)) return target;
@@ -179,12 +179,12 @@ export class PostController {
 	 */
 	private async process(
 		request: PostRequest,
-		reply: FastifyReply,
+		reply: AppReply,
 		target: PostingTarget,
 		censor: Censor | null,
 		form: PostForm,
 		{ asDraft, draftId, confirmNoTag = false }: { asDraft: boolean; draftId: number | null; confirmNoTag?: boolean },
-	): Promise<FastifyReply> {
+	): Promise<AppReply> {
 		const { viewer, board: config } = request;
 		const { lang } = this.deps.page;
 		const now = this.deps.page.clock();
@@ -287,9 +287,9 @@ export class PostController {
 	/** tid ou fid (l'un des deux), cible lisible, pas une redirection, et droit d'y écrire. */
 	private async resolveTarget(
 		request: PostRequest,
-		reply: FastifyReply,
+		reply: AppReply,
 		{ tid, fid }: { tid: number; fid: number },
-	): Promise<PostingTarget | FastifyReply> {
+	): Promise<PostingTarget | AppReply> {
 		const { viewer } = request;
 		const { lang } = this.deps.page;
 		if (!viewer.group.canReadBoard) return renderMessage(request, reply, this.deps, 403, lang.common.noView);
@@ -341,13 +341,13 @@ export class PostController {
 
 	private async renderForm(
 		request: PostRequest,
-		reply: FastifyReply,
+		reply: AppReply,
 		target: PostingTarget,
 		censor: Censor | null,
 		form: PostFormState,
 		errors: string[],
 		preview: string | null,
-	): Promise<FastifyReply> {
+	): Promise<AppReply> {
 		const { viewer, board: config } = request;
 		const { lang } = this.deps.page;
 		const review =

@@ -6,7 +6,6 @@
  * MP si la messagerie est active pour le membre, forums si la liste « Atteindre » est activée.
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { Lang } from '../lang/fr/index.ts';
 import { buildLayout, buildMinimalLayout, type LayoutView, type PageOptions } from '../presenters/layout.ts';
 import type { ForumReader } from '../repositories/ForumRepository.ts';
@@ -15,7 +14,9 @@ import type { ReportReader } from '../repositories/ReportRepository.ts';
 import { escapeHtml } from '../services/bbcode.ts';
 import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
 import { canUsePrivateMessages, isAnyModerator } from '../services/permissions.ts';
+import type { AppReply, AppRequest } from './context.ts';
 import type { SessionBlock } from './session.ts';
+import type { ViewRenderer } from './views.ts';
 
 /** Dépendances de présentation partagées par les contrôleurs. */
 export interface PageContext {
@@ -26,13 +27,15 @@ export interface PageContext {
 }
 
 export interface LayoutDeps {
+	/** Gabarits précompilés, avec leurs fonctions globales (url, asset). */
+	views: ViewRenderer;
 	forums: ForumReader;
 	reports: ReportReader;
 	privateMessages: PrivateMessageReader;
 	page: PageContext;
 }
 
-export async function loadLayout(request: FastifyRequest, deps: LayoutDeps, options: PageOptions): Promise<LayoutView> {
+export async function loadLayout(request: AppRequest, deps: LayoutDeps, options: PageOptions): Promise<LayoutView> {
 	const { viewer, board: config } = request;
 
 	const [pendingReports, unreadPrivateMessages] = await Promise.all([
@@ -55,32 +58,32 @@ export async function loadLayout(request: FastifyRequest, deps: LayoutDeps, opti
 
 /** Rend `template` dans la mise en page ; la vue reçoit `layout`, `lang` et `view`. */
 export async function renderPage(
-	request: FastifyRequest,
-	reply: FastifyReply,
+	request: AppRequest,
+	reply: AppReply,
 	deps: LayoutDeps,
 	template: string,
 	options: PageOptions,
 	view: object,
-): Promise<FastifyReply> {
+): Promise<AppReply> {
 	const layout = await loadLayout(request, deps, options);
-	return sendView(reply, template, { layout, lang: layout.lang, view });
+	return sendView(deps.views, reply, template, { layout, lang: layout.lang, view });
 }
 
 /** Rendu complet avant envoi : une erreur de gabarit remonte à l'appelant au lieu de partir au client. */
-async function sendView(reply: FastifyReply, template: string, data: object): Promise<FastifyReply> {
-	const html = await reply.viewAsync(template, data);
+function sendView(views: ViewRenderer, reply: AppReply, template: string, data: object): AppReply {
+	const html = views.render(template, data);
 	return reply.type('text/html; charset=utf-8').send(html);
 }
 
 /** Page d'information (message() de FluxBB) avec le statut HTTP voulu. */
 export async function renderMessage(
-	request: FastifyRequest,
-	reply: FastifyReply,
+	request: AppRequest,
+	reply: AppReply,
 	deps: LayoutDeps,
 	status: number,
 	message: string,
 	link: { href: string; label: string } | null = null,
-): Promise<FastifyReply> {
+): Promise<AppReply> {
 	const { lang } = deps.page;
 	reply.code(status);
 	return renderPage(
@@ -94,12 +97,7 @@ export async function renderMessage(
 }
 
 /** Page de maintenance (maintenance_message()) ou de bannissement (check_bans()). */
-export async function renderBlock(
-	request: FastifyRequest,
-	reply: FastifyReply,
-	deps: LayoutDeps,
-	block: SessionBlock,
-): Promise<FastifyReply> {
+export async function renderBlock(request: AppRequest, reply: AppReply, deps: LayoutDeps, block: SessionBlock): Promise<AppReply> {
 	const { lang } = deps.page;
 	const config = request.board;
 
@@ -139,11 +137,17 @@ export async function renderBlock(
 }
 
 /** Message d'erreur sans base ni utilisateur (voir buildMinimalLayout()). */
-export async function renderMinimalMessage(reply: FastifyReply, lang: Lang, status: number, message: string): Promise<FastifyReply> {
+export async function renderMinimalMessage(
+	views: ViewRenderer,
+	reply: AppReply,
+	lang: Lang,
+	status: number,
+	message: string,
+): Promise<AppReply> {
 	const layout = buildMinimalLayout(lang, lang.common.info);
 	reply.code(status);
 	try {
-		return await sendView(reply, 'message.njk', { layout, lang, view: { message, link: null } });
+		return sendView(views, reply, 'message.njk', { layout, lang, view: { message, link: null } });
 	} catch (error) {
 		// Dernier recours si les gabarits eux-mêmes sont en cause : page statique, sans détail technique.
 		reply.log.error({ err: error }, "Échec du rendu de la page d'erreur minimale");

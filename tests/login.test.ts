@@ -3,13 +3,13 @@
  * CSRF, adresse de retour, déconnexion en POST.
  */
 
-import type { FastifyInstance } from 'fastify';
-import { afterEach, describe, expect, it } from 'vitest';
-import { buildApp } from '../src/app.ts';
+import { describe, expect, it } from 'vitest';
+import { buildApp, type ForumApp } from '../src/app.ts';
 import { csrfToken } from '../src/http/csrf.ts';
 import { safeRedirect } from '../src/services/redirects.ts';
 import { readSessionCookie } from '../src/services/session.ts';
 import { COOKIE_SECRET, fakeDeps, fakeOnline, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
+import { inject } from './inject.ts';
 
 describe('safeRedirect', () => {
 	it('ne garde que les pages du forum, sur ce site', () => {
@@ -25,14 +25,13 @@ describe('safeRedirect', () => {
 const HOST = 'forum.test';
 const CSRF_SECRET = 'a'.repeat(64);
 
-let app: FastifyInstance | undefined;
-afterEach(async () => app?.close());
+let app: ForumApp | undefined;
 
 const tessy = viewer({ logged: NOW - 900 });
 const users = [{ viewer: guest }, { viewer: tessy, presence: { logged: NOW - 900, idle: false } }];
 
-const postForm = (server: FastifyInstance, url: string, body: string, cookie: string, remoteAddress = '127.0.0.1') =>
-	server.inject({
+const postForm = (server: ForumApp, url: string, body: string, cookie: string, remoteAddress = '127.0.0.1') =>
+	inject(server, {
 		method: 'POST',
 		url,
 		remoteAddress,
@@ -79,17 +78,16 @@ describe('connexion de développement', () => {
 		expect(remote.statusCode).toBe(403);
 		expect(sessionFrom(remote.headers)).toBeUndefined();
 
-		await app.close();
 		app = await buildApp({ ...fakeDeps({ users, topics: [], posts: new Map() }), devLogin: false });
 		const disabled = await postForm(app, '/login.php?action=in', `csrf_token=${guestToken}&req_username=Tessy`, guestCookie);
 		expect(disabled.statusCode).toBe(403);
-		const page = await app.inject({ url: '/login.php', headers: { host: HOST } });
+		const page = await inject(app, { url: '/login.php', headers: { host: HOST } });
 		expect(page.body).not.toContain('name="req_username"');
 	});
 
 	it('formulaire accessible en maintenance, avec adresse de retour tirée du Referer', async () => {
 		app = await buildApp(fakeDeps({ users: [{ viewer: guest }], topics: [], posts: new Map(), config: { maintenance: true } }));
-		const res = await app.inject({ url: '/login.php', headers: { host: HOST, referer: 'http://forum.test/viewforum.php?id=2' } });
+		const res = await inject(app, { url: '/login.php', headers: { host: HOST, referer: 'http://forum.test/viewforum.php?id=2' } });
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('name="redirect_url" value="viewforum.php?id=2"');
 		expect(res.body).not.toContain('type="password"');
@@ -103,10 +101,10 @@ describe('session et déconnexion', () => {
 		const online = fakeOnline();
 		app = await buildApp({ ...fakeDeps({ users, topics: [], posts: new Map() }), online });
 
-		expect((await app.inject({ url: '/login.php', headers: { cookie } })).headers.location).toBe('index.php');
+		expect((await inject(app, { url: '/login.php', headers: { cookie } })).headers.location).toBe('index.php');
 
 		// L'ancien lien GET ne déconnecte plus : aucune écriture en GET.
-		const get = await app.inject({ url: '/login.php?action=out', headers: { cookie } });
+		const get = await inject(app, { url: '/login.php?action=out', headers: { cookie } });
 		expect(get.headers.location).toBe('index.php');
 		expect(online.log).not.toContain('remove 3');
 
@@ -122,7 +120,7 @@ describe('session et déconnexion', () => {
 	it('cookie falsifié ou échu : visiteur traité en invité, cookie effacé', async () => {
 		app = await buildApp(fakeDeps({ users, topics: [], posts: new Map() }));
 		for (const bad of [sessionCookie(3).replace('avrobb_session=3.', 'avrobb_session=2.'), sessionCookie(3, NOW - 1)]) {
-			const res = await app.inject({ url: '/login.php', headers: { cookie: bad } });
+			const res = await inject(app, { url: '/login.php', headers: { cookie: bad } });
 			expect(res.statusCode).toBe(200);
 			expect(sessionFrom(res.headers)).toBe('');
 		}

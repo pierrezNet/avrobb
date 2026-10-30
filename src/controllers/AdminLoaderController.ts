@@ -4,7 +4,7 @@
  * pour les modérateurs. Les anciens plugins abandonnés (FluxToolBar, Plugile, Uploadile, Premium…) sont refusés.
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import type { FormBody } from '../http/forms.ts';
 import { renderMessage } from '../http/layout.ts';
 import { ADMIN_PLUGINS } from '../presenters/adminMenu.ts';
@@ -27,7 +27,7 @@ export class AdminLoaderController {
 		]);
 	}
 
-	show = async (request: FastifyRequest<{ Querystring: AdminLoaderQuery }>, reply: FastifyReply): Promise<FastifyReply> => {
+	show = async (request: AppRequest<{ Querystring: AdminLoaderQuery }>, reply: AppReply): Promise<AppReply> => {
 		const plugin = this.#plugin(request, reply);
 		if (typeof plugin !== 'string') return plugin;
 		const handler = this.#pages.get(plugin);
@@ -35,10 +35,7 @@ export class AdminLoaderController {
 		return handler.show(request, reply);
 	};
 
-	submit = async (
-		request: FastifyRequest<{ Querystring: AdminLoaderQuery; Body: FormBody }>,
-		reply: FastifyReply,
-	): Promise<FastifyReply> => {
+	submit = async (request: AppRequest<{ Querystring: AdminLoaderQuery; Body: FormBody }>, reply: AppReply): Promise<AppReply> => {
 		const plugin = this.#plugin(request, reply);
 		if (typeof plugin !== 'string') return plugin;
 		const handler = this.#pages.get(plugin);
@@ -47,7 +44,7 @@ export class AdminLoaderController {
 	};
 
 	/** Contrôles d'admin_loader.php ; renvoie le nom du plugin, ou la réponse d'erreur. */
-	#plugin(request: FastifyRequest<{ Querystring: AdminLoaderQuery }>, reply: FastifyReply): Plugin | Promise<FastifyReply> {
+	#plugin(request: AppRequest<{ Querystring: AdminLoaderQuery }>, reply: AppReply): Plugin | Promise<AppReply> {
 		const { lang } = this.deps.page;
 		if (!isAnyModerator(request.viewer)) return renderMessage(request, reply, this.deps, 403, lang.common.noPermission);
 		const name = request.query.plugin ?? '';

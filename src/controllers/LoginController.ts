@@ -7,8 +7,8 @@
  * seulement (services/session.ts).
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { CookieConfig } from '../config.ts';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { clearSessionCookie, setForumCookie, setSessionCookie, trackCookieName } from '../http/session.ts';
@@ -32,7 +32,7 @@ export class LoginController {
 	constructor(private readonly deps: LoginControllerDeps) {}
 
 	/** GET login.php ; l'ancien lien de déconnexion en GET ramène simplement à l'index. */
-	show = async (request: FastifyRequest<{ Querystring: LoginQuery }>, reply: FastifyReply): Promise<FastifyReply> => {
+	show = async (request: AppRequest<{ Querystring: LoginQuery }>, reply: AppReply): Promise<AppReply> => {
 		if (request.query.action !== undefined || !request.viewer.isGuest) return reply.redirect('index.php');
 
 		const { lang } = this.deps.page;
@@ -51,7 +51,7 @@ export class LoginController {
 	};
 
 	/** POST login.php?action=in : connexion de développement. */
-	login = async (request: FastifyRequest<{ Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> => {
+	login = async (request: AppRequest<{ Body: FormBody }>, reply: AppReply): Promise<AppReply> => {
 		const { lang } = this.deps.page;
 		if (!isDevLoginAllowed(this.deps.devLogin, request.ip))
 			return renderMessage(request, reply, this.deps, 403, lang.login.devLoginRefused);
@@ -71,7 +71,7 @@ export class LoginController {
 	};
 
 	/** POST login.php?action=out */
-	logout = async (request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply> => {
+	logout = async (request: AppRequest, reply: AppReply): Promise<AppReply> => {
 		const { viewer } = request;
 		if (!viewer.isGuest) {
 			await this.deps.online.removeMember(viewer.id);

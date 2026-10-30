@@ -9,7 +9,7 @@
  */
 
 import { randomInt } from 'node:crypto';
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { buildSearchForm, buildSearchResults } from '../presenters/searchPage.ts';
 import type { CensorReader } from '../repositories/CensorRepository.ts';
@@ -82,7 +82,7 @@ function noResultsMessage(outcome: SearchOutcome, lang: Lang): string {
 export class SearchController {
 	constructor(private readonly deps: SearchControllerDeps) {}
 
-	show = async (request: FastifyRequest<{ Querystring: SearchQuery }>, reply: FastifyReply): Promise<FastifyReply> => {
+	show = async (request: AppRequest<{ Querystring: SearchQuery }>, reply: AppReply): Promise<AppReply> => {
 		const { viewer, board: config } = request;
 		const { lang } = this.deps.page;
 		const { query } = request;
@@ -138,18 +138,18 @@ export class SearchController {
 	};
 
 	/** Propriétaire d'une recherche mémorisée, comme search.php : pseudo, ou IP pour un invité. */
-	private ident(request: FastifyRequest): string {
+	private ident(request: AppRequest): string {
 		return request.viewer.isGuest ? request.ip : request.viewer.username;
 	}
 
 	/** Mémorise les résultats dans search_cache (identifiant tiré au sort comme mt_rand()). */
-	private async remember(request: FastifyRequest, outcome: SearchOutcome): Promise<number> {
+	private async remember(request: AppRequest, outcome: SearchOutcome): Promise<number> {
 		const searchId = randomInt(1, 2_147_483_647);
 		await this.deps.searchWriter.saveCachedSearch(searchId, this.ident(request), serializeSearch(outcome, phpSerialize));
 		return searchId;
 	}
 
-	private async form(request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply> {
+	private async form(request: AppRequest, reply: AppReply): Promise<AppReply> {
 		const { viewer, board: config } = request;
 		const { lang } = this.deps.page;
 		const forums = await this.deps.forums.listReadable(viewer.group.id);
@@ -239,11 +239,11 @@ export class SearchController {
 	}
 
 	private async results(
-		request: FastifyRequest<{ Querystring: SearchQuery }>,
-		reply: FastifyReply,
+		request: AppRequest<{ Querystring: SearchQuery }>,
+		reply: AppReply,
 		outcome: SearchOutcome,
 		pageUrl: (page: number) => string,
-	): Promise<FastifyReply> {
+	): Promise<AppReply> {
 		const { viewer, board: config } = request;
 		const { lang } = this.deps.page;
 

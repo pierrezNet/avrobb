@@ -3,13 +3,13 @@
  * avec les doublures.
  */
 
-import type { FastifyInstance } from 'fastify';
-import { afterEach, describe, expect, it } from 'vitest';
-import { buildApp } from '../src/app.ts';
+import { describe, expect, it } from 'vitest';
+import { buildApp, type ForumApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
 import { canDeleteReputation, readReason, reputationAccessError, voteError } from '../src/services/reputation.ts';
 import { boardConfig, type FakeData, fakeDeps, group, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
+import { inject } from './inject.ts';
 
 const SEED = 'graine-de-test';
 const CSRF_SECRET = 'c'.repeat(64);
@@ -86,13 +86,12 @@ function data(overrides: Partial<FakeData> = {}): FakeData {
 
 const cookies = (userId: number): string => `${sessionCookie(userId)}; avrobb_csrf=${CSRF_SECRET}`;
 
-let app: FastifyInstance | undefined;
-afterEach(async () => app?.close());
+let app: ForumApp | undefined;
 
-function post(server: FastifyInstance, userId: number, url: string, fields: Record<string, string | string[]>) {
+function post(server: ForumApp, userId: number, url: string, fields: Record<string, string | string[]>) {
 	const body = new URLSearchParams({ csrf_token: csrfToken(CSRF_SECRET, SEED, userId) });
 	for (const [name, value] of Object.entries(fields)) for (const item of [value].flat()) body.append(name, item);
-	return server.inject({
+	return inject(server, {
 		method: 'POST',
 		url,
 		headers: { cookie: cookies(userId), 'content-type': 'application/x-www-form-urlencoded' },
@@ -104,7 +103,7 @@ describe('GET /reputation.php', () => {
 	it("historique d'un membre : totaux, raisons rendues, votant, discussion supprimée", async () => {
 		const fake = data();
 		app = await buildApp(fakeDeps(fake));
-		const res = await app.inject({ url: '/reputation.php?uid=5', headers: { cookie: cookies(3) } });
+		const res = await inject(app, { url: '/reputation.php?uid=5', headers: { cookie: cookies(3) } });
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('Renommée du membre MaxDUO');
 		expect(res.body).toContain('[+3 / -1]');
@@ -117,16 +116,16 @@ describe('GET /reputation.php', () => {
 
 	it('renommée désactivée : page refusée', async () => {
 		app = await buildApp(fakeDeps(data({ config: { reputationEnabled: false } })));
-		expect((await app.inject({ url: '/reputation.php?uid=5', headers: { cookie: cookies(3) } })).statusCode).toBe(403);
+		expect((await inject(app, { url: '/reputation.php?uid=5', headers: { cookie: cookies(3) } })).statusCode).toBe(403);
 	});
 
 	it('formulaire de vote, et refus pour soi-même ou un invité', async () => {
 		app = await buildApp(fakeDeps(data()));
-		const form = await app.inject({ url: '/reputation.php?pid=101&uid=5&method=2', headers: { cookie: cookies(3) } });
+		const form = await inject(app, { url: '/reputation.php?pid=101&uid=5&method=2', headers: { cookie: cookies(3) } });
 		expect(form.body).toContain('Réduction de renommée');
 		expect(form.body).toContain('name="pid" value="101"');
-		expect((await app.inject({ url: '/reputation.php?pid=101&uid=6&method=1', headers: { cookie: cookies(3) } })).statusCode).toBe(404);
-		expect((await app.inject('/reputation.php?pid=101&uid=5&method=1')).statusCode).toBe(403);
+		expect((await inject(app, { url: '/reputation.php?pid=101&uid=6&method=1', headers: { cookie: cookies(3) } })).statusCode).toBe(404);
+		expect((await inject(app, '/reputation.php?pid=101&uid=5&method=1')).statusCode).toBe(403);
 	});
 });
 
@@ -157,7 +156,7 @@ describe('POST /reputation.php', () => {
 		const fake = data();
 		app = await buildApp(fakeDeps(fake));
 		expect((await post(app, 3, '/reputation.php?uid=5', { delete_rep: '1', delete_rep_id: '41' })).statusCode).toBe(403);
-		const page = await app.inject({ url: '/reputation.php?uid=5', headers: { cookie: cookies(2) } });
+		const page = await inject(app, { url: '/reputation.php?uid=5', headers: { cookie: cookies(2) } });
 		expect(page.body).toContain('name="delete_rep_id" value="41"');
 		const res = await post(app, 2, '/reputation.php?uid=5', { delete_rep: '1', delete_rep_id: ['41', '40'] });
 		expect(res.headers.location).toBe('reputation.php?uid=5&done=deleted');

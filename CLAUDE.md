@@ -15,7 +15,7 @@ Cible : **100 % Cloudflare**. Un Worker (Hono), D1 (SQLite), R2 (fichiers), Stat
 - `FAILLES_PHP.md` (non versionné) : failles du PHP d'origine, liste de contrôle à ne pas reproduire.
 - Projet voisin sur le même modèle (Workers + D1 + Hono) : `../donnetonpoint`.
 
-> **Transition en cours** : l'héritage PV est retiré (lot 1), mais tant que les lots 2 et 3 de `TODO.md` ne sont pas terminés, le code tourne encore sur **Fastify, Node et MariaDB** (schéma FluxBB, conteneur `pv_db` sur le port 3307), avec un stockage local des fichiers (`STORAGE_DIR`). Ce fichier décrit la **cible**. Commandes actuelles : `npm run dev` (tsx, port `PORT` de `.env`), `npm run check`, `npm run test:db` (base `pv_forum_test` sur MariaDB), `npm run screenshot`. Un lot terminé met à jour la section « Commandes » s'il en change.
+> **Transition en cours** : l'héritage PV est retiré (lot 1) et la couche HTTP est sur Hono (lot 2), mais tant que le lot 3 de `TODO.md` n'est pas terminé, le code tourne sous **Node (`@hono/node-server`) avec MariaDB** (schéma FluxBB, conteneur `pv_db` sur le port 3307) et un stockage local des fichiers (`STORAGE_DIR`). Ce fichier décrit la **cible**. Commandes actuelles : `npm run dev` (gabarits recompilés et serveur relancé à chaque modification, port `PORT` de `.env`), `npm run check`, `npm run test:db` (base `pv_forum_test` sur MariaDB), `npm run build:templates`, `npm run screenshot`. Un lot terminé met à jour la section « Commandes » s'il en change.
 
 ## Commandes
 
@@ -38,7 +38,7 @@ npm run screenshot -- 'http://localhost:8787/viewtopic.php?id=4' --widths 320,37
 ## Pile technique
 
 - **Runtime** : Cloudflare Workers (`compatibility_flags = ["nodejs_compat"]`), configuration dans `wrangler.jsonc`. Node ≥ 24 pour l'outillage (ESM, `"type": "module"`, imports avec extension `.ts`).
-- **HTTP** : **Hono**. Les contrôleurs ne voient pas Hono directement : ils reçoivent un contexte de requête maison (`src/http/`) qui expose ce dont ils ont besoin (requête, corps, viewer, réglages, fichiers envoyés) et rendent une réponse.
+- **HTTP** : **Hono**. Les contrôleurs ne voient pas Hono directement : ils reçoivent `AppRequest` et `AppReply` (`src/http/context.ts`), et `src/http/server.ts` fait le lien avec Hono (routes, étapes préalables, erreurs, en-têtes, fichiers statiques).
 - **Base** : **D1** via **Kysely** (dialecte SQLite, pilote D1 maison de quelques dizaines de lignes dans `src/db/`). Schéma neuf, migrations SQL numérotées dans `migrations/` (`wrangler d1 migrations`).
 - **Fichiers** : **R2** (avatars, galerie, logo, bannière), servis par le Worker sous une route de même origine avec cache en bordure.
 - **Gabarits** : **Nunjucks précompilé** au build (`nunjucks.precompile` vers un module ES dans `src/generated/`), chargé par `PrecompiledLoader`. Un Worker n'a ni système de fichiers ni `eval` : on ne compile **jamais** un gabarit à l'exécution. Échappement automatique, `throwOnUndefined`.
@@ -116,7 +116,7 @@ Principes :
 - **Commentaires et textes en français**, comme dans le code existant : un en-tête `/** … */` par fichier qui explique son rôle, des commentaires sur le _pourquoi_ (surtout les choix imposés par Workers ou D1), pas sur le _quoi_.
 - TypeScript strict (`noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`) : pas de `any`, pas de `!` sans justification.
 - Fonctions courtes, noms explicites. Une règle reprise de FluxBB peut citer la fonction PHP d'origine (`paginate()`…) quand cela aide à comprendre.
-- Tests : chaque service pur a ses tests unitaires ; chaque page a au moins un test d'intégration via `app.request()` avec des doublures ; chaque repository a ses tests `test:db`.
+- Tests : chaque service pur a ses tests unitaires ; chaque page a au moins un test d'intégration via `inject()` (`tests/inject.ts`, sur `app.fetch`) avec des doublures ; chaque repository a ses tests `test:db`.
 
 ## Front-end responsive
 

@@ -3,7 +3,7 @@
  * les clés modifiées, puis vide le cache des réglages (generate_config_cache() du PHP).
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage } from '../http/layout.ts';
 import { buildAdminOptions } from '../presenters/adminOptionsPage.ts';
@@ -24,14 +24,14 @@ export interface AdminOptionsQuery {
 export class AdminOptionsController {
 	constructor(private readonly deps: AdminOptionsControllerDeps) {}
 
-	show = async (request: FastifyRequest<{ Querystring: AdminOptionsQuery }>, reply: FastifyReply): Promise<FastifyReply> => {
+	show = async (request: AppRequest<{ Querystring: AdminOptionsQuery }>, reply: AppReply): Promise<AppReply> => {
 		const denied = adminDenied(request, reply, this.deps, true);
 		if (denied !== null) return denied;
 		const notice = request.query.done === 'updated' ? this.deps.page.lang.adminOptions.updated : null;
 		return this.#render(request, reply, await this.deps.configStore.loadValues(), [], notice);
 	};
 
-	save = async (request: FastifyRequest<{ Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> => {
+	save = async (request: AppRequest<{ Body: FormBody }>, reply: AppReply): Promise<AppReply> => {
 		const denied = adminDenied(request, reply, this.deps, true);
 		if (denied !== null) return denied;
 		const { lang } = this.deps.page;
@@ -58,13 +58,13 @@ export class AdminOptionsController {
 	};
 
 	#render(
-		request: FastifyRequest,
-		reply: FastifyReply,
+		request: AppRequest,
+		reply: AppReply,
 		values: ReadonlyMap<string, string>,
 		errors: readonly OptionsError[],
 		notice: string | null,
 		status = 200,
-	): Promise<FastifyReply> {
+	): Promise<AppReply> {
 		const { lang } = this.deps.page;
 		reply.code(status);
 		return renderAdminPage(

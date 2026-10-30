@@ -3,12 +3,12 @@
  * la modification (tests/profile-edit.test.ts) ou vers le PHP pour la section Administration.
  */
 
-import type { FastifyInstance } from 'fastify';
-import { afterEach, describe, expect, it } from 'vitest';
-import { buildApp } from '../src/app.ts';
+import { describe, expect, it } from 'vitest';
+import { buildApp, type ForumApp } from '../src/app.ts';
 import { GroupId, type UserProfile } from '../src/domain/models.ts';
 import { canEditProfile } from '../src/services/permissions.ts';
 import { fakeDeps, group, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
+import { inject } from './inject.ts';
 
 function profile(overrides: Partial<UserProfile> = {}): UserProfile {
 	return {
@@ -57,8 +57,7 @@ describe('canEditProfile (profile.php)', () => {
 
 const users = [{ viewer: guest }, { viewer: tessy }, { viewer: mod }];
 
-let app: FastifyInstance | undefined;
-afterEach(async () => app?.close());
+let app: ForumApp | undefined;
 
 const deps = (overrides = {}) =>
 	fakeDeps({ users, topics: [], posts: new Map(), profiles: [profile(), profile({ id: 3, username: 'Tessy' })], ...overrides });
@@ -66,7 +65,7 @@ const deps = (overrides = {}) =>
 describe('GET /profile.php', () => {
 	it('affiche le profil public, échappé, avec signature, biographie et recherches', async () => {
 		app = await buildApp(deps());
-		const res = await app.inject({ url: '/profile.php?id=6', headers: { cookie: sessionCookie(3) } });
+		const res = await inject(app, { url: '/profile.php?id=6', headers: { cookie: sessionCookie(3) } });
 
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('<title>Profil de valdefsx / Forum de test</title>');
@@ -82,36 +81,35 @@ describe('GET /profile.php', () => {
 
 	it('invité : ni e-mail ni MP', async () => {
 		app = await buildApp(deps({ profiles: [profile({ emailSetting: 0 })], config: { privateMessagesEnabled: true } }));
-		const res = await app.inject('/profile.php?id=6');
+		const res = await inject(app, '/profile.php?id=6');
 		expect(res.body).not.toContain('mailto:');
 		expect(res.body).not.toContain('pms_send.php');
 	});
 
 	it('modification servie par le forum ; plus de section Administration', async () => {
 		app = await buildApp(deps());
-		const own = await app.inject({ url: '/profile.php?id=3', headers: { cookie: sessionCookie(3) } });
+		const own = await inject(app, { url: '/profile.php?id=3', headers: { cookie: sessionCookie(3) } });
 		expect(own.statusCode).toBe(200);
 		expect(own.body).toContain('Tessy - Principal');
 
-		const asMod = await app.inject({ url: '/profile.php?id=6', headers: { cookie: sessionCookie(5) } });
+		const asMod = await inject(app, { url: '/profile.php?id=6', headers: { cookie: sessionCookie(5) } });
 		expect(asMod.body).toContain('valdefsx - Principal');
 		// La section Administration de FluxBB n'existe plus : admin_users.php la remplace.
-		const admin = await app.inject({ url: '/profile.php?section=admin&id=6', headers: { cookie: sessionCookie(5) } });
+		const admin = await inject(app, { url: '/profile.php?section=admin&id=6', headers: { cookie: sessionCookie(5) } });
 		expect(admin.statusCode).toBe(404);
 
 		// Un lecteur qui ne peut pas modifier consulte, quelle que soit la section.
-		expect((await app.inject('/profile.php?section=personal&id=6')).body).toContain('Profil de valdefsx');
-		expect((await app.inject('/profile.php?action=inconnue&id=6')).statusCode).toBe(404);
+		expect((await inject(app, '/profile.php?section=personal&id=6')).body).toContain('Profil de valdefsx');
+		expect((await inject(app, '/profile.php?action=inconnue&id=6')).statusCode).toBe(404);
 	});
 
 	it('404 pour un identifiant invalide ou inconnu, 403 sans g_view_users', async () => {
 		app = await buildApp(deps());
-		expect((await app.inject('/profile.php?id=1')).statusCode).toBe(404);
-		expect((await app.inject('/profile.php?id=999')).statusCode).toBe(404);
-		await app.close();
+		expect((await inject(app, '/profile.php?id=1')).statusCode).toBe(404);
+		expect((await inject(app, '/profile.php?id=999')).statusCode).toBe(404);
 
 		const blind = { ...guest, group: group({ id: GroupId.Guest, canViewUsers: false }) };
 		app = await buildApp(deps({ users: [{ viewer: blind }] }));
-		expect((await app.inject('/profile.php?id=6')).statusCode).toBe(403);
+		expect((await inject(app, '/profile.php?id=6')).statusCode).toBe(403);
 	});
 });

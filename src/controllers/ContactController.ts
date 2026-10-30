@@ -7,8 +7,8 @@
  * signalement exige de pouvoir lire le message (le PHP ne le vérifiait qu'à l'affichage).
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { Mailer } from '../adapters/mailer.ts';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { buildEmailPage, buildReportPage } from '../presenters/contactPage.ts';
@@ -36,12 +36,12 @@ export interface ContactQuery {
 	report?: string;
 }
 
-type ContactRequest = FastifyRequest<{ Querystring: ContactQuery; Body?: FormBody }>;
+type ContactRequest = AppRequest<{ Querystring: ContactQuery; Body?: FormBody }>;
 
 export class ContactController {
 	constructor(private readonly deps: ContactControllerDeps) {}
 
-	emailForm = async (request: ContactRequest, reply: FastifyReply): Promise<FastifyReply> => {
+	emailForm = async (request: ContactRequest, reply: AppReply): Promise<AppReply> => {
 		const recipient = await this.resolveRecipient(request, reply);
 		if (!('recipient' in recipient)) return recipient;
 		// Retour sur la page d'où vient le visiteur, sinon le profil du destinataire (misc.php).
@@ -57,10 +57,7 @@ export class ContactController {
 		);
 	};
 
-	sendEmail = async (
-		request: FastifyRequest<{ Querystring: ContactQuery; Body: FormBody }>,
-		reply: FastifyReply,
-	): Promise<FastifyReply> => {
+	sendEmail = async (request: AppRequest<{ Querystring: ContactQuery; Body: FormBody }>, reply: AppReply): Promise<AppReply> => {
 		const recipient = await this.resolveRecipient(request, reply);
 		if (!('recipient' in recipient)) return recipient;
 		const { viewer, board: config, body } = request;
@@ -96,16 +93,13 @@ export class ContactController {
 		return reply.redirect(redirectUrl, 303);
 	};
 
-	reportForm = async (request: ContactRequest, reply: FastifyReply): Promise<FastifyReply> => {
+	reportForm = async (request: ContactRequest, reply: AppReply): Promise<AppReply> => {
 		const target = await this.resolveReportTarget(request, reply);
 		if (!('postId' in target)) return target;
 		return this.renderReport(request, reply, target, '', []);
 	};
 
-	sendReport = async (
-		request: FastifyRequest<{ Querystring: ContactQuery; Body: FormBody }>,
-		reply: FastifyReply,
-	): Promise<FastifyReply> => {
+	sendReport = async (request: AppRequest<{ Querystring: ContactQuery; Body: FormBody }>, reply: AppReply): Promise<AppReply> => {
 		const target = await this.resolveReportTarget(request, reply);
 		if (!('postId' in target)) return target;
 		const { viewer, board: config } = request;
@@ -141,7 +135,7 @@ export class ContactController {
 	};
 
 	/** Membre autorisé à envoyer des e-mails, destinataire existant qui accepte le formulaire. */
-	private async resolveRecipient(request: ContactRequest, reply: FastifyReply) {
+	private async resolveRecipient(request: ContactRequest, reply: AppReply) {
 		const { viewer } = request;
 		const { lang } = this.deps.page;
 		if (viewer.isGuest || !viewer.group.canSendEmail) return renderMessage(request, reply, this.deps, 403, lang.common.noPermission);
@@ -153,7 +147,7 @@ export class ContactController {
 		return { id, recipient };
 	}
 
-	private async resolveReportTarget(request: ContactRequest, reply: FastifyReply): Promise<ReportTarget | FastifyReply> {
+	private async resolveReportTarget(request: ContactRequest, reply: AppReply): Promise<ReportTarget | AppReply> {
 		const { viewer } = request;
 		const { lang } = this.deps.page;
 		if (viewer.isGuest) return renderMessage(request, reply, this.deps, 403, lang.common.noPermission);
@@ -165,12 +159,12 @@ export class ContactController {
 
 	private renderEmail(
 		request: ContactRequest,
-		reply: FastifyReply,
+		reply: AppReply,
 		recipient: { id: number; recipient: { username: string } },
 		redirectUrl: string,
 		form: { subject: string; message: string },
 		errors: string[],
-	): Promise<FastifyReply> {
+	): Promise<AppReply> {
 		const { lang } = this.deps.page;
 		const view = buildEmailPage({
 			recipientId: recipient.id,
@@ -192,11 +186,11 @@ export class ContactController {
 
 	private async renderReport(
 		request: ContactRequest,
-		reply: FastifyReply,
+		reply: AppReply,
 		target: ReportTarget,
 		reason: string,
 		errors: string[],
-	): Promise<FastifyReply> {
+	): Promise<AppReply> {
 		const { board: config } = request;
 		const { lang } = this.deps.page;
 		const censor = config.censoring ? buildCensor(await this.deps.censorship.listWords()) : null;

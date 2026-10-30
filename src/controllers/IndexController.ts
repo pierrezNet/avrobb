@@ -2,7 +2,7 @@
  * Contrôleur de l'index (index.php, aussi servi à la racine du site).
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { buildIndexPage } from '../presenters/indexPage.ts';
 import type { ForumReader } from '../repositories/ForumRepository.ts';
@@ -31,7 +31,7 @@ const ONLINE_AVATARS = 40;
 export class IndexController {
 	constructor(private readonly deps: IndexControllerDeps) {}
 
-	show = async (request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply> => {
+	show = async (request: AppRequest, reply: AppReply): Promise<AppReply> => {
 		const { viewer, board: config } = request;
 		const { lang } = this.deps.page;
 

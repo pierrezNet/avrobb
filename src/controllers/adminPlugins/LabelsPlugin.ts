@@ -3,7 +3,7 @@
  * ordre et suppression sont délégués à SubjectTagAdmin.
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { AppReply, AppRequest } from '../../http/context.ts';
 import type { FormBody } from '../../http/forms.ts';
 import { renderMessage } from '../../http/layout.ts';
 import { type AdminLoaderControllerDeps, type AdminLoaderQuery, type PluginHandler, renderPlugin } from './pluginPage.ts';
@@ -16,18 +16,18 @@ export class LabelsPlugin implements PluginHandler {
 		this.#subjectTags = new SubjectTagAdmin(deps);
 	}
 
-	show(request: FastifyRequest<{ Querystring: AdminLoaderQuery }>, reply: FastifyReply): Promise<FastifyReply> {
+	show(request: AppRequest<{ Querystring: AdminLoaderQuery }>, reply: AppReply): Promise<AppReply> {
 		if (SUBJECT_TAG_ACTIONS.has(request.query.action ?? '')) return this.#subjectTags.show(request, reply);
 		if (request.query.action !== undefined) return renderMessage(request, reply, this.deps, 400, this.deps.page.lang.common.badRequest);
 		return this.#showList(request, reply);
 	}
 
-	submit(request: FastifyRequest<{ Querystring: AdminLoaderQuery; Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> {
+	submit(request: AppRequest<{ Querystring: AdminLoaderQuery; Body: FormBody }>, reply: AppReply): Promise<AppReply> {
 		if (SUBJECT_TAG_ACTIONS.has(request.query.action ?? '')) return this.#subjectTags.submit(request, reply);
 		return renderMessage(request, reply, this.deps, 400, this.deps.page.lang.common.badRequest);
 	}
 
-	#showList(request: FastifyRequest<{ Querystring: AdminLoaderQuery }>, reply: FastifyReply): Promise<FastifyReply> {
+	#showList(request: AppRequest<{ Querystring: AdminLoaderQuery }>, reply: AppReply): Promise<AppReply> {
 		const t = this.deps.page.lang.adminPlugins.labels;
 		const { done } = request.query;
 		const notices: Record<string, string> = { tag_saved: t.subjectTagSaved, tag_deleted: t.subjectTagDeleted };

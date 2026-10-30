@@ -3,11 +3,11 @@
  * modification (draft_list.php, draft_edit.php).
  */
 
-import type { FastifyInstance } from 'fastify';
-import { afterEach, describe, expect, it } from 'vitest';
-import { buildApp } from '../src/app.ts';
+import { describe, expect, it } from 'vitest';
+import { buildApp, type ForumApp } from '../src/app.ts';
 import type { Draft, ForumInfo } from '../src/domain/models.ts';
 import { type FakeData, fakeDeps, guest, NOW, post, sessionCookie, topic, viewer } from './fixtures.ts';
+import { inject } from './inject.ts';
 
 const tessy = `${sessionCookie(3)}`;
 
@@ -48,18 +48,17 @@ function data(overrides: Partial<FakeData> = {}): FakeData {
 	};
 }
 
-let app: FastifyInstance | undefined;
-afterEach(async () => app?.close());
+let app: ForumApp | undefined;
 
-async function submit(server: FastifyInstance, page: string, action: string, fields: Record<string, string>) {
-	const form = await server.inject({ url: page, headers: { cookie: tessy } });
+async function submit(server: ForumApp, page: string, action: string, fields: Record<string, string>) {
+	const form = await inject(server, { url: page, headers: { cookie: tessy } });
 	const csrf =
 		[form.headers['set-cookie']]
 			.flat()
 			.find((c) => c?.startsWith('avrobb_csrf='))
 			?.split(';')[0] ?? '';
 	const token = /name="csrf_token" value="([0-9a-f]+)"/.exec(form.body)?.[1] ?? '';
-	return server.inject({
+	return inject(server, {
 		method: 'POST',
 		url: action,
 		headers: { cookie: `${tessy}; ${csrf}`, 'content-type': 'application/x-www-form-urlencoded' },
@@ -88,7 +87,7 @@ describe('post.php et brouillons', () => {
 	it('reprend un brouillon en prévisualisation, puis le supprime une fois publié', async () => {
 		const fake = data();
 		app = await buildApp(fakeDeps(fake));
-		const page = await app.inject({ url: '/post.php?id=6&brouillon=1', headers: { cookie: tessy } });
+		const page = await inject(app, { url: '/post.php?id=6&brouillon=1', headers: { cookie: tessy } });
 		expect(page.statusCode).toBe(200);
 		expect(page.body).toContain('action="post.php?action=post&amp;tid=10"');
 		expect(page.body).toContain('<strong>Brouillon</strong> du récit');
@@ -106,9 +105,9 @@ describe('post.php et brouillons', () => {
 
 	it('refuse le brouillon d’un autre ou inconnu', async () => {
 		app = await buildApp(fakeDeps(data()));
-		expect((await app.inject({ url: '/post.php?id=7&brouillon=1', headers: { cookie: tessy } })).statusCode).toBe(403);
-		expect((await app.inject({ url: '/post.php?id=99&brouillon=1', headers: { cookie: tessy } })).statusCode).toBe(404);
-		expect((await app.inject('/post.php?id=5&brouillon=1')).statusCode).toBe(404);
+		expect((await inject(app, { url: '/post.php?id=7&brouillon=1', headers: { cookie: tessy } })).statusCode).toBe(403);
+		expect((await inject(app, { url: '/post.php?id=99&brouillon=1', headers: { cookie: tessy } })).statusCode).toBe(404);
+		expect((await inject(app, '/post.php?id=5&brouillon=1')).statusCode).toBe(404);
 	});
 });
 
@@ -116,7 +115,7 @@ describe('« Poster » depuis la liste des brouillons', () => {
 	it('publie directement le brouillon (POST) et le retire de la liste', async () => {
 		const fake = data();
 		app = await buildApp(fakeDeps(fake));
-		const list = await app.inject({ url: '/draft_list.php?id=6', headers: { cookie: tessy } });
+		const list = await inject(app, { url: '/draft_list.php?id=6', headers: { cookie: tessy } });
 		expect(list.body).toContain('<form class="inline-form" method="post" action="post.php?id=6&amp;brouillon=1">');
 		const res = await submit(app, '/draft_list.php?id=6', '/post.php?id=6&brouillon=1', {});
 		expect(res.statusCode).toBe(302);
@@ -147,19 +146,19 @@ describe('« Poster » depuis la liste des brouillons', () => {
 describe('draft_list.php', () => {
 	it('liste les brouillons du membre et ouvre l’un d’eux', async () => {
 		app = await buildApp(fakeDeps(data()));
-		const res = await app.inject({ url: '/draft_list.php?id=5', headers: { cookie: tessy } });
+		const res = await inject(app, { url: '/draft_list.php?id=5', headers: { cookie: tessy } });
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('Mon vol de nuit');
 		expect(res.body).not.toContain('Pas à moi');
 		expect(res.body).toContain('<strong>Brouillon</strong> du récit');
 		expect(res.body).toContain('action="post.php?id=5&amp;brouillon=1"');
 		expect(res.body).toContain('href="draft_edit.php?id=5"');
-		expect((await app.inject({ url: '/draft_list.php?id=7', headers: { cookie: tessy } })).statusCode).toBe(403);
+		expect((await inject(app, { url: '/draft_list.php?id=7', headers: { cookie: tessy } })).statusCode).toBe(403);
 	});
 
 	it('renvoie un invité vers la connexion', async () => {
 		app = await buildApp(fakeDeps(data()));
-		const res = await app.inject('/draft_list.php');
+		const res = await inject(app, '/draft_list.php');
 		expect(res.statusCode).toBe(302);
 		expect(res.headers.location).toBe('login.php');
 	});
@@ -167,7 +166,7 @@ describe('draft_list.php', () => {
 	it('supprime après confirmation, seulement ses propres brouillons', async () => {
 		const fake = data();
 		app = await buildApp(fakeDeps(fake));
-		const confirm = await app.inject({ url: '/draft_list.php?action=delete&id=5', headers: { cookie: tessy } });
+		const confirm = await inject(app, { url: '/draft_list.php?action=delete&id=5', headers: { cookie: tessy } });
 		expect(confirm.body).toContain('Etes-vous sûr de vouloir supprimer le message');
 		const res = await submit(app, '/draft_list.php?action=delete&id=5', '/draft_list.php', {
 			action: 'delete',
@@ -184,7 +183,7 @@ describe('draft_edit.php', () => {
 	it('modifie le sujet et le texte d’un brouillon de discussion', async () => {
 		const fake = data();
 		app = await buildApp(fakeDeps(fake));
-		const page = await app.inject({ url: '/draft_edit.php?id=5', headers: { cookie: tessy } });
+		const page = await inject(app, { url: '/draft_edit.php?id=5', headers: { cookie: tessy } });
 		expect(page.body).toContain('value="Mon vol de nuit"');
 		const res = await submit(app, '/draft_edit.php?id=5', '/draft_edit.php?id=5&action=edit', {
 			form_sent: '1',
@@ -197,7 +196,7 @@ describe('draft_edit.php', () => {
 
 	it('brouillon de réponse : pas de sujet ; brouillon d’un autre refusé', async () => {
 		app = await buildApp(fakeDeps(data()));
-		expect((await app.inject({ url: '/draft_edit.php?id=6', headers: { cookie: tessy } })).body).not.toContain('name="req_subject"');
-		expect((await app.inject({ url: '/draft_edit.php?id=7', headers: { cookie: tessy } })).statusCode).toBe(403);
+		expect((await inject(app, { url: '/draft_edit.php?id=6', headers: { cookie: tessy } })).body).not.toContain('name="req_subject"');
+		expect((await inject(app, { url: '/draft_edit.php?id=7', headers: { cookie: tessy } })).statusCode).toBe(403);
 	});
 });

@@ -3,14 +3,14 @@
  * enregistré dans config et affiché par terms.php…, retour au texte par défaut ; administrateurs seulement.
  */
 
-import type { FastifyInstance } from 'fastify';
-import { afterEach, describe, expect, it } from 'vitest';
-import { buildApp } from '../src/app.ts';
+import { describe, expect, it } from 'vitest';
+import { buildApp, type ForumApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
 import { toBoardConfig } from '../src/services/boardConfig.ts';
 import { formatStaticBody, isSafeLink, parseStaticBody, readStaticPageForm } from '../src/services/staticPageConfig.ts';
 import { type FakeData, fakeDeps, group, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
+import { inject } from './inject.ts';
 
 describe('balisage des pages d’information', () => {
 	it('rubriques, paragraphes et liens ; aller-retour avec le formulaire', () => {
@@ -59,8 +59,7 @@ const admin = viewer({ id: 2, username: 'admin', group: group({ id: GroupId.Admi
 const mod = viewer({ id: 5, username: 'MaxDUO', group: group({ id: GroupId.Moderator, isModerator: true }) });
 const cookies = (userId: number): string => `${sessionCookie(userId)}; avrobb_csrf=${CSRF_SECRET}`;
 
-let app: FastifyInstance | undefined;
-afterEach(async () => app?.close());
+let app: ForumApp | undefined;
 
 function data(): FakeData {
 	return {
@@ -71,8 +70,8 @@ function data(): FakeData {
 	};
 }
 
-const send = (server: FastifyInstance, userId: number, fields: Record<string, string>) =>
-	server.inject({
+const send = (server: ForumApp, userId: number, fields: Record<string, string>) =>
+	inject(server, {
 		method: 'POST',
 		url: '/admin_pages.php',
 		headers: { cookie: cookies(userId), 'content-type': 'application/x-www-form-urlencoded' },
@@ -83,15 +82,15 @@ describe('admin_pages.php', () => {
 	it('liste et formulaire prérempli du texte par défaut ; administrateurs seulement', async () => {
 		const fake = data();
 		app = await buildApp(fakeDeps(fake));
-		expect((await app.inject({ url: '/admin_pages.php', headers: { cookie: cookies(5) } })).statusCode).toBe(403);
-		const list = await app.inject({ url: '/admin_pages.php', headers: { cookie: cookies(2) } });
+		expect((await inject(app, { url: '/admin_pages.php', headers: { cookie: cookies(5) } })).statusCode).toBe(403);
+		const list = await inject(app, { url: '/admin_pages.php', headers: { cookie: cookies(2) } });
 		expect(list.body).toContain('href="admin_pages.php?page=privacy"');
 		expect(list.body).toContain('Texte par défaut');
-		const form = await app.inject({ url: '/admin_pages.php?page=terms', headers: { cookie: cookies(2) } });
+		const form = await inject(app, { url: '/admin_pages.php?page=terms', headers: { cookie: cookies(2) } });
 		expect(form.body).toContain('value="Termes et règles"');
 		expect(form.body).toContain('## Respect et courtoisie');
 		expect(form.body).not.toContain('name="reset"');
-		expect((await app.inject({ url: '/admin_pages.php?page=../x', headers: { cookie: cookies(2) } })).statusCode).toBe(404);
+		expect((await inject(app, { url: '/admin_pages.php?page=../x', headers: { cookie: cookies(2) } })).statusCode).toBe(404);
 		expect((await send(app, 5, { page: 'terms', title: 'X', body: '## A' })).statusCode).toBe(403);
 	});
 
@@ -128,7 +127,7 @@ describe('admin_pages.php', () => {
 		});
 		fake.config = { staticPages: toBoardConfig(new Map([['o_page_terms', value]])).staticPages };
 		app = await buildApp(fakeDeps(fake));
-		const page = await app.inject('/terms.php');
+		const page = await inject(app, '/terms.php');
 		expect(page.body).toContain('<h1 class="page-title">Charte</h1>');
 		expect(page.body).toContain('<h3 class="forum-row__name">Règle &lt;1&gt;</h3>');
 		expect(page.body).toContain('<a href="faq.php">Aide</a>');

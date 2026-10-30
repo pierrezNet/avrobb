@@ -2,11 +2,11 @@
  * Accueil de l'administration (admin_index.php) et statistiques (admin_statistics.php).
  */
 
-import type { FastifyInstance } from 'fastify';
-import { afterEach, describe, expect, it } from 'vitest';
-import { buildApp } from '../src/app.ts';
+import { describe, expect, it } from 'vitest';
+import { buildApp, type ForumApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { type FakeData, fakeDeps, group, guest, sessionCookie, viewer } from './fixtures.ts';
+import { inject } from './inject.ts';
 
 const mod = viewer({ id: 5, username: 'MaxDUO', group: group({ id: GroupId.Moderator, isModerator: true }) });
 const tessy = viewer();
@@ -19,12 +19,11 @@ const data = (): FakeData => ({
 	posts: new Map(),
 });
 
-let app: FastifyInstance | undefined;
-afterEach(async () => app?.close());
+let app: ForumApp | undefined;
 
 const get = async (userId: number | null, url: string) => {
 	app = await buildApp(fakeDeps(data()));
-	return app.inject({ url, headers: userId !== null ? { cookie: cookie(userId) } : {} });
+	return inject(app, { url, headers: userId !== null ? { cookie: cookie(userId) } : {} });
 };
 
 describe('admin_index.php', () => {

@@ -5,7 +5,7 @@
  * de phpinfo() ; l'environnement affiché est celui de Node.js.
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import type { LayoutDeps } from '../http/layout.ts';
 import type { AdminStatsReader } from '../repositories/AdminStatsRepository.ts';
 import { fileSize, forumNumberFormat } from '../services/numberFormat.ts';
@@ -19,14 +19,14 @@ export interface AdminIndexControllerDeps extends LayoutDeps {
 export class AdminIndexController {
 	constructor(private readonly deps: AdminIndexControllerDeps) {}
 
-	index = async (request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply> => {
+	index = async (request: AppRequest, reply: AppReply): Promise<AppReply> => {
 		const denied = adminDenied(request, reply, this.deps, false);
 		if (denied !== null) return denied;
 		const { lang } = this.deps.page;
 		return renderAdminPage(request, reply, this.deps, { active: 'index', template: 'admin_index.njk', title: lang.admin.index }, {});
 	};
 
-	statistics = async (request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply> => {
+	statistics = async (request: AppRequest, reply: AppReply): Promise<AppReply> => {
 		const denied = adminDenied(request, reply, this.deps, false);
 		if (denied !== null) return denied;
 		const { lang } = this.deps.page;

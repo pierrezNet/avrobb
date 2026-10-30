@@ -3,8 +3,8 @@
  * rendu dans la mise en page de l'administration et écriture des réglages modifiés.
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { Mailer } from '../../adapters/mailer.ts';
+import type { AppReply, AppRequest } from '../../http/context.ts';
 import type { FormBody } from '../../http/forms.ts';
 import type { LayoutDeps } from '../../http/layout.ts';
 import type { ADMIN_PLUGINS } from '../../presenters/adminMenu.ts';
@@ -43,20 +43,20 @@ export type Plugin = (typeof ADMIN_PLUGINS)[number];
 
 /** Un plugin porté : affichage (GET) et envoi d'un de ses formulaires (POST). */
 export interface PluginHandler {
-	show(request: FastifyRequest<{ Querystring: AdminLoaderQuery }>, reply: FastifyReply): Promise<FastifyReply>;
-	submit(request: FastifyRequest<{ Querystring: AdminLoaderQuery; Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply>;
+	show(request: AppRequest<{ Querystring: AdminLoaderQuery }>, reply: AppReply): Promise<AppReply>;
+	submit(request: AppRequest<{ Querystring: AdminLoaderQuery; Body: FormBody }>, reply: AppReply): Promise<AppReply>;
 }
 
 /** Page d'un plugin dans l'administration ; `view` reçoit aussi `formAction` (adresse du plugin). */
 export function renderPlugin(
 	deps: LayoutDeps,
-	request: FastifyRequest,
-	reply: FastifyReply,
+	request: AppRequest,
+	reply: AppReply,
 	plugin: Plugin,
 	template: string,
 	title: string,
 	view: object,
-): Promise<FastifyReply> {
+): Promise<AppReply> {
 	return renderAdminPage(
 		request,
 		reply,

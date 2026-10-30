@@ -3,13 +3,13 @@
  * de bout en bout avec les doublures.
  */
 
-import type { FastifyInstance } from 'fastify';
-import { afterEach, describe, expect, it } from 'vitest';
-import { buildApp } from '../src/app.ts';
+import { describe, expect, it } from 'vitest';
+import { buildApp, type ForumApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
 import { type AdminGroup, type GroupColumn, readGroupForm, visibleGroupColumns } from '../src/services/adminGroups.ts';
 import { type FakeData, fakeDeps, group, guest, sessionCookie, viewer } from './fixtures.ts';
+import { inject } from './inject.ts';
 
 const SEED = 'graine-de-test';
 const CSRF_SECRET = '9'.repeat(64);
@@ -59,10 +59,9 @@ describe('règles du formulaire', () => {
 	});
 });
 
-let app: FastifyInstance | undefined;
-afterEach(async () => app?.close());
+let app: ForumApp | undefined;
 
-async function start(): Promise<{ server: FastifyInstance; fake: FakeData }> {
+async function start(): Promise<{ server: ForumApp; fake: FakeData }> {
 	const fake: FakeData = {
 		users: [{ viewer: guest }, { viewer: admin }],
 		topics: [],
@@ -80,9 +79,9 @@ async function start(): Promise<{ server: FastifyInstance; fake: FakeData }> {
 	return { server: app, fake };
 }
 
-const get = (server: FastifyInstance, url: string) => server.inject({ url, headers: { cookie: cookies } });
-function post(server: FastifyInstance, url: string, fields: Record<string, string>) {
-	return server.inject({
+const get = (server: ForumApp, url: string) => inject(server, { url, headers: { cookie: cookies } });
+function post(server: ForumApp, url: string, fields: Record<string, string>) {
+	return inject(server, {
 		method: 'POST',
 		url,
 		headers: { cookie: cookies, 'content-type': 'application/x-www-form-urlencoded' },

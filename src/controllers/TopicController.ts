@@ -3,8 +3,8 @@
  * au presenter et choisit la réponse (vue, redirection ou message d'erreur). Pas de SQL ni de HTML ici.
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { CookieConfig } from '../config.ts';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { setForumCookie } from '../http/session.ts';
 import { buildTopicPage, topicUrl } from '../presenters/topicPage.ts';
@@ -41,7 +41,7 @@ export interface TopicQuery {
 export class TopicController {
 	constructor(private readonly deps: TopicControllerDeps) {}
 
-	show = async (request: FastifyRequest<{ Querystring: TopicQuery }>, reply: FastifyReply): Promise<FastifyReply> => {
+	show = async (request: AppRequest<{ Querystring: TopicQuery }>, reply: AppReply): Promise<AppReply> => {
 		const { viewer, board: config } = request;
 		const { lang } = this.deps.page;
 
@@ -140,7 +140,7 @@ export class TopicController {
 	 * (membres), puis compteur de vues (o_topic_views). Seules écritures faites sur un GET, comme
 	 * dans tout forum : elles ne dépendent d'aucune action du visiteur.
 	 */
-	private async recordVisit(request: FastifyRequest, reply: FastifyReply, topicId: number): Promise<void> {
+	private async recordVisit(request: AppRequest, reply: AppReply, topicId: number): Promise<void> {
 		const { viewer, board: config } = request;
 		const now = this.deps.page.clock();
 
@@ -160,7 +160,7 @@ export class TopicController {
 		if (config.topicViews) await this.deps.topicViews.incrementViews(topicId);
 	}
 
-	private async redirectToPost(request: FastifyRequest, reply: FastifyReply, pid: number, perPage: number): Promise<FastifyReply> {
+	private async redirectToPost(request: AppRequest, reply: AppReply, pid: number, perPage: number): Promise<AppReply> {
 		const location = await this.deps.topics.locatePost(pid);
 
 		if (location === null) return this.notFound(request, reply);
@@ -170,7 +170,7 @@ export class TopicController {
 		return reply.redirect(`viewtopic.php?id=${location.topicId}${pageParam}#p${pid}`);
 	}
 
-	private notFound(request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply> {
+	private notFound(request: AppRequest, reply: AppReply): Promise<AppReply> {
 		return renderMessage(request, reply, this.deps, 404, this.deps.page.lang.common.badRequest);
 	}
 }

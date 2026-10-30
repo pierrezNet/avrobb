@@ -1,14 +1,10 @@
 /**
- * Assemblage de l'application Fastify. Les dépendances (repositories…) sont passées en paramètre :
- * server.ts fournit les vraies, les tests des doublures en mémoire.
+ * Assemblage de l'application (Hono). Les dépendances (repositories, gabarits, fichiers…) sont
+ * passées en paramètre : server.ts fournit les vraies sous Node, les tests des doublures en mémoire,
+ * et le Worker (lot 3) les liaisons Cloudflare. Rien ici ne dépend de Node.
  */
 
-import path from 'node:path';
-import fastifyCookie from '@fastify/cookie';
-import fastifyStatic from '@fastify/static';
-import fastifyView from '@fastify/view';
-import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
-import nunjucks from 'nunjucks';
+import { Hono } from 'hono';
 import type { ImageProcessor } from './adapters/imageProcessor.ts';
 import type { Mailer } from './adapters/mailer.ts';
 import { AdminAppearanceController, type AdminAppearanceQuery } from './controllers/AdminAppearanceController.ts';
@@ -50,12 +46,14 @@ import { SubjectPrefixController, type SubjectPrefixQuery } from './controllers/
 import { TopicController, type TopicQuery } from './controllers/TopicController.ts';
 import { UserlistController, type UserlistParams } from './controllers/UserlistController.ts';
 import type { BoardConfig, Viewer } from './domain/models.ts';
-import { ASSETS_PREFIX, createAssetUrl } from './http/assets.ts';
+import type { AppReply, AppRequest, Logger } from './http/context.ts';
 import { ensureCsrfToken, isValidCsrf } from './http/csrf.ts';
-import { type FormBody, registerFormParser } from './http/forms.ts';
+import { type FormBody, FormError } from './http/forms.ts';
 import { type LayoutDeps, renderBlock, renderMessage, renderMinimalMessage } from './http/layout.ts';
-import { securityHeaders } from './http/securityHeaders.ts';
+import { silentLogger } from './http/log.ts';
+import { ASSETS_PREFIX, createRouter, type ForumApp, type StaticFiles, serveFiles, useSecurityHeaders } from './http/server.ts';
 import { checkAccess, purgeOnline, type SessionDeps, startSession, trackCookieName as trackCookieOf } from './http/session.ts';
+import { createViews, type PrecompiledTemplates } from './http/views.ts';
 import type { AdminStatsReader } from './repositories/AdminStatsRepository.ts';
 import type { BanStore } from './repositories/BanRepository.ts';
 import type { CensorStore } from './repositories/CensorRepository.ts';
@@ -94,18 +92,9 @@ import type { AvatarLocator, AvatarStore } from './services/avatars.ts';
 import type { MailTemplateReader } from './services/mail.ts';
 import { type BannedWriteQuery, canWriteWhileBanned, readOnlyViewer } from './services/permissions.ts';
 
-declare module 'fastify' {
-	interface FastifyRequest {
-		/** Utilisateur courant ; null tant que le hook d'authentification n'a pas abouti. */
-		viewer: Viewer;
-		/** Réglages du forum chargés pour cette requête. */
-		board: BoardConfig;
-		/** Jeton CSRF du visiteur, à placer dans chaque formulaire POST (http/csrf.ts). */
-		csrfToken: string;
-	}
-}
+export type { ForumApp } from './http/server.ts';
 
-export interface AppDeps extends LayoutDeps, SessionDeps {
+export interface AppDeps extends Omit<LayoutDeps, 'views'>, SessionDeps {
 	config: ConfigReader;
 	members: MemberListReader;
 	accounts: AccountLookup;
@@ -171,75 +160,41 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	galleryFiles: GalleryFileStore;
 	stopwords: StopwordsReader;
 	usersInfo: UsersInfoReader;
-	/**
-	 * Dossier img/ du stockage local (STORAGE_DIR), servi sous /img/ (images seulement) : galerie,
-	 * avatars, logo et bannière. R2 le remplacera au lot 4.
-	 */
-	imagesRoot?: string;
-	/** Derrière un reverse proxy : l'IP du client est lue dans X-Forwarded-For. */
+	/** Gabarits Nunjucks précompilés (src/generated/templates.js). */
+	templates: PrecompiledTemplates;
+	/** Adresse versionnée d'une ressource de public/ (« css/base.css » → « /assets/css/base.css?v=… »). */
+	assetUrl: (file: string) => string;
+	/** Ressources de public/, servies sous /assets/ (Static Assets dans le Worker). */
+	assets?: StaticFiles;
+	/** Images du stockage (galerie, avatars, logo, bannière), servies sous /img/ ; R2 au lot 4. */
+	images?: StaticFiles;
+	/** Derrière un reverse proxy : adresse et protocole du client lus dans X-Forwarded-*. */
 	trustProxy?: boolean;
-	logger?: boolean;
+	logger?: Logger;
 }
 
-/** Fichiers de img/ que le forum accepte de servir. */
-const IMAGE_PATH = /\.(?:gif|jpe?g|png|webp|ico)$/i;
-
-const ROOT_DIR = path.join(import.meta.dirname, '..');
-
-export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
-	const app = Fastify({ logger: deps.logger ?? false, trustProxy: deps.trustProxy ?? false });
+export async function buildApp(input: AppDeps): Promise<ForumApp> {
+	const trustProxy = input.trustProxy ?? false;
+	const logger = input.logger ?? silentLogger;
 
 	// url('profile.php?id=2') dans les vues : point de passage unique des liens internes, pour
 	// pouvoir passer à des URL propres sans retoucher chaque gabarit.
 	const url = (target: string): string => target;
-	const asset = createAssetUrl(path.join(ROOT_DIR, 'public'));
+	const asset = input.assetUrl;
+	const deps = { ...input, views: createViews(input.templates, { url, asset }) };
 
-	// En-têtes de sécurité sur toutes les réponses, fichiers statiques compris (http/securityHeaders.ts).
-	app.addHook('onSend', async (request, reply) => {
-		reply.headers(securityHeaders(request.protocol === 'https'));
-	});
-	await app.register(fastifyCookie);
-	registerFormParser(app);
-	await app.register(fastifyView, {
-		engine: { nunjucks },
-		root: path.join(import.meta.dirname, 'views'),
-		options: {
-			autoescape: true,
-			throwOnUndefined: true,
-			onConfigure: (env: nunjucks.Environment) => {
-				env.addGlobal('url', url);
-				env.addGlobal('asset', asset);
-			},
-		},
-	});
-	await app.register(fastifyStatic, {
-		root: path.join(ROOT_DIR, 'public'),
-		prefix: ASSETS_PREFIX,
-		// Les URL portent une empreinte du contenu (http/assets.ts) : on peut les garder longtemps.
-		maxAge: '30d',
-		immutable: true,
-	});
-	if (deps.imagesRoot !== undefined) {
-		await app.register(fastifyStatic, {
-			root: deps.imagesRoot,
-			prefix: '/img/',
-			decorateReply: false,
-			index: false,
-			maxAge: '7d',
-			// Rien d'autre que des images, même si un autre fichier se trouvait dans le dossier.
-			allowedPath: (pathname) => IMAGE_PATH.test(pathname),
-		});
-	}
-
-	app.decorateRequest('viewer', null as unknown as Viewer);
-	app.decorateRequest('board', null as unknown as BoardConfig);
-	app.decorateRequest('csrfToken', '');
+	const app: ForumApp = new Hono();
+	useSecurityHeaders(app, trustProxy);
+	// Les URL des ressources portent une empreinte du contenu : on peut les garder longtemps.
+	if (deps.assets !== undefined) serveFiles(app, ASSETS_PREFIX, deps.assets, 'public, max-age=2592000, immutable');
+	if (deps.images !== undefined) serveFiles(app, '/img/', deps.images, 'public, max-age=604800');
+	const router = createRouter(app, { trustProxy, logger, onError: (error, request, reply) => handleError(error, request, reply, deps) });
 
 	// Équivalent de common.php : réglages, visiteur et présence, maintenance, bannissements. Déclaré
 	// par route (et non globalement) pour que les fichiers statiques ne coûtent aucune requête SQL.
 	const session =
-		(options: { quiet?: boolean | ((request: FastifyRequest) => boolean); allowDuringMaintenance?: boolean } = {}) =>
-		async (request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply | undefined> => {
+		(options: { quiet?: boolean | ((request: AppRequest) => boolean); allowDuringMaintenance?: boolean } = {}) =>
+		async (request: AppRequest, reply: AppReply): Promise<AppReply | undefined> => {
 			const now = deps.page.clock();
 			request.board = await deps.config.load();
 			const quiet = typeof options.quiet === 'function' ? options.quiet(request) : (options.quiet ?? false);
@@ -259,7 +214,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 	 * Formulaires POST : session puis jeton CSRF (403 sinon), avant toute écriture. Un visiteur banni
 	 * ne peut que se connecter ou se déconnecter, marquer comme lu et gérer ses abonnements.
 	 */
-	const verifyCsrf = async (request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply | undefined> => {
+	const verifyCsrf = async (request: AppRequest, reply: AppReply): Promise<AppReply | undefined> => {
 		if (!isValidCsrf(request, deps.cookie, request.viewer.id))
 			return renderMessage(request, reply, deps, 403, deps.page.lang.common.badCsrf);
 		const { ban } = request.viewer;
@@ -269,44 +224,41 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 	};
 	const quietSession = session({ quiet: true });
 
-	app.setErrorHandler((error: FastifyError, request, reply) => handleError(error, request, reply, deps));
-	app.setNotFoundHandler({ preHandler: authenticate }, (request, reply) =>
-		renderMessage(request, reply, deps, 404, deps.page.lang.common.badRequest),
-	);
+	router.notFound([authenticate], async (request, reply) => renderMessage(request, reply, deps, 404, deps.page.lang.common.badRequest));
 
 	// Les navigateurs et les robots demandent /favicon.ico d'office : icône AvroBB (sans session).
-	app.get('/favicon.ico', (_request, reply) => reply.redirect(asset('icons/favicon-32.png'), 301));
+	router.get('/favicon.ico', [], async (_request, reply) => reply.redirect(asset('icons/favicon-32.png'), 301));
 	const seo = new SeoController(deps);
-	app.get('/robots.txt', seo.robots);
-	app.get('/sitemap.xml', seo.sitemap);
+	router.get('/robots.txt', [], seo.robots);
+	router.get('/sitemap.xml', [], seo.sitemap);
 
 	const trackCookieName = trackCookieOf(deps.cookie);
 	const index = new IndexController({ ...deps, trackCookieName });
-	app.get('/', { preHandler: authenticate }, index.show);
-	app.get('/index.php', { preHandler: authenticate }, index.show);
+	router.get('/', [authenticate], index.show);
+	router.get('/index.php', [authenticate], index.show);
 
 	const forums = new ForumController({ ...deps, trackCookieName });
-	app.get<{ Querystring: ForumQuery }>('/viewforum.php', { preHandler: authenticate }, forums.show);
+	router.get<{ Querystring: ForumQuery }>('/viewforum.php', [authenticate], forums.show);
 
 	const search = new SearchController({ ...deps, trackCookieName });
-	app.get<{ Querystring: SearchQuery }>('/search.php', { preHandler: authenticate }, search.show);
+	router.get<{ Querystring: SearchQuery }>('/search.php', [authenticate], search.show);
 
 	const userlist = new UserlistController(deps);
-	app.get<{ Querystring: UserlistParams }>('/userlist.php', { preHandler: authenticate }, userlist.show);
+	router.get<{ Querystring: UserlistParams }>('/userlist.php', [authenticate], userlist.show);
 
 	const extern = new ExternController(deps);
-	app.get<{ Querystring: ExternQuery }>('/extern.php', { preHandler: quietSession }, extern.show);
+	router.get<{ Querystring: ExternQuery }>('/extern.php', [quietSession], extern.show);
 
 	const gallery = new GalleryController(deps);
-	app.get<{ Querystring: GalleryQuery }>('/gallery.php', { preHandler: authenticate }, gallery.show);
-	app.post<{ Querystring: GalleryQuery; Body: FormBody }>('/gallery.php', { preHandler: [authenticate, verifyCsrf] }, gallery.submit);
+	router.get<{ Querystring: GalleryQuery }>('/gallery.php', [authenticate], gallery.show);
+	router.post<{ Querystring: GalleryQuery; Body: FormBody }>('/gallery.php', [authenticate, verifyCsrf], gallery.submit);
 
 	// login.php : visite discrète dès qu'une action est demandée (PUN_QUIET_VISIT), et accessible en
 	// maintenance pour qu'un administrateur puisse se connecter.
 	const loginSession = session({ quiet: (request) => (request.query as LoginQuery).action !== undefined, allowDuringMaintenance: true });
 	const login = new LoginController(deps);
-	app.get<{ Querystring: LoginQuery }>('/login.php', { preHandler: loginSession }, login.show);
-	app.post<{ Querystring: LoginQuery; Body: FormBody }>('/login.php', { preHandler: [loginSession, verifyCsrf] }, (request, reply) => {
+	router.get<{ Querystring: LoginQuery }>('/login.php', [loginSession], login.show);
+	router.post<{ Querystring: LoginQuery; Body: FormBody }>('/login.php', [loginSession, verifyCsrf], (request, reply) => {
 		if (request.query.action === 'in') return login.login(request, reply);
 		if (request.query.action === 'out') return login.logout(request, reply);
 		return renderMessage(request, reply, deps, 400, deps.page.lang.common.badRequest);
@@ -316,172 +268,138 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 	const miscSession = session({ quiet: (request) => (request.query as MiscQuery).action !== undefined });
 	const misc = new MiscController({ ...deps, trackCookieName });
 	const contact = new ContactController(deps);
-	app.get<{ Querystring: MiscQuery & ContactQuery }>('/misc.php', { preHandler: miscSession }, (request, reply) => {
+	router.get<{ Querystring: MiscQuery & ContactQuery }>('/misc.php', [miscSession], (request, reply) => {
 		if (request.query.email !== undefined) return contact.emailForm(request, reply);
 		if (request.query.report !== undefined) return contact.reportForm(request, reply);
 		return misc.show(request, reply);
 	});
-	app.post<{ Querystring: MiscQuery & ContactQuery; Body: FormBody }>(
-		'/misc.php',
-		{ preHandler: [miscSession, verifyCsrf] },
-		(request, reply) => {
-			if (request.query.email !== undefined) return contact.sendEmail(request, reply);
-			if (request.query.report !== undefined) return contact.sendReport(request, reply);
-			if (request.query.action === 'subscribe' || request.query.action === 'unsubscribe') return misc.subscription(request, reply);
-			return misc.markRead(request, reply);
-		},
-	);
+	router.post<{ Querystring: MiscQuery & ContactQuery; Body: FormBody }>('/misc.php', [miscSession, verifyCsrf], (request, reply) => {
+		if (request.query.email !== undefined) return contact.sendEmail(request, reply);
+		if (request.query.report !== undefined) return contact.sendReport(request, reply);
+		if (request.query.action === 'subscribe' || request.query.action === 'unsubscribe') return misc.subscription(request, reply);
+		return misc.markRead(request, reply);
+	});
 
 	const help = new HelpController(deps);
-	app.get('/help.php', { preHandler: authenticate }, help.show);
+	router.get('/help.php', [authenticate], help.show);
 
 	const profiles = new ProfileController(deps);
-	app.get<{ Querystring: ProfileQuery }>('/profile.php', { preHandler: authenticate }, profiles.show);
-	app.post<{ Querystring: ProfileQuery; Body: FormBody }>('/profile.php', { preHandler: [authenticate, verifyCsrf] }, profiles.submit);
+	router.get<{ Querystring: ProfileQuery }>('/profile.php', [authenticate], profiles.show);
+	router.post<{ Querystring: ProfileQuery; Body: FormBody }>('/profile.php', [authenticate, verifyCsrf], profiles.submit);
 
 	const moderate = new ModerateController({ ...deps, trackCookieName });
-	app.get<{ Querystring: ModerateQuery }>('/moderate.php', { preHandler: authenticate }, moderate.show);
-	app.post<{ Querystring: ModerateQuery; Body: FormBody }>('/moderate.php', { preHandler: [authenticate, verifyCsrf] }, moderate.submit);
+	router.get<{ Querystring: ModerateQuery }>('/moderate.php', [authenticate], moderate.show);
+	router.post<{ Querystring: ModerateQuery; Body: FormBody }>('/moderate.php', [authenticate, verifyCsrf], moderate.submit);
 
 	const adminIndex = new AdminIndexController(deps);
-	app.get('/admin_index.php', { preHandler: authenticate }, adminIndex.index);
-	app.get('/admin_statistics.php', { preHandler: authenticate }, adminIndex.statistics);
+	router.get('/admin_index.php', [authenticate], adminIndex.index);
+	router.get('/admin_statistics.php', [authenticate], adminIndex.statistics);
 
 	const adminOptions = new AdminOptionsController(deps);
-	app.get<{ Querystring: AdminOptionsQuery }>('/admin_options.php', { preHandler: authenticate }, adminOptions.show);
-	app.post<{ Body: FormBody }>('/admin_options.php', { preHandler: [authenticate, verifyCsrf] }, adminOptions.save);
+	router.get<{ Querystring: AdminOptionsQuery }>('/admin_options.php', [authenticate], adminOptions.show);
+	router.post<{ Body: FormBody }>('/admin_options.php', [authenticate, verifyCsrf], adminOptions.save);
 
 	const adminPermissions = new AdminPermissionsController(deps);
-	app.get<{ Querystring: AdminPermissionsQuery }>('/admin_permissions.php', { preHandler: authenticate }, adminPermissions.show);
-	app.post<{ Body: FormBody }>('/admin_permissions.php', { preHandler: [authenticate, verifyCsrf] }, adminPermissions.save);
+	router.get<{ Querystring: AdminPermissionsQuery }>('/admin_permissions.php', [authenticate], adminPermissions.show);
+	router.post<{ Body: FormBody }>('/admin_permissions.php', [authenticate, verifyCsrf], adminPermissions.save);
 
 	const forumAdmin = new ForumAdminController(deps);
-	app.get<{ Querystring: AdminCategoriesQuery }>('/admin_categories.php', { preHandler: authenticate }, forumAdmin.showCategories);
-	app.post<{ Body: FormBody }>('/admin_categories.php', { preHandler: [authenticate, verifyCsrf] }, forumAdmin.submitCategories);
-	app.get<{ Querystring: AdminForumsQuery }>('/admin_forums.php', { preHandler: authenticate }, forumAdmin.showForums);
-	app.post<{ Querystring: AdminForumsQuery; Body: FormBody }>(
-		'/admin_forums.php',
-		{ preHandler: [authenticate, verifyCsrf] },
-		forumAdmin.submitForums,
-	);
+	router.get<{ Querystring: AdminCategoriesQuery }>('/admin_categories.php', [authenticate], forumAdmin.showCategories);
+	router.post<{ Body: FormBody }>('/admin_categories.php', [authenticate, verifyCsrf], forumAdmin.submitCategories);
+	router.get<{ Querystring: AdminForumsQuery }>('/admin_forums.php', [authenticate], forumAdmin.showForums);
+	router.post<{ Querystring: AdminForumsQuery; Body: FormBody }>('/admin_forums.php', [authenticate, verifyCsrf], forumAdmin.submitForums);
 
 	const adminGroups = new AdminGroupsController(deps);
-	app.get<{ Querystring: AdminGroupsQuery }>('/admin_groups.php', { preHandler: authenticate }, adminGroups.show);
-	app.post<{ Querystring: AdminGroupsQuery; Body: FormBody }>(
-		'/admin_groups.php',
-		{ preHandler: [authenticate, verifyCsrf] },
-		adminGroups.submit,
-	);
+	router.get<{ Querystring: AdminGroupsQuery }>('/admin_groups.php', [authenticate], adminGroups.show);
+	router.post<{ Querystring: AdminGroupsQuery; Body: FormBody }>('/admin_groups.php', [authenticate, verifyCsrf], adminGroups.submit);
 
 	const adminUsers = new AdminUsersController(deps);
-	app.get<{ Querystring: AdminUsersQuery }>('/admin_users.php', { preHandler: authenticate }, adminUsers.show);
-	app.post<{ Body: FormBody }>('/admin_users.php', { preHandler: [authenticate, verifyCsrf] }, adminUsers.submit);
+	router.get<{ Querystring: AdminUsersQuery }>('/admin_users.php', [authenticate], adminUsers.show);
+	router.post<{ Body: FormBody }>('/admin_users.php', [authenticate, verifyCsrf], adminUsers.submit);
 
 	const adminLoader = new AdminLoaderController(deps);
-	app.get<{ Querystring: AdminLoaderQuery }>('/admin_loader.php', { preHandler: authenticate }, adminLoader.show);
-	app.post<{ Querystring: AdminLoaderQuery; Body: FormBody }>(
-		'/admin_loader.php',
-		{ preHandler: [authenticate, verifyCsrf] },
-		adminLoader.submit,
-	);
+	router.get<{ Querystring: AdminLoaderQuery }>('/admin_loader.php', [authenticate], adminLoader.show);
+	router.post<{ Querystring: AdminLoaderQuery; Body: FormBody }>('/admin_loader.php', [authenticate, verifyCsrf], adminLoader.submit);
 
 	// Pages d'information : même en mode maintenance ou sans droit de lecture du forum.
 	const staticPages = new StaticPageController(deps);
 	const infoSession = session({ allowDuringMaintenance: true });
-	app.get('/terms.php', { preHandler: infoSession }, staticPages.show('terms'));
-	app.get('/privacy.php', { preHandler: infoSession }, staticPages.show('privacy'));
-	app.get('/faq.php', { preHandler: infoSession }, staticPages.show('faq'));
-	app.get('/stats.php', { preHandler: authenticate }, new StatsPageController(deps).show);
+	router.get('/terms.php', [infoSession], staticPages.show('terms'));
+	router.get('/privacy.php', [infoSession], staticPages.show('privacy'));
+	router.get('/faq.php', [infoSession], staticPages.show('faq'));
+	router.get('/stats.php', [authenticate], new StatsPageController(deps).show);
 
 	const adminPages = new AdminPagesController(deps);
-	app.get<{ Querystring: AdminPagesQuery }>('/admin_pages.php', { preHandler: authenticate }, adminPages.show);
-	app.post<{ Body: FormBody }>('/admin_pages.php', { preHandler: [authenticate, verifyCsrf] }, adminPages.submit);
+	router.get<{ Querystring: AdminPagesQuery }>('/admin_pages.php', [authenticate], adminPages.show);
+	router.post<{ Body: FormBody }>('/admin_pages.php', [authenticate, verifyCsrf], adminPages.submit);
 
 	const adminAppearance = new AdminAppearanceController(deps);
-	app.get<{ Querystring: AdminAppearanceQuery }>('/admin_appearance.php', { preHandler: authenticate }, adminAppearance.show);
-	app.post<{ Body: FormBody }>('/admin_appearance.php', { preHandler: [authenticate, verifyCsrf] }, adminAppearance.submit);
+	router.get<{ Querystring: AdminAppearanceQuery }>('/admin_appearance.php', [authenticate], adminAppearance.show);
+	router.post<{ Body: FormBody }>('/admin_appearance.php', [authenticate, verifyCsrf], adminAppearance.submit);
 
 	const adminCensoring = new AdminCensoringController(deps);
-	app.get<{ Querystring: AdminCensoringQuery }>('/admin_censoring.php', { preHandler: authenticate }, adminCensoring.show);
-	app.post<{ Body: FormBody }>('/admin_censoring.php', { preHandler: [authenticate, verifyCsrf] }, adminCensoring.submit);
+	router.get<{ Querystring: AdminCensoringQuery }>('/admin_censoring.php', [authenticate], adminCensoring.show);
+	router.post<{ Body: FormBody }>('/admin_censoring.php', [authenticate, verifyCsrf], adminCensoring.submit);
 
 	const adminBans = new AdminBansController(deps);
-	app.get<{ Querystring: AdminBansQuery }>('/admin_bans.php', { preHandler: authenticate }, adminBans.show);
-	app.post<{ Querystring: AdminBansQuery; Body: FormBody }>(
-		'/admin_bans.php',
-		{ preHandler: [authenticate, verifyCsrf] },
-		adminBans.submit,
-	);
+	router.get<{ Querystring: AdminBansQuery }>('/admin_bans.php', [authenticate], adminBans.show);
+	router.post<{ Querystring: AdminBansQuery; Body: FormBody }>('/admin_bans.php', [authenticate, verifyCsrf], adminBans.submit);
 
 	const adminMaintenance = new AdminMaintenanceController(deps);
-	app.get<{ Querystring: AdminMaintenanceQuery }>('/admin_maintenance.php', { preHandler: authenticate }, adminMaintenance.show);
-	app.post<{ Body: FormBody }>('/admin_maintenance.php', { preHandler: [authenticate, verifyCsrf] }, adminMaintenance.submit);
+	router.get<{ Querystring: AdminMaintenanceQuery }>('/admin_maintenance.php', [authenticate], adminMaintenance.show);
+	router.post<{ Body: FormBody }>('/admin_maintenance.php', [authenticate, verifyCsrf], adminMaintenance.submit);
 
 	const subjectPrefixes = new SubjectPrefixController(deps);
-	app.get<{ Querystring: SubjectPrefixQuery }>('/topic_prefixes.php', { preHandler: authenticate }, subjectPrefixes.show);
-	app.post<{ Querystring: SubjectPrefixQuery; Body: FormBody }>(
+	router.get<{ Querystring: SubjectPrefixQuery }>('/topic_prefixes.php', [authenticate], subjectPrefixes.show);
+	router.post<{ Querystring: SubjectPrefixQuery; Body: FormBody }>(
 		'/topic_prefixes.php',
-		{ preHandler: [authenticate, verifyCsrf] },
+		[authenticate, verifyCsrf],
 		subjectPrefixes.submit,
 	);
 
 	const memberSuggest = new MemberSuggestController(deps);
-	app.get<{ Querystring: MemberSuggestQuery }>('/member_suggest.php', { preHandler: authenticate }, memberSuggest.suggest);
+	router.get<{ Querystring: MemberSuggestQuery }>('/member_suggest.php', [authenticate], memberSuggest.suggest);
 
 	const adminReports = new AdminReportsController(deps);
-	app.get<{ Querystring: AdminReportsQuery }>('/admin_reports.php', { preHandler: authenticate }, adminReports.show);
-	app.post<{ Body: FormBody }>('/admin_reports.php', { preHandler: [authenticate, verifyCsrf] }, adminReports.zap);
+	router.get<{ Querystring: AdminReportsQuery }>('/admin_reports.php', [authenticate], adminReports.show);
+	router.post<{ Body: FormBody }>('/admin_reports.php', [authenticate, verifyCsrf], adminReports.zap);
 
 	const reputation = new ReputationController(deps);
-	app.get<{ Querystring: ReputationQuery }>('/reputation.php', { preHandler: authenticate }, reputation.show);
-	app.post<{ Querystring: ReputationQuery; Body: FormBody }>(
-		'/reputation.php',
-		{ preHandler: [authenticate, verifyCsrf] },
-		reputation.submit,
-	);
+	router.get<{ Querystring: ReputationQuery }>('/reputation.php', [authenticate], reputation.show);
+	router.post<{ Querystring: ReputationQuery; Body: FormBody }>('/reputation.php', [authenticate, verifyCsrf], reputation.submit);
 
 	const pms = new PrivateMessageController(deps);
-	app.get<{ Querystring: PrivateMessageQuery }>('/pms_inbox.php', { preHandler: authenticate }, (request, reply) =>
-		pms.inbox(request, reply),
-	);
-	app.post<{ Querystring: PrivateMessageQuery; Body: FormBody }>(
-		'/pms_inbox.php',
-		{ preHandler: [authenticate, verifyCsrf] },
-		pms.inboxAction,
-	);
-	app.get<{ Querystring: PrivateMessageQuery }>('/pms_view.php', { preHandler: authenticate }, pms.view);
-	app.post<{ Querystring: PrivateMessageQuery; Body: FormBody }>('/pms_view.php', { preHandler: [authenticate, verifyCsrf] }, pms.delete);
+	router.get<{ Querystring: PrivateMessageQuery }>('/pms_inbox.php', [authenticate], (request, reply) => pms.inbox(request, reply));
+	router.post<{ Querystring: PrivateMessageQuery; Body: FormBody }>('/pms_inbox.php', [authenticate, verifyCsrf], pms.inboxAction);
+	router.get<{ Querystring: PrivateMessageQuery }>('/pms_view.php', [authenticate], pms.view);
+	router.post<{ Querystring: PrivateMessageQuery; Body: FormBody }>('/pms_view.php', [authenticate, verifyCsrf], pms.delete);
 
 	const pmSend = new PrivateMessageSendController(deps);
-	app.get<{ Querystring: PrivateMessageSendQuery }>('/pms_send.php', { preHandler: authenticate }, pmSend.form);
-	app.post<{ Querystring: PrivateMessageSendQuery; Body: FormBody }>(
-		'/pms_send.php',
-		{ preHandler: [authenticate, verifyCsrf] },
-		pmSend.send,
-	);
+	router.get<{ Querystring: PrivateMessageSendQuery }>('/pms_send.php', [authenticate], pmSend.form);
+	router.post<{ Querystring: PrivateMessageSendQuery; Body: FormBody }>('/pms_send.php', [authenticate, verifyCsrf], pmSend.send);
 
 	const post = new PostController({ ...deps, trackCookieName });
-	app.get<{ Querystring: PostQuery }>('/post.php', { preHandler: authenticate }, post.show);
-	app.post<{ Querystring: PostQuery; Body: FormBody }>('/post.php', { preHandler: [authenticate, verifyCsrf] }, (request, reply) =>
+	router.get<{ Querystring: PostQuery }>('/post.php', [authenticate], post.show);
+	router.post<{ Querystring: PostQuery; Body: FormBody }>('/post.php', [authenticate, verifyCsrf], (request, reply) =>
 		request.query.brouillon !== undefined ? post.publishDraft(request, reply) : post.submit(request, reply),
 	);
 
 	const edit = new EditController(deps);
-	app.get<{ Querystring: EditQuery }>('/edit.php', { preHandler: authenticate }, edit.show);
-	app.post<{ Querystring: EditQuery; Body: FormBody }>('/edit.php', { preHandler: [authenticate, verifyCsrf] }, edit.submit);
+	router.get<{ Querystring: EditQuery }>('/edit.php', [authenticate], edit.show);
+	router.post<{ Querystring: EditQuery; Body: FormBody }>('/edit.php', [authenticate, verifyCsrf], edit.submit);
 
 	const drafts = new DraftController(deps);
-	app.get<{ Querystring: DraftQuery }>('/draft_list.php', { preHandler: authenticate }, drafts.list);
-	app.post<{ Body: FormBody }>('/draft_list.php', { preHandler: [authenticate, verifyCsrf] }, drafts.remove);
-	app.get<{ Querystring: DraftQuery }>('/draft_edit.php', { preHandler: authenticate }, drafts.edit);
-	app.post<{ Querystring: DraftQuery; Body: FormBody }>('/draft_edit.php', { preHandler: [authenticate, verifyCsrf] }, drafts.save);
+	router.get<{ Querystring: DraftQuery }>('/draft_list.php', [authenticate], drafts.list);
+	router.post<{ Body: FormBody }>('/draft_list.php', [authenticate, verifyCsrf], drafts.remove);
+	router.get<{ Querystring: DraftQuery }>('/draft_edit.php', [authenticate], drafts.edit);
+	router.post<{ Querystring: DraftQuery; Body: FormBody }>('/draft_edit.php', [authenticate, verifyCsrf], drafts.save);
 
 	const deletion = new DeleteController(deps);
-	app.get<{ Querystring: DeleteQuery }>('/delete.php', { preHandler: authenticate }, deletion.show);
-	app.post<{ Querystring: DeleteQuery; Body: FormBody }>('/delete.php', { preHandler: [authenticate, verifyCsrf] }, deletion.confirm);
+	router.get<{ Querystring: DeleteQuery }>('/delete.php', [authenticate], deletion.show);
+	router.post<{ Querystring: DeleteQuery; Body: FormBody }>('/delete.php', [authenticate, verifyCsrf], deletion.confirm);
 
 	const topics = new TopicController({ ...deps, topicViews: deps.topicWriter, trackCookieName });
-	app.get<{ Querystring: TopicQuery }>('/viewtopic.php', { preHandler: authenticate }, topics.show);
+	router.get<{ Querystring: TopicQuery }>('/viewtopic.php', [authenticate], topics.show);
 
 	return app;
 }
@@ -490,15 +408,21 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
  * Erreurs non prévues par les contrôleurs : page d'information avec un texte générique, détail
  * technique seulement dans le journal (ni SQL, ni chemin, ni pile d'appels vers le navigateur).
  */
-async function handleError(error: FastifyError, request: FastifyRequest, reply: FastifyReply, deps: LayoutDeps): Promise<FastifyReply> {
+async function handleError(
+	error: unknown,
+	request: AppRequest,
+	reply: AppReply,
+	deps: Omit<LayoutDeps, 'views'> & Pick<LayoutDeps, 'views'>,
+): Promise<AppReply> {
 	const { lang } = deps.page;
-	const status = error.statusCode !== undefined && error.statusCode >= 400 && error.statusCode < 500 ? error.statusCode : 500;
+	// Formulaire trop gros, illisible ou d'un type inconnu : refus du client (4xx) ; tout le reste est un incident.
+	const status = error instanceof FormError ? error.statusCode : 500;
 	const message = status === 500 ? lang.common.serverError : lang.common.badRequest;
 
 	if (status === 500) request.log.error({ err: error }, 'Erreur pendant le traitement de la requête');
 	else request.log.info({ err: error }, 'Requête refusée');
 
-	// Les décorations valent null si l'erreur est survenue avant ou pendant l'authentification.
+	// viewer et board valent null si l'erreur est survenue avant ou pendant l'authentification.
 	const authenticated = (request.viewer as Viewer | null) !== null && (request.board as BoardConfig | null) !== null;
 
 	if (authenticated) {
@@ -509,5 +433,5 @@ async function handleError(error: FastifyError, request: FastifyRequest, reply: 
 		}
 	}
 
-	return renderMinimalMessage(reply, lang, status, message);
+	return renderMinimalMessage(deps.views, reply, lang, status, message);
 }

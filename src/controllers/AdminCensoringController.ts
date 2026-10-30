@@ -3,7 +3,7 @@
  * suppression.
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage } from '../http/layout.ts';
 import type { CensorStore } from '../repositories/CensorRepository.ts';
@@ -30,7 +30,7 @@ function buttonId(body: FormBody, name: string): number | null {
 export class AdminCensoringController {
 	constructor(private readonly deps: AdminCensoringControllerDeps) {}
 
-	show = async (request: FastifyRequest<{ Querystring: AdminCensoringQuery }>, reply: FastifyReply): Promise<FastifyReply> => {
+	show = async (request: AppRequest<{ Querystring: AdminCensoringQuery }>, reply: AppReply): Promise<AppReply> => {
 		const denied = adminDenied(request, reply, this.deps, true);
 		if (denied !== null) return denied;
 		const t = this.deps.page.lang.adminCensoring;
@@ -38,7 +38,7 @@ export class AdminCensoringController {
 		return this.#render(request, reply, [], notices[request.query.done ?? ''] ?? null);
 	};
 
-	submit = async (request: FastifyRequest<{ Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> => {
+	submit = async (request: AppRequest<{ Body: FormBody }>, reply: AppReply): Promise<AppReply> => {
 		const denied = adminDenied(request, reply, this.deps, true);
 		if (denied !== null) return denied;
 		const { lang } = this.deps.page;
@@ -66,13 +66,7 @@ export class AdminCensoringController {
 		return reply.redirect(`admin_censoring.php?done=${done}`, 303);
 	};
 
-	async #render(
-		request: FastifyRequest,
-		reply: FastifyReply,
-		errors: string[],
-		notice: string | null,
-		status = 200,
-	): Promise<FastifyReply> {
+	async #render(request: AppRequest, reply: AppReply, errors: string[], notice: string | null, status = 200): Promise<AppReply> {
 		const t = this.deps.page.lang.adminCensoring;
 		reply.code(status);
 		return renderAdminPage(

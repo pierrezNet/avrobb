@@ -8,6 +8,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { buildApp } from '../../src/app.ts';
 import { createDatabase } from '../../src/db/database.ts';
 import { GroupId } from '../../src/domain/models.ts';
+import templates from '../../src/generated/templates.js';
 import { fr, frDateWords } from '../../src/lang/fr/index.ts';
 import { AdminStatsRepository } from '../../src/repositories/AdminStatsRepository.ts';
 import { BanRepository } from '../../src/repositories/BanRepository.ts';
@@ -43,6 +44,7 @@ import { UserAdminRepository } from '../../src/repositories/UserAdminRepository.
 import { UserRepository } from '../../src/repositories/UserRepository.ts';
 import { UsersInfoLoader } from '../../src/repositories/UsersInfoLoader.ts';
 import { buildSessionCookie } from '../../src/services/session.ts';
+import { inject } from '../inject.ts';
 import { testDbConfig } from './testDatabase.ts';
 
 const db = createDatabase(testDbConfig());
@@ -477,14 +479,15 @@ describe('viewtopic de bout en bout', () => {
 			avatarStore: { save: async () => undefined, delete: async () => undefined },
 			page: { lang: fr, dateWords: frDateWords, clock: () => NOW },
 			cookie: { name: 'avrobb', secret: seed, secure: false },
+			templates,
+			assetUrl: (file: string) => `/assets/${file}`,
 			online: new OnlineRepository(db),
 		});
 	}
 
 	it('affiche le sujet au membre avec son thème, ses MP et la pagination de son profil', async () => {
 		const server = await app();
-		const res = await server.inject({ url: '/viewtopic.php?id=10&p=2', headers: { cookie: cookie(3) } });
-		await server.close();
+		const res = await inject(server, { url: '/viewtopic.php?id=10&p=2', headers: { cookie: cookie(3) } });
 
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('<title>Postez un « vintage » (Page 2) / Captures d&#39;écran &amp; Vidéos / Forum de test</title>');
@@ -501,9 +504,8 @@ describe('viewtopic de bout en bout', () => {
 
 	it('refuse aux invités un sujet de forum interdit, et montre au modérateur ses outils', async () => {
 		const server = await app();
-		const denied = await server.inject('/viewtopic.php?id=11');
-		const mod = await server.inject({ url: '/viewtopic.php?id=10', headers: { cookie: cookie(5) } });
-		await server.close();
+		const denied = await inject(server, '/viewtopic.php?id=11');
+		const mod = await inject(server, { url: '/viewtopic.php?id=10', headers: { cookie: cookie(5) } });
 
 		expect(denied.statusCode).toBe(404);
 		expect(mod.body).toContain('moderate.php?fid=2&amp;close=10');

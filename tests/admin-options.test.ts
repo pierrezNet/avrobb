@@ -3,12 +3,12 @@
  * affichage des valeurs, enregistrement des seules clés modifiées, erreurs réaffichées.
  */
 
-import type { FastifyInstance } from 'fastify';
-import { afterEach, describe, expect, it } from 'vitest';
-import { buildApp } from '../src/app.ts';
+import { describe, expect, it } from 'vitest';
+import { buildApp, type ForumApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
 import { type FakeData, fakeDeps, group, guest, sessionCookie, viewer } from './fixtures.ts';
+import { inject } from './inject.ts';
 import { optionsForm } from './optionsForm.ts';
 
 const SEED = 'graine-de-test';
@@ -26,10 +26,9 @@ const current = (): Map<string, string> =>
 		['p_sig_length', '400'],
 	]);
 
-let app: FastifyInstance | undefined;
-afterEach(async () => app?.close());
+let app: ForumApp | undefined;
 
-async function start(): Promise<{ server: FastifyInstance; fake: FakeData }> {
+async function start(): Promise<{ server: ForumApp; fake: FakeData }> {
 	const fake: FakeData = {
 		users: [{ viewer: guest }, { viewer: mod }, { viewer: admin }],
 		topics: [],
@@ -40,10 +39,10 @@ async function start(): Promise<{ server: FastifyInstance; fake: FakeData }> {
 	return { server: app, fake };
 }
 
-function save(server: FastifyInstance, userId: number, fields: Record<string, string>, url = '/admin_options.php') {
+function save(server: ForumApp, userId: number, fields: Record<string, string>, url = '/admin_options.php') {
 	const body = new URLSearchParams({ csrf_token: csrfToken(CSRF_SECRET, SEED, userId), form_sent: '1' });
 	for (const [name, value] of Object.entries(fields)) body.append(`form[${name}]`, value);
-	return server.inject({
+	return inject(server, {
 		method: 'POST',
 		url,
 		headers: { cookie: cookies(userId), 'content-type': 'application/x-www-form-urlencoded' },
@@ -54,9 +53,9 @@ function save(server: FastifyInstance, userId: number, fields: Record<string, st
 describe('admin_options.php', () => {
 	it('réservé aux administrateurs', async () => {
 		const { server } = await start();
-		expect((await server.inject({ url: '/admin_options.php', headers: { cookie: cookies(5) } })).statusCode).toBe(403);
+		expect((await inject(server, { url: '/admin_options.php', headers: { cookie: cookies(5) } })).statusCode).toBe(403);
 		expect((await save(server, 5, optionsForm())).statusCode).toBe(403);
-		const res = await server.inject({ url: '/admin_options.php', headers: { cookie: cookies(2) } });
+		const res = await inject(server, { url: '/admin_options.php', headers: { cookie: cookies(2) } });
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('name="form[board_title]" value="Pilote-Virtuel"');
 		// Options de FluxBB sans effet dans AvroBB : absentes du formulaire.
@@ -72,7 +71,7 @@ describe('admin_options.php', () => {
 		expect(res.headers.location).toBe('admin_options.php?done=updated');
 		expect(fake.configUpdates).toEqual([new Map([['o_board_title', 'PV']])]);
 		expect(fake.configInvalidations).toBe(1);
-		const page = await server.inject({ url: '/admin_options.php?done=updated', headers: { cookie: cookies(2) } });
+		const page = await inject(server, { url: '/admin_options.php?done=updated', headers: { cookie: cookies(2) } });
 		expect(page.body).toContain('Options mises à jour.');
 	});
 
@@ -90,8 +89,8 @@ describe('admin_options.php', () => {
 describe('admin_permissions.php', () => {
 	it('affiche et enregistre les clés p_* modifiées, jamais négatives', async () => {
 		const { server, fake } = await start();
-		expect((await server.inject({ url: '/admin_permissions.php', headers: { cookie: cookies(5) } })).statusCode).toBe(403);
-		const page = await server.inject({ url: '/admin_permissions.php', headers: { cookie: cookies(2) } });
+		expect((await inject(server, { url: '/admin_permissions.php', headers: { cookie: cookies(5) } })).statusCode).toBe(403);
+		const page = await inject(server, { url: '/admin_permissions.php', headers: { cookie: cookies(2) } });
 		expect(page.body).toContain('name="form[message_bbcode]" value="1" checked');
 		expect(page.body).toContain('name="form[sig_length]" value="400"');
 		expect(page.body).toContain('action="admin_permissions.php"');

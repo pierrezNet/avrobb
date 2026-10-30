@@ -1,15 +1,21 @@
 /**
- * Point d'entrée : câble les vraies dépendances (base MariaDB, stockage local des fichiers) et
- * démarre le serveur. Remplacé par un Worker Cloudflare au lot 3.
+ * Point d'entrée Node : câble les vraies dépendances (base MariaDB, stockage local des fichiers,
+ * gabarits précompilés) et sert l'application Hono avec @hono/node-server. Remplacé par un Worker
+ * Cloudflare au lot 3.
  */
 
 import path from 'node:path';
+import { serve } from '@hono/node-server';
+import { createAssetUrl } from './adapters/assetUrls.ts';
+import { DirectoryFiles } from './adapters/directoryFiles.ts';
 import { DnsHostResolver } from './adapters/hostResolver.ts';
 import { SharpImageProcessor } from './adapters/imageProcessor.ts';
 import { NodeMailer } from './adapters/mailer.ts';
 import { buildApp } from './app.ts';
 import { loadConfig } from './config.ts';
 import { createDatabase } from './db/database.ts';
+import templates from './generated/templates.js';
+import { consoleLogger } from './http/log.ts';
 import { fr, frDateWords } from './lang/fr/index.ts';
 import { mail } from './lang/fr/mail.ts';
 import { AdminStatsRepository } from './repositories/AdminStatsRepository.ts';
@@ -66,7 +72,8 @@ const bans = new BanRepository(db);
 const configStore = new ConfigRepository(db);
 const configLoader = new ConfigLoader(configStore, clock);
 const headerImages = new HeaderImageFiles(config.storageDir);
-await headerImages.installDefaults(path.join(import.meta.dirname, '..', 'public'));
+const publicDir = path.join(import.meta.dirname, '..', 'public');
+await headerImages.installDefaults(publicDir);
 
 const app = await buildApp({
 	config: configLoader,
@@ -124,11 +131,23 @@ const app = await buildApp({
 	avatarStore: avatars,
 	page: { lang: fr, dateWords: frDateWords, clock },
 	cookie: config.cookie,
-	imagesRoot: path.join(config.storageDir, 'img'),
+	templates,
+	assetUrl: createAssetUrl(publicDir),
+	assets: new DirectoryFiles(publicDir),
+	// Rien d'autre que des images, même si un autre fichier se trouvait dans le dossier.
+	images: new DirectoryFiles(path.join(config.storageDir, 'img'), ['gif', 'jpg', 'jpeg', 'png', 'webp', 'ico']),
 	trustProxy: config.trustProxy,
-	logger: true,
+	logger: consoleLogger,
 });
 
-app.addHook('onClose', async () => db.destroy());
+const server = serve({ fetch: app.fetch, port: config.port, hostname: '127.0.0.1' }, (info) => {
+	console.error(`AvroBB : http://localhost:${info.port}`);
+});
 
-await app.listen({ port: config.port, host: '127.0.0.1' });
+// Arrêt (Ctrl+C, redémarrage de tsx watch) : on ferme le pool de la base avant de quitter.
+for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+	process.once(signal, () => {
+		server.close();
+		void db.destroy().finally(() => process.exit(0));
+	});
+}

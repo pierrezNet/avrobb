@@ -3,7 +3,7 @@
  * Comme le PHP : seules les clés modifiées sont écrites, puis le cache des réglages est vidé.
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import { type FormBody, field } from '../http/forms.ts';
 import type { LayoutDeps } from '../http/layout.ts';
 import { buildAdminOptions } from '../presenters/adminOptionsPage.ts';
@@ -24,7 +24,7 @@ export interface AdminPermissionsQuery {
 export class AdminPermissionsController {
 	constructor(private readonly deps: AdminPermissionsControllerDeps) {}
 
-	show = async (request: FastifyRequest<{ Querystring: AdminPermissionsQuery }>, reply: FastifyReply): Promise<FastifyReply> => {
+	show = async (request: AppRequest<{ Querystring: AdminPermissionsQuery }>, reply: AppReply): Promise<AppReply> => {
 		const denied = adminDenied(request, reply, this.deps, true);
 		if (denied !== null) return denied;
 		const { lang } = this.deps.page;
@@ -46,7 +46,7 @@ export class AdminPermissionsController {
 		);
 	};
 
-	save = async (request: FastifyRequest<{ Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> => {
+	save = async (request: AppRequest<{ Body: FormBody }>, reply: AppReply): Promise<AppReply> => {
 		const denied = adminDenied(request, reply, this.deps, true);
 		if (denied !== null) return denied;
 		const values = readPermissionsForm((key) => field(request.body, `form[${key}]`));

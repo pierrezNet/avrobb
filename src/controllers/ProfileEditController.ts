@@ -8,8 +8,8 @@
  * le jeton CSRF remplace confirm_referrer().
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { EditableProfile, ProfileChanges } from '../domain/models.ts';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { buildProfileEditPage, sectionTitle } from '../presenters/profileEditPage.ts';
@@ -39,7 +39,7 @@ export interface ProfileEditControllerDeps extends LayoutDeps, ProfileAccessDeps
 	avatars: AvatarLocator;
 }
 
-type EditRequest = FastifyRequest<{ Querystring: ProfileQuery; Body?: FormBody }>;
+type EditRequest = AppRequest<{ Querystring: ProfileQuery; Body?: FormBody }>;
 
 const checked = (body: FormBody | undefined, name: string): boolean => body?.[name] !== undefined;
 
@@ -47,11 +47,7 @@ export class ProfileEditController {
 	constructor(private readonly deps: ProfileEditControllerDeps) {}
 
 	/** Formulaire d'une section ; `section` est déjà validée par l'aiguillage de profile.php. */
-	show = async (
-		request: FastifyRequest<{ Querystring: ProfileQuery }>,
-		reply: FastifyReply,
-		section: ProfileSection,
-	): Promise<FastifyReply> => {
+	show = async (request: AppRequest<{ Querystring: ProfileQuery }>, reply: AppReply, section: ProfileSection): Promise<AppReply> => {
 		const profile = await loadEditableProfile(request, reply, this.deps);
 		if (!isProfile(profile)) return profile;
 		if (!this.sectionAvailable(request, section))
@@ -60,10 +56,10 @@ export class ProfileEditController {
 	};
 
 	submit = async (
-		request: FastifyRequest<{ Querystring: ProfileQuery; Body: FormBody }>,
-		reply: FastifyReply,
+		request: AppRequest<{ Querystring: ProfileQuery; Body: FormBody }>,
+		reply: AppReply,
 		section: ProfileSection,
-	): Promise<FastifyReply> => {
+	): Promise<AppReply> => {
 		const { lang } = this.deps.page;
 		const profile = await loadEditableProfile(request, reply, this.deps);
 		if (!isProfile(profile)) return profile;
@@ -82,7 +78,7 @@ export class ProfileEditController {
 	};
 
 	/** « Personnalité » n'existe que si les avatars ou les signatures sont activés. */
-	private sectionAvailable(request: FastifyRequest, section: ProfileSection): boolean {
+	private sectionAvailable(request: AppRequest, section: ProfileSection): boolean {
 		return section !== 'personality' || request.board.avatars || request.board.signatures;
 	}
 
@@ -222,19 +218,19 @@ export class ProfileEditController {
 		}
 	}
 
-	private async censor(request: FastifyRequest): Promise<Censor | null> {
+	private async censor(request: AppRequest): Promise<Censor | null> {
 		return request.board.censoring ? buildCensor(await this.deps.censorship.listWords()) : null;
 	}
 
 	private async renderForm(
 		request: EditRequest,
-		reply: FastifyReply,
+		reply: AppReply,
 		profile: EditableProfile,
 		section: ProfileSection,
 		form: EditableProfile,
 		errors: string[],
 		updated: boolean,
-	): Promise<FastifyReply> {
+	): Promise<AppReply> {
 		const { viewer, board: config } = request;
 		const { lang } = this.deps.page;
 		const [avatarUrl, censor] = await Promise.all([

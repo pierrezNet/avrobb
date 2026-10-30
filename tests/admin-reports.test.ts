@@ -2,14 +2,14 @@
  * Signalements (admin_reports.php) et menu de l'administration.
  */
 
-import type { FastifyInstance } from 'fastify';
-import { afterEach, describe, expect, it } from 'vitest';
-import { buildApp } from '../src/app.ts';
+import { describe, expect, it } from 'vitest';
+import { buildApp, type ForumApp } from '../src/app.ts';
 import { GroupId, type Report } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
 import { fr } from '../src/lang/fr/index.ts';
 import { buildAdminMenu } from '../src/presenters/adminMenu.ts';
 import { boardConfig, type FakeData, fakeDeps, group, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
+import { inject } from './inject.ts';
 
 const SEED = 'graine-de-test';
 const CSRF_SECRET = '8'.repeat(64);
@@ -52,8 +52,7 @@ describe('menu de l’administration', () => {
 	});
 });
 
-let app: FastifyInstance | undefined;
-afterEach(async () => app?.close());
+let app: ForumApp | undefined;
 
 function data(): FakeData {
 	return {
@@ -70,13 +69,13 @@ function data(): FakeData {
 describe('admin_reports.php', () => {
 	it('réservé aux modérateurs et administrateurs', async () => {
 		app = await buildApp(fakeDeps(data()));
-		expect((await app.inject('/admin_reports.php')).statusCode).toBe(403);
-		expect((await app.inject({ url: '/admin_reports.php', headers: { cookie: cookies(3) } })).statusCode).toBe(403);
+		expect((await inject(app, '/admin_reports.php')).statusCode).toBe(403);
+		expect((await inject(app, { url: '/admin_reports.php', headers: { cookie: cookies(3) } })).statusCode).toBe(403);
 	});
 
 	it('liste les nouveaux signalements et les derniers traités, motifs échappés', async () => {
 		app = await buildApp(fakeDeps(data()));
-		const res = await app.inject({ url: '/admin_reports.php', headers: { cookie: cookies(5) } });
+		const res = await inject(app, { url: '/admin_reports.php', headers: { cookie: cookies(5) } });
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('Hors sujet<br>&lt;b&gt;vraiment&lt;/b&gt;');
 		expect(res.body).toContain('href="viewtopic.php?pid=101#p101">Message n°101</a>');
@@ -91,7 +90,7 @@ describe('admin_reports.php', () => {
 		const fake = data();
 		app = await buildApp(fakeDeps(fake));
 		const body = new URLSearchParams({ csrf_token: csrfToken(CSRF_SECRET, SEED, 5), zap_id: '2' });
-		const res = await app.inject({
+		const res = await inject(app, {
 			method: 'POST',
 			url: '/admin_reports.php',
 			headers: { cookie: cookies(5), 'content-type': 'application/x-www-form-urlencoded' },

@@ -9,22 +9,21 @@
 		"node": ">=24"
 	},
 	"scripts": {
-		"dev": "tsx watch --env-file=.env src/server.ts",
+		"dev": "node scripts/build-templates.mjs && node scripts/dev.mjs",
 		"build": "node scripts/build.mjs",
+		"build:templates": "node scripts/build-templates.mjs",
 		"start": "node --env-file=.env --enable-source-maps dist/server.js",
-		"test": "vitest run",
-		"typecheck": "tsc --noEmit",
+		"test": "node scripts/build-templates.mjs && vitest run",
+		"typecheck": "node scripts/build-templates.mjs && tsc --noEmit",
 		"lint": "biome check .",
 		"format": "biome check --write .",
-		"check": "biome check . && tsc --noEmit && vitest run",
+		"check": "node scripts/build-templates.mjs && biome check . && tsc --noEmit && vitest run",
 		"screenshot": "tsx scripts/screenshot.ts",
-		"test:db": "vitest run --config vitest.db.config.ts"
+		"test:db": "node scripts/build-templates.mjs && vitest run --config vitest.db.config.ts"
 	},
 	"dependencies": {
-		"@fastify/cookie": "^11.1.3",
-		"@fastify/static": "^10.1.7",
-		"@fastify/view": "^12.0.1",
-		"fastify": "^5.12.7",
+		"@hono/node-server": "^2.1.5",
+		"hono": "^4.13.14",
 		"kysely": "^0.29.7",
 		"mysql2": "^3.24.6",
 		"nodemailer": "^7.0.13",

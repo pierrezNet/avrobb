@@ -3,13 +3,13 @@
  * modérateurs, page topic_prefixes.php et lien depuis viewtopic.
  */
 
-import type { FastifyInstance } from 'fastify';
-import { afterEach, describe, expect, it } from 'vitest';
-import { buildApp } from '../src/app.ts';
+import { describe, expect, it } from 'vitest';
+import { buildApp, type ForumApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
 import { applyPrefixes, normalizeSubjectTags, splitPrefixes } from '../src/services/subjectPrefixes.ts';
 import { type FakeData, fakeDeps, group, guest, post, sessionCookie, TEST_SUBJECT_TAGS as TAGS, topic, viewer } from './fixtures.ts';
+import { inject } from './inject.ts';
 
 const SEED = 'graine-de-test';
 const CSRF_SECRET = '9'.repeat(64);
@@ -41,10 +41,9 @@ describe('réécriture du sujet', () => {
 	});
 });
 
-let app: FastifyInstance | undefined;
-afterEach(async () => app?.close());
+let app: ForumApp | undefined;
 
-async function start(): Promise<{ server: FastifyInstance; fake: FakeData }> {
+async function start(): Promise<{ server: ForumApp; fake: FakeData }> {
 	const fake: FakeData = {
 		users: [{ viewer: guest }, { viewer: author }, { viewer: other }, { viewer: mod }],
 		topics: [
@@ -61,9 +60,9 @@ async function start(): Promise<{ server: FastifyInstance; fake: FakeData }> {
 	return { server: app, fake };
 }
 
-const get = (server: FastifyInstance, userId: number, url: string) => server.inject({ url, headers: { cookie: cookies(userId) } });
-const send = (server: FastifyInstance, userId: number, fields: Record<string, string>) =>
-	server.inject({
+const get = (server: ForumApp, userId: number, url: string) => inject(server, { url, headers: { cookie: cookies(userId) } });
+const send = (server: ForumApp, userId: number, fields: Record<string, string>) =>
+	inject(server, {
 		method: 'POST',
 		url: '/topic_prefixes.php?id=10',
 		headers: { cookie: cookies(userId), 'content-type': 'application/x-www-form-urlencoded' },

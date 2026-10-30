@@ -7,7 +7,7 @@
  * remplace (groupe, bannissement, suppression).
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import type { FormBody } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { buildProfilePage } from '../presenters/profilePage.ts';
@@ -26,8 +26,8 @@ export interface ProfileControllerDeps extends LayoutDeps, ProfileEditController
 	profiles: ProfileReader;
 }
 
-type ProfileRequest = FastifyRequest<{ Querystring: ProfileQuery }>;
-type ProfilePost = FastifyRequest<{ Querystring: ProfileQuery; Body: FormBody }>;
+type ProfileRequest = AppRequest<{ Querystring: ProfileQuery }>;
+type ProfilePost = AppRequest<{ Querystring: ProfileQuery; Body: FormBody }>;
 
 const AVATAR_UPLOAD = new Set(['upload_avatar', 'upload_avatar2']);
 
@@ -40,7 +40,7 @@ export class ProfileController {
 		this.#avatar = new AvatarController(deps);
 	}
 
-	show = async (request: ProfileRequest, reply: FastifyReply): Promise<FastifyReply> => {
+	show = async (request: ProfileRequest, reply: AppReply): Promise<AppReply> => {
 		const { viewer, board: config } = request;
 		const { lang } = this.deps.page;
 		const { query } = request;
@@ -97,7 +97,7 @@ export class ProfileController {
 	};
 
 	/** Formulaires POST : actions, puis sections. */
-	submit = async (request: ProfilePost, reply: FastifyReply): Promise<FastifyReply> => {
+	submit = async (request: ProfilePost, reply: AppReply): Promise<AppReply> => {
 		const { query } = request;
 		const { lang } = this.deps.page;
 		switch (query.action) {
@@ -113,7 +113,7 @@ export class ProfileController {
 		return renderMessage(request, reply, this.deps, 400, lang.common.badRequest);
 	};
 
-	private showAction(request: ProfileRequest, reply: FastifyReply): Promise<FastifyReply> {
+	private showAction(request: ProfileRequest, reply: AppReply): Promise<AppReply> {
 		const action = request.query.action ?? '';
 		if (AVATAR_UPLOAD.has(action)) return this.#avatar.uploadForm(request, reply);
 		if (action === 'delete_avatar') return this.#avatar.deleteForm(request, reply);

@@ -6,7 +6,7 @@
  * modérateurs autorisés). Chaque action passe par une étape de confirmation, comme le PHP.
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage } from '../http/layout.ts';
 import { buildIpPosters, buildIpStats, buildUserResults, buildUserSearchForm } from '../presenters/adminUsersPage.ts';
@@ -32,13 +32,13 @@ export interface AdminUsersControllerDeps extends LayoutDeps {
 }
 
 /** Droits des actions groupées, ou null si aucune n'est permise ($can_action du PHP). */
-function allowedActions(viewer: FastifyRequest['viewer']): ReturnType<typeof actionRights> | null {
+function allowedActions(viewer: AppRequest['viewer']): ReturnType<typeof actionRights> | null {
 	const rights = actionRights(viewer);
 	return rights.move || rights.delete || rights.ban ? rights : null;
 }
 
 /** Droits sur les actions groupées ($can_move, $can_delete, $can_ban du PHP). */
-function actionRights(viewer: FastifyRequest['viewer']): { move: boolean; delete: boolean; ban: boolean } {
+function actionRights(viewer: AppRequest['viewer']): { move: boolean; delete: boolean; ban: boolean } {
 	const admin = isAdmin(viewer);
 	return { move: admin, delete: admin, ban: admin || (viewer.group.isModerator && viewer.group.canModBanUsers) };
 }
@@ -54,7 +54,7 @@ function pageOf(requested: string | undefined, numPages: number): number {
 export class AdminUsersController {
 	constructor(private readonly deps: AdminUsersControllerDeps) {}
 
-	show = async (request: FastifyRequest<{ Querystring: AdminUsersQuery }>, reply: FastifyReply): Promise<FastifyReply> => {
+	show = async (request: AppRequest<{ Querystring: AdminUsersQuery }>, reply: AppReply): Promise<AppReply> => {
 		const denied = adminDenied(request, reply, this.deps, false);
 		if (denied !== null) return denied;
 		const { query } = request;
@@ -72,7 +72,7 @@ export class AdminUsersController {
 		);
 	};
 
-	async #ipStats(request: FastifyRequest<{ Querystring: AdminUsersQuery }>, reply: FastifyReply): Promise<FastifyReply> {
+	async #ipStats(request: AppRequest<{ Querystring: AdminUsersQuery }>, reply: AppReply): Promise<AppReply> {
 		const { lang, dateWords, clock } = this.deps.page;
 		const userId = positiveInt(request.query.ip_stats);
 		if (userId < 1) return renderMessage(request, reply, this.deps, 400, lang.common.badRequest);
@@ -88,7 +88,7 @@ export class AdminUsersController {
 		);
 	}
 
-	async #ipPosters(request: FastifyRequest<{ Querystring: AdminUsersQuery }>, reply: FastifyReply): Promise<FastifyReply> {
+	async #ipPosters(request: AppRequest<{ Querystring: AdminUsersQuery }>, reply: AppReply): Promise<AppReply> {
 		const { lang } = this.deps.page;
 		const ip = (request.query.show_users ?? '').trim();
 		if (!isIpAddress(ip)) return renderMessage(request, reply, this.deps, 400, lang.adminUsers.badIp);
@@ -107,7 +107,7 @@ export class AdminUsersController {
 		);
 	}
 
-	async #results(request: FastifyRequest<{ Querystring: AdminUsersQuery }>, reply: FastifyReply): Promise<FastifyReply> {
+	async #results(request: AppRequest<{ Querystring: AdminUsersQuery }>, reply: AppReply): Promise<AppReply> {
 		const { lang } = this.deps.page;
 		const search = readUserSearch((name) => request.query[name] ?? '');
 		if (search.kind === 'nonNumeric') return renderMessage(request, reply, this.deps, 400, lang.adminUsers.nonNumeric);
@@ -137,7 +137,7 @@ export class AdminUsersController {
 	}
 
 	/** Boutons des résultats (move_users, delete_users, ban_users) et leurs confirmations (*_comply). */
-	submit = async (request: FastifyRequest<{ Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> => {
+	submit = async (request: AppRequest<{ Body: FormBody }>, reply: AppReply): Promise<AppReply> => {
 		const denied = adminDenied(request, reply, this.deps, false);
 		if (denied !== null) return denied;
 		const { lang } = this.deps.page;
@@ -174,7 +174,7 @@ export class AdminUsersController {
 		return this.#ban(request, reply, ids);
 	};
 
-	async #move(request: FastifyRequest<{ Body: FormBody }>, reply: FastifyReply, ids: number[]): Promise<FastifyReply> {
+	async #move(request: AppRequest<{ Body: FormBody }>, reply: AppReply, ids: number[]): Promise<AppReply> {
 		const t = this.deps.page.lang.adminUsers;
 		const targets = await this.deps.userAdmin.listMoveTargets();
 		if (field(request.body, 'move_users_comply') === '')
@@ -185,7 +185,7 @@ export class AdminUsersController {
 		return reply.redirect('admin_users.php?done=moved', 303);
 	}
 
-	async #delete(request: FastifyRequest<{ Body: FormBody }>, reply: FastifyReply, ids: number[]): Promise<FastifyReply> {
+	async #delete(request: AppRequest<{ Body: FormBody }>, reply: AppReply, ids: number[]): Promise<AppReply> {
 		if (field(request.body, 'delete_users_comply') === '') return this.#confirm(request, reply, ids, 'delete', {});
 		await this.deps.userAdmin.deleteUsers(ids, field(request.body, 'delete_posts') !== '');
 		for (const id of ids) await this.deps.avatarStore.delete(id, request.board.avatarsDir);
@@ -193,7 +193,7 @@ export class AdminUsersController {
 		return reply.redirect('admin_users.php?done=deleted', 303);
 	}
 
-	async #ban(request: FastifyRequest<{ Body: FormBody }>, reply: FastifyReply, ids: number[]): Promise<FastifyReply> {
+	async #ban(request: AppRequest<{ Body: FormBody }>, reply: AppReply, ids: number[]): Promise<AppReply> {
 		const t = this.deps.page.lang.adminUsers;
 		const { body, viewer } = request;
 		if (field(body, 'ban_users_comply') === '') return this.#confirm(request, reply, ids, 'ban', {});
@@ -211,12 +211,12 @@ export class AdminUsersController {
 	}
 
 	#confirm(
-		request: FastifyRequest,
-		reply: FastifyReply,
+		request: AppRequest,
+		reply: AppReply,
 		ids: readonly number[],
 		action: 'move' | 'delete' | 'ban',
 		extra: object,
-	): Promise<FastifyReply> {
+	): Promise<AppReply> {
 		const t = this.deps.page.lang.adminUsers;
 		const titles = { move: t.moveUsers, delete: t.deleteUsers, ban: t.banUsers };
 		return renderAdminPage(

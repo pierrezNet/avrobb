@@ -7,8 +7,8 @@
  * (jamais enregistrée telle qu'envoyée).
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { ImageProcessor } from '../adapters/imageProcessor.ts';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage } from '../http/layout.ts';
 import type { ConfigCache } from '../repositories/ConfigLoader.ts';
@@ -34,7 +34,7 @@ const KINDS: readonly HeaderImageKind[] = ['logo', 'banner'];
 export class AdminAppearanceController {
 	constructor(private readonly deps: AdminAppearanceControllerDeps) {}
 
-	show = async (request: FastifyRequest<{ Querystring: AdminAppearanceQuery }>, reply: FastifyReply): Promise<FastifyReply> => {
+	show = async (request: AppRequest<{ Querystring: AdminAppearanceQuery }>, reply: AppReply): Promise<AppReply> => {
 		const denied = adminDenied(request, reply, this.deps, true);
 		if (denied !== null) return denied;
 		const t = this.deps.page.lang.adminAppearance;
@@ -42,7 +42,7 @@ export class AdminAppearanceController {
 		return this.#render(request, reply, notices[request.query.done ?? ''] ?? null, []);
 	};
 
-	submit = async (request: FastifyRequest<{ Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> => {
+	submit = async (request: AppRequest<{ Body: FormBody }>, reply: AppReply): Promise<AppReply> => {
 		const denied = adminDenied(request, reply, this.deps, true);
 		if (denied !== null) return denied;
 		const { lang } = this.deps.page;
@@ -65,19 +65,13 @@ export class AdminAppearanceController {
 	};
 
 	/** Nouvelle version des images (adresses changées, caches des navigateurs contournés). */
-	async #changed(reply: FastifyReply, done: string): Promise<FastifyReply> {
+	async #changed(reply: AppReply, done: string): Promise<AppReply> {
 		await this.deps.configStore.replaceValues(new Map([['o_header_version', String(this.deps.page.clock())]]));
 		await this.deps.configCache.invalidate();
 		return reply.redirect(`admin_appearance.php?done=${done}`, 303);
 	}
 
-	async #render(
-		request: FastifyRequest,
-		reply: FastifyReply,
-		notice: string | null,
-		errors: string[],
-		status = 200,
-	): Promise<FastifyReply> {
+	async #render(request: AppRequest, reply: AppReply, notice: string | null, errors: string[], status = 200): Promise<AppReply> {
 		const t = this.deps.page.lang.adminAppearance;
 		const version = request.board.headerVersion;
 		const images = await Promise.all(

@@ -4,7 +4,7 @@
  * comme generate_quickjump_cache(). Les erreurs réaffichent la page au lieu d'un message isolé.
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage } from '../http/layout.ts';
 import { buildAdminCategories, buildAdminForumEdit, buildAdminForumList } from '../presenters/adminForumsPage.ts';
@@ -37,7 +37,7 @@ export class ForumAdminController {
 
 	// --- Catégories ---
 
-	showCategories = async (request: FastifyRequest<{ Querystring: AdminCategoriesQuery }>, reply: FastifyReply): Promise<FastifyReply> => {
+	showCategories = async (request: AppRequest<{ Querystring: AdminCategoriesQuery }>, reply: AppReply): Promise<AppReply> => {
 		const denied = adminDenied(request, reply, this.deps, true);
 		if (denied !== null) return denied;
 		const t = this.deps.page.lang.adminForums;
@@ -45,7 +45,7 @@ export class ForumAdminController {
 		return this.#renderCategories(request, reply, null, [], notices[request.query.done as CategoryNotice] ?? null);
 	};
 
-	submitCategories = async (request: FastifyRequest<{ Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> => {
+	submitCategories = async (request: AppRequest<{ Body: FormBody }>, reply: AppReply): Promise<AppReply> => {
 		const denied = adminDenied(request, reply, this.deps, true);
 		if (denied !== null) return denied;
 		const { lang } = this.deps.page;
@@ -90,13 +90,13 @@ export class ForumAdminController {
 	};
 
 	async #renderCategories(
-		request: FastifyRequest,
-		reply: FastifyReply,
+		request: AppRequest,
+		reply: AppReply,
 		confirmDelete: AdminCategory | null,
 		errors: string[],
 		notice: string | null,
 		status = 200,
-	): Promise<FastifyReply> {
+	): Promise<AppReply> {
 		const t = this.deps.page.lang.adminForums;
 		const categories = await this.deps.forumAdmin.listCategories();
 		reply.code(status);
@@ -111,7 +111,7 @@ export class ForumAdminController {
 
 	// --- Forums ---
 
-	showForums = async (request: FastifyRequest<{ Querystring: AdminForumsQuery }>, reply: FastifyReply): Promise<FastifyReply> => {
+	showForums = async (request: AppRequest<{ Querystring: AdminForumsQuery }>, reply: AppReply): Promise<AppReply> => {
 		const denied = adminDenied(request, reply, this.deps, true);
 		if (denied !== null) return denied;
 		const { lang } = this.deps.page;
@@ -145,17 +145,14 @@ export class ForumAdminController {
 		return this.#renderForumList(request, reply, [], notices[query.done as ForumNotice] ?? null);
 	};
 
-	submitForums = async (
-		request: FastifyRequest<{ Querystring: AdminForumsQuery; Body: FormBody }>,
-		reply: FastifyReply,
-	): Promise<FastifyReply> => {
+	submitForums = async (request: AppRequest<{ Querystring: AdminForumsQuery; Body: FormBody }>, reply: AppReply): Promise<AppReply> => {
 		const denied = adminDenied(request, reply, this.deps, true);
 		if (denied !== null) return denied;
 		const { lang } = this.deps.page;
 		const t = lang.adminForums;
 		const { query, body } = request;
 		const store = this.deps.forumAdmin;
-		const badRequest = (): Promise<FastifyReply> => renderMessage(request, reply, this.deps, 400, lang.common.badRequest);
+		const badRequest = (): Promise<AppReply> => renderMessage(request, reply, this.deps, 400, lang.common.badRequest);
 
 		if (query.del_forum !== undefined) {
 			const forum = await store.findForum(positiveInt(query.del_forum));
@@ -185,7 +182,7 @@ export class ForumAdminController {
 		return badRequest();
 	};
 
-	async #saveForum(request: FastifyRequest<{ Body: FormBody }>, reply: FastifyReply, forumId: number): Promise<FastifyReply> {
+	async #saveForum(request: AppRequest<{ Body: FormBody }>, reply: AppReply, forumId: number): Promise<AppReply> {
 		const { lang } = this.deps.page;
 		const store = this.deps.forumAdmin;
 		const forum = await store.findForum(forumId);
@@ -219,13 +216,7 @@ export class ForumAdminController {
 		return reply.redirect('admin_forums.php?done=saved', 303);
 	}
 
-	async #renderForumList(
-		request: FastifyRequest,
-		reply: FastifyReply,
-		errors: string[],
-		notice: string | null,
-		status = 200,
-	): Promise<FastifyReply> {
+	async #renderForumList(request: AppRequest, reply: AppReply, errors: string[], notice: string | null, status = 200): Promise<AppReply> {
 		const t = this.deps.page.lang.adminForums;
 		const [categories, forums] = await Promise.all([this.deps.forumAdmin.listCategories(), this.deps.forumAdmin.listForums()]);
 		reply.code(status);
@@ -239,13 +230,13 @@ export class ForumAdminController {
 	}
 
 	async #renderForumEdit(
-		request: FastifyRequest,
-		reply: FastifyReply,
+		request: AppRequest,
+		reply: AppReply,
 		forumId: number,
 		errors: string[],
 		notice: string | null,
 		status = 200,
-	): Promise<FastifyReply> {
+	): Promise<AppReply> {
 		const { lang } = this.deps.page;
 		const forum = await this.deps.forumAdmin.findForum(forumId);
 		if (forum === null) return renderMessage(request, reply, this.deps, 400, lang.common.badRequest);

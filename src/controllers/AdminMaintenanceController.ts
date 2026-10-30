@@ -16,7 +16,7 @@
  * enchaînait des GET qui écrivaient dans l'index) ; un petit script enchaîne les étapes.
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import type { ConfigCache } from '../repositories/ConfigLoader.ts';
@@ -44,7 +44,7 @@ export interface AdminMaintenanceQuery {
 export class AdminMaintenanceController {
 	constructor(private readonly deps: AdminMaintenanceControllerDeps) {}
 
-	show = async (request: FastifyRequest<{ Querystring: AdminMaintenanceQuery }>, reply: FastifyReply): Promise<FastifyReply> => {
+	show = async (request: AppRequest<{ Querystring: AdminMaintenanceQuery }>, reply: AppReply): Promise<AppReply> => {
 		const denied = adminDenied(request, reply, this.deps, true);
 		if (denied !== null) return denied;
 		if (request.query.preview !== undefined) return this.#preview(request, reply);
@@ -73,7 +73,7 @@ export class AdminMaintenanceController {
 		);
 	};
 
-	submit = async (request: FastifyRequest<{ Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> => {
+	submit = async (request: AppRequest<{ Body: FormBody }>, reply: AppReply): Promise<AppReply> => {
 		const denied = adminDenied(request, reply, this.deps, true);
 		if (denied !== null) return denied;
 		const action = field(request.body, 'action');
@@ -83,7 +83,7 @@ export class AdminMaintenanceController {
 		return renderMessage(request, reply, this.deps, 400, this.deps.page.lang.common.badRequest);
 	};
 
-	async #saveMode(request: FastifyRequest<{ Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> {
+	async #saveMode(request: AppRequest<{ Body: FormBody }>, reply: AppReply): Promise<AppReply> {
 		const { lang } = this.deps.page;
 		const values = readMaintenanceForm((key) => field(request.body, key), lang.adminOptions.defaults.maintenance);
 		const changes = changedOptions(await this.deps.configStore.loadValues(), values);
@@ -94,7 +94,7 @@ export class AdminMaintenanceController {
 		return reply.redirect('admin_maintenance.php?done=mode#maintenance-mode', 303);
 	}
 
-	async #saveColdTopics(request: FastifyRequest<{ Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> {
+	async #saveColdTopics(request: AppRequest<{ Body: FormBody }>, reply: AppReply): Promise<AppReply> {
 		const values = readColdTopicsForm((name) => field(request.body, name));
 		if (values === null) return renderMessage(request, reply, this.deps, 400, this.deps.page.lang.adminMaintenance.coldDaysInvalid);
 		// Clé propre à AvroBB, absente de la table tant qu'elle n'a pas été réglée : REPLACE.
@@ -104,7 +104,7 @@ export class AdminMaintenanceController {
 	}
 
 	/** La page que voient les membres pendant la maintenance (les administrateurs passent outre). */
-	#preview(request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply> {
+	#preview(request: AppRequest, reply: AppReply): Promise<AppReply> {
 		const { lang } = this.deps.page;
 		return renderPage(
 			request,
@@ -121,7 +121,7 @@ export class AdminMaintenanceController {
 	}
 
 	/** Un lot de la reconstruction ; la page suivante relance le lot d'après, jusqu'au dernier message. */
-	async #rebuild(request: FastifyRequest<{ Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> {
+	async #rebuild(request: AppRequest<{ Body: FormBody }>, reply: AppReply): Promise<AppReply> {
 		const t = this.deps.page.lang.adminMaintenance;
 		const { body } = request;
 		const store = this.deps.maintenance;

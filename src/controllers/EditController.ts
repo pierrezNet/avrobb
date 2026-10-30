@@ -7,8 +7,8 @@
  * appliquée à l'affichage (fil d'Ariane, prévisualisation, messages).
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { BoardConfig, EditablePost } from '../domain/models.ts';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { buildEditPage, type EditPageInput } from '../presenters/postPage.ts';
@@ -35,14 +35,14 @@ export interface EditQuery {
 	action?: string;
 }
 
-type EditRequest = FastifyRequest<{ Querystring: EditQuery; Body?: FormBody }>;
+type EditRequest = AppRequest<{ Querystring: EditQuery; Body?: FormBody }>;
 
 const checked = (body: FormBody | undefined, name: string): boolean => body?.[name] !== undefined;
 
 export class EditController {
 	constructor(private readonly deps: EditControllerDeps) {}
 
-	show = async (request: FastifyRequest<{ Querystring: EditQuery }>, reply: FastifyReply): Promise<FastifyReply> => {
+	show = async (request: AppRequest<{ Querystring: EditQuery }>, reply: AppReply): Promise<AppReply> => {
 		const post = await this.resolvePost(request, reply);
 		if (!('topic' in post)) return post;
 		const censor = await this.censor(request.board);
@@ -69,7 +69,7 @@ export class EditController {
 		);
 	};
 
-	submit = async (request: FastifyRequest<{ Querystring: EditQuery; Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> => {
+	submit = async (request: AppRequest<{ Querystring: EditQuery; Body: FormBody }>, reply: AppReply): Promise<AppReply> => {
 		const { viewer, board: config, body } = request;
 		const { lang } = this.deps.page;
 		const post = await this.resolvePost(request, reply);
@@ -156,7 +156,7 @@ export class EditController {
 	};
 
 	/** Message lisible, et droit de le modifier. */
-	private async resolvePost(request: EditRequest, reply: FastifyReply): Promise<EditablePost | FastifyReply> {
+	private async resolvePost(request: EditRequest, reply: AppReply): Promise<EditablePost | AppReply> {
 		const { viewer } = request;
 		const { lang } = this.deps.page;
 		if (!viewer.group.canReadBoard) return renderMessage(request, reply, this.deps, 403, lang.common.noView);
@@ -175,13 +175,13 @@ export class EditController {
 
 	private async renderForm(
 		request: EditRequest,
-		reply: FastifyReply,
+		reply: AppReply,
 		post: EditablePost,
 		censor: Censor | null,
 		form: EditPageInput['form'],
 		errors: string[],
 		preview: string | null,
-	): Promise<FastifyReply> {
+	): Promise<AppReply> {
 		const { viewer, board: config } = request;
 		const { lang } = this.deps.page;
 		const view = buildEditPage({

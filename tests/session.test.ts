@@ -3,15 +3,15 @@
  * chaque requête (cookies émis, présence, maintenance, bannissements).
  */
 
-import type { FastifyInstance } from 'fastify';
-import { afterEach, describe, expect, it } from 'vitest';
-import { buildApp } from '../src/app.ts';
+import { describe, expect, it } from 'vitest';
+import { buildApp, type ForumApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
 import { type Ban, checkBans } from '../src/services/bans.ts';
 import { memberPresenceUpdate, planOnlinePurge } from '../src/services/presence.ts';
 import { buildSessionCookie, cookieMaxAge, SESSION_SECONDS } from '../src/services/session.ts';
 import { fakeDeps, fakeOnline, group, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
+import { inject } from './inject.ts';
 
 describe('durée des cookies', () => {
 	it('cookie de session du navigateur quand l’échéance ne dépasse pas la visite (forum_setcookie())', () => {
@@ -79,8 +79,7 @@ const setCookies = (header: string | string[] | undefined): string[] =>
 const tessy = viewer({ lastVisit: NOW - 7200 });
 const admin = viewer({ id: 2, username: 'admin', group: group({ id: GroupId.Admin }) });
 
-let app: FastifyInstance | undefined;
-afterEach(async () => app?.close());
+let app: ForumApp | undefined;
 
 describe('session à chaque requête', () => {
 	const base = (overrides = {}) =>
@@ -94,7 +93,7 @@ describe('session à chaque requête', () => {
 	it('membre : cookie prolongé une fois par jour, présence rafraîchie', async () => {
 		const online = fakeOnline();
 		app = await buildApp({ ...base(), online });
-		const res = await app.inject({ url: '/index.php', headers: { cookie: sessionCookie(3, NOW + 1000) } });
+		const res = await inject(app, { url: '/index.php', headers: { cookie: sessionCookie(3, NOW + 1000) } });
 
 		const session = setCookies(res.headers['set-cookie']).find((c) => c.startsWith('avrobb_session='));
 		expect(session).toContain(buildSessionCookie(3, NOW + SESSION_SECONDS, SEED));
@@ -103,14 +102,14 @@ describe('session à chaque requête', () => {
 		expect(online.log).toEqual(['refresh 3']);
 
 		// Cookie récent : rien à reposer.
-		const fresh = await app.inject({ url: '/index.php', headers: { cookie: sessionCookie(3, NOW + SESSION_SECONDS - 60) } });
+		const fresh = await inject(app, { url: '/index.php', headers: { cookie: sessionCookie(3, NOW + SESSION_SECONDS - 60) } });
 		expect(setCookies(fresh.headers['set-cookie']).some((c) => c.startsWith('avrobb_session='))).toBe(false);
 	});
 
 	it('première page d’une visite : entrée dans la liste et cookie de suivi vidé', async () => {
 		const online = fakeOnline();
 		app = await buildApp({ ...base(), online });
-		const res = await app.inject({ url: '/index.php', headers: { cookie: sessionCookie(2) } });
+		const res = await inject(app, { url: '/index.php', headers: { cookie: sessionCookie(2) } });
 
 		expect(online.log).toEqual(['enter 2 admin']);
 		expect(setCookies(res.headers['set-cookie']).some((c) => c.startsWith('avrobb_track=;'))).toBe(true);
@@ -120,7 +119,7 @@ describe('session à chaque requête', () => {
 		const online = fakeOnline();
 		app = await buildApp({ ...base(), online });
 		const forged = `avrobb_session=${buildSessionCookie(3, NOW + 3600, 'autre-secret')}`;
-		const res = await app.inject({ url: '/index.php', headers: { cookie: forged } });
+		const res = await inject(app, { url: '/index.php', headers: { cookie: forged } });
 
 		expect(setCookies(res.headers['set-cookie']).find((c) => c.startsWith('avrobb_session='))).toMatch(/^avrobb_session=;/);
 		expect(online.log).toEqual(['enter 1 127.0.0.1']);
@@ -130,16 +129,16 @@ describe('session à chaque requête', () => {
 	it('extern.php ne touche pas à la présence d’un membre (PUN_QUIET_VISIT)', async () => {
 		const online = fakeOnline();
 		app = await buildApp({ ...base(), online });
-		await app.inject({ url: '/extern.php?action=stats', headers: { cookie: sessionCookie(3) } });
+		await inject(app, { url: '/extern.php?action=stats', headers: { cookie: sessionCookie(3) } });
 		expect(online.log).toEqual([]);
 	});
 
 	it('maintenance : page 503 pour tous sauf les administrateurs', async () => {
 		app = await buildApp(base({ config: { maintenance: true } }));
-		const blocked = await app.inject('/index.php');
+		const blocked = await inject(app, '/index.php');
 		expect(blocked.statusCode).toBe(503);
 		expect(blocked.body).toContain('Le forum est fermé pour <b>maintenance</b>.');
-		expect((await app.inject({ url: '/index.php', headers: { cookie: sessionCookie(2) } })).statusCode).toBe(200);
+		expect((await inject(app, { url: '/index.php', headers: { cookie: sessionCookie(2) } })).statusCode).toBe(200);
 	});
 
 	it('bannissement : lecture seule avec bandeau (échéance, motif), écritures refusées ; les échus sont supprimés', async () => {
@@ -155,7 +154,7 @@ describe('session à chaque requête', () => {
 		};
 		app = await buildApp(deps);
 		const cookie = sessionCookie(3);
-		const res = await app.inject({ url: '/index.php', headers: { cookie } });
+		const res = await inject(app, { url: '/index.php', headers: { cookie } });
 
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('vous pouvez lire le forum, mais plus y écrire.');
@@ -164,9 +163,9 @@ describe('session à chaque requête', () => {
 		expect(online.log).toContain('remove ident Tessy');
 
 		// Écrire : formulaire refusé (droits du groupe retirés) et POST refusé avant tout traitement.
-		expect((await app.inject({ url: '/post.php?fid=1', headers: { cookie } })).statusCode).not.toBe(200);
+		expect((await inject(app, { url: '/post.php?fid=1', headers: { cookie } })).statusCode).not.toBe(200);
 		const secret = 'a'.repeat(64);
-		const posted = await app.inject({
+		const posted = await inject(app, {
 			method: 'POST',
 			url: '/post.php?tid=1',
 			headers: { cookie: `${cookie}; avrobb_csrf=${secret}`, 'content-type': 'application/x-www-form-urlencoded' },
@@ -177,11 +176,11 @@ describe('session à chaque requête', () => {
 
 		// Les administrateurs ne sont jamais bloqués.
 		// Invité de la même adresse IP : banni aussi (envois refusés), mais sans bandeau.
-		const forGuest = await app.inject({ url: '/index.php' });
+		const forGuest = await inject(app, { url: '/index.php' });
 		expect(forGuest.statusCode).toBe(200);
 		expect(forGuest.body).not.toContain('ban-notice');
 
-		const forAdmin = await app.inject({ url: '/index.php', headers: { cookie: sessionCookie(2) } });
+		const forAdmin = await inject(app, { url: '/index.php', headers: { cookie: sessionCookie(2) } });
 		expect(forAdmin.statusCode).toBe(200);
 		expect(forAdmin.body).not.toContain('ban-notice');
 	});

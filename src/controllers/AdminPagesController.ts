@@ -4,8 +4,8 @@
  * dans la table config (services/staticPageConfig.ts).
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { StaticPageId } from '../domain/models.ts';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage } from '../http/layout.ts';
 import { staticPageContent } from '../presenters/staticPage.ts';
@@ -40,7 +40,7 @@ interface PageForm {
 export class AdminPagesController {
 	constructor(private readonly deps: AdminPagesControllerDeps) {}
 
-	show = async (request: FastifyRequest<{ Querystring: AdminPagesQuery }>, reply: FastifyReply): Promise<FastifyReply> => {
+	show = async (request: AppRequest<{ Querystring: AdminPagesQuery }>, reply: AppReply): Promise<AppReply> => {
 		const denied = adminDenied(request, reply, this.deps, true);
 		if (denied !== null) return denied;
 		const t = this.deps.page.lang.adminPages;
@@ -53,7 +53,7 @@ export class AdminPagesController {
 		return this.#form(request, reply, id, { title: page.title, intro: page.intro, body: formatStaticBody(page.sections) }, [], notice);
 	};
 
-	submit = async (request: FastifyRequest<{ Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> => {
+	submit = async (request: AppRequest<{ Body: FormBody }>, reply: AppReply): Promise<AppReply> => {
 		const denied = adminDenied(request, reply, this.deps, true);
 		if (denied !== null) return denied;
 		const id = field(request.body, 'page');
@@ -79,7 +79,7 @@ export class AdminPagesController {
 		return reply.redirect(`admin_pages.php?page=${id}&done=saved`, 303);
 	};
 
-	#list(request: FastifyRequest, reply: FastifyReply, notice: string | null): Promise<FastifyReply> {
+	#list(request: AppRequest, reply: AppReply, notice: string | null): Promise<AppReply> {
 		const t = this.deps.page.lang.adminPages;
 		const pages = STATIC_PAGE_IDS.map((id) => ({
 			title: staticPageContent(id, request.board.staticPages[id], this.deps.page.lang).title,
@@ -91,13 +91,13 @@ export class AdminPagesController {
 	}
 
 	#form(
-		request: FastifyRequest,
-		reply: FastifyReply,
+		request: AppRequest,
+		reply: AppReply,
 		id: StaticPageId,
 		form: PageForm,
 		errors: string[],
 		notice: string | null,
-	): Promise<FastifyReply> {
+	): Promise<AppReply> {
 		const t = this.deps.page.lang.adminPages;
 		const current = staticPageContent(id, request.board.staticPages[id], this.deps.page.lang);
 		return renderAdminPage(

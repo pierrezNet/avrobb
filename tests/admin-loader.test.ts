@@ -3,12 +3,12 @@
  * le PHP, ajout d'utilisateur du plugin « Gestion d'utilisateur ».
  */
 
-import type { FastifyInstance } from 'fastify';
-import { afterEach, describe, expect, it } from 'vitest';
-import { buildApp } from '../src/app.ts';
+import { describe, expect, it } from 'vitest';
+import { buildApp, type ForumApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
 import { boardConfig, type FakeData, fakeDeps, group, guest, sessionCookie, TEST_SUBJECT_TAGS, topic, viewer } from './fixtures.ts';
+import { inject } from './inject.ts';
 
 const SEED = 'graine-de-test';
 const CSRF_SECRET = '9'.repeat(64);
@@ -17,10 +17,9 @@ const admin = viewer({ id: 2, username: 'admin', group: group({ id: GroupId.Admi
 const cookies = (userId: number): string => `${sessionCookie(userId)}; avrobb_csrf=${CSRF_SECRET}`;
 const PLUGIN = '/admin_loader.php?plugin=AP_Private_messaging.php';
 
-let app: FastifyInstance | undefined;
-afterEach(async () => app?.close());
+let app: ForumApp | undefined;
 
-async function start(): Promise<{ server: FastifyInstance; fake: FakeData }> {
+async function start(): Promise<{ server: ForumApp; fake: FakeData }> {
 	const fake: FakeData = {
 		users: [{ viewer: guest }, { viewer: mod }, { viewer: admin }],
 		topics: [],
@@ -33,7 +32,7 @@ async function start(): Promise<{ server: FastifyInstance; fake: FakeData }> {
 	return { server: app, fake };
 }
 
-const get = (server: FastifyInstance, userId: number, url: string) => server.inject({ url, headers: { cookie: cookies(userId) } });
+const get = (server: ForumApp, userId: number, url: string) => inject(server, { url, headers: { cookie: cookies(userId) } });
 describe('admin_loader.php', () => {
 	it('droits : AP_ pour les administrateurs ; plugin inconnu refusé', async () => {
 		const { server } = await start();
@@ -45,8 +44,8 @@ describe('admin_loader.php', () => {
 });
 
 describe('plugins de réglages', () => {
-	const send = (server: FastifyInstance, plugin: string, fields: Record<string, string>) =>
-		server.inject({
+	const send = (server: ForumApp, plugin: string, fields: Record<string, string>) =>
+		inject(server, {
 			method: 'POST',
 			url: `/admin_loader.php?plugin=${plugin}`,
 			headers: { cookie: cookies(2), 'content-type': 'application/x-www-form-urlencoded' },
@@ -105,8 +104,8 @@ describe('plugins de réglages', () => {
 });
 
 describe('page Balises : balises du sujet', () => {
-	const send = (server: FastifyInstance, query: string, fields: Record<string, string>) =>
-		server.inject({
+	const send = (server: ForumApp, query: string, fields: Record<string, string>) =>
+		inject(server, {
 			method: 'POST',
 			url: `/admin_loader.php?plugin=AP_Balises.php${query}`,
 			headers: { cookie: cookies(2), 'content-type': 'application/x-www-form-urlencoded' },

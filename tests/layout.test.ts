@@ -1,14 +1,14 @@
 /**
- * Mise en page commune : presenter (menu selon les droits, statut, MP, pied) et rendu via app.inject().
+ * Mise en page commune : presenter (menu selon les droits, statut, MP, pied) et rendu via inject(app, ).
  */
 
-import type { FastifyInstance } from 'fastify';
-import { afterEach, describe, expect, it } from 'vitest';
-import { buildApp } from '../src/app.ts';
+import { describe, expect, it } from 'vitest';
+import { buildApp, type ForumApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { fr, frDateWords } from '../src/lang/fr/index.ts';
 import { buildLayout, type LayoutInput, pageTitle } from '../src/presenters/layout.ts';
 import { boardConfig, fakeDeps, group, guest, NOW, sessionCookie, topic, viewer } from './fixtures.ts';
+import { inject } from './inject.ts';
 
 const mod = viewer({ id: 5, username: 'MaxDUO', group: group({ id: GroupId.Moderator, isModerator: true }) });
 
@@ -119,8 +119,7 @@ describe('buildLayout', () => {
 });
 
 describe('rendu de la mise en page', () => {
-	let app: FastifyInstance;
-	afterEach(async () => app.close());
+	let app: ForumApp;
 
 	const users = [{ viewer: guest }, { viewer: mod }];
 
@@ -128,7 +127,7 @@ describe('rendu de la mise en page', () => {
 		const config = { announcement: '<b>Maintenance dimanche</b>' };
 		app = await buildApp(fakeDeps({ users, topics: [], posts: new Map(), config, pendingReports: true }));
 
-		const res = await app.inject({ url: '/nimporte.php', headers: { cookie: sessionCookie(5) } });
+		const res = await inject(app, { url: '/nimporte.php', headers: { cookie: sessionCookie(5) } });
 		expect(res.statusCode).toBe(404);
 		expect(res.body).toContain('<b>Maintenance dimanche</b>');
 		expect(res.body).not.toContain('id="qjump"');
@@ -141,16 +140,15 @@ describe('rendu de la mise en page', () => {
 		app = await buildApp(
 			fakeDeps({ users, topics: [], posts: new Map(), config: { privateMessagesEnabled: true }, unreadPrivateMessages: new Map([[5, 3]]) }),
 		);
-		const res = await app.inject({ url: '/index.php', headers: { cookie: sessionCookie(5) } });
+		const res = await inject(app, { url: '/index.php', headers: { cookie: sessionCookie(5) } });
 		expect(res.body).toContain('<li id="navpm" class="site-nav__item has-news">');
 		// Modérateur : lien Administration dans le menu burger (masqué sur grand écran).
 		expect(res.body).toContain(
 			'<li id="navadminmenu" class="site-nav__item site-nav__item--mobile"><a href="admin_index.php">Administration</a>',
 		);
 		expect(res.body).toContain('<span class="site-nav__count">3<span class="visually-hidden"> non lus</span></span>');
-		await app.close();
 		app = await buildApp(fakeDeps({ users, topics: [], posts: new Map(), config: { privateMessagesEnabled: true } }));
-		const none = await app.inject({ url: '/index.php', headers: { cookie: sessionCookie(5) } });
+		const none = await inject(app, { url: '/index.php', headers: { cookie: sessionCookie(5) } });
 		expect(none.body).toContain('<li id="navpm" class="site-nav__item">');
 		expect(none.body).not.toContain('site-nav__count');
 	});
@@ -166,7 +164,7 @@ describe('rendu de la mise en page', () => {
 			},
 		});
 
-		const res = await app.inject('/assets/css/base.css');
+		const res = await inject(app, '/assets/css/base.css');
 		expect(res.statusCode).toBe(200);
 		expect(res.headers['cache-control']).toContain('immutable');
 	});

@@ -1,14 +1,14 @@
 /**
- * Index : services (nombres, suivi des sujets lus), presenter et page via app.inject().
+ * Index : services (nombres, suivi des sujets lus), presenter et page via inject(app, ).
  */
 
-import type { FastifyInstance } from 'fastify';
-import { afterEach, describe, expect, it } from 'vitest';
-import { buildApp } from '../src/app.ts';
+import { describe, expect, it } from 'vitest';
+import { buildApp, type ForumApp } from '../src/app.ts';
 import type { ForumSummary, IndexCategory } from '../src/domain/models.ts';
 import { forumNumberFormat, niceNumber } from '../src/services/numberFormat.ts';
 import { forumHasNewPosts, parseTrackedTopics } from '../src/services/trackedTopics.ts';
 import { fakeDeps, group, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
+import { inject } from './inject.ts';
 
 describe('formatage des nombres', () => {
 	it('bd_nice_number() et forum_number_format()', () => {
@@ -79,8 +79,7 @@ const cookie = (userId: number, extra = ''): string => `${sessionCookie(userId)}
 const tessy = viewer({ lastVisit: NOW - 3600 });
 const users = [{ viewer: guest }, { viewer: tessy }];
 
-let app: FastifyInstance | undefined;
-afterEach(async () => app?.close());
+let app: ForumApp | undefined;
 
 describe('GET /index.php', () => {
 	it('liste catégories et forums, échappés, avec l’activité de la semaine', async () => {
@@ -105,7 +104,7 @@ describe('GET /index.php', () => {
 			}),
 		);
 
-		const res = await app.inject('/index.php');
+		const res = await inject(app, '/index.php');
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('<title>Forum de test</title>');
 		expect(res.body).toContain('Simulateurs &lt;FS&gt;');
@@ -136,7 +135,7 @@ describe('GET /index.php', () => {
 
 	it('est aussi servi à la racine', async () => {
 		app = await buildApp(fakeDeps({ users, topics: [], posts: new Map(), indexCategories: categories }));
-		expect((await app.inject('/')).statusCode).toBe(200);
+		expect((await inject(app, '/')).statusCode).toBe(200);
 	});
 
 	it('signale les nouveaux messages au membre selon son cookie de suivi', async () => {
@@ -150,17 +149,17 @@ describe('GET /index.php', () => {
 			}),
 		);
 
-		const fresh = await app.inject({ url: '/index.php', headers: { cookie: cookie(3) } });
+		const fresh = await inject(app, { url: '/index.php', headers: { cookie: cookie(3) } });
 		expect(fresh.body).toContain('href="search.php?action=show_new&amp;fid=1">Nouveaux messages</a>');
 		expect(fresh.body).toContain('misc.php?action=markread');
 
-		const read = await app.inject({ url: '/index.php', headers: { cookie: `${cookie(3)}; avrobb_track=t7=${NOW}` } });
+		const read = await inject(app, { url: '/index.php', headers: { cookie: `${cookie(3)}; avrobb_track=t7=${NOW}` } });
 		expect(read.body).not.toContain('Nouveaux messages');
 	});
 
 	it('refuse l’accès sans g_read_board', async () => {
 		const blind = { ...guest, group: group({ id: 3, canReadBoard: false }) };
 		app = await buildApp(fakeDeps({ users: [{ viewer: blind }], topics: [], posts: new Map() }));
-		expect((await app.inject('/index.php')).statusCode).toBe(403);
+		expect((await inject(app, '/index.php')).statusCode).toBe(403);
 	});
 });

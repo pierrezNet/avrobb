@@ -6,8 +6,8 @@
  * mettait un texte tout en capitales en minuscules et limitait le message à 64 Kio).
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { BoardConfig, Draft } from '../domain/models.ts';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { buildDraftEditPage, buildDraftList } from '../presenters/draftPage.ts';
@@ -31,12 +31,12 @@ export interface DraftQuery {
 	action?: string;
 }
 
-type DraftRequest = FastifyRequest<{ Querystring: DraftQuery; Body?: FormBody }>;
+type DraftRequest = AppRequest<{ Querystring: DraftQuery; Body?: FormBody }>;
 
 export class DraftController {
 	constructor(private readonly deps: DraftControllerDeps) {}
 
-	list = async (request: FastifyRequest<{ Querystring: DraftQuery }>, reply: FastifyReply): Promise<FastifyReply> => {
+	list = async (request: AppRequest<{ Querystring: DraftQuery }>, reply: AppReply): Promise<AppReply> => {
 		const { viewer, board: config } = request;
 		const { lang } = this.deps.page;
 		if (viewer.isGuest) return reply.redirect('login.php');
@@ -72,7 +72,7 @@ export class DraftController {
 	};
 
 	/** Suppression confirmée (formulaire de draft_list.php?action=delete). */
-	remove = async (request: FastifyRequest<{ Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> => {
+	remove = async (request: AppRequest<{ Body: FormBody }>, reply: AppReply): Promise<AppReply> => {
 		const { viewer } = request;
 		if (viewer.isGuest) return reply.redirect('login.php');
 		const id = positiveInt(field(request.body, 'id'));
@@ -82,13 +82,13 @@ export class DraftController {
 		return reply.redirect('draft_list.php');
 	};
 
-	edit = async (request: FastifyRequest<{ Querystring: DraftQuery }>, reply: FastifyReply): Promise<FastifyReply> => {
+	edit = async (request: AppRequest<{ Querystring: DraftQuery }>, reply: AppReply): Promise<AppReply> => {
 		const draft = await this.resolveDraft(request, reply);
 		if (!('posterId' in draft)) return draft;
 		return this.renderForm(request, reply, draft, { subject: draft.subject, message: draft.message }, [], null);
 	};
 
-	save = async (request: FastifyRequest<{ Querystring: DraftQuery; Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> => {
+	save = async (request: AppRequest<{ Querystring: DraftQuery; Body: FormBody }>, reply: AppReply): Promise<AppReply> => {
 		const draft = await this.resolveDraft(request, reply);
 		if (!('posterId' in draft)) return draft;
 		const { viewer, board: config, body } = request;
@@ -150,7 +150,7 @@ export class DraftController {
 		return reply.redirect(`draft_list.php?id=${draft.id}`);
 	};
 
-	private async resolveDraft(request: DraftRequest, reply: FastifyReply): Promise<Draft | FastifyReply> {
+	private async resolveDraft(request: DraftRequest, reply: AppReply): Promise<Draft | AppReply> {
 		const { viewer } = request;
 		const { lang } = this.deps.page;
 		if (viewer.isGuest) return reply.redirect('login.php');
@@ -167,12 +167,12 @@ export class DraftController {
 
 	private async renderForm(
 		request: DraftRequest,
-		reply: FastifyReply,
+		reply: AppReply,
 		draft: Draft,
 		form: { subject: string; message: string },
 		errors: string[],
 		preview: string | null,
-	): Promise<FastifyReply> {
+	): Promise<AppReply> {
 		const { viewer, board: config } = request;
 		const { lang } = this.deps.page;
 		const view = buildDraftEditPage({

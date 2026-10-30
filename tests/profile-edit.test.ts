@@ -3,9 +3,8 @@
  * profile.php de bout en bout avec les doublures.
  */
 
-import type { FastifyInstance } from 'fastify';
-import { afterEach, describe, expect, it } from 'vitest';
-import { buildApp } from '../src/app.ts';
+import { describe, expect, it } from 'vitest';
+import { buildApp, type ForumApp } from '../src/app.ts';
 import { GroupId, type UserProfile } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
 import { parseMultipartBody } from '../src/http/forms.ts';
@@ -23,6 +22,7 @@ import {
 	readSignature,
 } from '../src/services/profileForms.ts';
 import { type FakeData, fakeDeps, group, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
+import { inject } from './inject.ts';
 
 const SEED = 'graine-de-test';
 const CSRF_SECRET = 'a'.repeat(64);
@@ -288,23 +288,22 @@ function data(overrides: Partial<FakeData> = {}): FakeData {
 
 const cookies = (userId: number): string => `${sessionCookie(userId)}; avrobb_csrf=${CSRF_SECRET}`;
 
-let app: FastifyInstance | undefined;
-afterEach(async () => app?.close());
+let app: ForumApp | undefined;
 
-async function start(fake: FakeData, config = {}): Promise<FastifyInstance> {
+async function start(fake: FakeData, config = {}): Promise<ForumApp> {
 	fake.config = { ...fake.config, ...config };
 	app = await buildApp(fakeDeps(fake));
 	return app;
 }
 
-function get(server: FastifyInstance, userId: number, url: string) {
-	return server.inject({ url, headers: { cookie: cookies(userId) } });
+function get(server: ForumApp, userId: number, url: string) {
+	return inject(server, { url, headers: { cookie: cookies(userId) } });
 }
 
-function post(server: FastifyInstance, userId: number, url: string, fields: Record<string, string | string[]>) {
+function post(server: ForumApp, userId: number, url: string, fields: Record<string, string | string[]>) {
 	const body = new URLSearchParams({ csrf_token: csrfToken(CSRF_SECRET, SEED, userId) });
 	for (const [name, value] of Object.entries(fields)) for (const item of [value].flat()) body.append(name, item);
-	return server.inject({
+	return inject(server, {
 		method: 'POST',
 		url,
 		headers: { cookie: cookies(userId), 'content-type': 'application/x-www-form-urlencoded' },
@@ -312,12 +311,12 @@ function post(server: FastifyInstance, userId: number, url: string, fields: Reco
 	});
 }
 
-async function postFile(server: FastifyInstance, userId: number, url: string, field: string, name: string, content: Buffer) {
+async function postFile(server: ForumApp, userId: number, url: string, field: string, name: string, content: Buffer) {
 	const form = new FormData();
 	form.append('csrf_token', csrfToken(CSRF_SECRET, SEED, userId));
 	form.append(field, new Blob([new Uint8Array(content)]), name);
 	const request = new Request('http://x/', { method: 'POST', body: form });
-	return server.inject({
+	return inject(server, {
 		method: 'POST',
 		url,
 		headers: { cookie: cookies(userId), 'content-type': request.headers.get('content-type') ?? '' },
@@ -381,7 +380,7 @@ describe('profile.php : sections', () => {
 	it('refuse un formulaire sans jeton CSRF', async () => {
 		const fake = data();
 		const server = await start(fake);
-		const res = await server.inject({
+		const res = await inject(server, {
 			method: 'POST',
 			url: '/profile.php?section=messaging&id=3',
 			headers: { cookie: cookies(3), 'content-type': 'application/x-www-form-urlencoded' },

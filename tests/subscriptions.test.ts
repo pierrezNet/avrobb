@@ -3,11 +3,11 @@
  * viewtopic et viewforum, confirmation d'un lien GET, contrôles de misc.php.
  */
 
-import type { FastifyInstance } from 'fastify';
-import { afterEach, describe, expect, it } from 'vitest';
-import { buildApp } from '../src/app.ts';
+import { describe, expect, it } from 'vitest';
+import { buildApp, type ForumApp } from '../src/app.ts';
 import type { ForumInfo } from '../src/domain/models.ts';
 import { boardConfig, type FakeData, fakeDeps, guest, post, sessionCookie, topic, viewer } from './fixtures.ts';
+import { inject } from './inject.ts';
 
 const tessy = `${sessionCookie(3)}`;
 const forumInfo: ForumInfo = {
@@ -31,12 +31,11 @@ function data(overrides: Partial<FakeData> = {}): FakeData {
 	};
 }
 
-let app: FastifyInstance | undefined;
-afterEach(async () => app?.close());
+let app: ForumApp | undefined;
 
 /** Envoie le formulaire de confirmation affiché par le lien GET. */
-async function confirm(server: FastifyInstance, url: string) {
-	const page = await server.inject({ url, headers: { cookie: tessy } });
+async function confirm(server: ForumApp, url: string) {
+	const page = await inject(server, { url, headers: { cookie: tessy } });
 	const csrf =
 		[page.headers['set-cookie']]
 			.flat()
@@ -46,7 +45,7 @@ async function confirm(server: FastifyInstance, url: string) {
 	const action = /<form class="message-box" method="post" action="([^"]+)"/.exec(page.body)?.[1]?.replaceAll('&amp;', '&') ?? '';
 	return {
 		page,
-		res: await server.inject({
+		res: await inject(server, {
 			method: 'POST',
 			url: `/${action}`,
 			headers: { cookie: `${tessy}; ${csrf}`, 'content-type': 'application/x-www-form-urlencoded' },
@@ -58,14 +57,13 @@ async function confirm(server: FastifyInstance, url: string) {
 describe('abonnements', () => {
 	it('viewtopic propose un bouton POST selon l’abonnement', async () => {
 		app = await buildApp(fakeDeps(data()));
-		const res = await app.inject({ url: '/viewtopic.php?id=10', headers: { cookie: tessy } });
+		const res = await inject(app, { url: '/viewtopic.php?id=10', headers: { cookie: tessy } });
 		expect(res.body).toContain('action="misc.php?action=subscribe&amp;tid=10"');
-		await app.close();
 		app = await buildApp(fakeDeps(data({ subscribedTopics: [10] })));
-		const subscribed = await app.inject({ url: '/viewtopic.php?id=10', headers: { cookie: tessy } });
+		const subscribed = await inject(app, { url: '/viewtopic.php?id=10', headers: { cookie: tessy } });
 		expect(subscribed.body).toContain('Vous suivez cette discussion');
 		expect(subscribed.body).toContain('action="misc.php?action=unsubscribe&amp;tid=10"');
-		expect((await app.inject('/viewtopic.php?id=10')).body).not.toContain('action=subscribe');
+		expect((await inject(app, '/viewtopic.php?id=10')).body).not.toContain('action=subscribe');
 	});
 
 	it('un lien GET demande confirmation, puis le POST abonne et revient au sujet', async () => {
@@ -88,21 +86,20 @@ describe('abonnements', () => {
 
 	it('contrôles de misc.php : invité, déjà abonné, pas abonné, cible inconnue, option désactivée', async () => {
 		app = await buildApp(fakeDeps(data({ subscribedTopics: [10] })));
-		const get = async (url: string, cookie = tessy) => app?.inject({ url, headers: { cookie } });
+		const get = async (url: string, cookie = tessy) => inject(app!, { url, headers: { cookie } });
 		expect((await get('/misc.php?action=subscribe&tid=10', ''))?.statusCode).toBe(403);
 		expect((await get('/misc.php?action=subscribe&tid=10'))?.body).toContain('Vous suivez déjà cette discussion.');
 		expect((await get('/misc.php?action=unsubscribe&fid=2'))?.body).toContain('Vous ne suivez pas ce forum.');
 		expect((await get('/misc.php?action=subscribe&tid=99'))?.statusCode).toBe(404);
 		expect((await get('/misc.php?action=subscribe'))?.statusCode).toBe(400);
-		await app.close();
 		app = await buildApp(fakeDeps(data({ config: { ...boardConfig, forumSubscriptions: false } })));
-		expect((await app.inject({ url: '/misc.php?action=subscribe&fid=2', headers: { cookie: tessy } })).statusCode).toBe(403);
+		expect((await inject(app, { url: '/misc.php?action=subscribe&fid=2', headers: { cookie: tessy } })).statusCode).toBe(403);
 	});
 
 	it('refuse un POST sans jeton CSRF', async () => {
 		const fake = data();
 		app = await buildApp(fakeDeps(fake));
-		const res = await app.inject({ method: 'POST', url: '/misc.php?action=subscribe&tid=10', headers: { cookie: tessy } });
+		const res = await inject(app, { method: 'POST', url: '/misc.php?action=subscribe&tid=10', headers: { cookie: tessy } });
 		expect(res.statusCode).toBe(403);
 		expect(fake.subscribedTopics).toBeUndefined();
 	});

@@ -4,7 +4,7 @@
  * (g_view_users), comme userlist.php ; aucune écriture.
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import type { MemberSuggestReader } from '../repositories/MemberSuggestRepository.ts';
 
 export interface MemberSuggestControllerDeps {
@@ -23,12 +23,12 @@ const MAX_PREFIX = 25;
 export class MemberSuggestController {
 	constructor(private readonly deps: MemberSuggestControllerDeps) {}
 
-	suggest = async (request: FastifyRequest<{ Querystring: MemberSuggestQuery }>, reply: FastifyReply): Promise<FastifyReply> => {
+	suggest = async (request: AppRequest<{ Querystring: MemberSuggestQuery }>, reply: AppReply): Promise<AppReply> => {
 		const { viewer } = request;
 		reply.header('Cache-Control', 'no-store');
-		if (viewer.isGuest || !viewer.group.canViewUsers) return reply.code(403).send({ members: [] });
+		if (viewer.isGuest || !viewer.group.canViewUsers) return reply.code(403).json({ members: [] });
 		const prefix = (request.query.q ?? '').trim();
-		if (prefix === '' || [...prefix].length > MAX_PREFIX) return reply.send({ members: [] });
-		return reply.send({ members: await this.deps.memberSuggest.suggestMembers(prefix, LIMIT) });
+		if (prefix === '' || [...prefix].length > MAX_PREFIX) return reply.json({ members: [] });
+		return reply.json({ members: await this.deps.memberSuggest.suggestMembers(prefix, LIMIT) });
 	};
 }

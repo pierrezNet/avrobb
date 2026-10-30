@@ -4,8 +4,8 @@
  * que le membre prévenu (l'auteur n'en garde pas de copie dans sa boîte).
  */
 
-import type { FastifyBaseLogger } from 'fastify';
 import type { BoardConfig } from '../domain/models.ts';
+import type { Logger } from '../http/context.ts';
 import type { PageContext } from '../http/layout.ts';
 import type { PrivateMessageStore } from '../repositories/PrivateMessageRepository.ts';
 import type { TopicReader } from '../repositories/TopicRepository.ts';
@@ -29,7 +29,7 @@ export interface MentionInput {
 }
 
 /** Envoie les messages privés ; un échec est journalisé sans annuler le message publié. */
-export async function notifyMentions(deps: MentionNotifierDeps, input: MentionInput, log: FastifyBaseLogger): Promise<void> {
+export async function notifyMentions(deps: MentionNotifierDeps, input: MentionInput, log: Logger): Promise<void> {
 	const { config, author } = input;
 	if (!config.privateMessagesEnabled) return;
 	const ids = extractMentionIds(input.message, config.baseUrl, author.id);

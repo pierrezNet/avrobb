@@ -1,12 +1,12 @@
 /**
- * viewforum : presenter et page via app.inject().
+ * viewforum : presenter et page via inject(app, ).
  */
 
-import type { FastifyInstance } from 'fastify';
-import { afterEach, describe, expect, it } from 'vitest';
-import { buildApp } from '../src/app.ts';
+import { describe, expect, it } from 'vitest';
+import { buildApp, type ForumApp } from '../src/app.ts';
 import { type ForumInfo, GroupId, type TopicSummary } from '../src/domain/models.ts';
 import { fakeDeps, group, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
+import { inject } from './inject.ts';
 
 function summary(id: number, overrides: Partial<TopicSummary> = {}): TopicSummary {
 	return {
@@ -47,8 +47,7 @@ const topics = [
 	summary(13, { numReplies: 30, subject: '[MSFS] Sujet 13' }),
 ];
 
-let app: FastifyInstance | undefined;
-afterEach(async () => app?.close());
+let app: ForumApp | undefined;
 
 describe('GET /viewforum.php', () => {
 	const deps = (overrides = {}) =>
@@ -63,7 +62,7 @@ describe('GET /viewforum.php', () => {
 
 	it('liste les sujets : épinglé, fermé, déplacé, balise colorée, compteurs', async () => {
 		app = await buildApp(deps());
-		const res = await app.inject('/viewforum.php?id=2');
+		const res = await inject(app, '/viewforum.php?id=2');
 
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('<title>Captures &amp; &lt;Vidéos&gt; (Page 1) / Forum de test</title>');
@@ -83,7 +82,7 @@ describe('GET /viewforum.php', () => {
 
 	it('membre : nouveaux messages, mini-pagination, abonnement, point', async () => {
 		app = await buildApp(deps({ config: { showDot: true } }));
-		const res = await app.inject({ url: '/viewforum.php?id=2', headers: { cookie: sessionCookie(3) } });
+		const res = await inject(app, { url: '/viewforum.php?id=2', headers: { cookie: sessionCookie(3) } });
 
 		expect(res.body).toContain('viewtopic.php?id=13&amp;action=new');
 		expect(res.body).not.toContain('viewtopic.php?id=12&amp;action=new');
@@ -96,17 +95,17 @@ describe('GET /viewforum.php', () => {
 
 	it('modérateur du forum : lien de modération du pied', async () => {
 		app = await buildApp(deps());
-		const res = await app.inject({ url: '/viewforum.php?id=2', headers: { cookie: sessionCookie(5) } });
+		const res = await inject(app, { url: '/viewforum.php?id=2', headers: { cookie: sessionCookie(5) } });
 		expect(res.body).toContain('moderate.php?fid=2&amp;p=1');
 	});
 
 	it('redirige les forums de redirection, 404 si illisible ou inexistant', async () => {
 		app = await buildApp(deps({ forumReaders: new Map([[2, [GroupId.Admin]]]) }));
-		const redirect = await app.inject('/viewforum.php?id=3');
+		const redirect = await inject(app, '/viewforum.php?id=3');
 		expect(redirect.statusCode).toBe(302);
 		expect(redirect.headers.location).toBe('https://example.test/');
-		expect((await app.inject('/viewforum.php?id=2')).statusCode).toBe(404);
-		expect((await app.inject('/viewforum.php?id=abc')).statusCode).toBe(404);
+		expect((await inject(app, '/viewforum.php?id=2')).statusCode).toBe(404);
+		expect((await inject(app, '/viewforum.php?id=abc')).statusCode).toBe(404);
 	});
 
 	it('discussions anciennes (o_cold_topic_days) : liste récente, bouton et page des anciennes', async () => {
@@ -117,14 +116,14 @@ describe('GET /viewforum.php', () => {
 			summary(23, { lastPost: { postedAt: NOW - 200 * 86_400, postId: 230, poster: 'admin' } }),
 		];
 		app = await buildApp(deps({ forumTopics: new Map([[2, aged]]), config: { coldTopicDays: 90 } }));
-		const recent = await app.inject('/viewforum.php?id=2');
+		const recent = await inject(app, '/viewforum.php?id=2');
 		// L'épinglée reste dans la liste, quel que soit son âge.
 		expect(recent.body).toContain('viewtopic.php?id=20"');
 		expect(recent.body).toContain('viewtopic.php?id=21"');
 		expect(recent.body).not.toContain('viewtopic.php?id=22"');
 		expect(recent.body).toContain('href="viewforum.php?id=2&amp;old=1">Anciennes discussions (2)</a>');
 
-		const old = await app.inject('/viewforum.php?id=2&old=1');
+		const old = await inject(app, '/viewforum.php?id=2&old=1');
 		expect(old.body).toContain('— Anciennes discussions</h1>');
 		expect(old.body).toContain('plus de 90 jours');
 		expect(old.body).toContain('viewtopic.php?id=22"');
@@ -136,15 +135,14 @@ describe('GET /viewforum.php', () => {
 
 	it('sans seuil ou sans ancienne discussion : pas de bouton', async () => {
 		app = await buildApp(deps());
-		expect((await app.inject('/viewforum.php?id=2')).body).not.toContain('old=1');
-		await app.close();
+		expect((await inject(app, '/viewforum.php?id=2')).body).not.toContain('old=1');
 		app = await buildApp(deps({ config: { coldTopicDays: 90 }, forumTopics: new Map([[2, [summary(30)]]]) }));
-		expect((await app.inject('/viewforum.php?id=2')).body).not.toContain('old=1');
+		expect((await inject(app, '/viewforum.php?id=2')).body).not.toContain('old=1');
 	});
 
 	it('forum vide et permission de créer des sujets retirée par forum_perms', async () => {
 		app = await buildApp(deps({ forumTopics: new Map(), forumInfos: [{ ...forumInfo, topicPermission: false, numTopics: 0 }] }));
-		const res = await app.inject('/viewforum.php?id=2');
+		const res = await inject(app, '/viewforum.php?id=2');
 		expect(res.body).toContain('Le forum ne contient aucune discussion.');
 		expect(res.body).not.toContain('post.php?fid=2');
 	});

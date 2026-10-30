@@ -2,12 +2,12 @@
  * Mots censurés (admin_censoring.php) de bout en bout avec les doublures.
  */
 
-import type { FastifyInstance } from 'fastify';
-import { afterEach, describe, expect, it } from 'vitest';
-import { buildApp } from '../src/app.ts';
+import { describe, expect, it } from 'vitest';
+import { buildApp, type ForumApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
 import { type FakeData, fakeDeps, group, guest, sessionCookie, viewer } from './fixtures.ts';
+import { inject } from './inject.ts';
 
 const SEED = 'graine-de-test';
 const CSRF_SECRET = '9'.repeat(64);
@@ -15,10 +15,9 @@ const mod = viewer({ id: 5, username: 'MaxDUO', group: group({ id: GroupId.Moder
 const admin = viewer({ id: 2, username: 'admin', group: group({ id: GroupId.Admin }) });
 const cookies = (userId: number): string => `${sessionCookie(userId)}; avrobb_csrf=${CSRF_SECRET}`;
 
-let app: FastifyInstance | undefined;
-afterEach(async () => app?.close());
+let app: ForumApp | undefined;
 
-async function start(): Promise<{ server: FastifyInstance; fake: FakeData }> {
+async function start(): Promise<{ server: ForumApp; fake: FakeData }> {
 	const fake: FakeData = {
 		users: [{ viewer: guest }, { viewer: mod }, { viewer: admin }],
 		topics: [],
@@ -29,8 +28,8 @@ async function start(): Promise<{ server: FastifyInstance; fake: FakeData }> {
 	return { server: app, fake };
 }
 
-function post(server: FastifyInstance, fields: Record<string, string>) {
-	return server.inject({
+function post(server: ForumApp, fields: Record<string, string>) {
+	return inject(server, {
 		method: 'POST',
 		url: '/admin_censoring.php',
 		headers: { cookie: cookies(2), 'content-type': 'application/x-www-form-urlencoded' },
@@ -41,8 +40,8 @@ function post(server: FastifyInstance, fields: Record<string, string>) {
 describe('admin_censoring.php', () => {
 	it('réservé aux administrateurs ; ajout, modification, suppression et cache PHP', async () => {
 		const { server, fake } = await start();
-		expect((await server.inject({ url: '/admin_censoring.php', headers: { cookie: cookies(5) } })).statusCode).toBe(403);
-		const page = await server.inject({ url: '/admin_censoring.php', headers: { cookie: cookies(2) } });
+		expect((await inject(server, { url: '/admin_censoring.php', headers: { cookie: cookies(5) } })).statusCode).toBe(403);
+		const page = await inject(server, { url: '/admin_censoring.php', headers: { cookie: cookies(2) } });
 		expect(page.body).toContain('name="search_for[1]" value="zut"');
 		expect((await post(server, { add_word: '1', new_search_for: ' ' })).statusCode).toBe(400);
 		await post(server, { add_word: '1', new_search_for: ' flûte ', new_replace_with: 'f***' });

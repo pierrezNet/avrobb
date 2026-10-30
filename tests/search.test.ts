@@ -1,10 +1,9 @@
 /**
- * Recherche : règles de search.php / search_idx.php (services purs) et page via app.inject().
+ * Recherche : règles de search.php / search_idx.php (services purs) et page via inject(app, ).
  */
 
-import type { FastifyInstance } from 'fastify';
-import { afterEach, describe, expect, it } from 'vitest';
-import { buildApp } from '../src/app.ts';
+import { describe, expect, it } from 'vitest';
+import { buildApp, type ForumApp } from '../src/app.ts';
 import type { SearchPost, SearchTopic } from '../src/domain/models.ts';
 import type { SearchReader } from '../src/repositories/SearchRepository.ts';
 import { phpUnserialize } from '../src/services/phpSerialize.ts';
@@ -17,6 +16,7 @@ import {
 	type WordHit,
 } from '../src/services/search.ts';
 import { type FakeData, fakeDeps, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
+import { inject } from './inject.ts';
 
 const member = { id: 3, isGuest: false, isAdmMod: false };
 
@@ -172,8 +172,7 @@ function fakeSearch(overrides: Partial<SearchReader> = {}): SearchReader {
 
 const users = [{ viewer: guest }, { viewer: viewer({ lastVisit: NOW - 3600 }) }];
 
-let app: FastifyInstance | undefined;
-afterEach(async () => app?.close());
+let app: ForumApp | undefined;
 
 describe('GET /search.php', () => {
 	/** Doublures avec un search_cache en mémoire partagé entre lecture et écriture. */
@@ -190,14 +189,14 @@ describe('GET /search.php', () => {
 	/** Lance une recherche et suit la redirection vers sa page de résultats (search_id). */
 	const searchFor = async (url: string, headers: Record<string, string> = {}) => {
 		if (app === undefined) throw new Error('application non démarrée');
-		const first = await app.inject({ url, headers });
+		const first = await inject(app, { url, headers });
 		if (first.statusCode !== 302) return first;
-		return app.inject({ url: `/${first.headers.location}`, headers });
+		return inject(app, { url: `/${first.headers.location}`, headers });
 	};
 
 	it('affiche le formulaire avec les forums à cocher', async () => {
 		app = await buildApp(deps());
-		const res = await app.inject('/search.php');
+		const res = await inject(app, '/search.php');
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('<input type="hidden" name="action" value="search">');
 		expect(res.body).toContain('<input type="checkbox" name="forums" value="2"> Captures &amp; Vidéos');
@@ -224,30 +223,30 @@ describe('GET /search.php', () => {
 
 	it('recherche rapide paginée avec ses paramètres, nom du membre dans le fil d’Ariane', async () => {
 		app = await buildApp(deps());
-		const res = await app.inject('/search.php?action=show_user_topics&user_id=6');
+		const res = await inject(app, '/search.php?action=show_user_topics&user_id=6');
 		expect(res.body).toContain('Discussions de valdefsx');
 		expect(res.body.match(/<h3 class="forum-row__name/g)).toHaveLength(30);
 		const searchId = /href="search\.php\?search_id=(\d+)&amp;p=2"/.exec(res.body)?.[1];
 		expect(searchId).toBeDefined();
 		// La page 2 relit les résultats mémorisés (même propriétaire : l'invité, par son IP).
-		const page2 = await app.inject(`/search.php?search_id=${searchId}&p=2`);
+		const page2 = await inject(app, `/search.php?search_id=${searchId}&p=2`);
 		expect(page2.body.match(/<h3 class="forum-row__name/g)).toHaveLength(5);
 		expect(res.body).toContain('<span class="badge">Épinglée :</span>');
 	});
 
 	it('messages d’absence de résultat et refus', async () => {
 		app = await buildApp(deps({ quickSearch: async () => [] }));
-		expect((await app.inject('/search.php?action=show_unanswered')).body).toContain('Il n&#39;y a pas de message sans réponse');
-		expect((await app.inject('/search.php?action=search&keywords=xyzzy')).body).toContain('aucun résultat');
-		expect((await app.inject('/search.php?action=search&keywords=ab')).body).toContain('Vous devez saisir au moins un mot-clé');
-		expect((await app.inject('/search.php?action=show_new')).statusCode).toBe(403);
-		expect((await app.inject('/search.php?search_id=0')).statusCode).toBe(404);
+		expect((await inject(app, '/search.php?action=show_unanswered')).body).toContain('Il n&#39;y a pas de message sans réponse');
+		expect((await inject(app, '/search.php?action=search&keywords=xyzzy')).body).toContain('aucun résultat');
+		expect((await inject(app, '/search.php?action=search&keywords=ab')).body).toContain('Vous devez saisir au moins un mot-clé');
+		expect((await inject(app, '/search.php?action=show_new')).statusCode).toBe(403);
+		expect((await inject(app, '/search.php?search_id=0')).statusCode).toBe(404);
 	});
 
 	it('mémorise la recherche au format du PHP et applique l’anti-flood (last_search)', async () => {
 		const setup = deps();
 		app = await buildApp(setup);
-		const res = await app.inject('/search.php?action=search&keywords=vintage');
+		const res = await inject(app, '/search.php?action=search&keywords=vintage');
 		expect(res.statusCode).toBe(302);
 		const id = Number(/search_id=(\d+)/.exec(String(res.headers.location))?.[1]);
 		const cached = setup.data.searchCache?.get(id);
@@ -255,7 +254,6 @@ describe('GET /search.php', () => {
 		expect(cached?.data).toMatch(/^a:6:\{s:10:"search_ids";s:\d+:"a:3:\{/);
 		expect(cached?.data).toContain('s:11:"search_type";a:4:{i:0;s:8:"keywords";i:1;s:7:"vintage";i:2;s:0:"";i:3;i:0;}');
 		expect(setup.data.searchLog).toEqual([`invité 127.0.0.1 ${NOW}`]);
-		await app.close();
 
 		const member = deps();
 		app = await buildApp({
@@ -265,7 +263,7 @@ describe('GET /search.php', () => {
 					uid === 3 ? { presence: null, viewer: viewer({ lastSearch: NOW - 5 }) } : member.users.findViewer(uid),
 			},
 		});
-		const flood = await app.inject({ url: '/search.php?action=search&keywords=vintage', headers: { cookie: sessionCookie(3) } });
+		const flood = await inject(app, { url: '/search.php?action=search&keywords=vintage', headers: { cookie: sessionCookie(3) } });
 		expect(flood.statusCode).toBe(429);
 		expect(flood.body).toContain('Vous devez patienter au minimum 30 secondes');
 	});
@@ -275,9 +273,9 @@ describe('GET /search.php', () => {
 		const data = `a:6:{s:10:"search_ids";s:${inner.length}:"${inner}";s:8:"num_hits";i:2;s:7:"sort_by";i:0;s:8:"sort_dir";s:4:"DESC";s:7:"show_as";s:6:"topics";s:11:"search_type";a:2:{i:0;s:6:"action";i:1;s:15:"show_unanswered";}}`;
 		app = await buildApp(deps({ findCachedSearch: async (id, ident) => (id === 77 && ident === 'Tessy' ? data : null) }));
 
-		const own = await app.inject({ url: '/search.php?search_id=77', headers: { cookie: sessionCookie(3) } });
+		const own = await inject(app, { url: '/search.php?search_id=77', headers: { cookie: sessionCookie(3) } });
 		expect(own.body.match(/<h3 class="forum-row__name/g)).toHaveLength(2);
 		expect(own.body).toContain('>Sans réponse</a>');
-		expect((await app.inject('/search.php?search_id=77')).body).toContain('aucun résultat');
+		expect((await inject(app, '/search.php?search_id=77')).body).toContain('aucun résultat');
 	});
 });

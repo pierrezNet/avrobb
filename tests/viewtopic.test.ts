@@ -1,8 +1,8 @@
-import type { FastifyInstance } from 'fastify';
-import { afterEach, describe, expect, it } from 'vitest';
-import { buildApp } from '../src/app.ts';
+import { describe, expect, it } from 'vitest';
+import { buildApp, type ForumApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { boardConfig, type FakeData, fakeDeps, group, guest, NOW, post, sessionCookie, topic, viewer } from './fixtures.ts';
+import { inject } from './inject.ts';
 
 const tessy = viewer();
 const admin = viewer({ id: 2, username: 'admin', group: group({ id: GroupId.Admin, title: 'Administrateurs' }) });
@@ -16,13 +16,12 @@ function data(overrides: Partial<FakeData> = {}): FakeData {
 	};
 }
 
-let app: FastifyInstance;
-afterEach(async () => app.close());
+let app: ForumApp;
 
 describe('GET /viewtopic.php', () => {
 	it('affiche le sujet à un invité, en échappant le sujet et les messages', async () => {
 		app = await buildApp(fakeDeps(data()));
-		const res = await app.inject('/viewtopic.php?id=10');
+		const res = await inject(app, '/viewtopic.php?id=10');
 
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
@@ -36,20 +35,20 @@ describe('GET /viewtopic.php', () => {
 	it('renvoie 404 pour un sujet inexistant ou un forum non lisible par le groupe', async () => {
 		app = await buildApp(fakeDeps(data({ forumReaders: new Map([[1, [GroupId.Admin]]]) })));
 
-		expect((await app.inject('/viewtopic.php?id=999')).statusCode).toBe(404);
-		expect((await app.inject('/viewtopic.php?id=10')).statusCode).toBe(404);
-		expect((await app.inject({ url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(2) } })).statusCode).toBe(200);
+		expect((await inject(app, '/viewtopic.php?id=999')).statusCode).toBe(404);
+		expect((await inject(app, '/viewtopic.php?id=10')).statusCode).toBe(404);
+		expect((await inject(app, { url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(2) } })).statusCode).toBe(200);
 	});
 
 	it('reconnaît le cookie de session PHP et ignore un cookie falsifié', async () => {
 		app = await buildApp(fakeDeps(data()));
 
-		const valid = await app.inject({ url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(3) } });
+		const valid = await inject(app, { url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(3) } });
 		expect(valid.body).toContain('<strong>Tessy</strong>');
 		expect(valid.body).toContain('id="navlogout"');
 		expect(valid.body).toContain('class="postedit"');
 
-		const forged = await app.inject({
+		const forged = await inject(app, {
 			url: '/viewtopic.php?id=10',
 			headers: { cookie: sessionCookie(2).replace(/.$/, (last) => (last === '0' ? '1' : '0')) },
 		});
@@ -60,7 +59,7 @@ describe('GET /viewtopic.php', () => {
 		const many = Array.from({ length: 30 }, (_, i) => post(200 + i));
 		app = await buildApp(fakeDeps(data({ topics: [topic({ id: 20, numReplies: 29, firstPostId: 200 })], posts: new Map([[20, many]]) })));
 
-		const res = await app.inject('/viewtopic.php?pid=227');
+		const res = await inject(app, '/viewtopic.php?pid=227');
 		expect(res.statusCode).toBe(302);
 		expect(res.headers.location).toBe('viewtopic.php?id=20&p=2#p227');
 	});
@@ -69,7 +68,7 @@ describe('GET /viewtopic.php', () => {
 		const many = Array.from({ length: 30 }, (_, i) => post(200 + i));
 		app = await buildApp(fakeDeps(data({ topics: [topic({ id: 20, numReplies: 29, firstPostId: 200 })], posts: new Map([[20, many]]) })));
 
-		const res = await app.inject({ url: '/viewtopic.php?id=20&p=2', headers: { cookie: sessionCookie(3) } });
+		const res = await inject(app, { url: '/viewtopic.php?id=20&p=2', headers: { cookie: sessionCookie(3) } });
 		expect(res.body).toContain('id="p225"');
 		expect(res.body).not.toContain('id="p224"');
 		expect(res.body).toContain('<strong aria-current="page">2</strong>');
@@ -81,12 +80,11 @@ describe('GET /viewtopic.php', () => {
 
 	it('pas de bouton « Répondre » quand le formulaire de réponse est en bas de page', async () => {
 		app = await buildApp(fakeDeps(data()));
-		const withForm = await app.inject({ url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(3) } });
+		const withForm = await inject(app, { url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(3) } });
 		expect(withForm.body).toContain('id="quickpostform"');
 		expect(withForm.body).not.toContain('href="post.php?tid=10"');
-		await app.close();
 		app = await buildApp(fakeDeps(data({ config: { posting: { ...boardConfig.posting, quickpost: false } } })));
-		const withoutForm = await app.inject({ url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(3) } });
+		const withoutForm = await inject(app, { url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(3) } });
 		expect(withoutForm.body).not.toContain('id="quickpostform"');
 		expect(withoutForm.body).toContain('href="post.php?tid=10"');
 	});
@@ -104,7 +102,7 @@ describe('gestion des erreurs', () => {
 			},
 		});
 
-		const res = await app.inject('/viewtopic.php?id=10');
+		const res = await inject(app, '/viewtopic.php?id=10');
 		expect(res.statusCode).toBe(500);
 		expect(res.headers['content-type']).toContain('text/html');
 		expect(res.body).toContain('Une erreur est survenue');
@@ -123,7 +121,7 @@ describe('gestion des erreurs', () => {
 			},
 		});
 
-		const res = await app.inject('/viewtopic.php?id=10');
+		const res = await inject(app, '/viewtopic.php?id=10');
 		expect(res.statusCode).toBe(500);
 		expect(res.body).toContain('Une erreur est survenue');
 		expect(res.body).not.toContain('ECONNREFUSED');
@@ -131,7 +129,7 @@ describe('gestion des erreurs', () => {
 
 	it('rend les URL inconnues en 404 dans la mise en page', async () => {
 		app = await buildApp(fakeDeps(data()));
-		const res = await app.inject('/inconnu');
+		const res = await inject(app, '/inconnu');
 		expect(res.statusCode).toBe(404);
 		expect(res.body).toContain('Le lien que vous avez suivi est incorrect');
 	});
@@ -152,7 +150,7 @@ describe('viewtopic : balises et censure', () => {
 			),
 		);
 
-		const res = await app.inject('/viewtopic.php?id=10');
+		const res = await inject(app, '/viewtopic.php?id=10');
 		expect(res.body).toContain('<title>[MSFS] Panne de *** (Page 1) / Forum / Forum de test</title>');
 		expect(res.body).toContain(
 			'<h1 class="page-title"><span class="subject-tag" style="background-color: #1d4ed8; color: #ffffff">MSFS</span><span class="subject-tag-gap">&#160;</span>Panne de ***</h1>',
@@ -175,7 +173,7 @@ describe('viewtopic : balises et censure', () => {
 			),
 		);
 
-		const asAdmin = await app.inject({ url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(2) } });
+		const asAdmin = await inject(app, { url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(2) } });
 		expect(asAdmin.body).toContain('<p class="post__usertitle">En vacances</p>');
 		expect(asAdmin.body).toContain('<strong>3</strong>');
 		expect(asAdmin.body).toContain('reputation.php?pid=100&amp;uid=3&amp;method=1');
@@ -183,7 +181,7 @@ describe('viewtopic : balises et censure', () => {
 		expect(asAdmin.body).toContain('href="http://javascript:alert(1)"');
 
 		// L'auteur voit sa renommée mais ne peut pas voter pour lui-même.
-		const asAuthor = await app.inject({ url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(3) } });
+		const asAuthor = await inject(app, { url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(3) } });
 		expect(asAuthor.body).toContain('<strong>3</strong>');
 		expect(asAuthor.body).not.toContain('method=1');
 	});
@@ -192,7 +190,7 @@ describe('viewtopic : balises et censure', () => {
 describe('réponse rapide (o_quickpost)', () => {
 	it('proposée au membre qui peut répondre, avec l’abonnement conservé', async () => {
 		app = await buildApp(fakeDeps(data({ subscribedTopics: [10] })));
-		const res = await app.inject({ url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(3) } });
+		const res = await inject(app, { url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(3) } });
 		expect(res.body).toContain('id="quickpostform"');
 		expect(res.body).toContain('action="post.php?action=post&amp;tid=10"');
 		expect(res.body).toMatch(/name="csrf_token" value="[0-9a-f]{64}"/);
@@ -202,11 +200,10 @@ describe('réponse rapide (o_quickpost)', () => {
 
 	it('invité autorisé : pseudo et e-mail ; sinon, pas de formulaire', async () => {
 		app = await buildApp(fakeDeps(data()));
-		expect((await app.inject('/viewtopic.php?id=10')).body).not.toContain('quickpostform');
-		await app.close();
+		expect((await inject(app, '/viewtopic.php?id=10')).body).not.toContain('quickpostform');
 
 		app = await buildApp(fakeDeps(data({ topics: [topic({ id: 10, forumReplyPermission: true })] })));
-		const res = await app.inject('/viewtopic.php?id=10');
+		const res = await inject(app, '/viewtopic.php?id=10');
 		expect(res.body).toContain('id="quickpostform"');
 		expect(res.body).toContain('name="req_email"');
 		expect(res.body).not.toContain('name="subscribe"');
@@ -214,11 +211,10 @@ describe('réponse rapide (o_quickpost)', () => {
 
 	it('fermée sur un sujet clos, sauf pour un modérateur ; absente si désactivée', async () => {
 		app = await buildApp(fakeDeps(data({ topics: [topic({ id: 10, closed: true })] })));
-		expect((await app.inject({ url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(3) } })).body).not.toContain('quickpostform');
-		expect((await app.inject({ url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(2) } })).body).toContain('quickpostform');
-		await app.close();
+		expect((await inject(app, { url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(3) } })).body).not.toContain('quickpostform');
+		expect((await inject(app, { url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(2) } })).body).toContain('quickpostform');
 
 		app = await buildApp(fakeDeps(data({ config: { posting: { ...boardConfig.posting, quickpost: false } } })));
-		expect((await app.inject({ url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(3) } })).body).not.toContain('quickpostform');
+		expect((await inject(app, { url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(3) } })).body).not.toContain('quickpostform');
 	});
 });

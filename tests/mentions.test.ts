@@ -3,13 +3,13 @@
  * membre mentionné après une réponse (post.php).
  */
 
-import type { FastifyInstance } from 'fastify';
-import { afterEach, describe, expect, it } from 'vitest';
-import { buildApp } from '../src/app.ts';
+import { describe, expect, it } from 'vitest';
+import { buildApp, type ForumApp } from '../src/app.ts';
 import { GroupId, type PrivateRecipient } from '../src/domain/models.ts';
 import { extractMentionIds, MAX_MENTIONS, mentionRecipients } from '../src/services/mentions.ts';
 import { pmData } from './fakePrivateMessages.ts';
 import { type FakeData, fakeDeps, guest, post, sessionCookie, topic, viewer } from './fixtures.ts';
+import { inject } from './inject.ts';
 
 const BASE = 'http://forum.test';
 const mention = (id: number, name: string): string => `[url=${BASE}/profile.php?id=${id}]@${name}[/url]`;
@@ -51,8 +51,7 @@ describe('repérage des mentions', () => {
 const tessy = viewer();
 const cookie = `${sessionCookie(3)}`;
 
-let app: FastifyInstance | undefined;
-afterEach(async () => app?.close());
+let app: ForumApp | undefined;
 
 function data(overrides: Partial<FakeData> = {}): FakeData {
 	return {
@@ -79,15 +78,15 @@ function data(overrides: Partial<FakeData> = {}): FakeData {
 	};
 }
 
-async function reply(server: FastifyInstance, message: string) {
-	const page = await server.inject({ url: '/post.php?tid=10', headers: { cookie } });
+async function reply(server: ForumApp, message: string) {
+	const page = await inject(server, { url: '/post.php?tid=10', headers: { cookie } });
 	const csrf =
 		[page.headers['set-cookie']]
 			.flat()
 			.find((c) => c?.startsWith('avrobb_csrf='))
 			?.split(';')[0] ?? '';
 	const token = /name="csrf_token" value="([0-9a-f]+)"/.exec(page.body)?.[1] ?? '';
-	return server.inject({
+	return inject(server, {
 		method: 'POST',
 		url: '/post.php?action=post&tid=10',
 		headers: { cookie: `${cookie}; ${csrf}`, 'content-type': 'application/x-www-form-urlencoded' },

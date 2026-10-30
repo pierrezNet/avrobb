@@ -4,12 +4,12 @@
  * pied de viewtopic (boutons POST).
  */
 
-import type { FastifyInstance } from 'fastify';
-import { afterEach, describe, expect, it } from 'vitest';
-import { buildApp } from '../src/app.ts';
+import { describe, expect, it } from 'vitest';
+import { buildApp, type ForumApp } from '../src/app.ts';
 import { type ForumInfo, GroupId, type TopicSummary } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
 import { type FakeData, fakeDeps, group, guest, NOW, post, sessionCookie, topic, viewer } from './fixtures.ts';
+import { inject } from './inject.ts';
 
 const SEED = 'graine-de-test';
 const CSRF_SECRET = '9'.repeat(64);
@@ -69,20 +69,19 @@ function data(overrides: Partial<FakeData> = {}): FakeData {
 	};
 }
 
-let app: FastifyInstance | undefined;
-afterEach(async () => app?.close());
+let app: ForumApp | undefined;
 
-async function start(fake = data()): Promise<{ server: FastifyInstance; fake: FakeData }> {
+async function start(fake = data()): Promise<{ server: ForumApp; fake: FakeData }> {
 	app = await buildApp(fakeDeps(fake));
 	return { server: app, fake };
 }
 
-const get = (server: FastifyInstance, userId: number, url: string) => server.inject({ url, headers: { cookie: cookies(userId) } });
+const get = (server: ForumApp, userId: number, url: string) => inject(server, { url, headers: { cookie: cookies(userId) } });
 
-function post_(server: FastifyInstance, userId: number, url: string, fields: Record<string, string | string[]>) {
+function post_(server: ForumApp, userId: number, url: string, fields: Record<string, string | string[]>) {
 	const body = new URLSearchParams({ csrf_token: csrfToken(CSRF_SECRET, SEED, userId) });
 	for (const [name, value] of Object.entries(fields)) for (const item of [value].flat()) body.append(name, item);
-	return server.inject({
+	return inject(server, {
 		method: 'POST',
 		url,
 		headers: { cookie: cookies(userId), 'content-type': 'application/x-www-form-urlencoded' },
@@ -93,7 +92,7 @@ function post_(server: FastifyInstance, userId: number, url: string, fields: Rec
 describe('accès', () => {
 	it('réservé aux modérateurs du forum', async () => {
 		const { server } = await start();
-		expect((await server.inject('/moderate.php?fid=2')).statusCode).toBe(403);
+		expect((await inject(server, '/moderate.php?fid=2')).statusCode).toBe(403);
 		expect((await get(server, 3, '/moderate.php?fid=2')).statusCode).toBe(403);
 		expect((await get(server, 5, '/moderate.php?fid=99')).statusCode).toBe(404);
 		expect((await get(server, 5, '/moderate.php?fid=2')).statusCode).toBe(200);

@@ -3,13 +3,13 @@
  * navigateur), suppression et sélecteur d'images à insérer dans un message.
  */
 
-import type { FastifyInstance } from 'fastify';
-import { afterEach, describe, expect, it } from 'vitest';
-import { buildApp } from '../src/app.ts';
+import { describe, expect, it } from 'vitest';
+import { buildApp, type ForumApp } from '../src/app.ts';
 import { type GalleryImage, GroupId } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
 import { canDeleteGalleryImage, galleryInsertCode, validateGalleryUpload } from '../src/services/gallery.ts';
 import { type FakeData, fakeDeps, group, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
+import { inject } from './inject.ts';
 
 const SEED = 'graine-de-test';
 const CSRF_SECRET = 'e'.repeat(64);
@@ -74,10 +74,9 @@ function data(overrides: Partial<FakeData> = {}): FakeData {
 	};
 }
 
-let app: FastifyInstance | undefined;
-afterEach(async () => app?.close());
+let app: ForumApp | undefined;
 
-const get = (server: FastifyInstance, userId: number, url: string) => server.inject({ url, headers: { cookie: cookies(userId) } });
+const get = (server: ForumApp, userId: number, url: string) => inject(server, { url, headers: { cookie: cookies(userId) } });
 
 describe('GET /gallery.php', () => {
 	it('recherche dans le titre et la description, pagination et filtres la conservent', async () => {
@@ -96,7 +95,7 @@ describe('GET /gallery.php', () => {
 
 	it('affiche 20 images par page, titres échappés, liens vers les fichiers du stockage', async () => {
 		app = await buildApp(fakeDeps(data()));
-		const res = await app.inject('/gallery.php');
+		const res = await inject(app, '/gallery.php');
 		expect(res.statusCode).toBe(200);
 		expect(res.body.match(/class="gallery__item"/g)).toHaveLength(20);
 		expect(res.body).toContain('&lt;b&gt;Image 1&lt;/b&gt;');
@@ -125,13 +124,13 @@ describe('GET /gallery.php', () => {
 
 	it('envoi réservé aux membres', async () => {
 		app = await buildApp(fakeDeps(data()));
-		expect((await app.inject('/gallery.php?info=new')).statusCode).toBe(403);
+		expect((await inject(app, '/gallery.php?info=new')).statusCode).toBe(403);
 		expect((await get(app, 3, '/gallery.php?info=new')).body).toContain('data-gallery-upload');
 	});
 });
 
 async function upload(
-	server: FastifyInstance,
+	server: ForumApp,
 	userId: number,
 	url: string,
 	fields: Record<string, string>,
@@ -142,7 +141,7 @@ async function upload(
 	for (const [name, value] of Object.entries(fields)) form.append(name, value);
 	for (const [name, [fileName, content]] of Object.entries(files)) form.append(name, new Blob([new Uint8Array(content)]), fileName);
 	const request = new Request('http://x/', { method: 'POST', body: form });
-	return server.inject({
+	return inject(server, {
 		method: 'POST',
 		url,
 		headers: { cookie: cookies(userId), 'content-type': request.headers.get('content-type') ?? '' },
@@ -248,7 +247,7 @@ describe('POST /gallery.php', () => {
 		expect(confirm.body).toContain('action="gallery.php?info=modo&amp;option=del&amp;id=1"');
 
 		const body = new URLSearchParams({ csrf_token: csrfToken(CSRF_SECRET, SEED, 3) });
-		const res = await app.inject({
+		const res = await inject(app, {
 			method: 'POST',
 			url: '/gallery.php?info=modo&option=del&id=1',
 			headers: { cookie: cookies(3), 'content-type': 'application/x-www-form-urlencoded' },
@@ -260,7 +259,7 @@ describe('POST /gallery.php', () => {
 	});
 });
 
-describe('Images de l’installation PHP (/img/)', () => {
+describe('Images du stockage (/img/)', () => {
 	it('sert les images et rien d’autre', async () => {
 		const { mkdtemp, mkdir, writeFile } = await import('node:fs/promises');
 		const { tmpdir } = await import('node:os');
@@ -269,16 +268,13 @@ describe('Images de l’installation PHP (/img/)', () => {
 		await mkdir(path.join(root, 'gallery'));
 		await writeFile(path.join(root, 'gallery', '1.webp'), 'RIFF');
 		await writeFile(path.join(root, 'gallery', 'index.html'), '<p>');
-		const app = await buildApp(fakeDeps(data(), { imagesRoot: root }));
-		try {
-			const ok = await app.inject({ url: '/img/gallery/1.webp' });
-			expect(ok.statusCode).toBe(200);
-			expect(ok.headers['content-type']).toBe('image/webp');
-			const refused = await app.inject({ url: '/img/gallery/index.html' });
-			expect(refused.statusCode).toBe(404);
-			expect((await app.inject({ url: '/img/../package.json' })).statusCode).toBe(404);
-		} finally {
-			await app.close();
-		}
+		const { DirectoryFiles } = await import('../src/adapters/directoryFiles.ts');
+		const app = await buildApp(fakeDeps(data(), { images: new DirectoryFiles(root, ['webp', 'png', 'jpg']) }));
+		const ok = await inject(app, { url: '/img/gallery/1.webp' });
+		expect(ok.statusCode).toBe(200);
+		expect(ok.headers['content-type']).toBe('image/webp');
+		const refused = await inject(app, { url: '/img/gallery/index.html' });
+		expect(refused.statusCode).toBe(404);
+		expect((await inject(app, { url: '/img/../package.json' })).statusCode).toBe(404);
 	});
 });

@@ -4,8 +4,8 @@
  * La liste est enregistrée dans la table config (o_subject_tags).
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { SubjectTag } from '../../domain/models.ts';
+import type { AppReply, AppRequest } from '../../http/context.ts';
 import { type FormBody, field } from '../../http/forms.ts';
 import { renderMessage } from '../../http/layout.ts';
 import { renameTagInSubject } from '../../services/subjectPrefixes.ts';
@@ -44,7 +44,7 @@ export class SubjectTagAdmin {
 		});
 	}
 
-	show(request: FastifyRequest<{ Querystring: AdminLoaderQuery }>, reply: FastifyReply): Promise<FastifyReply> {
+	show(request: AppRequest<{ Querystring: AdminLoaderQuery }>, reply: AppReply): Promise<AppReply> {
 		const { lang } = this.deps.page;
 		const t = lang.adminPlugins.labels;
 		const { action } = request.query;
@@ -60,7 +60,7 @@ export class SubjectTagAdmin {
 		return renderMessage(request, reply, this.deps, 400, lang.common.badRequest);
 	}
 
-	async submit(request: FastifyRequest<{ Querystring: AdminLoaderQuery; Body: FormBody }>, reply: FastifyReply): Promise<FastifyReply> {
+	async submit(request: AppRequest<{ Querystring: AdminLoaderQuery; Body: FormBody }>, reply: AppReply): Promise<AppReply> {
 		const { lang } = this.deps.page;
 		const t = lang.adminPlugins.labels;
 		const tags = request.board.subjectTags;
@@ -107,19 +107,19 @@ export class SubjectTagAdmin {
 		await this.deps.configCache.invalidate();
 	}
 
-	#find(request: FastifyRequest<{ Querystring: AdminLoaderQuery }>): SubjectTag | undefined {
+	#find(request: AppRequest<{ Querystring: AdminLoaderQuery }>): SubjectTag | undefined {
 		const name = request.query.tag ?? '';
 		return request.board.subjectTags.find((tag) => tag.name === name);
 	}
 
 	#renderForm(
-		request: FastifyRequest,
-		reply: FastifyReply,
+		request: AppRequest,
+		reply: AppReply,
 		tag: SubjectTag | null,
 		sent: { name: string; group: string; color: string } | null,
 		errors: string[],
 		status = 200,
-	): Promise<FastifyReply> {
+	): Promise<AppReply> {
 		const t = this.deps.page.lang.adminPlugins.labels;
 		reply.code(status);
 		const name = sent?.name ?? tag?.name ?? '';

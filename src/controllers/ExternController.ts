@@ -6,7 +6,7 @@
  * dans cache/ (o_feed_ttl, qui écrirait des fichiers PHP).
  */
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { AppReply, AppRequest } from '../http/context.ts';
 import type { LayoutDeps } from '../http/layout.ts';
 import { buildTopicFeed, buildTopicsFeed, type FeedInput } from '../presenters/feed.ts';
 import type { CensorReader } from '../repositories/CensorRepository.ts';
@@ -53,7 +53,7 @@ const idList = (value: string | undefined): number[] =>
 export class ExternController {
 	constructor(private readonly deps: ExternControllerDeps) {}
 
-	show = async (request: FastifyRequest<{ Querystring: ExternQuery }>, reply: FastifyReply): Promise<FastifyReply> => {
+	show = async (request: AppRequest<{ Querystring: ExternQuery }>, reply: AppReply): Promise<AppReply> => {
 		const { viewer, board: config } = request;
 		const { lang } = this.deps.page;
 
@@ -77,11 +77,7 @@ export class ExternController {
 		return reply.type('text/plain; charset=utf-8').send(lang.common.badRequest);
 	};
 
-	private async feed(
-		request: FastifyRequest<{ Querystring: ExternQuery }>,
-		reply: FastifyReply,
-		orderPosted: boolean,
-	): Promise<FastifyReply> {
+	private async feed(request: AppRequest<{ Querystring: ExternQuery }>, reply: AppReply, orderPosted: boolean): Promise<AppReply> {
 		const { viewer, board: config } = request;
 		const { query } = request;
 		const requested = (query.type ?? 'html').toLowerCase();
@@ -121,7 +117,7 @@ export class ExternController {
 		return reply.type(CONTENT_TYPES[type]).header('Cache-Control', 'must-revalidate').send(body);
 	}
 
-	private async online(request: FastifyRequest, reply: FastifyReply, full: boolean): Promise<FastifyReply> {
+	private async online(request: AppRequest, reply: AppReply, full: boolean): Promise<AppReply> {
 		const { viewer, board: config } = request;
 		const t = this.deps.page.lang.index;
 		const visitors = await this.deps.stats.listOnline();
@@ -139,7 +135,7 @@ export class ExternController {
 		return reply.type('text/html; charset=utf-8').send(`${lines.join('\n')}\n`);
 	}
 
-	private async stats(request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply> {
+	private async stats(request: AppRequest, reply: AppReply): Promise<AppReply> {
 		const { viewer, board: config } = request;
 		const t = this.deps.page.lang.index;
 		const [info, totals] = await Promise.all([this.deps.usersInfo.load(), this.deps.stats.countTopicsAndPosts()]);

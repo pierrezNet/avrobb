@@ -6,6 +6,7 @@
  */
 
 import { type RawBuilder, sql } from 'kysely';
+import { chunks } from '../db/d1Dialect.ts';
 import type { Compilable, Db } from '../db/database.ts';
 import { type CurrentIndex, type IndexedWords, planIndexUpdate } from '../services/searchIndex.ts';
 
@@ -13,6 +14,12 @@ import { type CurrentIndex, type IndexedWords, planIndexUpdate } from '../servic
 export const LAST_POST_ID = sql<number>`(SELECT MAX(id) FROM posts)`;
 /** Identifiant de la dernière discussion créée dans le lot en cours. */
 export const LAST_TOPIC_ID = sql<number>`(SELECT MAX(id) FROM topics)`;
+
+/**
+ * Mots ou identifiants par requête : D1 plafonne une requête à 100 paramètres (d1Dialect.ts), et
+ * un long message compte des centaines de mots. La marge laisse place aux autres paramètres.
+ */
+const ITEMS_PER_QUERY = 90;
 
 /** Index actuel d'un message (mode « edit » de update_search_index()). */
 async function currentIndex(db: Db, postId: number): Promise<CurrentIndex> {
@@ -45,23 +52,24 @@ export async function searchIndexWrites(
 
 	// OR IGNORE : un mot déjà connu, ou créé entre-temps par une autre écriture, est laissé tel quel.
 	const wanted = [...new Set([...changes.add.post, ...changes.add.subject])];
-	if (wanted.length > 0)
+	for (const part of chunks(wanted, ITEMS_PER_QUERY))
 		writes.push(
 			db
 				.insertInto('search_words')
 				.orIgnore()
-				.values(wanted.map((word) => ({ word }))),
+				.values(part.map((word) => ({ word }))),
 		);
 
 	for (const [subjectMatch, wordIds] of [
 		[0, changes.remove.post],
 		[1, changes.remove.subject],
 	] as const) {
-		if (wordIds.length > 0 && typeof postId === 'number')
+		if (typeof postId !== 'number') continue;
+		for (const part of chunks(wordIds, ITEMS_PER_QUERY))
 			writes.push(
 				db
 					.deleteFrom('search_matches')
-					.where('word_id', 'in', wordIds)
+					.where('word_id', 'in', part)
 					.where('post_id', '=', postId)
 					.where('subject_match', '=', subjectMatch),
 			);
@@ -71,7 +79,7 @@ export async function searchIndexWrites(
 		[0, changes.add.post],
 		[1, changes.add.subject],
 	] as const) {
-		if (list.length > 0)
+		for (const part of chunks(list, ITEMS_PER_QUERY))
 			writes.push(
 				db
 					.insertInto('search_matches')
@@ -80,7 +88,7 @@ export async function searchIndexWrites(
 						eb
 							.selectFrom('search_words')
 							.select([postIdValue.as('post_id'), 'id', eb.val(subjectMatch).as('subject_match')])
-							.where('word', 'in', list),
+							.where('word', 'in', part),
 					),
 			);
 	}
@@ -92,17 +100,18 @@ export async function stripSearchIndexWrites(db: Db, postIds: readonly number[])
 	if (postIds.length === 0) return [];
 	const writes: Compilable[] = [];
 
-	const used = await db.selectFrom('search_matches').select('word_id').where('post_id', 'in', postIds).groupBy('word_id').execute();
-	if (used.length > 0) {
-		// Fidèle au PHP : un mot présent deux fois (texte et sujet) dans ces messages compte 2 et reste.
+	const used = new Set<number>();
+	for (const part of chunks(postIds, ITEMS_PER_QUERY)) {
+		const rows = await db.selectFrom('search_matches').select('word_id').where('post_id', 'in', part).groupBy('word_id').execute();
+		for (const row of rows) used.add(row.word_id);
+	}
+	// Fidèle au PHP : un mot présent deux fois (texte et sujet) dans ces messages compte 2 et reste.
+	// Le compte porte sur toutes les lignes d'un mot : découper par mot ne le fausse pas.
+	for (const part of chunks([...used], ITEMS_PER_QUERY)) {
 		const single = await db
 			.selectFrom('search_matches')
 			.select('word_id')
-			.where(
-				'word_id',
-				'in',
-				used.map((row) => row.word_id),
-			)
+			.where('word_id', 'in', part)
 			.groupBy('word_id')
 			.having((eb) => eb.fn.count('word_id'), '=', 1)
 			.execute();
@@ -116,6 +125,6 @@ export async function stripSearchIndexWrites(db: Db, postIds: readonly number[])
 			);
 	}
 
-	writes.push(db.deleteFrom('search_matches').where('post_id', 'in', postIds));
+	for (const part of chunks(postIds, ITEMS_PER_QUERY)) writes.push(db.deleteFrom('search_matches').where('post_id', 'in', part));
 	return writes;
 }

@@ -27,7 +27,25 @@ function toD1Value(value: unknown): D1Value {
 	throw new TypeError(`Valeur non prise en charge par D1 : ${typeof value}`);
 }
 
+/**
+ * D1 refuse une requête de plus de 100 paramètres liés (« too many SQL variables »), alors que le
+ * SQLite local de wrangler dev et des tests en accepte des milliers : sans ce contrôle, l'erreur ne
+ * se verrait qu'en production. Les listes longues se découpent avec `chunks()`.
+ */
+export const MAX_QUERY_PARAMETERS = 100;
+
+/** Paquets de `size` éléments au plus, pour rester sous MAX_QUERY_PARAMETERS. */
+export function chunks<T>(list: readonly T[], size: number): T[][] {
+	const result: T[][] = [];
+	for (let start = 0; start < list.length; start += size) result.push(list.slice(start, start + size));
+	return result;
+}
+
 export function prepareCompiled(d1: D1Database, query: CompiledQuery): D1PreparedStatement {
+	if (query.parameters.length > MAX_QUERY_PARAMETERS)
+		throw new RangeError(
+			`Requête à ${query.parameters.length} paramètres, D1 en accepte ${MAX_QUERY_PARAMETERS} : ${query.sql.slice(0, 80)}`,
+		);
 	return d1.prepare(query.sql).bind(...query.parameters.map(toD1Value));
 }
 

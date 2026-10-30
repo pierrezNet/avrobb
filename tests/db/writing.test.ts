@@ -60,6 +60,23 @@ describe('index de recherche', () => {
 			expect(await words(trx)).toEqual(['avion', 'vintage']);
 		});
 	});
+
+	// D1 refuse plus de 100 paramètres par requête : un long message doit être indexé par paquets.
+	it('indexe, modifie et retire un long message', async () => {
+		await inRollback(async (trx) => {
+			const long = Array.from({ length: 300 }, (_, index) => `mot${index}`);
+			await trx.batch(await searchIndexWrites(trx, 'post', 200, { post: long, subject: long.slice(0, 150) }));
+			expect(await indexOf(trx, 200)).toHaveLength(450);
+
+			await trx.batch(await searchIndexWrites(trx, 'edit', 200, { post: ['avion'], subject: [] }));
+			expect(await indexOf(trx, 200)).toEqual(['avion']);
+
+			await trx.batch(await searchIndexWrites(trx, 'edit', 200, { post: long, subject: [] }));
+			await trx.batch(await stripSearchIndexWrites(trx, [200]));
+			expect(await indexOf(trx, 200)).toEqual([]);
+			expect(await words(trx)).not.toContain('mot0');
+		});
+	});
 });
 
 describe('update_forum()', () => {

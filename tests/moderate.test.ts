@@ -24,6 +24,7 @@ const forum: ForumInfo = {
 	name: 'Captures',
 	redirectUrl: null,
 	links: { site: null, repository: null },
+	descriptionHtml: '',
 	moderators: new Map([['MaxDUO', 5]]),
 	numTopics: 3,
 	sortBy: 'lastPost',

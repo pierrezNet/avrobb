@@ -30,6 +30,7 @@ const forumInfo: ForumInfo = {
 	name: 'Captures & <Vidéos>',
 	redirectUrl: null,
 	links: { site: null, repository: 'https://github.com/x/captures' },
+	descriptionHtml: '<em>Vos plus beaux vols</em>',
 	moderators: new Map([['MaxDUO', 5]]),
 	numTopics: 4,
 	sortBy: 'lastPost',
@@ -68,6 +69,8 @@ describe('GET /viewforum.php', () => {
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('<title>Captures &amp; &lt;Vidéos&gt; (Page 1) / Forum de test</title>');
 		expect(res.body).toContain('topic-row--sticky');
+		// Description du forum (HTML de l'administrateur) sous le titre, comme sur l'index.
+		expect(res.body).toContain('<div class="page-intro forum-description"><em>Vos plus beaux vols</em></div>');
 		expect(res.body).toContain('<ul class="project-links project-links--page" aria-label="Liens du projet">');
 		expect(res.body).toContain('href="https://github.com/x/captures" rel="external noopener">Dépôt');
 		expect(res.body).toContain('<span class="badge">Fermée :</span>');

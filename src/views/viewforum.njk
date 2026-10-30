@@ -16,6 +16,8 @@
 {% block main %}
 {{ navigation.breadcrumbs(view.crumbs, lang) }}
 <h1 class="page-title">{{ view.forum.name }}{% if view.age and view.age.old %} — {{ lang.forum.oldTopicsTitle }}{% endif %}</h1>
+{#- forums.forum_desc : HTML saisi par l'administrateur, affiché tel quel comme sur l'index. #}
+{% if view.forum.descriptionHtml %}<div class="page-intro forum-description">{{ view.forum.descriptionHtml | safe }}</div>{% endif %}
 {{ projectLinks.list(view.forum.links, lang, 'page') }}
 {% if view.age and view.age.info %}<p class="page-intro">{{ view.age.info }}</p>{% endif %}
 {{ forumBar(view, lang) }}

@@ -41,7 +41,7 @@ export interface TopicRowView {
 }
 
 export interface ForumPageView {
-	forum: { id: number; name: string; links: ProjectLinkView[] };
+	forum: { id: number; name: string; descriptionHtml: string; links: ProjectLinkView[] };
 	crumbs: Crumb[];
 	pagination: PaginationLink[];
 	postTopicUrl: string | null;
@@ -143,7 +143,7 @@ export function buildForumPage(input: ForumPageInput): ForumPageView {
 	const member = !viewer.isGuest;
 
 	return {
-		forum: { id: forum.id, name: forum.name, links: projectLinkViews(forum.links, lang) },
+		forum: { id: forum.id, name: forum.name, descriptionHtml: forum.descriptionHtml, links: projectLinkViews(forum.links, lang) },
 		crumbs: crumbs({ label: lang.common.index, href: 'index.php' }, { label: forum.name, href: forumUrl(forum.id, 1, false, forum.name) }),
 		pagination: paginationLinks(input.numPages, input.page, (page) => forumUrl(forum.id, page, input.age?.old ?? false, forum.name)),
 		postTopicUrl: canPostTopic(viewer, forum) ? `post.php?fid=${forum.id}` : null,

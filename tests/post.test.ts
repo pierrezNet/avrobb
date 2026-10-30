@@ -177,6 +177,7 @@ const forumInfo = (overrides: Partial<ForumInfo> = {}): ForumInfo => ({
 	name: 'Captures',
 	redirectUrl: null,
 	links: { site: null, repository: null },
+	descriptionHtml: '',
 	moderators: new Map(),
 	numTopics: 0,
 	sortBy: 'lastPost',

@@ -401,6 +401,8 @@ export type TopicSort = 'lastPost' | 'posted' | 'subject';
 export interface ForumInfo {
 	id: number;
 	name: string;
+	/** forums.forum_desc : HTML saisi par l'administrateur, affiché tel quel ; chaîne vide sans description. */
+	descriptionHtml: string;
 	redirectUrl: string | null;
 	links: ProjectLinks;
 	moderators: ReadonlyMap<string, number>;

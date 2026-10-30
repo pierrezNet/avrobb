@@ -100,6 +100,7 @@ export class ForumRepository implements ForumReader {
 			.select([
 				'f.id',
 				'f.forum_name',
+				'f.forum_desc',
 				'f.redirect_url',
 				'f.site_url',
 				'f.repo_url',
@@ -118,6 +119,7 @@ export class ForumRepository implements ForumReader {
 		return {
 			id: row.id,
 			name: row.forum_name,
+			descriptionHtml: row.forum_desc ?? '',
 			redirectUrl: (row.redirect_url ?? '') !== '' ? (row.redirect_url ?? '') : null,
 			links: projectLinks(row),
 			moderators: parseModerators(row.moderators),

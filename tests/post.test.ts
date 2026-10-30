@@ -10,8 +10,7 @@ import type { ForumInfo, PostingTarget } from '../src/domain/models.ts';
 import { buildCensor } from '../src/services/censor.ts';
 import { canPostIn } from '../src/services/permissions.ts';
 import { type PostContext, type PostForm, promotionGroup, quoteText, subscriptionChange, validatePost } from '../src/services/posting.ts';
-import { DEFAULT_SUBJECT_TAGS } from '../src/services/subjectTagConfig.ts';
-import { type FakeData, fakeDeps, group, guest, NOW, post, sessionCookie, topic, viewer } from './fixtures.ts';
+import { type FakeData, fakeDeps, group, guest, NOW, post, sessionCookie, TEST_SUBJECT_TAGS, topic, viewer } from './fixtures.ts';
 
 const form = (overrides: Partial<PostForm> = {}): PostForm => ({
 	subject: null,
@@ -36,7 +35,7 @@ const context = (overrides: Partial<PostContext> = {}): PostContext => ({
 		messageAllCaps: false,
 		forceGuestEmail: true,
 		allowBannedEmail: false,
-		subjectTags: DEFAULT_SUBJECT_TAGS,
+		subjectTags: TEST_SUBJECT_TAGS,
 	},
 	preparse: { quoteDepth: 3, makeLinks: true, indentSpaces: 4, baseUrl: 'http://forum.test' },
 	censor: null,
@@ -327,7 +326,7 @@ describe('POST /post.php', () => {
 		expect(fake.sentMails).toEqual([expect.objectContaining({ to: 'abonne@example.test', subject: 'Sujet new_reply_full' })]);
 	});
 
-	it('avec une balise de simulateur : publiée sans avertissement', async () => {
+	it('avec une balise de projet : publiée sans avertissement', async () => {
 		const fake = data({ forumInfos: [forumInfo({ topicPermission: true })] });
 		app = await buildApp(fakeDeps(fake));
 		const fields = { req_subject: '[MSFS] Premier vol', req_message: 'Bonjour', req_username: 'Pilote', req_email: 'p@example.test' };
@@ -338,10 +337,10 @@ describe('POST /post.php', () => {
 		const fake = data({ forumInfos: [forumInfo({ topicPermission: true })] });
 		app = await buildApp(fakeDeps(fake));
 		const fields = { req_subject: 'Premier vol', req_message: 'Bonjour', req_username: 'Pilote', req_email: 'Pilote@Example.test' };
-		// Sans balise de simulateur : avertissement, rien n'est publié ; le second envoi publie.
+		// Sans balise de projet : avertissement, rien n'est publié ; le second envoi publie.
 		const warned = await submit(app, '/post.php?fid=2', fields, '');
 		expect(warned.statusCode).toBe(200);
-		expect(warned.body).toContain('Aucune balise de simulateur');
+		expect(warned.body).toContain('Aucune balise de projet');
 		expect(warned.body).toContain('<input type="hidden" name="no_tag_ok" value="1">');
 		expect(warned.body).toContain('value="Premier vol"');
 		expect(fake.savedTopics).toBeUndefined();

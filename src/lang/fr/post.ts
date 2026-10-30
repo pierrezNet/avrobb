@@ -88,9 +88,9 @@ export const post = {
 
 	// Formulaire
 	postErrors: 'Erreurs dans le message',
-	noTagTitle: 'Aucune balise de simulateur',
+	noTagTitle: 'Aucune balise de projet',
 	noTagInfo:
-		'Votre discussion ne précise pas le simulateur concerné (MSFS, FS24, X-Plane…). Ajoutez une balise avec les boutons sous le titre : les réponses seront plus justes. Si aucun ne convient, cliquez à nouveau sur « Valider » pour publier tel quel.',
+		'Votre discussion ne précise pas le projet concerné. Ajoutez une balise avec les boutons sous le titre : elle aide à retrouver les échanges de chaque projet. Si aucune ne convient, cliquez à nouveau sur « Valider » pour publier tel quel.',
 	postErrorsInfo: 'Les erreurs suivantes doivent être corrigées pour que le message puisse être envoyé :',
 	postPreview: 'Prévisualisation du message',
 	guestName: 'Nom',
@@ -111,9 +111,9 @@ export const post = {
 	stickTopic: 'Épingler la discussion',
 	/** Mod brouillon de PV (lang/French/draft.php). */
 	saveAsDraft: 'Enregistrer comme brouillon. Décocher pour poster le message.',
-	/** Boutons de préfixe du sujet (simulateur, autre) propres à PV. */
+	/** Boutons de préfixe du sujet (projet, autre). */
 	subjectPrefixes: 'Balise du sujet',
-	simulators: 'Simu :',
+	projects: 'Projet :',
 	other: 'Autre :',
 	bbcode: 'BBCode :',
 	urlTag: 'Balise [url] :',

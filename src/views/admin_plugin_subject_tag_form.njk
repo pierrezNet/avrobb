@@ -16,7 +16,7 @@
 	<p class="form__field"><label for="name">{{ t.subjectTagName }}</label><input type="text" id="name" name="name" value="{{ v.name }}" maxlength="20" required aria-describedby="name_help"><span id="name_help" class="form__help">{{ t.subjectTagNameHelp }}</span></p>
 	<div class="form__field" role="radiogroup" aria-labelledby="label-group">
 		<span id="label-group" class="form__label">{{ t.subjectTagGroup }}</span>
-		<label class="form__choice"><input type="radio" name="group" value="simulator"{% if v.group == 'simulator' %} checked{% endif %}> {{ t.groups.simulator }}</label>
+		<label class="form__choice"><input type="radio" name="group" value="project"{% if v.group == 'project' %} checked{% endif %}> {{ t.groups.project }}</label>
 		<label class="form__choice"><input type="radio" name="group" value="other"{% if v.group == 'other' %} checked{% endif %}> {{ t.groups.other }}</label>
 	</div>
 	<p class="form__field"><label for="color">{{ t.subjectTagColor }}</label><input type="color" id="color" name="color" value="{{ v.color }}" aria-describedby="color_help"><span id="color_help" class="form__help">{{ t.subjectTagColorHelp }}</span></p>

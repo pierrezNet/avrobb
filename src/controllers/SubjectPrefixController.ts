@@ -1,6 +1,6 @@
 /**
  * Préfixes du sujet (topic_prefixes.php?id=…, page propre à Node) : l'auteur d'une discussion et les
- * modérateurs du forum ajoutent ou retirent les préfixes de PV (« [MSFS] », « [Résolu] »…) à tout
+ * modérateurs du forum ajoutent ou retirent les balises du sujet (« [AvroBB] », « [Résolu] »…) à tout
  * moment, sans toucher au message, même après les 30 minutes de modification.
  */
 
@@ -75,7 +75,7 @@ export class SubjectPrefixController {
 		status = 200,
 	): Promise<FastifyReply> {
 		const { lang } = this.deps.page;
-		const choices = (group: 'simulator' | 'other') =>
+		const choices = (group: 'project' | 'other') =>
 			request.board.subjectTags
 				.filter((tag) => tag.group === group)
 				.map((tag) => ({ prefix: tag.name, checked: selected.includes(tag.name), colors: tagColors(tag) }));
@@ -90,7 +90,7 @@ export class SubjectPrefixController {
 				subject: topic.subject,
 				formAction: `topic_prefixes.php?id=${topic.id}`,
 				topicHref: topicUrl(topic.id),
-				simulators: choices('simulator'),
+				projects: choices('project'),
 				other: choices('other'),
 				error,
 			},

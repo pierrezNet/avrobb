@@ -1,6 +1,6 @@
 /**
  * Règles pures ajoutées par AvroBB : dernière IP d'un bannissement, avertissement sans balise de
- * simulateur, écritures d'un banni, seuil des discussions anciennes, image et simulateurs de la
+ * projet, écritures d'un banni, seuil des discussions anciennes, image et projets de la
  * semaine (accueil), adresses versionnées du logo et de la bannière.
  */
 
@@ -8,10 +8,10 @@ import { describe, expect, it } from 'vitest';
 import { readColdTopicsForm } from '../src/services/adminOptions.ts';
 import { withLastIp } from '../src/services/banForm.ts';
 import { headerImageHref } from '../src/services/headerImages.ts';
-import { lastImageUrl, simulatorShares } from '../src/services/homeActivity.ts';
+import { lastImageUrl, projectShares } from '../src/services/homeActivity.ts';
 import { canWriteWhileBanned } from '../src/services/permissions.ts';
-import { needsSimulatorTagWarning } from '../src/services/subjectPrefixes.ts';
-import { DEFAULT_SUBJECT_TAGS as TAGS } from '../src/services/subjectTagConfig.ts';
+import { needsProjectTagWarning } from '../src/services/subjectPrefixes.ts';
+import { TEST_SUBJECT_TAGS as TAGS } from './fixtures.ts';
 
 describe('règles AvroBB', () => {
 	it('bannissement : la dernière IP s’ajoute aux adresses saisies, sans doublon', () => {
@@ -21,13 +21,13 @@ describe('règles AvroBB', () => {
 		expect(withLastIp('10.1', '')).toBe('10.1');
 	});
 
-	it('nouvelle discussion : avertissement sans balise de simulateur, sauf confirmation', () => {
-		expect(needsSimulatorTagWarning('Panne moteur', TAGS, false)).toBe(true);
-		expect(needsSimulatorTagWarning('[Résolu] Panne', TAGS, false)).toBe(true);
-		expect(needsSimulatorTagWarning('[MSFS] Panne', TAGS, false)).toBe(false);
-		expect(needsSimulatorTagWarning('Panne moteur', TAGS, true)).toBe(false);
+	it('nouvelle discussion : avertissement sans balise de projet, sauf confirmation', () => {
+		expect(needsProjectTagWarning('Panne moteur', TAGS, false)).toBe(true);
+		expect(needsProjectTagWarning('[Résolu] Panne', TAGS, false)).toBe(true);
+		expect(needsProjectTagWarning('[MSFS] Panne', TAGS, false)).toBe(false);
+		expect(needsProjectTagWarning('Panne moteur', TAGS, true)).toBe(false);
 		expect(
-			needsSimulatorTagWarning(
+			needsProjectTagWarning(
 				'Panne',
 				TAGS.filter((tag) => tag.group === 'other'),
 				false,
@@ -57,13 +57,13 @@ describe('règles AvroBB', () => {
 		expect(lastImageUrl('Pas d’image')).toBeNull();
 	});
 
-	it('accueil : simulateurs de la semaine, du plus discuté au moins discuté', () => {
-		const shares = simulatorShares(['[MSFS] A', '[MSFS][X-Plane] B', '[Résolu] C', '[X-Plane] D', '[MSFS] E'], TAGS);
+	it('accueil : projets de la semaine, du plus discuté au moins discuté', () => {
+		const shares = projectShares(['[MSFS] A', '[MSFS][X-Plane] B', '[Résolu] C', '[X-Plane] D', '[MSFS] E'], TAGS);
 		expect(shares.map((share) => [share.tag.name, share.count, share.percent])).toEqual([
 			['MSFS', 3, 60],
 			['X-Plane', 2, 40],
 		]);
-		expect(simulatorShares([], TAGS)).toEqual([]);
+		expect(projectShares([], TAGS)).toEqual([]);
 	});
 
 	it('logo et bannière : version dans l’adresse après un remplacement', () => {

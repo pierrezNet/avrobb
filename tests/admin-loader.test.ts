@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
-import { boardConfig, type FakeData, fakeDeps, group, guest, sessionCookie, topic, viewer } from './fixtures.ts';
+import { boardConfig, type FakeData, fakeDeps, group, guest, sessionCookie, TEST_SUBJECT_TAGS, topic, viewer } from './fixtures.ts';
 
 const SEED = 'graine-de-test';
 const CSRF_SECRET = '9'.repeat(64);
@@ -124,14 +124,14 @@ describe('page Balises : balises du sujet', () => {
 
 	it('ajout, doublon refusé, renommage reporté dans les sujets, ordre et suppression', async () => {
 		const { server, fake } = await start();
-		fake.configValues = new Map();
+		fake.configValues = new Map([['o_subject_tags', JSON.stringify(TEST_SUBJECT_TAGS)]]);
 		fake.topics = [topic({ id: 10, subject: '[MSFS][Résolu] Vol de nuit' })];
-		expect((await send(server, '&action=tag_add', { name: 'msfs', group: 'simulator', color: '#000000' })).body).toContain(
+		expect((await send(server, '&action=tag_add', { name: 'msfs', group: 'project', color: '#000000' })).body).toContain(
 			'porte déjà ce nom',
 		);
-		await send(server, '&action=tag_add', { name: 'DCS', group: 'simulator', color: '#FF0000' });
+		await send(server, '&action=tag_add', { name: 'DCS', group: 'project', color: '#FF0000' });
 		expect(saved(fake).map((t) => t.name)).toContain('DCS');
-		const renamed = await send(server, '&action=tag_edit&tag=MSFS', { name: 'MSFS 2024', group: 'simulator', color: '#1d4ed8' });
+		const renamed = await send(server, '&action=tag_edit&tag=MSFS', { name: 'MSFS 2024', group: 'project', color: '#1d4ed8' });
 		expect(renamed.headers.location).toBe('admin_loader.php?plugin=AP_Balises.php&done=tag_renamed_1');
 		expect(fake.subjectUpdates).toEqual([{ topicId: 10, subject: '[MSFS 2024][Résolu] Vol de nuit' }]);
 		fake.config = { ...fake.config, subjectTags: saved(fake) as never };

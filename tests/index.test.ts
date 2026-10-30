@@ -124,8 +124,8 @@ describe('GET /index.php', () => {
 		expect(res.body).toContain('Vol &lt;de nuit&gt;');
 		expect(res.body).toContain('5 messages cette semaine');
 		expect(res.body).toContain('hot-topics__image--none');
-		// Simulateurs : MSFS 3, X-Plane 2 (C sans balise ignoré).
-		expect(res.body).toMatch(/MSFS<\/span>\s*<span class="sim-shares__bar"[^>]*><span style="width: 60%/);
+		// Projets : MSFS 3, X-Plane 2 (C sans balise ignoré).
+		expect(res.body).toMatch(/MSFS<\/span>\s*<span class="project-shares__bar"[^>]*><span style="width: 60%/);
 		expect(res.body).toContain('X-Plane : 2 discussions');
 		expect(res.body).toContain('<a href="profile.php?id=8">Nouveau</a>');
 		expect(res.body).not.toContain('Nouveaux messages');

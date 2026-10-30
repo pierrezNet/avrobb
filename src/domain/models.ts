@@ -195,10 +195,10 @@ export interface StaticPageContent {
 	updatedAt: number | null;
 }
 
-/** Balise du sujet (« [MSFS] »…) proposée aux auteurs, avec la couleur de fond de sa pastille. */
+/** Balise du sujet (« [AvroBB] »…) proposée aux auteurs, avec la couleur de fond de sa pastille. */
 export interface SubjectTag {
 	name: string;
-	group: 'simulator' | 'other';
+	group: 'project' | 'other';
 	/** Couleur de fond #RRGGBB. */
 	color: string;
 }

@@ -5,7 +5,6 @@
  */
 
 import { afterAll, describe, expect, it } from 'vitest';
-import { NodeServerInfo } from '../../src/adapters/serverInfo.ts';
 import { buildApp } from '../../src/app.ts';
 import { createDatabase } from '../../src/db/database.ts';
 import { GroupId } from '../../src/domain/models.ts';
@@ -458,7 +457,6 @@ describe('viewtopic de bout en bout', () => {
 			userAdmin: new UserAdminRepository(db),
 			banStore: new BanRepository(db),
 			configCache: { invalidate: async () => {} },
-			serverInfo: new NodeServerInfo(),
 			forums: new ForumRepository(db),
 			reports: new ReportRepository(db),
 			privateMessages: new PrivateMessageRepository(db),

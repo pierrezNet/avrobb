@@ -123,7 +123,7 @@ export class SubjectTagAdmin {
 		const t = this.deps.page.lang.adminPlugins.labels;
 		reply.code(status);
 		const name = sent?.name ?? tag?.name ?? '';
-		const group = sent?.group ?? tag?.group ?? 'simulator';
+		const group = sent?.group ?? tag?.group ?? 'project';
 		return renderPlugin(
 			this.deps,
 			request,
@@ -135,7 +135,7 @@ export class SubjectTagAdmin {
 				errors,
 				editing: tag !== null,
 				submitAction: tag !== null ? `${BASE}&action=tag_edit&tag=${encodeURIComponent(tag.name)}` : `${BASE}&action=tag_add`,
-				values: { name, group: group === 'other' ? 'other' : 'simulator', color: sent?.color ?? tag?.color ?? '#1d4ed8' },
+				values: { name, group: group === 'other' ? 'other' : 'project', color: sent?.color ?? tag?.color ?? '#1d4ed8' },
 			},
 		);
 	}

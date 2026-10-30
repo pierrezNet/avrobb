@@ -44,8 +44,8 @@
 		{% if view.subjectPrefixes %}
 		{#- Préfixes de sujet de PV : insérés par public/js/post.js, masqués sans JavaScript. #}
 		<div class="subject-prefixes" data-subject-prefixes hidden>
-			<p class="subject-prefixes__group"><span>{{ lang.post.simulators }}</span>
-			{% for prefix in view.subjectPrefixes.simulators %}<button type="button" class="button button--small subject-tag-button" data-prefix="[{{ prefix.name }}]" style="background-color: {{ prefix.colors.background }}; color: {{ prefix.colors.foreground }}">{{ prefix.name }}</button>{% endfor %}</p>
+			<p class="subject-prefixes__group"><span>{{ lang.post.projects }}</span>
+			{% for prefix in view.subjectPrefixes.projects %}<button type="button" class="button button--small subject-tag-button" data-prefix="[{{ prefix.name }}]" style="background-color: {{ prefix.colors.background }}; color: {{ prefix.colors.foreground }}">{{ prefix.name }}</button>{% endfor %}</p>
 			<p class="subject-prefixes__group"><span>{{ lang.post.other }}</span>
 			{% for prefix in view.subjectPrefixes.other %}<button type="button" class="button button--small subject-tag-button" data-prefix="[{{ prefix.name }}]" style="background-color: {{ prefix.colors.background }}; color: {{ prefix.colors.foreground }}">{{ prefix.name }}</button>{% endfor %}</p>
 		</div>

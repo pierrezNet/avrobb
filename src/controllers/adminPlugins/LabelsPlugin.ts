@@ -35,7 +35,7 @@ export class LabelsPlugin implements PluginHandler {
 		const subjectTags = this.#subjectTags.listView(request.board.subjectTags);
 		return renderPlugin(this.deps, request, reply, 'AP_Balises.php', 'admin_plugin_labels.njk', t.title, {
 			notice: renamed?.[1] !== undefined ? t.subjectTagRenamed(Number(renamed[1])) : (notices[done ?? ''] ?? null),
-			subjectTagGroups: (['simulator', 'other'] as const).map((group) => ({
+			subjectTagGroups: (['project', 'other'] as const).map((group) => ({
 				name: t.groups[group] ?? group,
 				tags: subjectTags.filter((tag) => tag.group === group),
 			})),

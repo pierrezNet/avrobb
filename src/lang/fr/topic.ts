@@ -33,7 +33,7 @@ export const topic = {
 	subjectPrefixes: 'Balises du sujet',
 	subjectPrefixesInfo:
 		'Cochez les balises à afficher devant le sujet de la discussion. Vous pouvez les changer à tout moment, même après le délai de modification de votre message.',
-	simulators: 'Simulateur',
+	projects: 'Projet',
 	otherPrefixes: 'Autre',
 	currentSubject: 'Sujet actuel',
 	newSubject: 'Nouveau sujet',

@@ -21,10 +21,10 @@ export interface SubjectTagView {
 	colors: TagColors;
 }
 
-export function subjectTagChoices(tags: readonly SubjectTag[]): { simulators: SubjectTagView[]; other: SubjectTagView[] } {
+export function subjectTagChoices(tags: readonly SubjectTag[]): { projects: SubjectTagView[]; other: SubjectTagView[] } {
 	const view = (tag: SubjectTag): SubjectTagView => ({ name: tag.name, colors: tagColors(tag) });
 	return {
-		simulators: tags.filter((tag) => tag.group === 'simulator').map(view),
+		projects: tags.filter((tag) => tag.group === 'project').map(view),
 		other: tags.filter((tag) => tag.group === 'other').map(view),
 	};
 }
@@ -41,7 +41,7 @@ export interface PostFormState {
 	draft: boolean;
 	/** Brouillon repris (post.php?brouillon) : supprimé une fois le message publié. */
 	draftId: number | null;
-	/** Nouvelle discussion sans balise de simulateur : avertissement, le prochain envoi publie. */
+	/** Nouvelle discussion sans balise de projet : avertissement, le prochain envoi publie. */
 	tagWarning?: boolean;
 }
 
@@ -83,8 +83,8 @@ export interface PostPageView {
 	errors: readonly string[];
 	/** HTML de parseMessage() (échappé par construction). */
 	previewHtml: string | null;
-	/** Préfixes de sujet proposés par PV (simulateur, autre), insérés par JavaScript. */
-	subjectPrefixes: { simulators: SubjectTagView[]; other: SubjectTagView[] } | null;
+	/** Préfixes de sujet proposés (projet, autre), insérés par JavaScript. */
+	subjectPrefixes: { projects: SubjectTagView[]; other: SubjectTagView[] } | null;
 	bbcodeStatus: BbcodeStatus;
 	toolbar: ToolbarView | null;
 	checkboxes: Checkbox[];

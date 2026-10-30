@@ -1,5 +1,5 @@
 /**
- * Balises du sujet de PV (« [MSFS] », « [Résolu] »…) : repérage en tête du sujet et réécriture quand
+ * Balises du sujet (« [AvroBB] », « [Résolu] »…) : repérage en tête du sujet et réécriture quand
  * l'auteur en ajoute ou en retire. La liste proposée vient de la configuration (BoardConfig.subjectTags).
  */
 
@@ -31,20 +31,20 @@ export function splitPrefixes(subject: string, tags: readonly SubjectTag[]): { p
 }
 
 /**
- * Le sujet porte-t-il une balise de simulateur (MSFS, X-Plane…) ? Une nouvelle discussion sans
+ * Le sujet porte-t-il une balise de projet ? Une nouvelle discussion sans
  * balise reçoit un avertissement avant publication (AvroBB), sans être refusée.
  */
-export function hasSimulatorTag(subject: string, tags: readonly SubjectTag[]): boolean {
+export function hasProjectTag(subject: string, tags: readonly SubjectTag[]): boolean {
 	const { prefixes } = splitPrefixes(subject, tags);
-	return tags.some((tag) => tag.group === 'simulator' && prefixes.includes(tag.name));
+	return tags.some((tag) => tag.group === 'project' && prefixes.includes(tag.name));
 }
 
 /**
  * Avertir avant de publier une nouvelle discussion ? Oui si le forum propose des balises de
- * simulateur, que le sujet n'en porte aucune et que l'auteur n'a pas déjà confirmé.
+ * projet, que le sujet n'en porte aucune et que l'auteur n'a pas déjà confirmé.
  */
-export function needsSimulatorTagWarning(subject: string, tags: readonly SubjectTag[], confirmed: boolean): boolean {
-	return !confirmed && tags.some((tag) => tag.group === 'simulator') && !hasSimulatorTag(subject, tags);
+export function needsProjectTagWarning(subject: string, tags: readonly SubjectTag[], confirmed: boolean): boolean {
+	return !confirmed && tags.some((tag) => tag.group === 'project') && !hasProjectTag(subject, tags);
 }
 
 /** Sujet avec ces balises, dans l'ordre de la liste, séparées du titre par une espace. */

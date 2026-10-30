@@ -9,8 +9,7 @@ import { buildApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
 import { applyPrefixes, normalizeSubjectTags, splitPrefixes } from '../src/services/subjectPrefixes.ts';
-import { DEFAULT_SUBJECT_TAGS as TAGS } from '../src/services/subjectTagConfig.ts';
-import { type FakeData, fakeDeps, group, guest, post, sessionCookie, topic, viewer } from './fixtures.ts';
+import { type FakeData, fakeDeps, group, guest, post, sessionCookie, TEST_SUBJECT_TAGS as TAGS, topic, viewer } from './fixtures.ts';
 
 const SEED = 'graine-de-test';
 const CSRF_SECRET = '9'.repeat(64);

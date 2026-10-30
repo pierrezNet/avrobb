@@ -19,7 +19,7 @@
 	{{ forms.csrf(layout) }}
 	<p><strong>{{ t.currentSubject }}&#160;:</strong> {{ view.subject }}</p>
 	<p class="form__help">{{ t.subjectPrefixesInfo }}</p>
-	{{ choices(view.simulators, t.simulators) }}
+	{{ choices(view.projects, t.projects) }}
 	{{ choices(view.other, t.otherPrefixes) }}
 	<p class="form__buttons"><button type="submit" class="button button--primary">{{ t.savePrefixes }}</button> <a class="button" href="{{ url(view.topicHref) }}">{{ t.cancel }}</a></p>
 </form>

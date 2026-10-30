@@ -1,6 +1,6 @@
 /**
  * Activité de la semaine pour l'accueil (AvroBB) : discussions les plus commentées, dernière image
- * publiée dans une discussion, nouveaux membres, sujets actifs (répartition par simulateur). Les
+ * publiée dans une discussion, nouveaux membres, sujets actifs (répartition par projet). Les
  * permissions de forum (forum_perms) sont appliquées comme pour index.php.
  */
 
@@ -32,7 +32,7 @@ export interface HomeActivityReader {
 	findLatestImageMessages(topicIds: readonly number[]): Promise<Map<number, string>>;
 	/** Membres inscrits depuis `since`, les plus récents d'abord. */
 	listNewMembers(since: number, limit: number): Promise<NewMember[]>;
-	/** Sujets des discussions lisibles actives depuis `since` (répartition par simulateur). */
+	/** Sujets des discussions lisibles actives depuis `since` (répartition par projet). */
 	listActiveSubjects(groupId: number, since: number): Promise<string[]>;
 }
 

@@ -7,18 +7,16 @@ import type { SubjectTag } from '../domain/models.ts';
 
 export const SUBJECT_TAGS_KEY = 'o_subject_tags';
 
-/** Liste reprise de post.php et edit.php du PHP, avec une couleur par balise. */
+/**
+ * Liste de départ, modifiable dans l'administration (page Balises) : les projets sont à compléter
+ * avec ceux dont on discute sur le forum ; les autres balises décrivent l'état ou la nature du sujet.
+ */
 export const DEFAULT_SUBJECT_TAGS: readonly SubjectTag[] = [
-	{ name: 'MSFS', group: 'simulator', color: '#1d4ed8' },
-	{ name: 'FS-24', group: 'simulator', color: '#0f766e' },
-	{ name: 'FSX', group: 'simulator', color: '#6d28d9' },
-	{ name: 'X-Plane', group: 'simulator', color: '#9a3412' },
-	{ name: 'Flight', group: 'simulator', color: '#be185d' },
-	{ name: 'P3D', group: 'simulator', color: '#4d7c0f' },
-	{ name: 'MULTI-SIMU', group: 'simulator', color: '#475569' },
+	{ name: 'AvroBB', group: 'project', color: '#7a1d1d' },
+	{ name: 'Question', group: 'other', color: '#1d4ed8' },
+	{ name: 'Idée', group: 'other', color: '#6d28d9' },
+	{ name: 'Bug', group: 'other', color: '#b91c1c' },
 	{ name: 'Résolu', group: 'other', color: '#15803d' },
-	{ name: 'Réel', group: 'other', color: '#a16207' },
-	{ name: 'Video', group: 'other', color: '#b91c1c' },
 ];
 
 /** Nom de balise accepté : 1 à 20 caractères, sans crochets. */
@@ -41,14 +39,14 @@ export function parseSubjectTags(value: string | undefined): SubjectTag[] {
 		const { name, group, color } = item as Record<string, unknown>;
 		if (typeof name !== 'string' || !isValidTagName(name) || typeof color !== 'string' || !isValidTagColor(color)) continue;
 		if (tags.some((tag) => tag.name.toLowerCase() === name.toLowerCase())) continue;
-		tags.push({ name, group: group === 'other' ? 'other' : 'simulator', color });
+		tags.push({ name, group: group === 'other' ? 'other' : 'project', color });
 	}
 	return tags;
 }
 
-/** Valeur à enregistrer : simulateurs puis autres, dans l'ordre donné. */
+/** Valeur à enregistrer : projets puis autres, dans l'ordre donné. */
 export function serializeSubjectTags(tags: readonly SubjectTag[]): string {
-	const ordered = [...tags.filter((tag) => tag.group === 'simulator'), ...tags.filter((tag) => tag.group === 'other')];
+	const ordered = [...tags.filter((tag) => tag.group === 'project'), ...tags.filter((tag) => tag.group === 'other')];
 	return JSON.stringify(ordered.map(({ name, group, color }) => ({ name, group, color })));
 }
 
@@ -66,7 +64,7 @@ export function readSubjectTagForm(
 	if (!isValidTagColor(color)) return { kind: 'error', error: 'color' };
 	if (tags.some((tag) => tag.name.toLowerCase() === name.toLowerCase() && tag.name !== current))
 		return { kind: 'error', error: 'duplicate' };
-	return { kind: 'ok', tag: { name, group: read('group') === 'other' ? 'other' : 'simulator', color: color.toLowerCase() } };
+	return { kind: 'ok', tag: { name, group: read('group') === 'other' ? 'other' : 'project', color: color.toLowerCase() } };
 }
 
 /** Liste après l'ajout (en fin de groupe) ou la modification (à sa place) d'une balise. */

@@ -101,15 +101,15 @@
 	{% endif %}
 </section>
 
-{% if view.simulators.length %}
-<section class="home-block home-block--sims" aria-labelledby="sims-title">
-	<h2 class="home-block__title" id="sims-title">{{ lang.index.simulators }}</h2>
-	<ul class="sim-shares">
-		{% for sim in view.simulators %}
-		<li class="sim-shares__row">
-			<span class="subject-tag" style="background-color: {{ sim.background }}; color: {{ sim.foreground }}">{{ sim.name }}</span>
-			<span class="sim-shares__bar" aria-hidden="true"><span style="width: {{ sim.percent }}%; background-color: {{ sim.background }}"></span></span>
-			<span class="sim-shares__count"><span class="visually-hidden">{{ sim.label }}</span><span aria-hidden="true">{{ sim.count }}</span></span>
+{% if view.projects.length %}
+<section class="home-block home-block--projects" aria-labelledby="projects-title">
+	<h2 class="home-block__title" id="projects-title">{{ lang.index.projects }}</h2>
+	<ul class="project-shares">
+		{% for project in view.projects %}
+		<li class="project-shares__row">
+			<span class="subject-tag" style="background-color: {{ project.background }}; color: {{ project.foreground }}">{{ project.name }}</span>
+			<span class="project-shares__bar" aria-hidden="true"><span style="width: {{ project.percent }}%; background-color: {{ project.background }}"></span></span>
+			<span class="project-shares__count"><span class="visually-hidden">{{ project.label }}</span><span aria-hidden="true">{{ project.count }}</span></span>
 		</li>
 		{% endfor %}
 	</ul>

@@ -6,7 +6,6 @@
  */
 
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import type { ServerInfo } from '../adapters/serverInfo.ts';
 import type { LayoutDeps } from '../http/layout.ts';
 import type { AdminStatsReader } from '../repositories/AdminStatsRepository.ts';
 import { fileSize, forumNumberFormat } from '../services/numberFormat.ts';
@@ -15,7 +14,6 @@ import { adminDenied, renderAdminPage } from './adminPage.ts';
 
 export interface AdminIndexControllerDeps extends LayoutDeps {
 	adminStats: AdminStatsReader;
-	serverInfo: ServerInfo;
 }
 
 export class AdminIndexController {
@@ -33,9 +31,8 @@ export class AdminIndexController {
 		if (denied !== null) return denied;
 		const { lang } = this.deps.page;
 		const t = lang.admin;
-		const load = this.deps.serverInfo.loadAverage();
 		const online = await this.deps.adminStats.countActiveOnline();
-		// Environnement et base : administrateurs seulement, comme le PHP.
+		// Base de données : administrateurs seulement, comme le PHP.
 		const details = isAdmin(request.viewer) ? await this.deps.adminStats.databaseInfo() : null;
 		return renderAdminPage(
 			request,
@@ -43,11 +40,7 @@ export class AdminIndexController {
 			this.deps,
 			{ active: 'index', template: 'admin_statistics.njk', title: t.serverStatistics },
 			{
-				load: t.serverLoadData(load !== null ? load.map((value) => value.toFixed(2)).join(' ') : t.notAvailable, online),
-				environment:
-					details !== null
-						? [t.environmentOs(this.deps.serverInfo.operatingSystem()), t.environmentRuntime(this.deps.serverInfo.runtimeVersion())]
-						: null,
+				online: t.onlineData(online),
 				database:
 					details !== null
 						? [details.version, t.databaseRows(forumNumberFormat(details.rows)), t.databaseSize(fileSize(details.bytes))]

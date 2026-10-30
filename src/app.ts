@@ -11,7 +11,6 @@ import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply, ty
 import nunjucks from 'nunjucks';
 import type { ImageProcessor } from './adapters/imageProcessor.ts';
 import type { Mailer } from './adapters/mailer.ts';
-import type { ServerInfo } from './adapters/serverInfo.ts';
 import { AdminAppearanceController, type AdminAppearanceQuery } from './controllers/AdminAppearanceController.ts';
 import { AdminBansController, type AdminBansQuery } from './controllers/AdminBansController.ts';
 import { AdminCensoringController, type AdminCensoringQuery } from './controllers/AdminCensoringController.ts';
@@ -137,7 +136,6 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	banStore: BanStore;
 	/** Statistiques de l'administration (admin_statistics.php). */
 	adminStats: AdminStatsReader;
-	serverInfo: ServerInfo;
 	/** Options du forum (admin_options.php) : table config et invalidation des caches. */
 	configStore: ConfigStore;
 	configCache: ConfigCache;
@@ -165,7 +163,7 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	gallery: GalleryStore;
 	/** Plan du site (sitemap.xml) : forums et discussions lisibles par un invité. */
 	sitemap: SitemapReader;
-	/** Activité de la semaine affichée à l'accueil (discussions, nouveaux membres, simulateurs). */
+	/** Activité de la semaine affichée à l'accueil (discussions, nouveaux membres, projets). */
 	homeActivity: HomeActivityReader;
 	/** Logo et bannière de l'en-tête (fichiers de l'installation PHP), page Apparence. */
 	headerImages: HeaderImageStore;

@@ -1,5 +1,5 @@
 /**
- * Accueil de l'administration (admin_index.php) et statistiques du serveur (admin_statistics.php).
+ * Accueil de l'administration (admin_index.php) et statistiques (admin_statistics.php).
  */
 
 import type { FastifyInstance } from 'fastify';
@@ -40,15 +40,14 @@ describe('admin_index.php', () => {
 });
 
 describe('admin_statistics.php', () => {
-	it('charge et membres en ligne pour un modérateur, sans détails du serveur', async () => {
+	it('membres en ligne pour un modérateur, sans détails de la base', async () => {
 		const res = await get(5, '/admin_statistics.php');
-		expect(res.body).toContain('0.50 0.25 0.13 - 4 utilisateur(s) en ligne');
+		expect(res.body).toContain('4 utilisateur(s) en ligne');
 		expect(res.body).not.toContain('MariaDB');
 	});
 
-	it('environnement et base de données pour un administrateur', async () => {
+	it('base de données pour un administrateur', async () => {
 		const res = await get(2, '/admin_statistics.php');
-		expect(res.body).toContain('Node.js : v24.0.0');
 		expect(res.body).toContain('11.4.2-MariaDB');
 		expect(res.body).toContain('12');
 		expect((await get(3, '/admin_statistics.php')).statusCode).toBe(403);

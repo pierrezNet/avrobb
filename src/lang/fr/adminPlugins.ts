@@ -31,7 +31,7 @@ export const adminPlugins = {
 		subjectTagsHead: 'Balises du sujet',
 		subjectTagsInfo:
 			"Proposées à l'auteur d'une discussion (boutons du formulaire, page « Balises du sujet »). Une balise absente de cette liste est retirée du sujet à l'enregistrement.",
-		groups: { simulator: 'Simulateur', other: 'Autre' } as Record<string, string>,
+		groups: { project: 'Projet', other: 'Autre' } as Record<string, string>,
 		addSubjectTag: 'Ajouter une balise du sujet',
 		subjectTagAddTitle: 'Ajout d’une balise du sujet',
 		subjectTagEditTitle: 'Édition d’une balise du sujet',

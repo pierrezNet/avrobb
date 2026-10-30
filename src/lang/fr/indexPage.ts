@@ -32,6 +32,6 @@ export const indexPage = {
 	noHotTopics: 'Pas encore de discussion cette semaine.',
 	newMembers: 'Bienvenue à',
 	newMembersInfo: 'Inscrits cette semaine : un petit mot d’accueil fait toujours plaisir.',
-	simulators: 'Simulateurs de la semaine',
-	simulatorShare: (name: string, count: number) => (count === 1 ? `${name} : 1 discussion` : `${name} : ${count} discussions`),
+	projects: 'Projets de la semaine',
+	projectShare: (name: string, count: number) => (count === 1 ? `${name} : 1 discussion` : `${name} : ${count} discussions`),
 };

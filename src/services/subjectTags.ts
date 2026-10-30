@@ -1,5 +1,5 @@
 /**
- * Balises en tête de sujet (« [MSFS] », « [Résolu] », « [BETA] »…) affichées en pastilles colorées,
+ * Balises en tête de sujet (« [AvroBB] », « [Résolu] », « [BETA] »…) affichées en pastilles colorées,
  * sans crochets. Affichage seulement : le sujet enregistré garde ses crochets (le PHP l'affiche tel quel).
  */
 

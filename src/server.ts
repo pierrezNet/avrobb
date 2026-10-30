@@ -7,7 +7,6 @@ import path from 'node:path';
 import { DnsHostResolver } from './adapters/hostResolver.ts';
 import { SharpImageProcessor } from './adapters/imageProcessor.ts';
 import { NodeMailer } from './adapters/mailer.ts';
-import { NodeServerInfo } from './adapters/serverInfo.ts';
 import { buildApp } from './app.ts';
 import { loadConfig } from './config.ts';
 import { createDatabase } from './db/database.ts';
@@ -102,7 +101,6 @@ const app = await buildApp({
 	reportWriter: reports,
 	reportStore: reports,
 	adminStats: new AdminStatsRepository(db, config.db.tablePrefix),
-	serverInfo: new NodeServerInfo(),
 	forums: new ForumRepository(db),
 	reports,
 	privateMessages,

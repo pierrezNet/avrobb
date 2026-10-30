@@ -1,7 +1,7 @@
 /**
  * Modèle de vue de l'index (index.php) : catégories et forums, puis l'activité de la semaine
  * (AvroBB, à la place du bloc « Informations sur les forums ») : membres en ligne avec leur avatar,
- * discussions les plus commentées avec leur dernière image, nouveaux membres, simulateurs les plus
+ * discussions les plus commentées avec leur dernière image, nouveaux membres, projets les plus
  * discutés. Les totaux sont sur la page Statistiques. Fonction pure : données chargées par IndexController.
  */
 
@@ -9,7 +9,7 @@ import type { BoardConfig, IndexCategory, OnlineVisitor, RecentTopic, Viewer } f
 import type { Lang } from '../lang/fr/index.ts';
 import type { HotTopic, NewMember } from '../repositories/HomeActivityRepository.ts';
 import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
-import { lastImageUrl, simulatorShares } from '../services/homeActivity.ts';
+import { lastImageUrl, projectShares } from '../services/homeActivity.ts';
 import { mobileVariantUrl } from '../services/imageVariants.ts';
 import { niceNumber } from '../services/numberFormat.ts';
 import { readableOn, type SubjectSegment, subjectSegments } from '../services/subjectTags.ts';
@@ -49,8 +49,8 @@ export interface IndexPageView {
 	/** Discussions les plus commentées de la semaine, avec leur dernière image. */
 	hotTopics: HotTopicView[];
 	newMembers: PersonLink[];
-	/** Simulateurs les plus discutés de la semaine (balises des discussions actives). */
-	simulators: { name: string; count: number; percent: number; background: string; foreground: string; label: string }[];
+	/** Projets les plus discutés de la semaine (balises des discussions actives). */
+	projects: { name: string; count: number; percent: number; background: string; foreground: string; label: string }[];
 }
 
 export interface OnlineMemberView extends PersonLink {
@@ -160,12 +160,12 @@ export function buildIndexPage(input: IndexPageInput): IndexPageView {
 			};
 		}),
 		newMembers: input.newMembers.map((member) => person(member.id, member.username)),
-		simulators: simulatorShares(input.activeSubjects, config.subjectTags).map((share) => ({
+		projects: projectShares(input.activeSubjects, config.subjectTags).map((share) => ({
 			name: share.tag.name,
 			count: share.count,
 			percent: share.percent,
 			...readableOn(share.tag.color),
-			label: t.simulatorShare(share.tag.name, share.count),
+			label: t.projectShare(share.tag.name, share.count),
 		})),
 	};
 }

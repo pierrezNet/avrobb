@@ -1,6 +1,6 @@
 /**
  * Règles des blocs d'activité de l'accueil (AvroBB) : image d'une discussion, répartition des
- * discussions de la semaine par simulateur. Fonctions pures.
+ * discussions de la semaine par projet. Fonctions pures.
  */
 
 import type { SubjectTag } from '../domain/models.ts';
@@ -18,24 +18,24 @@ export function lastImageUrl(message: string): string | null {
 	return url;
 }
 
-export interface SimulatorShare {
+export interface ProjectShare {
 	tag: SubjectTag;
 	count: number;
-	/** Part des discussions balisées par un simulateur, arrondie (somme proche de 100). */
+	/** Part des discussions balisées par un projet, arrondie (somme proche de 100). */
 	percent: number;
 }
 
-/** Discussions actives par balise de simulateur, de la plus fréquente à la moins fréquente. */
-export function simulatorShares(subjects: readonly string[], tags: readonly SubjectTag[]): SimulatorShare[] {
-	const simulators = tags.filter((tag) => tag.group === 'simulator');
+/** Discussions actives par balise de projet, de la plus fréquente à la moins fréquente. */
+export function projectShares(subjects: readonly string[], tags: readonly SubjectTag[]): ProjectShare[] {
+	const projects = tags.filter((tag) => tag.group === 'project');
 	const counts = new Map<string, number>();
 	for (const subject of subjects) {
 		for (const name of splitPrefixes(subject, tags).prefixes) {
-			if (simulators.some((tag) => tag.name === name)) counts.set(name, (counts.get(name) ?? 0) + 1);
+			if (projects.some((tag) => tag.name === name)) counts.set(name, (counts.get(name) ?? 0) + 1);
 		}
 	}
 	const total = [...counts.values()].reduce((sum, count) => sum + count, 0);
-	return simulators
+	return projects
 		.map((tag) => ({ tag, count: counts.get(tag.name) ?? 0 }))
 		.filter((share) => share.count > 0)
 		.sort((a, b) => b.count - a.count)

@@ -29,7 +29,7 @@ import { bannedEmailAlert, notifySubscribers, type PostLinks, replyValues, topic
 import { canPostIn, isAnyModerator, isForumModerator } from '../services/permissions.ts';
 import { type PostForm, promotionGroup, quoteText, subscriptionChange, type ValidatedPost, validatePost } from '../services/posting.ts';
 import { indexWords } from '../services/searchIndex.ts';
-import { needsSimulatorTagWarning } from '../services/subjectPrefixes.ts';
+import { needsProjectTagWarning } from '../services/subjectPrefixes.ts';
 import { TOOLBAR } from '../services/toolbar.ts';
 import { markRead, parseTrackedTopics, serializeTrackedTopics } from '../services/trackedTopics.ts';
 import { type MentionNotifierDeps, notifyMentions } from './mentionNotifier.ts';
@@ -196,8 +196,8 @@ export class PostController {
 			return this.renderForm(request, reply, target, censor, state, errors, errors.length === 0 ? post.message : null);
 		}
 
-		// Nouvelle discussion sans balise de simulateur : avertir une fois, publier au second envoi.
-		if (target.topic === null && !asDraft && needsSimulatorTagWarning(post.subject, config.subjectTags, confirmNoTag)) {
+		// Nouvelle discussion sans balise de projet : avertir une fois, publier au second envoi.
+		if (target.topic === null && !asDraft && needsProjectTagWarning(post.subject, config.subjectTags, confirmNoTag)) {
 			const state: PostFormState = { ...this.stateOf(form, post), draft: asDraft, draftId, tagWarning: true };
 			return this.renderForm(request, reply, target, censor, state, [], null);
 		}

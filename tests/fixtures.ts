@@ -26,6 +26,7 @@ import {
 	type Report,
 	type ReputationTarget,
 	type ReputationVote,
+	type SubjectTag,
 	type Subscriber,
 	type Topic,
 	type TopicAgeFilter,
@@ -54,11 +55,27 @@ import type { CensoredWord } from '../src/services/censor.ts';
 import type { GroupForumPermissionRow } from '../src/services/forumPermissions.ts';
 import type { MailMessage } from '../src/services/mail.ts';
 import { buildSessionCookie } from '../src/services/session.ts';
-import { DEFAULT_SUBJECT_TAGS } from '../src/services/subjectTagConfig.ts';
 import type { UserSearchCriteria } from '../src/services/userSearch.ts';
 import { fakePrivateMessageStore, type PmData, pmData } from './fakePrivateMessages.ts';
 
 export const NOW = 1_782_900_000;
+
+/**
+ * Balises du sujet des tests : des projets (groupe « project ») et des balises d'état, avec les
+ * couleurs attendues par les assertions. Indépendantes de la liste par défaut du forum.
+ */
+export const TEST_SUBJECT_TAGS: readonly SubjectTag[] = [
+	{ name: 'MSFS', group: 'project', color: '#1d4ed8' },
+	{ name: 'FS-24', group: 'project', color: '#0f766e' },
+	{ name: 'FSX', group: 'project', color: '#6d28d9' },
+	{ name: 'X-Plane', group: 'project', color: '#9a3412' },
+	{ name: 'Flight', group: 'project', color: '#be185d' },
+	{ name: 'P3D', group: 'project', color: '#4d7c0f' },
+	{ name: 'MULTI-SIMU', group: 'project', color: '#475569' },
+	{ name: 'Résolu', group: 'other', color: '#15803d' },
+	{ name: 'Réel', group: 'other', color: '#a16207' },
+	{ name: 'Video', group: 'other', color: '#b91c1c' },
+];
 
 /** Secret des signatures dans les tests (cookie de session, jeton CSRF). */
 export const COOKIE_SECRET = 'graine-de-test';
@@ -271,7 +288,7 @@ export const boardConfig: BoardConfig = {
 	signatureMaxLength: 400,
 	signatureMaxLines: 4,
 	signatureAllCaps: false,
-	subjectTags: [...DEFAULT_SUBJECT_TAGS],
+	subjectTags: [...TEST_SUBJECT_TAGS],
 	privateMessageNotification: false,
 	privateMessageMaxReceivers: 3,
 	privateMessagesPerPage: 15,
@@ -912,7 +929,6 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			countActiveOnline: async () => 4,
 			databaseInfo: async () => ({ version: '11.4.2-MariaDB', rows: 12345, bytes: 3 * 1024 * 1024 }),
 		},
-		serverInfo: { loadAverage: () => [0.5, 0.25, 0.125], operatingSystem: () => 'linux 7.0', runtimeVersion: () => 'v24.0.0' },
 		hostResolver: { reverse: async (ip) => (ip === '192.0.2.5' ? 'pilote.example.test' : ip) },
 		reputation: {
 			findMember: async (id) => data.reputationMembers?.find((m) => m.id === id) ?? null,

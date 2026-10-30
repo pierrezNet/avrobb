@@ -1,5 +1,5 @@
 /**
- * Rendu des gabarits Nunjucks précompilés (scripts/build-templates.mjs) avec le runtime sans
+ * Rendu des gabarits Nunjucks précompilés (scripts/build.mjs) avec le runtime sans
  * compilateur : aucun accès au système de fichiers ni `eval`, comme l'exige un Worker.
  * Échappement automatique, et toute variable indéfinie est une erreur (throwOnUndefined).
  */

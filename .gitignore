@@ -2,7 +2,6 @@ node_modules/
 dist/
 .env
 screenshots/
-mail-outbox/
 storage/
 
 # Synthèse personnelle des améliorations par rapport au PHP (tenue à jour, non versionnée)

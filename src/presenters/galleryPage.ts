@@ -168,7 +168,7 @@ export function buildGalleryPicker(input: {
 				selected: input.embedded && input.preselectFirst && index === 0,
 				thumbUrl: files.thumb,
 				fullUrl: files.full,
-				insertCode: galleryInsertCode(image, input.config.baseUrl),
+				insertCode: galleryInsertCode(image),
 				insertLabel: t.insertNamed(image.title),
 				codeLabel: t.insertCode(image.title),
 			};

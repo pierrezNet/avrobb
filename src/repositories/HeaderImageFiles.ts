@@ -1,61 +1,65 @@
 /**
- * Fichiers du logo et de la bannière dans le stockage local (services/headerImages.ts) : écriture
- * avec copie de l'image précédente, retour à cette copie, et installation des images par défaut.
+ * Logo et bannière du forum dans R2 (services/headerImages.ts) : écriture avec copie de l'image
+ * précédente, et retour à cette copie. Tant qu'aucune image n'a été envoyée, l'en-tête affiche les
+ * images d'AvroBB de public/assets/ (headerImageHref) ; au premier remplacement, c'est elle qui
+ * devient l'image précédente, lue par `loadDefault`. La version des adresses (o_header_version)
+ * est commune aux deux images : dès le premier envoi, les deux sont donc lues dans R2, et l'image
+ * d'AvroBB de l'autre type y est déposée.
  */
 
-import { copyFile, mkdir, rename, stat, writeFile } from 'node:fs/promises';
-import path from 'node:path';
 import { HEADER_IMAGES, type HeaderImageKind } from '../services/headerImages.ts';
+import type { FileStore } from './FileStore.ts';
 
 export interface HeaderImageStore {
 	/** Remplace l'image ; l'actuelle devient l'image précédente. */
-	replace(kind: HeaderImageKind, data: Buffer): Promise<void>;
+	replace(kind: HeaderImageKind, data: Uint8Array, contentType: string): Promise<void>;
 	/** Échange l'image et la précédente ; false s'il n'y a pas d'image précédente. */
 	restore(kind: HeaderImageKind): Promise<boolean>;
 	hasPrevious(kind: HeaderImageKind): Promise<boolean>;
 }
 
-const exists = async (file: string): Promise<boolean> => (await stat(file).catch(() => null)) !== null;
+/** Image d'AvroBB (public/assets/), lue par le Worker dans Static Assets. */
+export type DefaultImageLoader = (assetPath: string) => Promise<{ data: Uint8Array; contentType: string } | null>;
+
+async function readAll(stream: ReadableStream<Uint8Array>): Promise<Uint8Array> {
+	return new Uint8Array(await new Response(stream).arrayBuffer());
+}
 
 export class HeaderImageFiles implements HeaderImageStore {
-	constructor(private readonly storageRoot: string) {}
+	constructor(
+		private readonly files: FileStore,
+		private readonly loadDefault: DefaultImageLoader,
+	) {}
 
-	#paths(kind: HeaderImageKind): { current: string; previous: string } {
+	async replace(kind: HeaderImageKind, data: Uint8Array, contentType: string): Promise<void> {
 		const spec = HEADER_IMAGES[kind];
-		return { current: path.join(this.storageRoot, spec.path), previous: path.join(this.storageRoot, spec.previousPath) };
+		const current = await this.files.get(spec.path);
+		const previous =
+			current !== null ? { data: await readAll(current.body), contentType: current.contentType } : await this.loadDefault(spec.defaultPath);
+		if (previous !== null) await this.files.put(spec.previousPath, previous.data, previous.contentType);
+		await this.files.put(spec.path, data, contentType);
+		for (const other of Object.keys(HEADER_IMAGES) as HeaderImageKind[]) if (other !== kind) await this.#installDefault(other);
 	}
 
-	/** Au démarrage : copie les images d'AvroBB (dossier public/) là où le stockage n'en a pas. */
-	async installDefaults(publicDir: string): Promise<void> {
-		for (const kind of Object.keys(HEADER_IMAGES) as HeaderImageKind[]) {
-			const { current } = this.#paths(kind);
-			if (await exists(current)) continue;
-			await mkdir(path.dirname(current), { recursive: true });
-			await copyFile(path.join(publicDir, HEADER_IMAGES[kind].defaultPath), current);
-		}
-	}
-
-	async replace(kind: HeaderImageKind, data: Buffer): Promise<void> {
-		const { current, previous } = this.#paths(kind);
-		await mkdir(path.dirname(current), { recursive: true });
-		if (await exists(current)) await copyFile(current, previous);
-		// Fichier temporaire puis renommage : on ne sert jamais une image à moitié écrite.
-		const temporary = `${current}.tmp`;
-		await writeFile(temporary, data);
-		await rename(temporary, current);
+	/** Image d'AvroBB déposée dans R2 si ce type n'y a encore aucune image. */
+	async #installDefault(kind: HeaderImageKind): Promise<void> {
+		const spec = HEADER_IMAGES[kind];
+		if ((await this.files.head(spec.path)) !== null) return;
+		const image = await this.loadDefault(spec.defaultPath);
+		if (image !== null) await this.files.put(spec.path, image.data, image.contentType);
 	}
 
 	async restore(kind: HeaderImageKind): Promise<boolean> {
-		const { current, previous } = this.#paths(kind);
-		if (!(await exists(previous))) return false;
-		const swap = `${current}.swap`;
-		await copyFile(current, swap);
-		await copyFile(previous, current);
-		await rename(swap, previous);
+		const spec = HEADER_IMAGES[kind];
+		const [current, previous] = await Promise.all([this.files.get(spec.path), this.files.get(spec.previousPath)]);
+		if (previous === null) return false;
+		const previousData = await readAll(previous.body);
+		if (current !== null) await this.files.put(spec.previousPath, await readAll(current.body), current.contentType);
+		await this.files.put(spec.path, previousData, previous.contentType);
 		return true;
 	}
 
-	hasPrevious(kind: HeaderImageKind): Promise<boolean> {
-		return exists(this.#paths(kind).previous);
+	async hasPrevious(kind: HeaderImageKind): Promise<boolean> {
+		return (await this.files.head(HEADER_IMAGES[kind].previousPath)) !== null;
 	}
 }

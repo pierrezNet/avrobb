@@ -1,8 +1,9 @@
 /**
- * Développement : précompile les gabarits et les recompile à chaque modification, pendant que tsx
- * relance le serveur (src/server.ts) quand le code ou les gabarits compilés changent.
+ * Développement : précompile les gabarits et le manifeste des ressources, les recalcule à chaque
+ * modification (scripts/build.mjs --watch), et lance `wrangler dev` (Worker, D1 et R2 locaux, dans
+ * .wrangler/state) qui recharge le Worker quand le code ou les fichiers générés changent.
  *
- * En JavaScript (et non TypeScript) : lancé par npm run dev, avant tsx.
+ * En JavaScript (et non TypeScript) : lancé par npm run dev, sans tsx.
  */
 
 import { spawn } from 'node:child_process';
@@ -10,8 +11,8 @@ import path from 'node:path';
 
 const root = path.join(import.meta.dirname, '..');
 const children = [
-	spawn(process.execPath, [path.join(root, 'scripts/build-templates.mjs'), '--watch'], { stdio: 'inherit' }),
-	spawn(process.execPath, [path.join(root, 'node_modules/tsx/dist/cli.mjs'), 'watch', '--env-file=.env', 'src/server.ts'], {
+	spawn(process.execPath, [path.join(root, 'scripts/build.mjs'), '--watch'], { stdio: 'inherit' }),
+	spawn(process.execPath, [path.join(root, 'node_modules/wrangler/bin/wrangler.js'), 'dev', ...process.argv.slice(2)], {
 		cwd: root,
 		stdio: 'inherit',
 	}),

@@ -103,23 +103,32 @@ Vigilance :
 - Limites D1 : 100 paramètres liés par requête (attention aux `IN (…)` longs, à découper) et 100 Ko par instruction SQL.
 - Pas d'import des données de Pilote-Virtuel : AvroBB démarre vide.
 
-## Lot 4 — Worker et R2 · 3 à 4 jours
+## Lot 4 — Worker et R2 · 3 à 4 jours · terminé le 2026-10-30
 
-Le forum tourne dans `wrangler dev`, puis le serveur Node disparaît.
+Le forum tourne dans `wrangler dev` ; le serveur Node (`src/server.ts`, `@hono/node-server`) a disparu.
 
-- [ ] `src/worker.ts` : câblage des dépendances à partir de `env` (`DB`, `FILES`, `ASSETS`, secrets), `nodejs_compat` ; `npm run dev` = `wrangler dev`
-- [ ] Ressources statiques par Workers Static Assets (`public/` servi tel quel sous `/assets/`) et **manifeste des empreintes** calculé au build (`src/generated/assets.json`, à la place d'`adapters/assetUrls.ts`)
-- [ ] Ce qui dépendait de Node : consultation d'IP par DNS sur HTTPS (`fetch`, à la place de `node:dns`), e-mails journalisés en attendant le lot 6 (`nodemailer` retiré), **images sans sharp** : type, dimensions et poids lus dans le contenu et vérifiés, fichier gardé tel quel (la conversion en WebP dans le navigateur arrive au lot 6)
-- [ ] Tâche planifiée (Cron Trigger) : purge de `online` et des brouillons anciens
-- [ ] Liaison `FILES` (bucket `avrobb-files`), interface `FileStore` (`put`, `get`, `delete`) et doublure en mémoire pour les tests
-- [ ] Galerie, avatars, logo et bannière (`GalleryFiles`, `avatars.ts`, `HeaderImageFiles`) passés sur R2 ; clés générées par le serveur (`gallery/<id>-<aléa>.webp`)
-- [ ] Route `GET /files/*` : lecture R2, `Content-Type` fixé par le serveur, `ETag`, `Cache-Control: public, max-age=31536000, immutable` (une clé ne change jamais de contenu), cache en bordure
-- [ ] Images du forum (galerie, avatars) insérées dans les messages en **adresse relative** (`/img/gallery/…`) et non plus préfixées d'`o_base_url` : une adresse absolue casse dès que le domaine change (développement → production). Le rendu (variante mobile, `<picture>`, miniatures de l'accueil) reconnaît aussi les anciennes adresses absolues du forum
-- [ ] Suppression : effacement R2 **après** la suppression en base (un fichier orphelin vaut mieux qu'une ligne qui pointe dans le vide) ; tâche planifiée de nettoyage des orphelins
+- [x] `src/worker.ts` : câblage des dépendances à partir de `env` (`DB`, `FILES`, `ASSETS`, `SESSION_SECRET`…), application construite à la première requête de l'isolat ; `npm run dev` = `wrangler dev` (+ build en continu), secrets locaux dans `.dev.vars` ; adresse du client lue dans `CF-Connecting-IP` (`TRUST_PROXY` retiré)
+- [x] Ressources statiques par Workers Static Assets : `public/assets/` servi sous `/assets/` sans appeler le Worker, en-têtes dans `public/_headers` ; **manifeste des empreintes** calculé par `scripts/build.mjs` (`src/generated/assets.js`, qui remplace aussi `build-templates.mjs`)
+- [x] Ce qui dépendait de Node : résolution inverse des IP par DNS sur HTTPS (`DohHostResolver`, Cloudflare), `isIP` réécrit en fonction pure, e-mails journalisés (`LogMailer`, `nodemailer` retiré), **images sans sharp** : type et dimensions lus dans le contenu (WebP ajouté), poids et dimensions plafonnés, fichier gardé tel quel
+- [x] Tâche planifiée (Cron Trigger nocturne, `controllers/ScheduledTasks.ts`) : purge de `online` et des fichiers orphelins de R2
+- [x] Liaison `FILES` (bucket `avrobb-files`), interface `FileStore` (`put`, `get`, `head`, `list`, `delete`) sur R2 (`R2FileStore`), doublure en mémoire (`tests/memoryFileStore.ts`) et test sur le R2 local (`tests/db/r2.test.ts`)
+- [x] Galerie, avatars, logo et bannière (`GalleryFiles`, `AvatarFiles`, `HeaderImageFiles`) passés sur R2, type MIME fixé à l'écriture d'après le contenu ; logo et bannière d'AvroBB servis depuis `public/assets/` tant qu'aucun n'a été envoyé (ils deviennent l'image « précédente » du premier envoi) ; adresses des avatars par une liste du dossier gardée une minute par isolat (une lecture R2 par page au lieu d'une par avatar)
+- [x] Route `GET /img/*` : lecture R2, types d'image seulement, `ETag` et `304`, `Cache-Control: public, max-age=604800`, cache en bordure d'une heure (`http/edgeCache.ts`) pour qu'une image retirée disparaisse vite
+- [x] Images de la galerie insérées en **adresse relative** (`[img]/img/gallery/…[/img]`, acceptée par `[img]` pour les seuls fichiers du forum) ; variante mobile, carte de galerie et miniatures de l'accueil reconnaissent aussi les anciennes adresses absolues
+- [x] Suppression : effacement R2 **après** la suppression en base, écriture R2 **avant** la ligne (galerie) ; la tâche planifiée efface les orphelins de plus d'un jour
+
+Écarts au plan :
+- Clés de la galerie gardées sous la forme de FluxBB (`img/gallery/<horodatage><ext>`, `mini_`, `mobile_`) plutôt que `gallery/<id>-<aléa>.webp` : elles restent fabriquées par le serveur, et le schéma (`date_ajout`, `ext`) n'a pas à changer.
+- Fichiers servis sous `/img/` (adresses déjà présentes dans les messages) plutôt que `/files/`, avec un cache d'une semaine et non `immutable` : avatars, logo et bannière gardent leur nom et changent de version (`?m=`, `?v=`).
+- Brouillons non purgés : ce sont des textes des membres, qu'ils effacent eux-mêmes.
+
+Reporté :
+- Quota d'images par membre : au lot 6, avec l'envoi par le navigateur.
+- Réduction des images trop grandes (avatars, galerie) : refusées pour l'instant, comme dans FluxBB ; le navigateur les réduira au lot 6.
 
 Vigilance :
 - Même origine que le forum : la CSP `img-src 'self'` suffit, et le domaine public `r2.dev` reste désactivé.
-- Taille max par fichier et quota par membre (nombre d'images), à vérifier avant l'écriture.
+- `fetch` des Workers ne s'appelle pas comme une méthode d'objet (« Illegal invocation ») : l'envelopper dans une fonction quand on l'injecte.
 
 ## Lot 5 — SSO (GitHub, Google en option) · 2 à 3 jours
 
@@ -140,9 +149,10 @@ Vigilance :
 ## Lot 6 — Images et e-mails · 2 à 3 jours
 
 - [ ] **Images côté navigateur** : script d'amélioration progressive qui redimensionne (1024 px, plus une variante 640 px) et convertit en WebP par `canvas` avant l'envoi ; recadrage de l'avatar ; repris de ce que fait déjà la vignette de galerie
-- [ ] Côté serveur, sans sharp : type lu dans le contenu, **dimensions lues dans l'en-tête** (WebP, PNG, JPEG, GIF) par une fonction pure, refus au-delà des limites ; sans JS, le fichier d'origine est accepté tel quel s'il respecte taille (~2 Mo) et dimensions
-- [ ] Retrait de `sharp` et de `SharpImageProcessor`
-- [ ] **E-mails** : `Mailer` par API HTTP (Resend, comme donnetonpoint), `NullMailer` par défaut tant que la clé n'est pas configurée ; notifications d'abonnement et alertes de message privé ; retrait de `nodemailer` et de `MAIL_OUTBOX`
+- [x] Côté serveur, sans sharp : type lu dans le contenu, **dimensions lues dans l'en-tête** (WebP, PNG, JPEG, GIF) par une fonction pure, refus au-delà des limites ; sans JS, le fichier d'origine est accepté tel quel s'il respecte taille et dimensions (fait au lot 4)
+- [x] Retrait de `sharp` et de `SharpImageProcessor` (fait au lot 4)
+- [ ] Quota d'images par membre (nombre d'images de la galerie), vérifié avant l'écriture
+- [ ] **E-mails** : `Mailer` par API HTTP (Resend, comme donnetonpoint) à la place de `LogMailer`, qui reste tant que la clé n'est pas configurée ; notifications d'abonnement et alertes de message privé
 - [ ] Envoi des e-mails hors du chemin de la réponse (`ctx.waitUntil`) pour ne pas ralentir la publication
 
 Vigilance :

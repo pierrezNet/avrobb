@@ -10,32 +10,39 @@ schéma FluxBB. Cible : **Cloudflare** (Workers, D1, R2). Le plan de portage est
 
 ## État actuel
 
-Lots 1 à 3 terminés (retrait de l'héritage PV, Hono et gabarits précompilés, base D1).
-L'application tourne encore sous **Node** (`@hono/node-server`), sur la base **D1 locale** de
-Wrangler ; le Worker et R2 arrivent au lot 4. Les comptes SSO
-arrivent au lot 5 : d'ici là, la **connexion de développement** (`DEV_LOGIN=1`) permet de se
-connecter sous le nom d'un membre existant, depuis la machine seulement.
+Lots 1 à 4 terminés (retrait de l'héritage PV, Hono et gabarits précompilés, base D1, Worker et
+R2). L'application est un **Worker Cloudflare** (`src/worker.ts`), lancé en local par
+`wrangler dev` avec D1 et R2 locaux (`.wrangler/state`). Les comptes SSO arrivent au lot 5 : d'ici
+là, la **connexion de développement** (`DEV_LOGIN=1`) permet de se connecter sous le nom d'un
+membre existant, depuis la machine seulement. Les e-mails sont seulement notés dans le journal
+jusqu'au lot 6.
 
 ## Lancer
 
 ```bash
-cp .env.example .env    # SESSION_SECRET : openssl rand -hex 32
+cp .dev.vars.example .dev.vars   # SESSION_SECRET : openssl rand -hex 32
 npm install
 npm run db:migrate      # crée la base D1 locale (.wrangler/state) : schéma et réglages par défaut
 npm run db:seed:dev     # administrateur « Emmanuel » (connexion de développement), catégorie et forums
-npm run dev             # http://localhost:8787 ; gabarits recompilés à chaque modification
+npm run dev             # wrangler dev, http://localhost:8787 ; gabarits et manifeste recalculés à chaque modification
 npm run check           # lint (Biome) + typecheck + tests rapides
-npm run test:db         # tests sur une D1 locale neuve (migrations + tests/db/seed.sql)
-npm run screenshot -- 'http://localhost:3000/index.php' --widths 320,1280 [--cookie avrobb_session=…]
+npm run test:db         # tests sur D1 et R2 locaux neufs (migrations + tests/db/seed.sql)
+npm run screenshot -- 'http://localhost:8787/index.php' --widths 320,1280 [--cookie avrobb_session=…]
 ```
 
 Base : D1 (SQLite), schéma dans `migrations/`. Les écritures en plusieurs requêtes passent par
 des lots atomiques (`db.batch()`, voir `src/db/database.ts`) : D1 n'a pas de transaction interactive.
 Les captures demandent un Chrome sans tête (`CHROME_BIN`, ou celui de Playwright s'il est installé).
 
-Fichiers envoyés (galerie, avatars, logo, bannière) : dossier `STORAGE_DIR` (`storage/` par défaut),
-servi sous `/img/` ; R2 le remplacera au lot 4. Le logo et la bannière d'AvroBB (`public/img/`) y
-sont copiés au premier démarrage ; `scripts/brand.py` les régénère.
+Ressources statiques (CSS, scripts, icônes) : `public/assets/`, servies sous `/assets/` par Workers
+Static Assets sans appeler le Worker (en-têtes dans `public/_headers`) ; leur empreinte (`?v=…`) vient
+du manifeste calculé par `npm run build` (`src/generated/assets.js`).
+
+Fichiers envoyés (galerie, avatars, logo, bannière) : bucket R2 `avrobb-files` (liaison `FILES`),
+servi par le Worker sous `/img/` avec ETag et cache en bordure d'une heure. Tant qu'aucun logo ni
+bannière n'a été envoyé, l'en-tête affiche ceux d'AvroBB (`public/assets/img/`, régénérés par
+`scripts/brand.py`). Une tâche planifiée nocturne (`triggers` de `wrangler.jsonc`) purge la table
+`online` et efface les fichiers orphelins ; en local : `curl 'http://localhost:8787/cdn-cgi/handler/scheduled'`.
 
 ## Organisation
 
@@ -50,8 +57,8 @@ sont copiés au premier démarrage ; `scripts/brand.py` les régénère.
 
 Les tables gardent les noms de FluxBB 1.5, sans préfixe.
 
-Front-end : `public/css/base.css` (mobile d'abord) et un fichier de variables par thème dans
-`public/css/themes/` ; le contraste AA de chaque thème est vérifié par `tests/themes.test.ts`.
+Front-end : `public/assets/css/base.css` (mobile d'abord) et un fichier de variables par thème dans
+`public/assets/css/themes/` ; le contraste AA de chaque thème est vérifié par `tests/themes.test.ts`.
 
 ## Différences avec FluxBB
 
@@ -177,7 +184,7 @@ Front-end : `public/css/base.css` (mobile d'abord) et un fichier de variables pa
   ligne (`script-src 'self'`), styles en ligne permis (couleurs des balises), images de partout en
   http(s), vidéos YouTube/Dailymotion seulement, formulaires vers le forum seulement,
   pas d'intégration dans un autre site ; `nosniff`, `Referrer-Policy`, `Permissions-Policy`, HSTS
-  en HTTPS (`TRUST_PROXY` derrière un proxy). Un script collé dans l'annonce ou les liens du menu
+  en HTTPS. Un script collé dans l'annonce ou les liens du menu
   par l'administrateur ne s'exécute plus.
 - Référencement (le PHP n'en faisait pas) : balise description par page (extrait censuré du premier
   message d'une discussion, description du forum `o_board_desc` sinon), URL canonique absolue
@@ -215,11 +222,15 @@ Front-end : `public/css/base.css` (mobile d'abord) et un fichier de variables pa
   Les anciens sujets ne sont pas réécrits, mais leurs balises inventées et doublons ne sont plus
   affichés par Node (le PHP les montre toujours). Les boutons du formulaire ajoutent une balise ou la
   retirent si elle y est déjà.
-- Images envoyées (galerie) : converties en WebP par sharp (le navigateur s'en chargera au lot 6),
-  plus grand côté limité à 1024 px, avec une variante mobile de 640 px (`mobile_<fichier>`) et une
-  vignette `mini_`. Les limites de poids portent sur l'image convertie. Dans les messages, une image
-  WebP du forum est servie dans un `<picture>` qui donne la variante mobile aux écrans de 640 px au
-  plus ; toutes les images sont chargées à la demande (`loading="lazy"`).
+- Images envoyées (galerie, avatars, logo, bannière) : GIF, JPEG, PNG ou WebP, type et dimensions
+  lus dans le contenu, gardées telles quelles (pas de bibliothèque d'images dans le Worker ; la
+  réduction et la conversion en WebP par le navigateur arrivent au lot 6). Galerie : 1,5 Mio et
+  4 096 px de côté au plus, l'image sert aussi de vignette (`mini_`) et, en WebP, de variante mobile
+  (`mobile_`). Avatar trop grand ou logo hors cadre : refusé, comme dans FluxBB. La galerie insère une
+  adresse relative (`[img]/img/gallery/…[/img]`, acceptée par `[img]` pour les seuls fichiers du
+  forum) qui survit à un changement de domaine ; les anciennes adresses absolues restent reconnues.
+  Dans les messages, une image WebP du forum est servie dans un `<picture>` qui donne la variante
+  mobile aux écrans de 640 px au plus ; toutes les images sont chargées à la demande (`loading="lazy"`).
 - Avatar : une image trop grande ou trop lourde est recadrée automatiquement aux dimensions permises
   (centre d'intérêt de l'image), au lieu d'être refusée ; elle garde le format GIF, JPEG ou PNG, les
   seuls que le PHP affiche, et passe en JPEG plus compressé si son poids dépasse encore la limite.
@@ -285,8 +296,9 @@ Front-end : `public/css/base.css` (mobile d'abord) et un fichier de variables pa
   le lien « Images de la galerie » reste sous le formulaire. Une image de la galerie insérée avec
   son titre et sa description s'affiche en carte (`<figure>` : image, titre, légende) ; le PHP
   montre le même BBCode en titre gras, image et texte.
-- Fichiers du stockage local (`STORAGE_DIR/img/`) servis sous `/img/`, images seulement (gif, jpg,
-  png, webp, ico).
+- Fichiers envoyés (R2) servis sous `/img/` : images seulement (type fixé à l'écriture d'après le
+  contenu), clés fabriquées par le serveur, ETag ; une image effacée disparaît du cache en bordure
+  en une heure au plus. Résolution inverse des IP (modération) par DNS sur HTTPS (Cloudflare).
 - extern.php : pas d'authentification HTTP Basic ni de cache des flux (`o_feed_ttl`).
 - Connexion : pas de mot de passe (SSO au lot 5, connexion de développement d'ici là) ; jeton CSRF,
   adresse de retour limitée aux pages du forum, redirection immédiate, page accessible en

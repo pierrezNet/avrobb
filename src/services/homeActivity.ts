@@ -9,9 +9,9 @@ import { splitPrefixes } from './subjectPrefixes.ts';
 /** Semaine glissante des blocs de l'accueil, en secondes. */
 export const HOME_WEEK = 7 * 86400;
 
-const IMG = /\[img(?:=[^\]]*)?\]\s*(https?:\/\/[^\s[\]"<>]+?)\s*\[\/img\]/gi;
+const IMG = /\[img(?:=[^\]]*)?\]\s*((?:https?:\/\/|\/img\/)[^\s[\]"<>]+?)\s*\[\/img\]/gi;
 
-/** Dernière image ([img]) d'un message BBCode, en http(s) seulement ; null s'il n'y en a pas. */
+/** Dernière image ([img]) d'un message BBCode, en http(s) ou fichier du forum (/img/…) ; null s'il n'y en a pas. */
 export function lastImageUrl(message: string): string | null {
 	let url: string | null = null;
 	for (const match of message.matchAll(IMG)) url = match[1] ?? url;

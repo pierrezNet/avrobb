@@ -1,10 +1,19 @@
-// Configuration Cloudflare d'AvroBB. Lot 3 : seule la base D1 sert, sous Node, par
-// getPlatformProxy() (base locale dans .wrangler/state). Le Worker lui-même arrive au lot 4.
+// Configuration Cloudflare d'AvroBB : Worker (src/worker.ts), base D1, fichiers R2, ressources
+// statiques (public/), tâche planifiée. Les secrets (SESSION_SECRET) se posent par
+// `wrangler secret put` ; en local, dans .dev.vars (non versionné, voir .dev.vars.example).
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "avrobb",
+	"main": "src/worker.ts",
 	"compatibility_date": "2026-10-01",
 	"compatibility_flags": ["nodejs_compat"],
+	// Ressources de public/assets/ servies sous /assets/ sans appeler le Worker (en-têtes : public/_headers).
+	// Toute autre adresse (pages, /img/…) passe au Worker.
+	"assets": {
+		"directory": "public",
+		"binding": "ASSETS",
+		"not_found_handling": "none"
+	},
 	"d1_databases": [
 		{
 			"binding": "DB",
@@ -13,5 +22,11 @@
 			"database_id": "00000000-0000-0000-0000-000000000000",
 			"migrations_dir": "migrations"
 		}
-	]
+	],
+	// Galerie, avatars, logo et bannière ; servis par le Worker sous /img/ (accès public r2.dev désactivé).
+	"r2_buckets": [{ "binding": "FILES", "bucket_name": "avrobb-files" }],
+	// Chaque nuit : purge de la table online et des fichiers orphelins (controllers/ScheduledTasks.ts).
+	"triggers": { "crons": ["17 3 * * *"] },
+	"vars": { "COOKIE_SECURE": "1" },
+	"observability": { "enabled": true }
 }

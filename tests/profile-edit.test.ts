@@ -454,10 +454,11 @@ describe('profile.php : avatar', () => {
 		expect(bad.body).toContain('Ce type de fichier n&#39;est pas autorisé');
 		expect(fake.avatarLog).toHaveLength(1);
 
-		// Trop grande : réduite automatiquement au lieu d'être refusée.
+		// Trop grande : refusée, comme dans FluxBB (pas de bibliothèque d'images dans le Worker).
 		const big = await postFile(server, 3, '/profile.php?action=upload_avatar2&id=3', 'req_file', 'grand.png', png(800, 600));
-		expect(big.statusCode).toBe(303);
-		expect(fake.avatarLog).toEqual(['save 3.png', 'save 3.png']);
+		expect(big.statusCode).toBe(200);
+		expect(big.body).toContain('plus large et/ou plus haute que le maximum autorisé');
+		expect(fake.avatarLog).toEqual(['save 3.png']);
 	});
 
 	it("efface l'avatar après confirmation (POST)", async () => {

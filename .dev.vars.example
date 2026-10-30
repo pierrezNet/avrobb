@@ -1,0 +1,7 @@
+# Variables du Worker en développement (wrangler dev) : copier en .dev.vars (non versionné).
+# Secret des signatures (session, CSRF), au moins 32 caractères : openssl rand -hex 32
+SESSION_SECRET=
+# http://localhost : cookies sans l'attribut Secure.
+COOKIE_SECURE=0
+# Connexion de test sans fournisseur SSO, depuis la machine seulement.
+DEV_LOGIN=1

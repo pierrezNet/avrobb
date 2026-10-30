@@ -1,32 +1,18 @@
 /**
- * URL des ressources statiques de public/, suffixées d'une empreinte de leur contenu (`?v=…`) :
- * le navigateur peut les garder longtemps en cache et recharge dès qu'elles changent.
- *
- * Adaptateur Node : l'empreinte est calculée en lisant le fichier. Dans le Worker (lot 3), un
- * manifeste calculé au build la remplacera.
+ * URL des ressources statiques de public/assets/ (servies par Workers Static Assets sous /assets/),
+ * suffixées d'une empreinte de leur contenu (`?v=…`) : le navigateur peut les garder longtemps en
+ * cache et recharge dès qu'elles changent. Les empreintes viennent du manifeste calculé au build
+ * (scripts/build.mjs → src/generated/assets.js) : rien n'est lu à l'exécution.
  */
 
-import { createHash } from 'node:crypto';
-import { readFileSync, statSync } from 'node:fs';
-import path from 'node:path';
-import { ASSETS_PREFIX } from '../http/server.ts';
+/** Préfixe des ressources de public/assets/ (CSS, scripts, icônes). */
+export const ASSETS_PREFIX = '/assets/';
 
-export function createAssetUrl(publicDir: string): (file: string) => string {
-	const root = path.resolve(publicDir);
-	const fingerprints = new Map<string, { mtimeMs: number; hash: string }>();
-
+export function createAssetUrl(manifest: Readonly<Record<string, string>>): (file: string) => string {
 	return (file: string): string => {
-		const absolute = path.resolve(root, file);
-		if (!absolute.startsWith(root + path.sep)) throw new Error(`Ressource hors de public/ : ${file}`);
-
-		// Un stat par appel : un fichier modifié pendant le développement change aussitôt d'empreinte.
-		const { mtimeMs } = statSync(absolute);
-		let entry = fingerprints.get(absolute);
-		if (entry?.mtimeMs !== mtimeMs) {
-			entry = { mtimeMs, hash: createHash('sha1').update(readFileSync(absolute)).digest('hex').slice(0, 10) };
-			fingerprints.set(absolute, entry);
-		}
-
-		return `${ASSETS_PREFIX}${file}?v=${entry.hash}`;
+		const hash = manifest[file];
+		// Une ressource inconnue est une faute de frappe dans un gabarit : on la signale tout de suite.
+		if (hash === undefined) throw new Error(`Ressource absente de public/assets/ : ${file}`);
+		return `${ASSETS_PREFIX}${file}?v=${hash}`;
 	};
 }

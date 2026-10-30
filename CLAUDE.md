@@ -15,12 +15,12 @@ Cible : **100 % Cloudflare**. Un Worker (Hono), D1 (SQLite), R2 (fichiers), Stat
 - `FAILLES_PHP.md` (non versionné) : failles du PHP d'origine, liste de contrôle à ne pas reproduire.
 - Projet voisin sur le même modèle (Workers + D1 + Hono) : `../donnetonpoint`.
 
-> **Transition en cours** : lots 1 à 3 terminés (héritage PV retiré, Hono, base D1). Tant que le lot 4 de `TODO.md` n'est pas terminé, le serveur tourne encore **sous Node** (`@hono/node-server`), sur la **base D1 locale de Wrangler** ouverte par `getPlatformProxy`, avec sharp et un stockage local des fichiers (`STORAGE_DIR`). Ce fichier décrit la **cible**. Commandes actuelles : `npm run dev` (port 8787, gabarits recompilés à chaque modification), `npm run db:migrate` (migrations sur la base locale), `npm run db:seed:dev` (administrateur « Emmanuel » et premiers forums), `npm run check`, `npm run test:db` (D1 locale neuve), `npm run screenshot`. Un lot terminé met à jour la section « Commandes » s'il en change.
+> **Transition en cours** : lots 1 à 4 terminés (héritage PV retiré, Hono, base D1, Worker et R2). Le forum tourne sous `wrangler dev` ; les comptes SSO (lot 5), l'envoi réel des e-mails et la réduction des images par le navigateur (lot 6) restent à faire. Ce fichier décrit la **cible** : en attendant le lot 6, `LogMailer` note les e-mails dans le journal, et une image envoyée trop grande est refusée. La commande `npm run deploy` et le déploiement par GitHub Actions arrivent au lot 7.
 
 ## Commandes
 
 ```bash
-npm run dev        # wrangler dev : Worker local, D1 et R2 locaux (Miniflare), http://localhost:8787
+npm run dev        # wrangler dev : Worker local, D1 et R2 locaux (Miniflare), http://localhost:8787 ; secrets dans .dev.vars
 npm run build      # précompile les gabarits Nunjucks et le manifeste des ressources (src/generated/)
 npm test           # vitest (Node) : services, presenters, contrôleurs avec doublures
 npm run test:db    # repositories sur une vraie D1 locale (getPlatformProxy), migrations rejouées à chaque lancement
@@ -28,7 +28,7 @@ npm run typecheck  # tsc --noEmit (TypeScript strict)
 npm run lint       # Biome (lint + format, vérification seule)
 npm run format     # Biome : corrige le formatage et l'ordre des imports
 npm run check      # lint + typecheck + test : à lancer avant chaque commit
-npm run db:migrate -- --local|--remote   # wrangler d1 migrations apply
+npm run db:migrate # wrangler d1 migrations apply (base locale ; --remote au lot 7)
 npm run deploy     # build puis wrangler deploy (normalement fait par GitHub Actions)
 npm run screenshot -- 'http://localhost:8787/viewtopic.php?id=4' --widths 320,375,768,1280
 ```
@@ -40,11 +40,11 @@ npm run screenshot -- 'http://localhost:8787/viewtopic.php?id=4' --widths 320,37
 - **Runtime** : Cloudflare Workers (`compatibility_flags = ["nodejs_compat"]`), configuration dans `wrangler.jsonc`. Node ≥ 24 pour l'outillage (ESM, `"type": "module"`, imports avec extension `.ts`).
 - **HTTP** : **Hono**. Les contrôleurs ne voient pas Hono directement : ils reçoivent `AppRequest` et `AppReply` (`src/http/context.ts`), et `src/http/server.ts` fait le lien avec Hono (routes, étapes préalables, erreurs, en-têtes, fichiers statiques).
 - **Base** : **D1** via **Kysely** (dialecte SQLite, pilote D1 maison de quelques dizaines de lignes dans `src/db/`). Schéma neuf, migrations SQL numérotées dans `migrations/` (`wrangler d1 migrations`).
-- **Fichiers** : **R2** (avatars, galerie, logo, bannière), servis par le Worker sous une route de même origine avec cache en bordure.
+- **Fichiers** : **R2** (avatars, galerie, logo, bannière) derrière l'interface `FileStore` (`repositories/FileStore.ts`), servis par le Worker sous `/img/` (même origine) avec cache en bordure.
 - **Gabarits** : **Nunjucks précompilé** au build (`nunjucks.precompile` vers un module ES dans `src/generated/`), chargé par `PrecompiledLoader`. Un Worker n'a ni système de fichiers ni `eval` : on ne compile **jamais** un gabarit à l'exécution. Échappement automatique, `throwOnUndefined`.
-- **Ressources statiques** : `public/` servi par Workers Static Assets. Empreintes (`?v=…`) calculées au build dans un manifeste, pas à l'exécution.
-- **Recherche** : FTS5 de SQLite (table virtuelle tenue à jour par déclencheurs).
-- **E-mails** : interface `Mailer`. Pas de SMTP : une API HTTP (Resend, comme donnetonpoint) ou rien (`NullMailer`).
+- **Ressources statiques** : `public/assets/` servi sous `/assets/` par Workers Static Assets, sans passer par le Worker (en-têtes dans `public/_headers`). Empreintes (`?v=…`) calculées au build dans un manifeste (`src/generated/assets.js`), pas à l'exécution.
+- **Recherche** : index de mots de FluxBB (`search_words`, `search_matches`) ; FTS5 de SQLite reste une option.
+- **E-mails** : interface `Mailer`. Pas de SMTP : une API HTTP (Resend, comme donnetonpoint), ou le journal (`LogMailer`) tant qu'aucune clé n'est configurée.
 - **Images** : pas de sharp. Le navigateur redimensionne et convertit en WebP (canvas) avant l'envoi ; le serveur vérifie type (contenu), dimensions (en-tête du fichier) et taille.
 - **Tests** : **Vitest**. Outillage : **Biome**, **Wrangler**.
 

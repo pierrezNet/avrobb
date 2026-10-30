@@ -17,9 +17,10 @@
  *   classes CSS plutôt que des styles en ligne ;
  * - dans un message, chaque retour à la ligne simple est suivi d'un espace vertical
  *   (<span class="bbcode-gap">) : une ligne tapée avec Entrée se lit comme un petit paragraphe ;
- * - une image envoyée sur le forum (WebP de img/members/ ou img/gallery/) est servie dans un
- *   <picture> avec sa variante mobile pour les petits écrans ; toutes les images sont chargées à
- *   la demande (loading="lazy") ;
+ * - [img] accepte aussi une adresse relative vers les images du forum (/img/…, insérées par la
+ *   galerie) ; une image envoyée sur le forum (WebP de img/gallery/) est servie dans un <picture>
+ *   avec sa variante mobile pour les petits écrans ; toutes les images sont chargées à la demande
+ *   (loading="lazy") ;
  * - une image de la galerie insérée avec son titre et sa description devient une carte (<figure>).
  */
 
@@ -260,11 +261,13 @@ function doBbcode(input: string, isSignature: boolean, options: BbcodeOptions): 
 		);
 
 	if (options.imgTag) {
-		text = text.replace(/\[img\]((?:ht|f)tps?:\/\/)([^\s<"]*?)\[\/img\]/g, (_w, scheme: string, rest: string) =>
+		// Schéma http(s)/ftp(s), ou fichier du forum (/img/… : même origine, jamais « //hôte »).
+		text = text.replace(/\[img\]((?:ht|f)tps?:\/\/|\/img\/)([^\s<"]*?)\[\/img\]/g, (_w, scheme: string, rest: string) =>
 			imgTag(scheme + rest, null, isSignature, options),
 		);
-		text = text.replace(/\[img=([^[]*?)\]((?:ht|f)tps?:\/\/)([^\s<"]*?)\[\/img\]/g, (_w, alt: string, scheme: string, rest: string) =>
-			imgTag(scheme + rest, alt, isSignature, options),
+		text = text.replace(
+			/\[img=([^[]*?)\]((?:ht|f)tps?:\/\/|\/img\/)([^\s<"]*?)\[\/img\]/g,
+			(_w, alt: string, scheme: string, rest: string) => imgTag(scheme + rest, alt, isSignature, options),
 		);
 	}
 
@@ -345,16 +348,16 @@ const escapeRegExp = (text: string): string => text.replace(/[.*+?^${}()|[\]\\/]
  * paragraphe qui ne contient que ce bloc est transformé ; le PHP l'affiche tel quel.
  */
 function galleryCards(html: string, baseUrl: string): string {
-	if (baseUrl === '' || !html.includes('/img/gallery/')) return html;
+	if (!html.includes('/img/gallery/')) return html;
 	const gap = '<br /><span class="bbcode-gap"></span>';
-	const gallery = escapeRegExp(`${baseUrl}/img/gallery/`);
+	// Adresse relative (/img/gallery/…), ou absolue sous l'adresse du forum (anciens messages).
+	const gallery = `${baseUrl !== '' ? `(?:${escapeRegExp(baseUrl)})?` : ''}${escapeRegExp('/img/gallery/')}`;
 	const image = `<span class="postimg">(?:<picture>(?:(?!</picture>).)*</picture>|<img src="${gallery}[^"]*"[^>]*/>)</span>`;
 	const pattern = new RegExp(
 		`<p><strong>([^<]{1,80})</strong>${escapeRegExp(gap)}(${image})(?:${escapeRegExp(gap)}((?:(?!</p>).)*))?</p>`,
 		'g',
 	);
-	return html.replace(pattern, (whole, title: string, img: string, text: string | undefined) => {
-		if (!img.includes(`${baseUrl}/img/gallery/`)) return whole;
+	return html.replace(pattern, (_whole, title: string, img: string, text: string | undefined) => {
 		// Le titre décrit l'image mieux que son nom de fichier.
 		const described = img.replace(/ alt="[^"]*"/, ` alt="${title}"`);
 		const caption = text !== undefined && text !== '' ? `<span class="post-card__text">${text}</span>` : '';

@@ -10,7 +10,7 @@
  * - formulaires : vers le forum seulement ;
  * - aucune intégration du forum dans un cadre d'un autre site (frame-ancestors, X-Frame-Options).
  *
- * HSTS seulement en HTTPS (derrière un proxy, TRUST_PROXY doit être activé pour le savoir).
+ * HSTS seulement en HTTPS (adresse de la requête reçue par le Worker).
  */
 
 const VIDEO_FRAMES = ['https://www.youtube-nocookie.com', 'https://www.dailymotion.com'];

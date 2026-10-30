@@ -5,8 +5,8 @@ vu de dessus, texte « AvroBB » converti en tracés (aucune police requise chez
 Hors de la chaîne Node : à relancer seulement pour changer l'identité visuelle.
   python3 -m venv /tmp/brand && /tmp/brand/bin/pip install fonttools pillow
   /tmp/brand/bin/python scripts/brand.py /tmp/brand-out
-puis copier logo.png et banner.jpg dans public/img/ (avrobb-logo.png, avrobb-banner.jpg),
-avrobb-logo.svg dans public/img/, et les icônes dans public/icons/.
+puis copier logo.png et banner.jpg dans public/assets/img/ (avrobb-logo.png, avrobb-banner.jpg),
+avrobb-logo.svg dans public/assets/img/, et les icônes dans public/assets/icons/.
 Pré-requis : rsvg-convert, Noto Sans Bold et DejaVu Sans Mono ; image source de la bannière :
 https://www.pierrez.net/images/bg.jpg (BANNER_SOURCE).
 """

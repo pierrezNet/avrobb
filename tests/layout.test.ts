@@ -3,6 +3,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { createAssetUrl } from '../src/adapters/assetUrls.ts';
 import { buildApp, type ForumApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { fr, frDateWords } from '../src/lang/fr/index.ts';
@@ -153,19 +154,9 @@ describe('rendu de la mise en page', () => {
 		expect(none.body).not.toContain('site-nav__count');
 	});
 
-	it('sert les feuilles de style sans interroger la base', async () => {
-		const deps = fakeDeps({ users, topics: [], posts: new Map() });
-		app = await buildApp({
-			...deps,
-			config: {
-				load: async () => {
-					throw new Error('pas de base pour un fichier statique');
-				},
-			},
-		});
-
-		const res = await inject(app, '/assets/css/base.css');
-		expect(res.statusCode).toBe(200);
-		expect(res.headers['cache-control']).toContain('immutable');
+	it('ressources de public/assets/ : adresse versionnée par le manifeste du build, faute de frappe signalée', () => {
+		const asset = createAssetUrl({ 'css/base.css': 'abc1234567' });
+		expect(asset('css/base.css')).toBe('/assets/css/base.css?v=abc1234567');
+		expect(() => asset('css/absente.css')).toThrow('css/absente.css');
 	});
 });

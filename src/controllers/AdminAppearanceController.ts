@@ -2,12 +2,10 @@
  * Apparence du forum (admin_appearance.php, page propre à AvroBB, administrateurs) : remplacement du
  * logo et de la bannière de l'en-tête, et retour à l'image précédente.
  *
- * Les images remplacent les fichiers du PHP (services/headerImages.ts) : les deux forums affichent
- * donc les mêmes. Le type est lu dans le contenu, puis l'image est réduite et réencodée par sharp
- * (jamais enregistrée telle qu'envoyée).
+ * Le type et les dimensions sont lus dans le contenu ; l'image est gardée telle qu'envoyée (pas de
+ * bibliothèque d'images dans le Worker), une image trop grande est refusée.
  */
 
-import type { ImageProcessor } from '../adapters/imageProcessor.ts';
 import type { AppReply, AppRequest } from '../http/context.ts';
 import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage } from '../http/layout.ts';
@@ -15,12 +13,11 @@ import type { ConfigCache } from '../repositories/ConfigLoader.ts';
 import type { ConfigStore } from '../repositories/ConfigRepository.ts';
 import type { HeaderImageStore } from '../repositories/HeaderImageFiles.ts';
 import { HEADER_IMAGES, type HeaderImageKind, headerImageHref, isHeaderImageKind } from '../services/headerImages.ts';
-import { readImageInfo } from '../services/images.ts';
+import { IMAGE_CONTENT_TYPES, readImageInfo } from '../services/images.ts';
 import { adminDenied, renderAdminPage } from './adminPage.ts';
 
 export interface AdminAppearanceControllerDeps extends LayoutDeps {
 	headerImages: HeaderImageStore;
-	imageProcessor: ImageProcessor;
 	configStore: ConfigStore;
 	configCache: ConfigCache;
 }
@@ -56,11 +53,12 @@ export class AdminAppearanceController {
 
 		const upload = request.uploads.get('image')?.data;
 		if (upload === undefined || upload.length === 0) return this.#render(request, reply, null, [lang.adminAppearance.noFile], 400);
-		if (readImageInfo(upload) === null) return this.#render(request, reply, null, [lang.adminAppearance.badType], 400);
-		const spec = HEADER_IMAGES[kind];
-		const image = await this.deps.imageProcessor.fit(upload, { format: spec.format, maxWidth: spec.maxWidth, maxHeight: spec.maxHeight });
+		const image = readImageInfo(upload);
 		if (image === null) return this.#render(request, reply, null, [lang.adminAppearance.badType], 400);
-		await this.deps.headerImages.replace(kind, image.data);
+		const spec = HEADER_IMAGES[kind];
+		if (image.width > spec.maxWidth || image.height > spec.maxHeight)
+			return this.#render(request, reply, null, [lang.adminAppearance.tooLarge(spec.maxWidth, spec.maxHeight)], 400);
+		await this.deps.headerImages.replace(kind, upload, IMAGE_CONTENT_TYPES[image.type]);
 		return this.#changed(reply, 'replaced');
 	};
 

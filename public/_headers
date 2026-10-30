@@ -1,0 +1,5 @@
+# En-têtes des ressources servies par Workers Static Assets (le Worker n'est pas appelé pour elles).
+# Leurs adresses portent une empreinte du contenu (?v=…) : on peut les garder longtemps en cache.
+/assets/*
+  Cache-Control: public, max-age=2592000, immutable
+  X-Content-Type-Options: nosniff

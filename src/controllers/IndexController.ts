@@ -5,11 +5,11 @@
 import type { AppReply, AppRequest } from '../http/context.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { buildIndexPage } from '../presenters/indexPage.ts';
+import type { AvatarLocator } from '../repositories/AvatarFiles.ts';
 import type { ForumReader } from '../repositories/ForumRepository.ts';
 import type { HomeActivityReader } from '../repositories/HomeActivityRepository.ts';
 import type { StatsReader } from '../repositories/StatsRepository.ts';
 import type { TopicReader } from '../repositories/TopicRepository.ts';
-import type { AvatarLocator } from '../services/avatars.ts';
 import { HOME_WEEK } from '../services/homeActivity.ts';
 import { parseTrackedTopics } from '../services/trackedTopics.ts';
 

@@ -2,39 +2,34 @@
 	"name": "avrobb",
 	"version": "0.1.0",
 	"private": true,
-	"description": "AvroBB, forum d'échange autour de projets personnels (Node/TypeScript, MVC) ; cible Cloudflare Workers",
+	"description": "AvroBB, forum d'échange autour de projets personnels (TypeScript, Cloudflare Workers, D1, R2)",
 	"license": "GPL-2.0-or-later",
 	"type": "module",
 	"engines": {
 		"node": ">=24"
 	},
 	"scripts": {
-		"dev": "node scripts/build-templates.mjs && node scripts/dev.mjs",
+		"dev": "node scripts/build.mjs && node scripts/dev.mjs",
 		"build": "node scripts/build.mjs",
-		"build:templates": "node scripts/build-templates.mjs",
-		"start": "node --env-file=.env --enable-source-maps dist/server.js",
-		"test": "node scripts/build-templates.mjs && vitest run",
-		"typecheck": "node scripts/build-templates.mjs && tsc --noEmit",
+		"test": "node scripts/build.mjs && vitest run",
+		"typecheck": "node scripts/build.mjs && tsc --noEmit",
 		"lint": "biome check .",
 		"format": "biome check --write .",
-		"check": "node scripts/build-templates.mjs && biome check . && tsc --noEmit && vitest run",
+		"check": "node scripts/build.mjs && biome check . && tsc --noEmit && vitest run",
 		"screenshot": "tsx scripts/screenshot.ts",
-		"test:db": "node scripts/build-templates.mjs && vitest run --config vitest.db.config.ts",
+		"test:db": "node scripts/build.mjs && vitest run --config vitest.db.config.ts",
 		"db:migrate": "wrangler d1 migrations apply avrobb --local",
-		"db:seed:dev": "wrangler d1 execute avrobb --local --file scripts/dev-seed.sql"
+		"db:seed:dev": "wrangler d1 execute avrobb --local --file scripts/dev-seed.sql",
+		"deploy": "node scripts/build.mjs && wrangler deploy"
 	},
 	"dependencies": {
-		"@hono/node-server": "^2.1.5",
 		"hono": "^4.13.14",
 		"kysely": "^0.29.7",
-		"nodemailer": "^7.0.13",
-		"nunjucks": "^3.2.4",
-		"sharp": "^0.34.5"
+		"nunjucks": "^3.2.4"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.6.3",
 		"@types/node": "^26.6.5",
-		"@types/nodemailer": "^8.0.2",
 		"@types/nunjucks": "^3.2.6",
 		"tsx": "^4.23.15",
 		"typescript": "^7.0.2",

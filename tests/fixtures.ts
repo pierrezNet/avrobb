@@ -2,9 +2,7 @@
  * Doublures en mémoire des repositories et objets de test.
  */
 
-import path from 'node:path';
 import { createAssetUrl } from '../src/adapters/assetUrls.ts';
-import { DirectoryFiles } from '../src/adapters/directoryFiles.ts';
 import type { AppDeps } from '../src/app.ts';
 import {
 	type BoardConfig,
@@ -37,6 +35,7 @@ import {
 	type UserProfile,
 	type Viewer,
 } from '../src/domain/models.ts';
+import assetManifest from '../src/generated/assets.js';
 import templates from '../src/generated/templates.js';
 import { fr, frDateWords } from '../src/lang/fr/index.ts';
 import type { Recipient, SenderLimits } from '../src/repositories/ContactRepository.ts';
@@ -63,8 +62,6 @@ import type { UserSearchCriteria } from '../src/services/userSearch.ts';
 import { fakePrivateMessageStore, type PmData, pmData } from './fakePrivateMessages.ts';
 
 export const NOW = 1_782_900_000;
-
-const PUBLIC_DIR = path.join(import.meta.dirname, '..', 'public');
 
 /**
  * Balises du sujet des tests : des projets (groupe « project ») et des balises d'état, avec les
@@ -743,28 +740,6 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 				for (const { id, subject } of updates) data.subjectUpdates = [...(data.subjectUpdates ?? []), { topicId: id, subject }];
 			},
 		},
-		imageProcessor: {
-			// Image de test : « webp<côté>:<contenu> », dimensions fictives.
-			toWebp: async (input, maxSide) =>
-				input.subarray(0, 4).toString('latin1') === '\x89PNG' || input.subarray(0, 3).toString('latin1') === 'GIF'
-					? { data: Buffer.from(`webp${maxSide}:${input.length}`), width: maxSide, height: maxSide }
-					: null,
-			// Avatar réduit : en-tête PNG aux dimensions permises (lu par readImageInfo()).
-			avatar: async (_input, _type, limits) => {
-				const header = Buffer.alloc(33);
-				Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(header);
-				header.writeUInt32BE(13, 8);
-				header.write('IHDR', 12, 'latin1');
-				header.writeUInt32BE(limits.width, 16);
-				header.writeUInt32BE(limits.height, 20);
-				return { data: header, type: 'png' };
-			},
-			// Logo, bannière : « png|jpeg<largeur>x<hauteur>:<taille> » pour une image PNG ou GIF de test.
-			fit: async (input, options) =>
-				input.subarray(0, 4).toString('latin1') === '\x89PNG' || input.subarray(0, 3).toString('latin1') === 'GIF'
-					? { data: Buffer.from(`${options.format}${options.maxWidth}x${options.maxHeight}:${input.length}`), width: 1, height: 1 }
-					: null,
-		},
 		maintenance: {
 			firstPostId: async () => 100,
 			emptySearchIndex: async () => {
@@ -1100,8 +1075,8 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			listActiveSubjects: async () => data.activeSubjects ?? [],
 		},
 		headerImages: {
-			replace: async (kind, image) => {
-				data.headerImageLog = [...(data.headerImageLog ?? []), `replace ${kind} ${image.toString()}`];
+			replace: async (kind, image, contentType) => {
+				data.headerImageLog = [...(data.headerImageLog ?? []), `replace ${kind} ${contentType} ${image.length}`];
 				data.headerImagePrevious = new Set([...(data.headerImagePrevious ?? []), kind]);
 			},
 			restore: async (kind) => {
@@ -1112,9 +1087,9 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			hasPrevious: async (kind) => data.headerImagePrevious?.has(kind) ?? false,
 		},
 		galleryFiles: {
-			save: async (addedAt, extension, files) => {
-				const sizes = `${files.image.toString()} ${files.thumbnail.toString()} ${files.mobile.toString()}`;
-				data.galleryFileLog = [...(data.galleryFileLog ?? []), `save ${addedAt}${extension} ${sizes}`];
+			save: async (addedAt, type, files) => {
+				const sizes = `${files.image.length} ${files.thumbnail.length} ${files.mobile?.length ?? '-'}`;
+				data.galleryFileLog = [...(data.galleryFileLog ?? []), `save ${addedAt}.${type} ${sizes}`];
 				return addedAt;
 			},
 			delete: async (addedAt, extension) => {
@@ -1156,8 +1131,7 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 		page: { lang: fr, dateWords: frDateWords, clock: () => NOW },
 		cookie: { name: 'avrobb', secret: COOKIE_SECRET, secure: false },
 		templates,
-		assetUrl: createAssetUrl(PUBLIC_DIR),
-		assets: new DirectoryFiles(PUBLIC_DIR),
+		assetUrl: createAssetUrl(assetManifest),
 		...overrides,
 	};
 }

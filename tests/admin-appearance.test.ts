@@ -1,11 +1,8 @@
 /**
- * Apparence (admin_appearance.php) : logo et bannière remplacés après contrôle du type et
- * réencodage, image précédente rétablie, version des adresses changée ; réservé aux administrateurs.
+ * Apparence (admin_appearance.php) : logo et bannière remplacés après contrôle du type et des
+ * dimensions, image précédente rétablie (R2), version des adresses changée ; réservé aux administrateurs.
  */
 
-import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { buildApp, type ForumApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
@@ -13,6 +10,7 @@ import { csrfToken } from '../src/http/csrf.ts';
 import { HeaderImageFiles } from '../src/repositories/HeaderImageFiles.ts';
 import { type FakeData, fakeDeps, group, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
 import { inject } from './inject.ts';
+import { MemoryFileStore } from './memoryFileStore.ts';
 
 const SEED = 'graine-de-test';
 const CSRF_SECRET = '7'.repeat(64);
@@ -60,24 +58,32 @@ describe('admin_appearance.php', () => {
 		const page = await inject(server, { url: '/admin_appearance.php', headers: { cookie: cookies(2) } });
 		expect(page.statusCode).toBe(200);
 		expect(page.body).toContain('href="admin_appearance.php"');
-		expect(page.body).toContain('src="/img/logo.png"');
-		expect(page.body).toContain('src="/img/banner.jpg"');
+		// Aucune image envoyée : celles d'AvroBB.
+		expect(page.body).toContain('src="/assets/img/avrobb-logo.png"');
+		expect(page.body).toContain('src="/assets/img/avrobb-banner.jpg"');
 		expect(page.body).not.toContain('value="restore"');
 		expect((await send(server, 5, { kind: 'logo' }, png)).statusCode).toBe(403);
 	});
 
-	it('remplace le logo (PNG réencodé), puis le rétablit ; la version change', async () => {
+	it('remplace le logo (gardé tel quel), puis le rétablit ; la version change', async () => {
 		const { server, fake } = await start();
 		expect((await send(server, 2, { kind: 'logo' }, Buffer.from('pas une image'))).statusCode).toBe(400);
 		expect((await send(server, 2, { kind: 'autre' }, png)).statusCode).toBe(400);
 		const replaced = await send(server, 2, { kind: 'logo' }, png);
 		expect(replaced.headers.location).toBe('admin_appearance.php?done=replaced');
-		expect(fake.headerImageLog).toEqual([`replace logo png1204x308:${png.length}`]);
+		expect(fake.headerImageLog).toEqual([`replace logo image/png ${png.length}`]);
+		// Plus grand que le cadre du logo (1 204 × 308) : refusé, rien n'est écrit.
+		const wide = Buffer.from(png);
+		wide.writeUInt32BE(1300, 16);
+		const refused = await send(server, 2, { kind: 'logo' }, wide);
+		expect(refused.statusCode).toBe(400);
+		expect(refused.body).toContain('réduisez-la');
+		expect(fake.headerImageLog).toHaveLength(1);
 		expect(fake.configValues?.get('o_header_version')).toBe(String(NOW));
 
 		const banner = await send(server, 2, { kind: 'banner' }, png);
 		expect(banner.headers.location).toBe('admin_appearance.php?done=replaced');
-		expect(fake.headerImageLog?.at(-1)).toBe(`replace banner jpeg2560x800:${png.length}`);
+		expect(fake.headerImageLog?.at(-1)).toBe(`replace banner image/png ${png.length}`);
 
 		expect((await inject(server, { url: '/admin_appearance.php', headers: { cookie: cookies(2) } })).body).toContain('value="restore"');
 		const restored = await send(server, 2, { kind: 'logo', action: 'restore' });
@@ -95,38 +101,28 @@ describe('admin_appearance.php', () => {
 });
 
 describe('HeaderImageFiles', () => {
-	it('garde l’image précédente et l’échange au rétablissement', async () => {
-		const root = await mkdtemp(path.join(tmpdir(), 'pv-header-'));
-		await mkdir(path.join(root, 'img'));
-		await writeFile(path.join(root, 'img', 'logo.png'), 'ancien');
-		const files = new HeaderImageFiles(root);
+	it('garde l’image précédente (celle d’AvroBB au premier envoi) et l’échange au rétablissement', async () => {
+		const store = new MemoryFileStore();
+		const defaults: string[] = [];
+		const files = new HeaderImageFiles(store, async (assetPath) => {
+			defaults.push(assetPath);
+			return assetPath.endsWith('.png') ? { data: Buffer.from('avrobb'), contentType: 'image/png' } : null;
+		});
 		expect(await files.hasPrevious('logo')).toBe(false);
-		await files.replace('logo', Buffer.from('nouveau'));
-		expect(await readFile(path.join(root, 'img', 'logo.png'), 'utf8')).toBe('nouveau');
+		await files.replace('logo', Buffer.from('nouveau'), 'image/webp');
+		expect(store.text('img/logo.png')).toBe('nouveau');
+		expect(store.text('img/logo.previous.png')).toBe('avrobb');
+		// Version commune : la bannière d'AvroBB est déposée aussi (introuvable ici, pas de .jpg).
+		expect(defaults).toEqual(['img/avrobb-logo.png', 'img/avrobb-banner.jpg']);
+		await files.replace('logo', Buffer.from('troisième'), 'image/png');
+		expect(store.text('img/logo.previous.png')).toBe('nouveau');
+		expect((await store.head('img/logo.previous.png'))?.contentType).toBe('image/webp');
 		expect(await files.hasPrevious('logo')).toBe(true);
 		expect(await files.restore('logo')).toBe(true);
-		expect(await readFile(path.join(root, 'img', 'logo.png'), 'utf8')).toBe('ancien');
-		expect(await readFile(path.join(root, 'img', 'logo.previous.png'), 'utf8')).toBe('nouveau');
-		// Bannière dans un dossier encore absent : créé à la première écriture, rien à rétablir.
-		await files.replace('banner', Buffer.from('jpeg'));
+		expect(store.text('img/logo.png')).toBe('nouveau');
+		expect(store.text('img/logo.previous.png')).toBe('troisième');
+		// Image d'AvroBB introuvable : pas d'image précédente, rien à rétablir.
+		await files.replace('banner', Buffer.from('jpeg'), 'image/jpeg');
 		expect(await files.restore('banner')).toBe(false);
-	});
-});
-
-describe('SharpImageProcessor.fit', () => {
-	it('réduit dans le cadre sans agrandir, au format demandé', async () => {
-		const { default: sharp } = await import('sharp');
-		const { SharpImageProcessor } = await import('../src/adapters/imageProcessor.ts');
-		const source = await sharp({ create: { width: 3000, height: 1000, channels: 4, background: { r: 10, g: 20, b: 30, alpha: 0.5 } } })
-			.png()
-			.toBuffer();
-		const processor = new SharpImageProcessor();
-		const logo = await processor.fit(source, { format: 'png', maxWidth: 1204, maxHeight: 308 });
-		expect(logo).toMatchObject({ width: 924, height: 308 });
-		expect((await sharp(logo?.data).metadata()).hasAlpha).toBe(true);
-		const banner = await processor.fit(source, { format: 'jpeg', maxWidth: 2560, maxHeight: 800 });
-		expect(banner).toMatchObject({ width: 2400, height: 800 });
-		expect((await sharp(banner?.data).metadata()).format).toBe('jpeg');
-		expect(await processor.fit(Buffer.from('rien'), { format: 'png', maxWidth: 10, maxHeight: 10 })).toBeNull();
 	});
 });

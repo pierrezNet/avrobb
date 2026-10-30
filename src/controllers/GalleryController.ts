@@ -8,7 +8,6 @@
  * modérateurs) ; les erreurs réaffichent le formulaire.
  */
 
-import type { ImageProcessor } from '../adapters/imageProcessor.ts';
 import type { AppReply, AppRequest } from '../http/context.ts';
 import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
@@ -17,14 +16,12 @@ import type { CensorReader } from '../repositories/CensorRepository.ts';
 import type { GalleryFileStore } from '../repositories/GalleryFiles.ts';
 import type { GalleryStore } from '../repositories/GalleryRepository.ts';
 import { buildCensor } from '../services/censor.ts';
-import { canDeleteGalleryImage, GALLERY_MAX_BYTES, THUMBNAIL_MAX_SIDE, validateGalleryUpload } from '../services/gallery.ts';
-import { FULL_MAX_SIDE, MOBILE_MAX_SIDE } from '../services/imageVariants.ts';
+import { canDeleteGalleryImage, validateGalleryUpload } from '../services/gallery.ts';
 import { clampPage, pageCount } from '../services/pagination.ts';
 import { punTrim } from '../services/phpString.ts';
 import { positiveInt } from './params.ts';
 
 export interface GalleryControllerDeps extends LayoutDeps {
-	imageProcessor: ImageProcessor;
 	gallery: GalleryStore;
 	galleryFiles: GalleryFileStore;
 	censorship: CensorReader;
@@ -147,42 +144,34 @@ export class GalleryController {
 			image: request.uploads.get('req_file')?.data ?? null,
 		});
 		const source = request.uploads.get('req_file')?.data;
-		// Conversion en WebP : image (1024 px), vignette (150 px) et variante mobile (640 px).
-		const converted = result.imageOk && source !== undefined ? await this.#convert(source) : null;
-		const errors = [...result.errors];
-		if (result.imageOk && converted === null) errors.push('badType');
-		else if (converted !== null && converted.image.length > GALLERY_MAX_BYTES) errors.push('tooLarge');
-		if (errors.length > 0 || converted === null) {
+		if (result.errors.length > 0 || result.image === null || source === undefined) {
 			const form = {
 				title: field(body, 'titre'),
 				description: field(body, 'description'),
-				errors: errors.map((e) => lang.gallery.uploadError(e)),
+				errors: result.errors.map((e) => lang.gallery.uploadError(e)),
 			};
 			return fromPicker ? this.renderPicker(request, reply, form) : this.renderForm(request, reply, form);
 		}
 
-		const addedAt = await this.deps.galleryFiles.save(this.deps.page.clock(), '.webp', converted);
+		// Image gardée telle qu'envoyée (pas de bibliothèque d'images dans le Worker) : elle sert
+		// aussi de vignette et, en WebP, de variante mobile, en attendant la réduction par le
+		// navigateur (lot 6 de TODO.md). Fichier écrit avant la ligne : un échec laisse au pire un
+		// fichier orphelin, effacé par la tâche planifiée.
+		const { type } = result.image;
+		const addedAt = await this.deps.galleryFiles.save(this.deps.page.clock(), type, {
+			image: source,
+			thumbnail: source,
+			mobile: type === 'webp' ? source : null,
+		});
 		await this.deps.gallery.createImage({
 			title: result.title,
 			description: result.description,
 			userId: viewer.id,
 			addedAt,
-			extension: '.webp',
+			extension: `.${type}`,
 		});
 		if (!fromPicker) return reply.redirect('gallery.php?done=added', 303);
 		return reply.redirect(`gallery.php?info=pick&done=added${request.query.embed === '1' ? '&embed=1' : ''}`, 303);
-	}
-
-	async #convert(source: Buffer): Promise<{ image: Buffer; thumbnail: Buffer; mobile: Buffer } | null> {
-		const processor = this.deps.imageProcessor;
-		const [image, thumbnail, mobile] = await Promise.all([
-			processor.toWebp(source, FULL_MAX_SIDE),
-			processor.toWebp(source, THUMBNAIL_MAX_SIDE),
-			processor.toWebp(source, MOBILE_MAX_SIDE),
-		]);
-		return image !== null && thumbnail !== null && mobile !== null
-			? { image: image.data, thumbnail: thumbnail.data, mobile: mobile.data }
-			: null;
 	}
 
 	/** Image désignée par ?id=, si le lecteur peut la supprimer ; sinon la réponse d'erreur. */
@@ -216,6 +205,7 @@ export class GalleryController {
 	private async delete(request: GalleryRequest, reply: AppReply): Promise<AppReply> {
 		const image = await this.deletable(request, reply);
 		if (!('extension' in image)) return image;
+		// La ligne d'abord : un fichier orphelin vaut mieux qu'une image qui pointe dans le vide.
 		await this.deps.gallery.deleteImage(image.id);
 		await this.deps.galleryFiles.delete(image.addedAt, image.extension);
 		return reply.redirect('gallery.php?done=deleted', 303);

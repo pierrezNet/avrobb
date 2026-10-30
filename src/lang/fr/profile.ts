@@ -58,7 +58,7 @@ function avatarErrorText(error: AvatarError, formatNumber: (n: number) => string
 		case 'noFile':
 			return "Vous n'avez pas sélectionné de fichier à envoyer.";
 		case 'badType':
-			return "Ce type de fichier n'est pas autorisé. Voici les formats pris en charge\u00a0: *.gif, *.jpeg et *.png.";
+			return "Ce type de fichier n'est pas autorisé. Voici les formats pris en charge\u00a0: *.gif, *.jpeg, *.png et *.webp.";
 		case 'tooLarge':
 			return `La taille du fichier dépasse le maximum autorisé ${formatNumber(error.max)} octets.`;
 		case 'tooWideOrHigh':

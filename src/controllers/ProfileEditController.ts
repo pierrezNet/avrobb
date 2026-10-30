@@ -13,10 +13,10 @@ import type { AppReply, AppRequest } from '../http/context.ts';
 import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { buildProfileEditPage, sectionTitle } from '../presenters/profileEditPage.ts';
+import type { AvatarLocator } from '../repositories/AvatarFiles.ts';
 import type { BanReader } from '../repositories/BanRepository.ts';
 import type { CensorReader } from '../repositories/CensorRepository.ts';
 import { normalizeUsername, usernameSkeleton } from '../services/accounts.ts';
-import type { AvatarLocator } from '../services/avatars.ts';
 import { buildCensor, type Censor } from '../services/censor.ts';
 import { canRenameUsers, isAdmin, isAnyModerator } from '../services/permissions.ts';
 import {

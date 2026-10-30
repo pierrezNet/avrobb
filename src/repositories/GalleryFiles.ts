@@ -1,44 +1,50 @@
 /**
- * Fichiers de la galerie : img/gallery/<horodatage><ext>, sa vignette mini_<…> et, pour les images
- * converties en WebP, sa variante mobile mobile_<…>, dans le stockage local (servi sous /img/).
+ * Fichiers de la galerie dans R2 : img/gallery/<horodatage><ext>, sa vignette mini_<…> et, pour une
+ * image WebP, sa variante mobile mobile_<…> (servis sous /img/). Le nom est fabriqué par le serveur
+ * (horodatage, extension tirée du contenu), jamais repris du fichier envoyé.
  */
 
-import { mkdir, rm, stat, writeFile } from 'node:fs/promises';
-import path from 'node:path';
 import type { GalleryExtension } from '../domain/models.ts';
+import { IMAGE_CONTENT_TYPES, type ImageType } from '../services/images.ts';
 import { MOBILE_PREFIX } from '../services/imageVariants.ts';
+import type { FileStore } from './FileStore.ts';
 
-/** Dossier des images, relatif au stockage ($rep_upload de gallery.php). */
+/** Dossier des images ($rep_upload de gallery.php), préfixe des clés R2. */
 export const GALLERY_DIR = 'img/gallery';
 
 export interface GalleryFileStore {
 	/**
-	 * Enregistre l'image, sa vignette et sa variante mobile. Renvoie l'horodatage retenu : `addedAt`,
-	 * ou la seconde libre suivante si un fichier porte déjà ce nom.
+	 * Enregistre l'image, sa vignette et, s'il y en a une, sa variante mobile. Renvoie l'horodatage
+	 * retenu : `addedAt`, ou la seconde libre suivante si un fichier porte déjà ce nom.
 	 */
-	save(addedAt: number, extension: GalleryExtension, files: { image: Buffer; thumbnail: Buffer; mobile: Buffer }): Promise<number>;
+	save(addedAt: number, type: ImageType, files: { image: Uint8Array; thumbnail: Uint8Array; mobile: Uint8Array | null }): Promise<number>;
 	delete(addedAt: number, extension: GalleryExtension): Promise<void>;
 }
 
 export class GalleryFiles implements GalleryFileStore {
-	constructor(private readonly storageRoot: string) {}
+	constructor(private readonly files: FileStore) {}
 
-	async save(addedAt: number, extension: GalleryExtension, files: { image: Buffer; thumbnail: Buffer; mobile: Buffer }): Promise<number> {
-		const dir = path.join(this.storageRoot, GALLERY_DIR);
-		await mkdir(dir, { recursive: true });
+	async save(
+		addedAt: number,
+		type: ImageType,
+		files: { image: Uint8Array; thumbnail: Uint8Array; mobile: Uint8Array | null },
+	): Promise<number> {
+		const extension = `.${type}`;
 		let stamp = Math.trunc(addedAt);
-		while ((await stat(path.join(dir, `${stamp}${extension}`)).catch(() => null)) !== null) stamp += 1;
+		// R2 n'a pas d'écriture exclusive : deux envois dans la même seconde par deux membres restent
+		// possibles mais improbables sur un petit forum ; le suivant écraserait le précédent.
+		while ((await this.files.head(`${GALLERY_DIR}/${stamp}${extension}`)) !== null) stamp += 1;
 
 		const name = `${stamp}${extension}`;
-		await writeFile(path.join(dir, name), files.image, { flag: 'wx' });
-		await writeFile(path.join(dir, `mini_${name}`), files.thumbnail);
-		await writeFile(path.join(dir, `${MOBILE_PREFIX}${name}`), files.mobile);
+		const contentType = IMAGE_CONTENT_TYPES[type];
+		await this.files.put(`${GALLERY_DIR}/${name}`, files.image, contentType);
+		await this.files.put(`${GALLERY_DIR}/mini_${name}`, files.thumbnail, contentType);
+		if (files.mobile !== null) await this.files.put(`${GALLERY_DIR}/${MOBILE_PREFIX}${name}`, files.mobile, contentType);
 		return stamp;
 	}
 
 	async delete(addedAt: number, extension: GalleryExtension): Promise<void> {
-		const dir = path.join(this.storageRoot, GALLERY_DIR);
 		const name = `${Math.trunc(addedAt)}${extension}`;
-		await Promise.all([name, `mini_${name}`, `${MOBILE_PREFIX}${name}`].map((file) => rm(path.join(dir, file), { force: true })));
+		await this.files.delete([name, `mini_${name}`, `${MOBILE_PREFIX}${name}`].map((file) => `${GALLERY_DIR}/${file}`));
 	}
 }

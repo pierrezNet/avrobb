@@ -17,9 +17,12 @@ export interface RouteTypes {
 }
 
 /** Journal minimal ; `error` pour les incidents, `info` pour les refus attendus. */
+/** Contexte d'une ligne de journal : `err` pour une erreur, d'autres champs au besoin. */
+export type LogContext = { err?: unknown } & Record<string, unknown>;
+
 export interface Logger {
-	error(context: { err: unknown }, message: string): void;
-	info(context: { err: unknown }, message: string): void;
+	error(context: LogContext, message: string): void;
+	info(context: LogContext, message: string): void;
 }
 
 export interface AppRequest<T extends RouteTypes = RouteTypes> {
@@ -34,7 +37,7 @@ export interface AppRequest<T extends RouteTypes = RouteTypes> {
 	headers: Readonly<Record<string, string | undefined>>;
 	/** Cookies reçus ; le jeton CSRF y ajoute son secret quand il vient d'être créé. */
 	cookies: Record<string, string | undefined>;
-	/** Adresse du client (en-tête du proxy si TRUST_PROXY, Cloudflare au lot 3). */
+	/** Adresse du client (CF-Connecting-IP, posé par Cloudflare). */
 	ip: string;
 	protocol: 'http' | 'https';
 	/** Fichiers d'un formulaire multipart, par nom de champ. */

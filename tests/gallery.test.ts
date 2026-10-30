@@ -10,6 +10,7 @@ import { csrfToken } from '../src/http/csrf.ts';
 import { canDeleteGalleryImage, galleryInsertCode, validateGalleryUpload } from '../src/services/gallery.ts';
 import { type FakeData, fakeDeps, group, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
 import { inject } from './inject.ts';
+import { MemoryFileStore } from './memoryFileStore.ts';
 
 const SEED = 'graine-de-test';
 const CSRF_SECRET = 'e'.repeat(64);
@@ -37,13 +38,20 @@ const png = Buffer.concat([
 describe('règles de la galerie', () => {
 	it('titre, description, type lu dans le contenu', () => {
 		const ok = validateGalleryUpload({ title: ' Vol ', description: 'Au [b]soleil[/b]', image: png });
-		expect(ok).toMatchObject({ errors: [], title: 'Vol', imageOk: true });
-		expect(validateGalleryUpload({ title: 'a', description: 'b', image: jpeg(300, 300) }).imageOk).toBe(true);
+		expect(ok).toMatchObject({ errors: [], title: 'Vol', image: { type: 'png', width: 512, height: 256 } });
+		expect(validateGalleryUpload({ title: 'a', description: 'b', image: jpeg(300, 300) }).image?.type).toBe('jpg');
 		expect(validateGalleryUpload({ title: '', description: '', image: Buffer.from('<?php') }).errors).toEqual([
 			'noTitle',
 			'noDescription',
 			'badType',
 		]);
+	});
+
+	it('poids et dimensions plafonnés : l’image est gardée telle quelle', () => {
+		const large = validateGalleryUpload({ title: 'a', description: 'b', image: jpeg(5000, 300) });
+		expect(large).toMatchObject({ errors: ['tooWide'], image: null });
+		const heavy = Buffer.concat([jpeg(300, 300), Buffer.alloc(1_600_000)]);
+		expect(validateGalleryUpload({ title: 'a', description: 'b', image: heavy })).toMatchObject({ errors: ['tooLarge'], image: null });
 	});
 
 	it("suppression : l'auteur, les administrateurs, le groupe des modérateurs", () => {
@@ -54,9 +62,8 @@ describe('règles de la galerie', () => {
 	});
 
 	it('BBCode inséré : titre, image et description', () => {
-		expect(galleryInsertCode(image(1, { title: 'Vol' }), 'https://pv.test')).toBe(
-			'[b]Vol[/b]\n[img]https://pv.test/img/gallery/1705145503.jpg[/img]\n[i]Belle[/i] vue',
-		);
+		// Adresse relative : elle reste juste quand le forum change de domaine.
+		expect(galleryInsertCode(image(1, { title: 'Vol' }))).toBe('[b]Vol[/b]\n[img]/img/gallery/1705145503.jpg[/img]\n[i]Belle[/i] vue');
 	});
 });
 
@@ -150,7 +157,7 @@ async function upload(
 }
 
 describe('POST /gallery.php', () => {
-	it('convertit en WebP (1024 px, vignette 150 px, variante mobile 640 px) et redirige', async () => {
+	it('garde l’image telle quelle, qui sert aussi de vignette, et redirige', async () => {
 		const fake = data();
 		app = await buildApp(fakeDeps(fake));
 		const res = await upload(
@@ -164,8 +171,8 @@ describe('POST /gallery.php', () => {
 		);
 		expect(res.statusCode).toBe(303);
 		expect(res.headers.location).toBe('gallery.php?done=added');
-		expect(fake.galleryFileLog).toEqual([`save ${NOW}.webp webp1024:${png.length} webp150:${png.length} webp640:${png.length}`]);
-		expect(fake.galleryImages?.[0]).toMatchObject({ title: 'Vol de nuit', userId: 3, addedAt: NOW, extension: '.webp' });
+		expect(fake.galleryFileLog).toEqual([`save ${NOW}.png ${png.length} ${png.length} -`]);
+		expect(fake.galleryImages?.[0]).toMatchObject({ title: 'Vol de nuit', userId: 3, addedAt: NOW, extension: '.png' });
 	});
 
 	it('réaffiche le formulaire avec les erreurs', async () => {
@@ -191,13 +198,11 @@ describe('POST /gallery.php', () => {
 			},
 		);
 		expect(res.headers.location).toBe('gallery.php?info=pick&done=added');
-		expect(fake.galleryFileLog).toEqual([`save ${NOW}.webp webp1024:${png.length} webp150:${png.length} webp640:${png.length}`]);
+		expect(fake.galleryFileLog).toEqual([`save ${NOW}.png ${png.length} ${png.length} -`]);
 
 		const picker = await get(app, 3, '/gallery.php?info=pick&done=added');
 		expect(picker.body).toContain('Votre image a été envoyée correctement.');
-		expect(picker.body).toContain(
-			`data-insert="[b]Cockpit[/b]\n[img]http://forum.test/img/gallery/${NOW}.webp[/img]\nLe [b]tableau de bord[/b]"`,
-		);
+		expect(picker.body).toContain(`data-insert="[b]Cockpit[/b]\n[img]/img/gallery/${NOW}.png[/img]\nLe [b]tableau de bord[/b]"`);
 		// Seules les images du membre sont proposées.
 		expect(picker.body).not.toContain('Image 2');
 	});
@@ -259,22 +264,28 @@ describe('POST /gallery.php', () => {
 	});
 });
 
-describe('Images du stockage (/img/)', () => {
-	it('sert les images et rien d’autre', async () => {
-		const { mkdtemp, mkdir, writeFile } = await import('node:fs/promises');
-		const { tmpdir } = await import('node:os');
-		const path = await import('node:path');
-		const root = await mkdtemp(path.join(tmpdir(), 'pv-img-'));
-		await mkdir(path.join(root, 'gallery'));
-		await writeFile(path.join(root, 'gallery', '1.webp'), 'RIFF');
-		await writeFile(path.join(root, 'gallery', 'index.html'), '<p>');
-		const { DirectoryFiles } = await import('../src/adapters/directoryFiles.ts');
-		const app = await buildApp(fakeDeps(data(), { images: new DirectoryFiles(root, ['webp', 'png', 'jpg']) }));
+describe('Fichiers envoyés (/img/, R2)', () => {
+	async function server() {
+		const files = new MemoryFileStore();
+		await files.put('img/gallery/1.webp', new TextEncoder().encode('RIFF'), 'image/webp');
+		await files.put('img/gallery/index.html', new TextEncoder().encode('<p>'), 'text/html');
+		return buildApp(fakeDeps(data(), { files }));
+	}
+
+	it('sert les images avec leur type, un ETag et un cache public ; rien d’autre', async () => {
+		const app = await server();
 		const ok = await inject(app, { url: '/img/gallery/1.webp' });
 		expect(ok.statusCode).toBe(200);
 		expect(ok.headers['content-type']).toBe('image/webp');
-		const refused = await inject(app, { url: '/img/gallery/index.html' });
-		expect(refused.statusCode).toBe(404);
-		expect((await inject(app, { url: '/img/../package.json' })).statusCode).toBe(404);
+		expect(ok.headers['cache-control']).toBe('public, max-age=604800');
+		expect(ok.headers['x-content-type-options']).toBe('nosniff');
+		expect(ok.body).toBe('RIFF');
+		const etag = String(ok.headers.etag ?? '');
+		expect(etag).not.toBe('');
+		const unchanged = await inject(app, { url: '/img/gallery/1.webp', headers: { 'if-none-match': etag } });
+		expect(unchanged.statusCode).toBe(304);
+		expect((await inject(app, { url: '/img/gallery/index.html' })).statusCode).toBe(404);
+		expect((await inject(app, { url: '/img/gallery/absent.webp' })).statusCode).toBe(404);
+		expect((await inject(app, { url: '/img/gallery/%2e%2e/1.webp' })).statusCode).toBe(404);
 	});
 });

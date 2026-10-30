@@ -1,8 +1,7 @@
 /**
- * Configuration de l'application, lue depuis l'environnement (.env).
+ * Configuration de l'application, lue une fois dans les variables du Worker (wrangler.jsonc
+ * « vars », secrets, et .dev.vars en développement) par src/worker.ts.
  */
-
-import path from 'node:path';
 
 /** Cookies du forum : `<name>_session`, `<name>_csrf`, `<name>_track`, tous sur le chemin /. */
 export interface CookieConfig {
@@ -13,40 +12,29 @@ export interface CookieConfig {
 }
 
 export interface AppConfig {
-	port: number;
 	cookie: CookieConfig;
 	/** Connexion sans fournisseur SSO, pour le développement (DEV_LOGIN=1, depuis la machine seulement). */
 	devLogin: boolean;
-	/** Stockage local des fichiers (galerie, avatars, logo, bannière) ; R2 au lot 4. */
-	storageDir: string;
-	/** Node est derrière un reverse proxy (IP du client lue dans X-Forwarded-For). */
-	trustProxy: boolean;
-	/** Sans SMTP configuré : dossier où écrire les e-mails (.eml) au lieu de sendmail ; null sinon. */
-	mailOutbox: string | null;
 }
 
-function required(env: NodeJS.ProcessEnv, name: string): string {
+/** Variables texte du Worker (les liaisons D1, R2… sont à côté, ignorées ici). */
+export type ConfigVars = Readonly<Record<string, unknown>>;
+
+function text(env: ConfigVars, name: string): string {
 	const value = env[name];
-
-	if (value === undefined || value === '') throw new Error(`Variable d'environnement manquante : ${name}`);
-
-	return value;
+	return typeof value === 'string' ? value : '';
 }
 
-function sessionSecret(env: NodeJS.ProcessEnv): string {
-	const secret = required(env, 'SESSION_SECRET');
+function sessionSecret(env: ConfigVars): string {
+	const secret = text(env, 'SESSION_SECRET');
+	if (secret === '') throw new Error('Variable manquante : SESSION_SECRET (wrangler secret put, ou .dev.vars en local)');
 	if (secret.length < 32) throw new Error('SESSION_SECRET doit compter au moins 32 caractères');
 	return secret;
 }
 
-export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
+export function loadConfig(env: ConfigVars): AppConfig {
 	return {
-		port: Number(env.PORT ?? 3000),
-		cookie: { name: 'avrobb', secret: sessionSecret(env), secure: env.COOKIE_SECURE === '1' },
-		devLogin: env.DEV_LOGIN === '1',
-		// Chemin absolu : le service des fichiers statiques l'exige.
-		storageDir: path.resolve(env.STORAGE_DIR !== undefined && env.STORAGE_DIR !== '' ? env.STORAGE_DIR : 'storage'),
-		trustProxy: env.TRUST_PROXY === '1',
-		mailOutbox: env.MAIL_OUTBOX !== undefined && env.MAIL_OUTBOX !== '' ? env.MAIL_OUTBOX : null,
+		cookie: { name: 'avrobb', secret: sessionSecret(env), secure: text(env, 'COOKIE_SECURE') !== '0' },
+		devLogin: text(env, 'DEV_LOGIN') === '1',
 	};
 }

@@ -23,7 +23,7 @@ AvroBB descend de FluxBB : quand une fonction existe dans FluxBB 1.5.4, son comp
 5. **Presenter** : `buildXxxPage(input): XxxPageView`, fonction pure. Toute la logique d'affichage est ici.
 6. **Contrôleur** : validation des entrées → droits → repositories → presenter → page, redirection ou message. En POST : jeton CSRF vérifié en amont, puis POST → redirection → GET.
 7. **Vue** Nunjucks : `{% extends "layout.njk" %}`, aucun calcul, textes via `lang.*`, liens via `url()`. Appliquer le skill `responsive-ui`.
-8. **Câblage** : route dans `src/app.ts`, dépendances dans `AppDeps`, implémentation réelle dans le point d'entrée (`server.ts`, puis `worker.ts` au lot 3), doublure dans `tests/fixtures.ts`.
+8. **Câblage** : route dans `src/app.ts`, dépendances dans `AppDeps`, implémentation réelle dans le point d'entrée (`src/worker.ts`), doublure dans `tests/fixtures.ts`.
 9. **Langue** : nouvelles chaînes dans `src/lang/fr/` (un fichier par page).
 
 ## 3. Tester

@@ -71,8 +71,8 @@ describe('pages de rédaction', () => {
 		}
 	});
 
-	it('chaque bouton a son icône dans public/', async () => {
+	it('chaque bouton a son icône dans public/assets/', async () => {
 		const { existsSync } = await import('node:fs');
-		for (const button of TOOLBAR.tags) expect(existsSync(`public/img/toolbar/${button.image}`), button.image).toBe(true);
+		for (const button of TOOLBAR.tags) expect(existsSync(`public/assets/img/toolbar/${button.image}`), button.image).toBe(true);
 	});
 });

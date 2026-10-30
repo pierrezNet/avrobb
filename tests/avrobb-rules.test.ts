@@ -66,8 +66,8 @@ describe('règles AvroBB', () => {
 		expect(projectShares([], TAGS)).toEqual([]);
 	});
 
-	it('logo et bannière : version dans l’adresse après un remplacement', () => {
-		expect(headerImageHref('logo', 0)).toBe('/img/logo.png');
+	it('logo et bannière : images d’AvroBB, puis version dans l’adresse après un remplacement', () => {
+		expect(headerImageHref('logo', 0)).toBe('/assets/img/avrobb-logo.png');
 		expect(headerImageHref('banner', 42)).toBe('/img/banner.jpg?v=42');
 	});
 });

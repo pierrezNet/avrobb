@@ -446,7 +446,6 @@ describe('viewtopic de bout en bout', () => {
 			configStore: new ConfigRepository(db),
 			forumAdmin: new ForumAdminRepository(db),
 			maintenance: new MaintenanceRepository(db),
-			imageProcessor: { toWebp: async () => null, avatar: async () => null, fit: async () => null },
 			subjectPrefixes: new SubjectPrefixRepository(db),
 			memberSuggest: new MemberSuggestRepository(db),
 			groupAdmin: new GroupAdminRepository(db),

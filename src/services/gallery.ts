@@ -2,33 +2,41 @@
  * Règles de la galerie de PV (gallery.php) : envoi d'une image (titre, description, fichier et
  * vignette), droit de suppression, BBCode inséré dans un message. Fonctions pures.
  *
- * Écarts assumés : le PNG est accepté en plus du GIF et du JPEG ; le type est lu dans le contenu ;
- * la vignette est calculée par le navigateur (canvas, 150 px) et vérifiée ici, faute de
- * bibliothèque d'images côté serveur ; sans JavaScript, l'image sert de vignette.
+ * Écarts assumés : PNG et WebP acceptés en plus du GIF et du JPEG ; le type est lu dans le contenu.
+ * Le Worker n'a pas de bibliothèque d'images : l'image est gardée telle qu'envoyée, dans les limites
+ * de poids et de dimensions ci-dessous, et sert aussi de vignette (la réduction et la conversion
+ * en WebP par le navigateur arrivent avec le lot 6 de TODO.md).
  */
 
 import { type GalleryImage, GroupId, type Viewer } from '../domain/models.ts';
-import { readImageInfo } from './images.ts';
+import { type ImageInfo, readImageInfo } from './images.ts';
 import { punTrim } from './phpString.ts';
 
-/**
- * Taille maximale d'une image enregistrée ($max_size de gallery.php : 1,5 Mio), après conversion en
- * WebP : une photo plus lourde est acceptée puisqu'elle est réduite à 1024 px.
- */
+/** Taille maximale d'une image enregistrée ($max_size de gallery.php : 1,5 Mio). */
 export const GALLERY_MAX_BYTES = 1_572_864;
+/** Plus grand côté accepté : au-delà, l'image est à réduire avant l'envoi. */
+export const GALLERY_MAX_SIDE = 4096;
 /** Dimensions maximales d'une vignette ($largeur_max, $hauteur_max). */
 export const THUMBNAIL_MAX_SIDE = 150;
 export const GALLERY_TITLE_MAX = 40;
 export const GALLERY_DESCRIPTION_MAX = 2000;
 
-export type GalleryUploadError = 'noTitle' | 'titleTooLong' | 'noDescription' | 'descriptionTooLong' | 'noFile' | 'badType' | 'tooLarge';
+export type GalleryUploadError =
+	| 'noTitle'
+	| 'titleTooLong'
+	| 'noDescription'
+	| 'descriptionTooLong'
+	| 'noFile'
+	| 'badType'
+	| 'tooLarge'
+	| 'tooWide';
 
 export interface ValidatedGalleryUpload {
 	errors: GalleryUploadError[];
 	title: string;
 	description: string;
-	/** Image reconnue à son contenu (GIF, JPEG ou PNG), à convertir en WebP. */
-	imageOk: boolean;
+	/** Image reconnue à son contenu et dans les limites ; null en cas d'erreur sur le fichier. */
+	image: ImageInfo | null;
 }
 
 export function validateGalleryUpload(input: { title: string; description: string; image: Buffer | null }): ValidatedGalleryUpload {
@@ -40,12 +48,14 @@ export function validateGalleryUpload(input: { title: string; description: strin
 	if (description === '') errors.push('noDescription');
 	else if ([...description].length > GALLERY_DESCRIPTION_MAX) errors.push('descriptionTooLong');
 
-	let imageOk = false;
+	const image = input.image !== null && input.image.length > 0 ? readImageInfo(input.image) : null;
 	if (input.image === null || input.image.length === 0) errors.push('noFile');
-	else if (readImageInfo(input.image) === null) errors.push('badType');
-	else imageOk = true;
+	else if (image === null) errors.push('badType');
+	else if (input.image.length > GALLERY_MAX_BYTES) errors.push('tooLarge');
+	else if (image.width === 0 || image.height === 0 || Math.max(image.width, image.height) > GALLERY_MAX_SIDE) errors.push('tooWide');
 
-	return { errors, title, description, imageOk };
+	const fileOk = image !== null && !errors.some((error) => error === 'tooLarge' || error === 'tooWide');
+	return { errors, title, description, image: fileOk ? image : null };
 }
 
 /** Supprimer une image : son auteur, un administrateur ou le groupe des modérateurs. */
@@ -61,9 +71,10 @@ export function galleryFiles(image: Pick<GalleryImage, 'addedAt' | 'extension'>)
 
 /**
  * BBCode inséré dans un message : titre, image en grand et sa description (que l'insertion par
- * URL perdait).
+ * URL perdait). Adresse relative (/img/gallery/…) : une adresse absolue casserait au changement
+ * de domaine (développement → production).
  */
-export function galleryInsertCode(image: Pick<GalleryImage, 'title' | 'description' | 'addedAt' | 'extension'>, baseUrl: string): string {
-	const url = `${baseUrl}/${galleryFiles(image).full}`;
+export function galleryInsertCode(image: Pick<GalleryImage, 'title' | 'description' | 'addedAt' | 'extension'>): string {
+	const url = `/${galleryFiles(image).full}`;
 	return `[b]${image.title}[/b]\n[img]${url}[/img]\n${image.description}`;
 }

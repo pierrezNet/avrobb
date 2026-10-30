@@ -8,7 +8,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { THEMES } from '../src/services/themes.ts';
 
-const THEMES_DIR = path.join(import.meta.dirname, '..', 'public', 'css', 'themes');
+const THEMES_DIR = path.join(import.meta.dirname, '..', 'public', 'assets', 'css', 'themes');
 
 function readVariables(theme: string): Map<string, string> {
 	const css = readFileSync(path.join(THEMES_DIR, `${theme}.css`), 'utf8');

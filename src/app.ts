@@ -1,11 +1,10 @@
 /**
  * Assemblage de l'application (Hono). Les dépendances (repositories, gabarits, fichiers…) sont
- * passées en paramètre : server.ts fournit les vraies sous Node, les tests des doublures en mémoire,
- * et le Worker (lot 3) les liaisons Cloudflare. Rien ici ne dépend de Node.
+ * passées en paramètre : worker.ts fournit les vraies, à partir des liaisons du Worker (D1, R2),
+ * les tests des doublures en mémoire. Rien ici ne dépend de Node.
  */
 
 import { Hono } from 'hono';
-import type { ImageProcessor } from './adapters/imageProcessor.ts';
 import type { Mailer } from './adapters/mailer.ts';
 import { AdminAppearanceController, type AdminAppearanceQuery } from './controllers/AdminAppearanceController.ts';
 import { AdminBansController, type AdminBansQuery } from './controllers/AdminBansController.ts';
@@ -51,10 +50,11 @@ import { ensureCsrfToken, isValidCsrf } from './http/csrf.ts';
 import { type FormBody, FormError } from './http/forms.ts';
 import { type LayoutDeps, renderBlock, renderMessage, renderMinimalMessage } from './http/layout.ts';
 import { silentLogger } from './http/log.ts';
-import { ASSETS_PREFIX, createRouter, type ForumApp, type StaticFiles, serveFiles, useSecurityHeaders } from './http/server.ts';
+import { createRouter, type ForumApp, serveStoredFiles, useSecurityHeaders } from './http/server.ts';
 import { checkAccess, purgeOnline, type SessionDeps, startSession, trackCookieName as trackCookieOf } from './http/session.ts';
 import { createViews, type PrecompiledTemplates } from './http/views.ts';
 import type { AdminStatsReader } from './repositories/AdminStatsRepository.ts';
+import type { AvatarLocator, AvatarStore } from './repositories/AvatarFiles.ts';
 import type { BanStore } from './repositories/BanRepository.ts';
 import type { CensorStore } from './repositories/CensorRepository.ts';
 import type { ConfigCache, ConfigReader } from './repositories/ConfigLoader.ts';
@@ -62,6 +62,7 @@ import type { ConfigStore } from './repositories/ConfigRepository.ts';
 import type { ContactStore } from './repositories/ContactRepository.ts';
 import type { DraftStore } from './repositories/DraftRepository.ts';
 import type { FeedReader } from './repositories/FeedRepository.ts';
+import type { FileStore } from './repositories/FileStore.ts';
 import type { ForumAdminStore } from './repositories/ForumAdminRepository.ts';
 import type { GalleryFileStore } from './repositories/GalleryFiles.ts';
 import type { GalleryStore } from './repositories/GalleryRepository.ts';
@@ -88,7 +89,6 @@ import type { TopicReader, TopicWriter } from './repositories/TopicRepository.ts
 import type { UserAdminReader, UserAdminWriter } from './repositories/UserAdminRepository.ts';
 import type { AccountLookup, MemberListReader, ProfileReader } from './repositories/UserRepository.ts';
 import type { UsersInfoReader } from './repositories/UsersInfoLoader.ts';
-import type { AvatarLocator, AvatarStore } from './services/avatars.ts';
 import type { MailTemplateReader } from './services/mail.ts';
 import { type BannedWriteQuery, canWriteWhileBanned, readOnlyViewer } from './services/permissions.ts';
 
@@ -142,8 +142,6 @@ export interface AppDeps extends Omit<LayoutDeps, 'views'>, SessionDeps {
 	userAdmin: UserAdminReader & UserAdminWriter;
 	avatars: AvatarLocator;
 	avatarStore: AvatarStore;
-	/** Conversion des images envoyées en WebP (sharp). */
-	imageProcessor: ImageProcessor;
 	censorship: CensorStore;
 	stats: StatsReader;
 	search: SearchReader;
@@ -154,27 +152,22 @@ export interface AppDeps extends Omit<LayoutDeps, 'views'>, SessionDeps {
 	sitemap: SitemapReader;
 	/** Activité de la semaine affichée à l'accueil (discussions, nouveaux membres, projets). */
 	homeActivity: HomeActivityReader;
-	/** Logo et bannière de l'en-tête (stockage local), page Apparence. */
+	/** Logo et bannière de l’en-tête (R2), page Apparence. */
 	headerImages: HeaderImageStore;
-	/** Fichiers de la galerie (img/gallery/ du stockage local). */
+	/** Fichiers de la galerie (img/gallery/ dans R2). */
 	galleryFiles: GalleryFileStore;
 	stopwords: StopwordsReader;
 	usersInfo: UsersInfoReader;
 	/** Gabarits Nunjucks précompilés (src/generated/templates.js). */
 	templates: PrecompiledTemplates;
-	/** Adresse versionnée d'une ressource de public/ (« css/base.css » → « /assets/css/base.css?v=… »). */
+	/** Adresse versionnée d'une ressource de public/assets/ (« css/base.css » → « /assets/css/base.css?v=… »), manifeste du build. */
 	assetUrl: (file: string) => string;
-	/** Ressources de public/, servies sous /assets/ (Static Assets dans le Worker). */
-	assets?: StaticFiles;
-	/** Images du stockage (galerie, avatars, logo, bannière), servies sous /img/ ; R2 au lot 4. */
-	images?: StaticFiles;
-	/** Derrière un reverse proxy : adresse et protocole du client lus dans X-Forwarded-*. */
-	trustProxy?: boolean;
+	/** Fichiers envoyés (R2) : galerie, avatars, logo, bannière, servis sous /img/. */
+	files?: FileStore;
 	logger?: Logger;
 }
 
 export async function buildApp(input: AppDeps): Promise<ForumApp> {
-	const trustProxy = input.trustProxy ?? false;
 	const logger = input.logger ?? silentLogger;
 
 	// url('profile.php?id=2') dans les vues : point de passage unique des liens internes, pour
@@ -184,11 +177,11 @@ export async function buildApp(input: AppDeps): Promise<ForumApp> {
 	const deps = { ...input, views: createViews(input.templates, { url, asset }) };
 
 	const app: ForumApp = new Hono();
-	useSecurityHeaders(app, trustProxy);
-	// Les URL des ressources portent une empreinte du contenu : on peut les garder longtemps.
-	if (deps.assets !== undefined) serveFiles(app, ASSETS_PREFIX, deps.assets, 'public, max-age=2592000, immutable');
-	if (deps.images !== undefined) serveFiles(app, '/img/', deps.images, 'public, max-age=604800');
-	const router = createRouter(app, { trustProxy, logger, onError: (error, request, reply) => handleError(error, request, reply, deps) });
+	useSecurityHeaders(app);
+	// Les ressources de public/assets/ sont servies par Workers Static Assets, sans passer par ici.
+	// Fichiers envoyés : une semaine (avatars et en-tête changent d'adresse quand ils changent).
+	if (deps.files !== undefined) serveStoredFiles(app, '/img/', deps.files, 'public, max-age=604800');
+	const router = createRouter(app, { logger, onError: (error, request, reply) => handleError(error, request, reply, deps) });
 
 	// Équivalent de common.php : réglages, visiteur et présence, maintenance, bannissements. Déclaré
 	// par route (et non globalement) pour que les fichiers statiques ne coûtent aucune requête SQL.

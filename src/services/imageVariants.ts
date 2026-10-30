@@ -1,7 +1,6 @@
 /**
- * Images envoyées par les membres (fichiers Uploadile, galerie) : converties en WebP, plus grand côté
- * limité à 1024 px, avec une variante mobile (640 px, préfixe « mobile_ ») servie aux petits écrans.
- * Règles de nommage et adresse de la variante mobile, en fonctions pures.
+ * Images de la galerie au format WebP : une variante mobile (640 px, préfixe « mobile_ ») est
+ * servie aux petits écrans. Règles de nommage et adresse de la variante mobile, en fonctions pures.
  */
 
 /** Plus grand côté de l'image enregistrée. */
@@ -21,14 +20,18 @@ export function webpName(fileName: string): string {
 
 /**
  * Adresse de la variante mobile d'une image du forum (img/members/<id>/ ou img/gallery/, au format
- * WebP, sous l'adresse du forum), ou null pour toute autre image : seules nos conversions en ont une.
+ * WebP), ou null pour toute autre image : seules nos images en ont une. L'adresse est relative
+ * (/img/…) ou, dans les anciens messages, absolue sous l'adresse du forum ; la variante garde la
+ * même forme.
  */
 export function mobileVariantUrl(url: string, baseUrl: string): string | null {
-	if (baseUrl === '' || !url.startsWith(`${baseUrl}/`)) return null;
-	const path = url.slice(baseUrl.length);
+	let origin = '';
+	if (baseUrl !== '' && url.startsWith(`${baseUrl}/`)) origin = baseUrl;
+	else if (!url.startsWith('/img/')) return null;
+	const path = url.slice(origin.length);
 	const match = /^\/img\/(members\/\d{1,10}|gallery)\/([^/?#]+\.webp)$/.exec(path);
 	if (match === null) return null;
 	const file = match[2] ?? '';
 	if (file.startsWith(MOBILE_PREFIX) || file.startsWith('mini_')) return null;
-	return `${baseUrl}/img/${match[1]}/${MOBILE_PREFIX}${file}`;
+	return `${origin}/img/${match[1]}/${MOBILE_PREFIX}${file}`;
 }

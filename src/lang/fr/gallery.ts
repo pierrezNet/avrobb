@@ -10,8 +10,9 @@ const UPLOAD_ERRORS: Record<GalleryUploadError, string> = {
 	noDescription: "Vous n'avez pas donné de description à votre image.",
 	descriptionTooLong: 'La description ne doit pas dépasser 2 000 caractères.',
 	noFile: "Vous n'avez pas sélectionné de fichier à télécharger.",
-	badType: "Le type du fichier n'est pas autorisé. Les types autorisés sont le JPG, le GIF et le PNG.",
+	badType: "Le type du fichier n'est pas autorisé. Les types autorisés sont le JPG, le GIF, le PNG et le WebP.",
 	tooLarge: 'La taille du fichier dépasse le maximum autorisé (1,5 Mio).',
+	tooWide: "L'image dépasse 4 096 pixels de côté : réduisez-la avant de l'envoyer.",
 };
 
 export const gallery = {
@@ -31,7 +32,7 @@ export const gallery = {
 	// Envoi
 	postTitle: 'Poster une image dans la galerie',
 	imageUse:
-		"Le formulaire ci-dessous vous permet d'envoyer une image dans la galerie du site. L'image doit être au format JPG, GIF ou PNG, avec une taille maximale de 1,5 Mio. N'oubliez pas d'ajouter un titre et une petite description de l'image.",
+		"Le formulaire ci-dessous vous permet d'envoyer une image dans la galerie du site. L'image doit être au format JPG, GIF, PNG ou WebP, avec une taille maximale de 1,5 Mio et 4 096 pixels de côté. N'oubliez pas d'ajouter un titre et une petite description de l'image.",
 	imageRule:
 		"L'équipe du site se réserve le droit de supprimer sans préavis votre image. Toutes images non conformes aux conditions d'utilisation du site seront supprimées. Tout abus sera immédiatement sanctionné.",
 	titleField: 'Titre',

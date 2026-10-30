@@ -1,10 +1,19 @@
 /**
- * Type et dimensions d'une image d'après ses premiers octets, comme getimagesize() pour les formats
- * acceptés en avatar (GIF, JPEG, PNG). On se fie au contenu, jamais au type annoncé par le
- * navigateur ni à l'extension du nom de fichier.
+ * Type et dimensions d'une image d'après ses premiers octets, comme getimagesize(), pour les formats
+ * acceptés (GIF, JPEG, PNG, WebP). On se fie au contenu, jamais au type annoncé par le navigateur
+ * ni à l'extension du nom de fichier. Le Worker n'a pas de bibliothèque d'images : une image envoyée
+ * est vérifiée ici puis gardée telle quelle.
  */
 
-export type ImageType = 'gif' | 'jpg' | 'png';
+export type ImageType = 'gif' | 'jpg' | 'png' | 'webp';
+
+/** Type MIME servi pour chaque format (fixé par le serveur, jamais repris du client). */
+export const IMAGE_CONTENT_TYPES: Readonly<Record<ImageType, string>> = {
+	gif: 'image/gif',
+	jpg: 'image/jpeg',
+	png: 'image/png',
+	webp: 'image/webp',
+};
 
 export interface ImageInfo {
 	type: ImageType;
@@ -37,13 +46,32 @@ function jpegSize(data: Buffer): { width: number; height: number } | null {
 	return null;
 }
 
-/** Type et dimensions, ou null si le contenu n'est pas une image GIF, JPEG ou PNG lisible. */
+/** Dimensions d'un WebP : en-têtes VP8 (avec perte), VP8L (sans perte) ou VP8X (étendu). */
+function webpSize(data: Buffer): { width: number; height: number } | null {
+	if (data.length < 30) return null;
+	const chunk = data.toString('latin1', 12, 16);
+	if (chunk === 'VP8 ' && data[23] === 0x9d && data[24] === 0x01 && data[25] === 0x2a)
+		return { width: data.readUInt16LE(26) & 0x3fff, height: data.readUInt16LE(28) & 0x3fff };
+	if (chunk === 'VP8L' && data[20] === 0x2f) {
+		const bits = data.readUInt32LE(21);
+		return { width: (bits & 0x3fff) + 1, height: ((bits >>> 14) & 0x3fff) + 1 };
+	}
+	if (chunk === 'VP8X') return { width: data.readUIntLE(24, 3) + 1, height: data.readUIntLE(27, 3) + 1 };
+	return null;
+}
+
+/** Type et dimensions, ou null si le contenu n'est pas une image GIF, JPEG, PNG ou WebP lisible. */
 export function readImageInfo(data: Buffer): ImageInfo | null {
 	if (data.length >= 24 && data.subarray(0, 8).equals(PNG_SIGNATURE) && data.toString('latin1', 12, 16) === 'IHDR')
 		return { type: 'png', width: data.readUInt32BE(16), height: data.readUInt32BE(20) };
 
 	if (data.length >= 10 && (data.toString('latin1', 0, 6) === 'GIF87a' || data.toString('latin1', 0, 6) === 'GIF89a'))
 		return { type: 'gif', width: data.readUInt16LE(6), height: data.readUInt16LE(8) };
+
+	if (data.length >= 12 && data.toString('latin1', 0, 4) === 'RIFF' && data.toString('latin1', 8, 12) === 'WEBP') {
+		const size = webpSize(data);
+		return size !== null ? { type: 'webp', ...size } : null;
+	}
 
 	if (data.length >= 4 && data[0] === 0xff && data[1] === 0xd8) {
 		const size = jpegSize(data);

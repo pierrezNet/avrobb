@@ -3,12 +3,12 @@
  * en développement, par les journaux Workers en production), ou rien (tests).
  */
 
-import type { Logger } from './context.ts';
+import type { LogContext, Logger } from './context.ts';
 
-function line(level: 'error' | 'info', context: { err: unknown }, message: string): string {
-	const { err } = context;
+function line(level: 'error' | 'info', context: LogContext, message: string): string {
+	const { err, ...fields } = context;
 	const error = err instanceof Error ? { name: err.name, message: err.message, stack: err.stack } : err;
-	return JSON.stringify({ level, time: new Date().toISOString(), msg: message, err: error });
+	return JSON.stringify({ level, time: new Date().toISOString(), msg: message, ...fields, ...(err !== undefined ? { err: error } : {}) });
 }
 
 export const consoleLogger: Logger = {

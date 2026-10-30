@@ -260,7 +260,7 @@ describe('GET /search.php', () => {
 			...member,
 			users: {
 				findViewer: async (uid: number) =>
-					uid === 3 ? { presence: null, viewer: viewer({ lastSearch: NOW - 5 }) } : member.users.findViewer(uid),
+					uid === 3 ? { presence: null, sessionVersion: 0, viewer: viewer({ lastSearch: NOW - 5 }) } : member.users.findViewer(uid),
 			},
 		});
 		const flood = await inject(app, { url: '/search.php?action=search&keywords=vintage', headers: { cookie: sessionCookie(3) } });

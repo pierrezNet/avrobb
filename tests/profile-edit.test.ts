@@ -56,6 +56,7 @@ describe('readEssentials', () => {
 		emailOwners: [],
 		allowBannedEmail: false,
 		allowDupeEmail: false,
+		selfRename: false,
 	};
 	const input = { timezone: '2', dst: true, username: 'Autre', email: ' Tessy@Example.com ', adminNote: 'note', numPosts: '9' };
 
@@ -81,6 +82,19 @@ describe('readEssentials', () => {
 		expect(result.changes).toMatchObject({ adminNote: 'note', numPosts: 9 });
 		expect(readEssentials(input, { ...admin, similarUsername: 'autre' }).errors).toEqual([{ kind: 'usernameDupe', existing: 'autre' }]);
 		expect(readEssentials({ ...input, username: 'x' }, admin).errors).toEqual([{ kind: 'username', error: 'tooShort' }]);
+		// Un administrateur qui renomme ne consomme pas le changement unique du membre.
+		expect(result.changes.usernameChanged).toBeUndefined();
+	});
+
+	it('le membre change lui-même son pseudo une fois ; adresse facultative', () => {
+		const self = { ...context, canRename: true, selfRename: true };
+		const result = readEssentials(input, self);
+		expect(result.rename).toBe('Autre');
+		expect(result.changes.usernameChanged).toBe(true);
+		expect(result.changes.adminNote).toBeUndefined();
+		// Même pseudo : rien n'est consommé.
+		expect(readEssentials({ ...input, username: 'Tessy' }, self).changes.usernameChanged).toBeUndefined();
+		expect(readEssentials({ ...input, email: '' }, context)).toMatchObject({ errors: [], changes: { email: '' } });
 	});
 });
 
@@ -475,5 +489,73 @@ describe('profile.php : avatar', () => {
 		const fake = data();
 		const server = await start(fake, { avatars: false });
 		expect((await get(server, 3, '/profile.php?action=upload_avatar&id=3')).statusCode).toBe(404);
+	});
+});
+
+describe('profile.php : compte SSO', () => {
+	const essentials = (username: string) => ({
+		form_sent: '1',
+		req_username: username,
+		req_email: 'tessy@example.test',
+		'form[timezone]': '1',
+	});
+
+	it('le membre change son pseudo une seule fois', async () => {
+		const fake = data();
+		const server = await start(fake);
+		const form = await get(server, 3, '/profile.php?section=essentials&id=3');
+		expect(form.body).toContain('name="req_username"');
+		expect(form.body).toContain('Vous pouvez le changer une seule fois');
+
+		const renamed = await post(server, 3, '/profile.php?section=essentials&id=3', essentials('Tessy Pilote'));
+		expect(renamed.statusCode).toBe(303);
+		expect(fake.renames).toEqual([{ id: 3, from: 'Tessy', to: 'Tessy Pilote' }]);
+		expect(fake.profileUpdates?.at(-1)?.changes.usernameChanged).toBe(true);
+
+		// Ensuite, le champ disparaît et un nouvel envoi n'a aucun effet sur le pseudo.
+		expect((await get(server, 3, '/profile.php?section=essentials&id=3')).body).not.toContain('name="req_username"');
+		await post(server, 3, '/profile.php?section=essentials&id=3', essentials('Encore autre'));
+		expect(fake.renames).toHaveLength(1);
+	});
+
+	it('un modérateur sans droit de renommer ne renomme pas un membre', async () => {
+		const fake = data();
+		const server = await start(fake);
+		expect((await get(server, 5, '/profile.php?section=essentials&id=3')).body).not.toContain('name="req_username"');
+	});
+
+	it('« Mon compte » sur son profil seulement ; pas de suppression pour un administrateur', async () => {
+		const fake = data();
+		const server = await start(fake);
+		const own = await get(server, 3, '/profile.php?section=essentials&id=3');
+		expect(own.body).toContain('action="login.php?action=out_all"');
+		expect(own.body).toContain('href="profile.php?action=delete_account&amp;id=3"');
+		expect((await get(server, 5, '/profile.php?section=essentials&id=3')).body).not.toContain('out_all');
+		const adminOwn = await get(server, 2, '/profile.php?section=essentials&id=2');
+		expect(adminOwn.body).toContain('out_all');
+		expect(adminOwn.body).not.toContain('delete_account');
+	});
+
+	it('supprime son compte après confirmation : session fermée, avatar effacé', async () => {
+		const fake = data();
+		const server = await start(fake);
+		const confirm = await get(server, 3, '/profile.php?action=delete_account&id=3');
+		expect(confirm.body).toContain('Supprimer définitivement votre compte');
+		expect(fake.accountLog).toBeUndefined();
+
+		const res = await post(server, 3, '/profile.php?action=delete_account&id=3', {});
+		expect(res.statusCode).toBe(303);
+		expect(fake.accountLog).toEqual(['delete 3 Tessy → Membre supprimé']);
+		expect(fake.avatarLog).toEqual(['delete 3']);
+		expect([res.headers['set-cookie']].flat().some((c) => String(c).startsWith('avrobb_session=;'))).toBe(true);
+	});
+
+	it('ni le compte d’un autre, ni celui d’un administrateur', async () => {
+		const fake = data();
+		const server = await start(fake);
+		expect((await post(server, 5, '/profile.php?action=delete_account&id=3', {})).statusCode).toBe(403);
+		expect((await get(server, 2, '/profile.php?action=delete_account&id=2')).statusCode).toBe(403);
+		expect((await post(server, 2, '/profile.php?action=delete_account&id=2', {})).statusCode).toBe(403);
+		expect(fake.accountLog).toBeUndefined();
 	});
 });

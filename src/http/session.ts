@@ -58,10 +58,15 @@ export function setForumCookie(
 	});
 }
 
-/** Ouvre (ou prolonge) la session du membre pour SESSION_SECONDS. */
-export function setSessionCookie(reply: AppReply, deps: Pick<SessionDeps, 'cookie'>, userId: number, now: number): void {
+/** Ouvre (ou prolonge) la session du membre pour SESSION_SECONDS ; `version` : users.session_version. */
+export function setSessionCookie(
+	reply: AppReply,
+	deps: Pick<SessionDeps, 'cookie'>,
+	member: { userId: number; version: number },
+	now: number,
+): void {
 	const expires = now + SESSION_SECONDS;
-	reply.setCookie(sessionCookieName(deps.cookie), buildSessionCookie(userId, expires, deps.cookie.secret), {
+	reply.setCookie(sessionCookieName(deps.cookie), buildSessionCookie({ ...member, expires }, deps.cookie.secret), {
 		path: '/',
 		httpOnly: true,
 		secure: deps.cookie.secure,
@@ -86,13 +91,14 @@ async function authenticateMember(request: AppRequest, reply: AppReply, deps: Se
 
 	const session = readSessionCookie(raw, deps.cookie.secret, now);
 	const record = session !== null && session.userId !== GUEST_USER_ID ? await deps.users.findViewer(session.userId) : null;
-	if (session === null || record === null) {
-		// Cookie falsifié, échu ou compte supprimé : on l'efface.
+	if (session === null || record === null || record.sessionVersion !== session.version) {
+		// Cookie falsifié, échu, compte supprimé ou « déconnecter de partout » : on l'efface.
 		clearSessionCookie(reply, deps);
 		return null;
 	}
 
-	if (shouldRenewSession(session.expires, now)) setSessionCookie(reply, deps, record.viewer.id, now);
+	if (shouldRenewSession(session.expires, now))
+		setSessionCookie(reply, deps, { userId: record.viewer.id, version: record.sessionVersion }, now);
 	return record;
 }
 

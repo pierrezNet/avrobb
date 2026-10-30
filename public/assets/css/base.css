@@ -1668,6 +1668,12 @@ a.site-status__alert {
 	font-weight: 600;
 }
 
+/* Intitulé de section hors <fieldset> (titre h2) : même taille qu'une légende. */
+h2.form__legend {
+	margin-top: 0;
+	font-size: 1rem;
+}
+
 .form__grid {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr);

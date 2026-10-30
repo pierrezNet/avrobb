@@ -256,6 +256,8 @@ export interface UsersTable {
 	provider_id: string | null;
 	/** Incrémenté pour déconnecter le membre de partout. */
 	session_version: Generated<number>;
+	/** Pseudo déjà changé par le membre lui-même (migrations/0004_username_changed.sql). */
+	username_changed: Generated<number>;
 	title: string | null;
 	realname: string | null;
 	url: string | null;

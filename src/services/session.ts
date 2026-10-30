@@ -1,16 +1,16 @@
 /**
- * Cookie de session d'AvroBB : `<id du membre>.<échéance>.<signature>`, signé par HMAC-SHA256 avec
- * le secret de l'application. Rien n'est stocké côté serveur : un cookie valide suffit à identifier
- * le membre, relu en base à chaque requête (groupe, bannissement).
- *
- * Au lot 3, le numéro de session du compte (users.session_version) rejoindra la signature pour
- * permettre « me déconnecter de partout ».
+ * Cookie de session d'AvroBB : `<id du membre>.<numéro de session>.<échéance>.<signature>`, signé
+ * par HMAC-SHA256 avec le secret de l'application. Rien n'est stocké côté serveur : un cookie valide
+ * identifie le membre, relu en base à chaque requête (groupe, bannissement). Le numéro de session
+ * (users.session_version) doit être celui du compte : l'incrémenter déconnecte le membre de partout.
  */
 
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
 export interface SessionCookie {
 	userId: number;
+	/** users.session_version au moment de la connexion. */
+	version: number;
 	expires: number;
 }
 
@@ -24,22 +24,22 @@ function sign(payload: string, secret: string): string {
 	return createHmac('sha256', `${secret}|session`).update(payload).digest('hex');
 }
 
-export function buildSessionCookie(userId: number, expires: number, secret: string): string {
-	const payload = `${userId}.${expires}`;
+export function buildSessionCookie(session: SessionCookie, secret: string): string {
+	const payload = `${session.userId}.${session.version}.${session.expires}`;
 	return `${payload}.${sign(payload, secret)}`;
 }
 
 /** Cookie lu, signature vérifiée, non expiré ; null sinon. */
 export function readSessionCookie(value: string | undefined, secret: string, now: number): SessionCookie | null {
-	const match = /^(\d{1,10})\.(\d{1,12})\.([0-9a-f]{64})$/.exec(value ?? '');
+	const match = /^(\d{1,10})\.(\d{1,10})\.(\d{1,12})\.([0-9a-f]{64})$/.exec(value ?? '');
 	if (match === null) return null;
 
-	const [, userId = '', expires = '', signature = ''] = match;
-	const expected = Buffer.from(sign(`${userId}.${expires}`, secret));
+	const [, userId = '', version = '', expires = '', signature = ''] = match;
+	const expected = Buffer.from(sign(`${userId}.${version}.${expires}`, secret));
 	const actual = Buffer.from(signature);
 	if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) return null;
 
-	const cookie = { userId: Number(userId), expires: Number(expires) };
+	const cookie = { userId: Number(userId), version: Number(version), expires: Number(expires) };
 	return cookie.userId > 0 && cookie.expires > now ? cookie : null;
 }
 

@@ -3,6 +3,7 @@
  */
 
 import { createAssetUrl } from '../src/adapters/assetUrls.ts';
+import type { OAuthIdentity } from '../src/adapters/oauth.ts';
 import type { AppDeps } from '../src/app.ts';
 import {
 	type BoardConfig,
@@ -85,7 +86,7 @@ export const COOKIE_SECRET = 'graine-de-test';
 
 /** En-tête Cookie d'une session ouverte pour ce membre (échéance par défaut : une heure). */
 export function sessionCookie(userId: number, expires: number = NOW + 3600): string {
-	return `avrobb_session=${buildSessionCookie(userId, expires, COOKIE_SECRET)}`;
+	return `avrobb_session=${buildSessionCookie({ userId, version: 0, expires }, COOKIE_SECRET)}`;
 }
 
 export function group(overrides: Partial<Group> = {}): Group {
@@ -309,7 +310,10 @@ export const forumCategories: ForumCategory[] = [
 
 export interface FakeData {
 	/** Membres connus ; `presence` vaut null par défaut (pas encore dans la liste des présents). */
-	users: (Omit<ViewerRecord, 'presence'> & { presence?: ViewerRecord['presence'] })[];
+	users: (Omit<ViewerRecord, 'presence' | 'sessionVersion'> & {
+		presence?: ViewerRecord['presence'];
+		sessionVersion?: number;
+	})[];
 	topics: Topic[];
 	/** Messages par sujet, dans l'ordre. */
 	posts: Map<number, Post[]>;
@@ -413,12 +417,18 @@ export interface FakeData {
 	reportList?: Report[];
 	/** Messagerie privée en mémoire (créée vide au besoin). */
 	pm?: PmData;
+	/** Connexion SSO : identité renvoyée par le fournisseur pour chaque code, comptes par « fournisseur:id ». */
+	oauthIdentities?: Map<string, OAuthIdentity>;
+	oauthCalls?: string[];
+	ssoAccounts?: Map<string, number>;
+	accountLog?: string[];
 }
 
 /** Profil modifiable tiré d'un UserProfile de test, avec des préférences par défaut. */
 export function editableProfile(profile: UserProfile, details: Partial<EditableProfile> = {}): EditableProfile {
 	return {
 		...profile,
+		usernameChanged: false,
 		topicsPerPage: null,
 		postsPerPage: null,
 		timezone: 1,
@@ -871,7 +881,7 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 		users: {
 			findViewer: async (id) => {
 				const found = data.users.find((u) => u.viewer.id === id);
-				return found === undefined ? null : { presence: null, ...found };
+				return found === undefined ? null : { presence: null, sessionVersion: 0, ...found };
 			},
 		},
 		accounts: {
@@ -925,6 +935,37 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			},
 			deleteVotes: async (userId, ids) => {
 				data.deletedVotes = [...(data.deletedVotes ?? []), { userId, ids: [...ids] }];
+			},
+		},
+		oauthClient: {
+			identify: async (provider, _credentials, params) => {
+				data.oauthCalls = [...(data.oauthCalls ?? []), `${provider} ${params.code} ${params.verifier.length} ${params.redirectUri}`];
+				return data.oauthIdentities?.get(params.code) ?? null;
+			},
+		},
+		oauthProviders: { github: { clientId: 'client-github', clientSecret: 'secret-github' } },
+		adminAccounts: new Set(['github:42']),
+		accountStore: {
+			findByProvider: async (provider, providerId) => {
+				const id = data.ssoAccounts?.get(`${provider}:${providerId}`);
+				return id === undefined ? null : { id, sessionVersion: data.users.find((u) => u.viewer.id === id)?.sessionVersion ?? 0 };
+			},
+			createAccount: async (account) => {
+				if (data.users.some((u) => u.viewer.username.toLowerCase() === account.username.toLowerCase())) return null;
+				const id = Math.max(...data.users.map((u) => u.viewer.id)) + 1;
+				data.users.push({ viewer: viewer({ id, username: account.username, group: group({ id: account.groupId }) }) });
+				data.ssoAccounts = new Map([...(data.ssoAccounts ?? []), [`${account.provider}:${account.providerId}`, id]]);
+				data.accountLog = [...(data.accountLog ?? []), `create ${id} ${account.username} groupe ${account.groupId} ${account.email}`];
+				return id;
+			},
+			endAllSessions: async (userId) => {
+				const user = data.users.find((u) => u.viewer.id === userId);
+				if (user !== undefined) user.sessionVersion = (user.sessionVersion ?? 0) + 1;
+				data.accountLog = [...(data.accountLog ?? []), `endAllSessions ${userId}`];
+			},
+			deleteAccount: async (userId, username, anonymousName) => {
+				data.users = data.users.filter((u) => u.viewer.id !== userId);
+				data.accountLog = [...(data.accountLog ?? []), `delete ${userId} ${username} → ${anonymousName}`];
 			},
 		},
 		avatarStore: {

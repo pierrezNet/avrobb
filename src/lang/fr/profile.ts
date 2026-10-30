@@ -113,7 +113,20 @@ export const profile = {
 
 	usernameAndPassLegend: "Nom d'utilisateur",
 	usernameInfo: (username: string) => `Nom d'utilisateur\u00a0: ${username}`,
-	emailLegend: 'Indiquez une adresse électronique valide',
+	emailLegend: 'Adresse électronique',
+	emailOptional:
+		'Facultative : elle sert aux notifications (abonnements, messages privés) et n’est jamais affichée aux autres membres. À la première connexion, c’est l’adresse vérifiée de votre compte GitHub ou Google, s’il y en a une.',
+	usernameOnce:
+		'Votre nom d’utilisateur vient de votre compte de connexion. Vous pouvez le changer une seule fois ; ensuite, seul un administrateur pourra le modifier.',
+	accountLegend: 'Mon compte',
+	deleteAccount: 'Supprimer mon compte',
+	deleteAccountInfo:
+		'La suppression efface vos données personnelles, abonnements, brouillons, messages privés, images de la galerie et avatar. Vos messages publics restent dans les discussions, sous le nom « Membre supprimé ».',
+	confirmDeleteAccount: 'Supprimer définitivement votre compte\u00a0?',
+	confirmDeleteAccountInfo:
+		'Vos données personnelles, abonnements, brouillons, messages privés, images de la galerie et avatar seront effacés. Vos messages publics resteront dans les discussions, sous le nom « Membre supprimé ». Cette action est irréversible ; une nouvelle connexion créera un nouveau compte.',
+	deletedMember: 'Membre supprimé',
+	accountDeleted: 'Votre compte a été supprimé.',
 	localisationLegend: 'Définissez vos options géographiques',
 	timeZone: 'Fuseau horaire',
 	timeZoneInfo: "Afin que le forum affiche correctement l'heure, vous devez sélectionner votre fuseau horaire.",

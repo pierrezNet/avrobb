@@ -10,12 +10,13 @@ schéma FluxBB. Cible : **Cloudflare** (Workers, D1, R2). Le plan de portage est
 
 ## État actuel
 
-Lots 1 à 4 terminés (retrait de l'héritage PV, Hono et gabarits précompilés, base D1, Worker et
-R2). L'application est un **Worker Cloudflare** (`src/worker.ts`), lancé en local par
-`wrangler dev` avec D1 et R2 locaux (`.wrangler/state`). Les comptes SSO arrivent au lot 5 : d'ici
-là, la **connexion de développement** (`DEV_LOGIN=1`) permet de se connecter sous le nom d'un
-membre existant, depuis la machine seulement. Les e-mails sont seulement notés dans le journal
-jusqu'au lot 6.
+Lots 1 à 5 terminés (retrait de l'héritage PV, Hono et gabarits précompilés, base D1, Worker et
+R2, connexion SSO). L'application est un **Worker Cloudflare** (`src/worker.ts`), lancé en local par
+`wrangler dev` avec D1 et R2 locaux (`.wrangler/state`). Comptes par **GitHub** (Google en option) :
+créer une application OAuth (URL de retour `http://localhost:8787/auth/github/callback`) et
+renseigner `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` et `ADMIN_ACCOUNTS` dans `.dev.vars`. La
+**connexion de développement** (`DEV_LOGIN=1`) reste disponible depuis la machine, jamais en
+production. Les e-mails sont seulement notés dans le journal jusqu'au lot 6.
 
 ## Lancer
 
@@ -300,7 +301,10 @@ Front-end : `public/assets/css/base.css` (mobile d'abord) et un fichier de varia
   contenu), clés fabriquées par le serveur, ETag ; une image effacée disparaît du cache en bordure
   en une heure au plus. Résolution inverse des IP (modération) par DNS sur HTTPS (Cloudflare).
 - extern.php : pas d'authentification HTTP Basic ni de cache des flux (`o_feed_ttl`).
-- Connexion : pas de mot de passe (SSO au lot 5, connexion de développement d'ici là) ; jeton CSRF,
+- Connexion : pas de mot de passe ni d'inscription, comptes créés à la première connexion GitHub ou
+  Google (OAuth avec state et PKCE, compte identifié par le fournisseur et non par l'e-mail, pseudo
+  modifiable une fois par le membre) ; « me déconnecter de partout » ; suppression de son compte
+  par le membre (messages publics gardés sous « Membre supprimé ») ; connexion de développement : jeton CSRF,
   adresse de retour limitée aux pages du forum, redirection immédiate, page accessible en
   maintenance. Session dans un cookie signé (HMAC-SHA256), prolongée une fois par jour ;
   déconnexion par un bouton POST avec jeton CSRF.

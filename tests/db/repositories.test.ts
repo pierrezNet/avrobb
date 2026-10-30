@@ -9,6 +9,7 @@ import { buildApp } from '../../src/app.ts';
 import { GroupId } from '../../src/domain/models.ts';
 import templates from '../../src/generated/templates.js';
 import { fr, frDateWords } from '../../src/lang/fr/index.ts';
+import { AccountRepository } from '../../src/repositories/AccountRepository.ts';
 import { AdminStatsRepository } from '../../src/repositories/AdminStatsRepository.ts';
 import { BanRepository } from '../../src/repositories/BanRepository.ts';
 import { CensorRepository } from '../../src/repositories/CensorRepository.ts';
@@ -415,7 +416,7 @@ describe('ConfigLoader sur la table config', () => {
 
 describe('viewtopic de bout en bout', () => {
 	const seed = 'graine-de-test';
-	const cookie = (userId: number): string => `avrobb_session=${buildSessionCookie(userId, NOW + 3600, seed)}`;
+	const cookie = (userId: number): string => `avrobb_session=${buildSessionCookie({ userId, version: 0, expires: NOW + 3600 }, seed)}`;
 
 	async function app() {
 		return buildApp({
@@ -424,6 +425,10 @@ describe('viewtopic de bout en bout', () => {
 			members: new UserRepository(db),
 			accounts: new UserRepository(db),
 			devLogin: false,
+			oauthClient: { identify: async () => null },
+			oauthProviders: {},
+			adminAccounts: new Set(),
+			accountStore: new AccountRepository(db),
 			mailTemplates: { load: async () => ({ subject: '', body: '' }) },
 			mailer: { send: async () => undefined },
 			profiles: new UserRepository(db),

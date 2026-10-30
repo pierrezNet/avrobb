@@ -1,9 +1,22 @@
-{#- Connexion (login.php). Données : `view.devLogin`, `view.redirectUrl`. -#}
+{#- Connexion (login.php). Données : `view.providers`, `view.devLogin`, `view.redirectUrl`. -#}
 {% extends "layout.njk" %}
 {% import "partials/forms.njk" as forms %}
 
 {% block main %}
 <h1 class="page-title">{{ lang.login.login }}</h1>
+
+<section class="form-box sso-login" aria-labelledby="sso-title">
+	<h2 class="visually-hidden" id="sso-title">{{ lang.login.login }}</h2>
+	<p>{{ lang.login.intro }}</p>
+	{% if view.providers.length %}
+	<ul class="sso-login__providers">
+		{% for provider in view.providers %}<li><a class="button button--primary sso-login__button sso-login__button--{{ provider.id }}" href="{{ url(provider.href) }}">{{ provider.label }}</a></li>{% endfor %}
+	</ul>
+	{% else %}
+	<p class="form__help">{{ lang.login.noProvider }}</p>
+	{% endif %}
+	<p class="form__help">{{ lang.login.privacyInfo }} <a href="{{ url('privacy.php') }}">{{ lang.login.privacyLink }}</a>.</p>
+</section>
 
 {% if view.devLogin %}
 <form id="login" class="form-box form" method="post" action="{{ url('login.php?action=in') }}">
@@ -19,7 +32,5 @@
 	</fieldset>
 	<p class="form__buttons"><button type="submit" class="button button--primary">{{ lang.login.submit }}</button></p>
 </form>
-{% else %}
-<p class="form-box">{{ lang.login.ssoSoon }}</p>
 {% endif %}
 {% endblock %}

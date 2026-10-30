@@ -130,21 +130,28 @@ Vigilance :
 - Même origine que le forum : la CSP `img-src 'self'` suffit, et le domaine public `r2.dev` reste désactivé.
 - `fetch` des Workers ne s'appelle pas comme une méthode d'objet (« Illegal invocation ») : l'envelopper dans une fonction quand on l'injecte.
 
-## Lot 5 — SSO (GitHub, Google en option) · 2 à 3 jours
+## Lot 5 — SSO (GitHub, Google en option) · 2 à 3 jours · terminé le 2026-10-30
 
-- [ ] Adaptateur OAuth générique (`src/adapters/oauth.ts`) : URL d'autorisation, échange du code, lecture du profil ; GitHub d'abord (`read:user`, `user:email` facultatif), Google ensuite (OpenID Connect, `openid profile`)
-- [ ] `state` + PKCE dans un cookie de courte durée, URL de retour fixe par fournisseur
-- [ ] Création du compte à la première connexion : pseudo proposé depuis le fournisseur, rendu unique (suffixe), modifiable une fois dans le profil ; avatar du fournisseur **non** recopié automatiquement
-- [ ] Page de connexion « Se connecter avec GitHub / Google » (sans JS), déconnexion en POST, « Me déconnecter de partout » (incrémente `session_version`)
-- [ ] Administrateurs initiaux par `ADMIN_ACCOUNTS`
-- [ ] Suppression de son compte par le membre (messages conservés sous « Membre supprimé »), exigée par la politique de confidentialité
-- [ ] Retrait de `DEV_LOGIN` en production (test qui le garantit)
+- [x] Adaptateur OAuth (`src/adapters/oauth.ts`, `fetch` écrit à la main) : échange du code avec le vérificateur PKCE, lecture de l'identité ; GitHub (`read:user user:email`, adresse principale **vérifiée** seulement) et Google (OpenID Connect, adresse si `email_verified`) ; règles pures dans `services/oauth.ts`
+- [x] `state` + PKCE (S256) dans un cookie signé de 10 minutes limité à `/auth/`, à usage unique ; URL de retour fixe par fournisseur (`<o_base_url>/auth/<fournisseur>/callback`)
+- [x] Création du compte à la première connexion (`AccountRepository`) : pseudo tiré du fournisseur (identifiant GitHub, puis nom affiché ; « Membre » à défaut), passé par `check_username()`, rendu unique (« Nom 2 »…), **modifiable une fois** par le membre (`users.username_changed`, migration 0004) ; groupe et réglages par défaut du forum ; avatar du fournisseur non recopié
+- [x] Page de connexion « Se connecter avec GitHub / Google » (liens, sans JS), déconnexion en POST, « Me déconnecter de partout » (`users.session_version`, signé dans le cookie de session)
+- [x] Administrateurs initiaux par `ADMIN_ACCOUNTS` (`github:123456`), appliqué à la création du compte
+- [x] Suppression de son compte par le membre (profil, section Principal) : données personnelles, abonnements, brouillons, messagerie, galerie et avatar effacés ; messages publics gardés sous « Membre supprimé », sans adresse IP. Refusée à un administrateur (le forum pourrait rester sans administrateur)
+- [x] `DEV_LOGIN` refusé quand `ENVIRONMENT=production` (déclaré dans `wrangler.jsonc`, testé)
+- [x] Limitation de débit sur `/auth/*` (liaison Rate Limiting `AUTH_LIMITER`, 10 par minute et par IP)
+- [x] Politique de confidentialité : données reçues du fournisseur, cookie de connexion, suppression du compte
+- [x] Adresse e-mail facultative dans le profil (le fournisseur n'en donne pas toujours)
+
+Reporté :
+- Essai réel avec GitHub : demande une application OAuth (identifiant et secret dans `.dev.vars`) ; parcours couvert par les tests avec un faux fournisseur.
+- Cookies `__Host-` : au lot 7, une fois le forum en HTTPS (le préfixe exige `Secure`).
+- Rattacher le compte de développement « Emmanuel » à GitHub : une ligne SQL sur la base locale (`provider`, `provider_id`), inutile en production qui démarre vide.
 
 Vigilance :
 - Identifier par `(provider, provider_id)`, jamais par e-mail ; un e-mail fourni par GitHub peut être absent ou non vérifié.
-- Un membre banni qui se reconnecte reste banni (bannissement porté par le compte, pas par la session).
-- Limitation de débit sur `/auth/*`.
-- Mettre à jour la politique de confidentialité : données reçues du fournisseur et durée de conservation.
+- Un membre banni qui se reconnecte reste banni (bannissement relu à chaque requête, par pseudo, adresse ou IP).
+- Une application OAuth GitHub n'a qu'une URL de retour : une pour le développement (`http://localhost:8787`), une pour la production.
 
 ## Lot 6 — Images et e-mails · 2 à 3 jours
 

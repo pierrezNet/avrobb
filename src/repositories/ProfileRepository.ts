@@ -70,6 +70,7 @@ function toColumns(changes: ProfileChanges): UserColumns {
 	set('show_avatars', flag(changes.showAvatars));
 	set('show_sig', flag(changes.showSignatures));
 	set('reputation_enable', flag(changes.reputationEnabled));
+	set('username_changed', flag(changes.usernameChanged));
 	return columns;
 }
 
@@ -143,6 +144,7 @@ export class ProfileRepository implements ProfileStore {
 			registrationIp: row.registration_ip,
 			adminNote: row.admin_note ?? '',
 			lastVisit: row.last_visit,
+			usernameChanged: row.username_changed === 1,
 		};
 	}
 

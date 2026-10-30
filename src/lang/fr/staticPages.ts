@@ -79,7 +79,7 @@ export const staticPages = {
 			{
 				title: 'Données collectées',
 				paragraphs: [
-					'À la première connexion par GitHub : l’identifiant de votre compte GitHub, votre nom d’utilisateur et, si GitHub la communique, votre adresse e-mail. AvroBB ne reçoit ni ne stocke aucun mot de passe.',
+					'À la première connexion par GitHub ou Google : l’identifiant de votre compte chez ce fournisseur (pour vous reconnaître aux connexions suivantes), votre nom d’utilisateur ou votre nom affiché (pour proposer votre nom sur le forum) et, s’il en a une, votre adresse e-mail vérifiée. AvroBB ne reçoit ni ne stocke aucun mot de passe, ne garde pas le jeton d’accès du fournisseur au-delà de la connexion et ne recopie pas votre photo de profil.',
 					'Ce que vous choisissez de publier : messages, images de la galerie, avatar, signature et informations facultatives du profil (localisation, site web…).',
 					'Pour la sécurité du forum : l’adresse IP utilisée pour chaque message, ainsi que vos dates de première connexion, de dernière visite et de dernier message.',
 				],
@@ -102,20 +102,20 @@ export const staticPages = {
 			{
 				title: 'Cookies',
 				paragraphs: [
-					'Le forum ne dépose que des cookies nécessaires à son fonctionnement : votre session de connexion, un jeton de sécurité contre les envois de formulaires frauduleux, et le suivi des discussions déjà lues. Ils ne servent à aucun suivi publicitaire et ne demandent donc pas de consentement.',
+					'Le forum ne dépose que des cookies nécessaires à son fonctionnement : votre session de connexion (30 jours, prolongée à chaque visite), un cookie de dix minutes pendant la connexion par GitHub ou Google, un jeton de sécurité contre les envois de formulaires frauduleux, et le suivi des discussions déjà lues. Ils ne servent à aucun suivi publicitaire et ne demandent donc pas de consentement.',
 				],
 			},
 			{
 				title: 'Durée de conservation',
 				paragraphs: [
 					'Votre compte et vos contributions sont conservés tant que votre compte existe. Les messages publics restent visibles pour préserver le fil des discussions, même anciennes.',
-					'Si vous demandez la suppression de votre compte, vos données personnelles sont effacées ; vos messages publics sont conservés, sous un nom anonymisé si vous le souhaitez, pour garder la cohérence des discussions.',
+					'Vous pouvez supprimer votre compte vous-même depuis votre profil (section Principal, « Supprimer mon compte ») : vos données personnelles, abonnements, brouillons, messages privés, images de la galerie et avatar sont effacés aussitôt. Vos messages publics restent, sous le nom « Membre supprimé » et sans adresse IP, pour garder la cohérence des discussions.',
 				],
 			},
 			{
 				title: 'Vos droits',
 				paragraphs: [
-					'Vous pouvez à tout moment consulter et corriger vos informations depuis votre profil. Vous disposez aussi d’un droit d’accès, de rectification, d’effacement, de limitation et d’opposition au traitement de vos données.',
+					'Vous pouvez à tout moment consulter et corriger vos informations depuis votre profil, et vous déconnecter de tous vos appareils (« Me déconnecter de partout »). Vous disposez aussi d’un droit d’accès, de rectification, d’effacement, de limitation et d’opposition au traitement de vos données.',
 					'Pour l’exercer, écrivez à l’administrateur (adresse ci-dessous). En cas de difficulté, vous pouvez saisir la CNIL (cnil.fr).',
 				],
 			},

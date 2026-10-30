@@ -26,21 +26,25 @@ describe('parseModerators', () => {
 describe('cookie de session', () => {
 	const secret = 'secret-de-test';
 	const now = 1_000_000;
-	const value = buildSessionCookie(3, now + 60, secret);
+	const value = buildSessionCookie({ userId: 3, version: 2, expires: now + 60 }, secret);
 
 	it('valide signature et expiration', () => {
-		expect(readSessionCookie(value, secret, now)).toEqual({ userId: 3, expires: now + 60 });
+		expect(readSessionCookie(value, secret, now)).toEqual({ userId: 3, version: 2, expires: now + 60 });
 		expect(readSessionCookie(value, secret, now + 60)).toBeNull();
 		expect(readSessionCookie(value, 'autre-secret', now)).toBeNull();
 		// Membre ou échéance modifiés : la signature ne correspond plus.
 		expect(readSessionCookie(value.replace(/^3\./, '2.'), secret, now)).toBeNull();
 		expect(readSessionCookie(value.replace(`.${now + 60}.`, `.${now + 9999}.`), secret, now)).toBeNull();
+		// Numéro de session modifié (pour survivre à « me déconnecter de partout ») : refusé aussi.
+		expect(readSessionCookie(value.replace('3.2.', '3.3.'), secret, now)).toBeNull();
 	});
 
 	it('rejette un format inattendu', () => {
 		expect(readSessionCookie('3|abc|x|def', secret, now)).toBeNull();
 		expect(readSessionCookie(undefined, secret, now)).toBeNull();
-		expect(readSessionCookie(buildSessionCookie(0, now + 60, secret), secret, now)).toBeNull();
+		expect(readSessionCookie(buildSessionCookie({ userId: 0, version: 0, expires: now + 60 }, secret), secret, now)).toBeNull();
+		// Ancien format, sans numéro de session.
+		expect(readSessionCookie(`3.${now + 60}.${'0'.repeat(64)}`, secret, now)).toBeNull();
 	});
 
 	it("ne renouvelle le cookie qu'une fois par jour", () => {

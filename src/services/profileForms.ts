@@ -90,8 +90,10 @@ export interface EssentialsContext {
 	/** Administrateur ou modérateur de groupe ($pun_user['is_admmod']). */
 	isAnyModerator: boolean;
 	isAdmin: boolean;
-	/** Administrateur, ou modérateur avec g_mod_rename_users. */
+	/** Administrateur, modérateur avec g_mod_rename_users, ou le membre lui-même une fois (canRenameProfile()). */
 	canRename: boolean;
+	/** Le membre se renomme lui-même : le changement est alors définitif. */
+	selfRename: boolean;
 	currentUsername: string;
 	currentEmail: string;
 	guestLabel: string;
@@ -119,31 +121,33 @@ export function readEssentials(input: EssentialsInput, context: EssentialsContex
 	};
 	let rename: string | null = null;
 
+	if (context.canRename) {
+		const username = normalizeUsername(input.username);
+		if (username !== context.currentUsername) {
+			// Ordre de check_username() : forme, censure, pseudo déjà pris, pseudo banni.
+			const usernameErrors = checkUsername(username, context.guestLabel, context.bans, context.censor);
+			errors.push(
+				...usernameErrors.filter((error) => error !== 'banned').map((error): ProfileError => ({ kind: 'username', error })),
+				...(context.similarUsername !== null ? [{ kind: 'usernameDupe', existing: context.similarUsername } as const] : []),
+				...usernameErrors.filter((error) => error === 'banned').map((error): ProfileError => ({ kind: 'username', error })),
+			);
+			rename = username;
+			if (context.selfRename) changes.usernameChanged = true;
+		}
+	}
+
 	if (context.isAnyModerator) {
 		changes.adminNote = limited('adminNote', input.adminNote, errors);
-
-		if (context.canRename) {
-			const username = normalizeUsername(input.username);
-			if (username !== context.currentUsername) {
-				// Ordre de check_username() : forme, censure, pseudo déjà pris, pseudo banni.
-				const usernameErrors = checkUsername(username, context.guestLabel, context.bans, context.censor);
-				errors.push(
-					...usernameErrors.filter((error) => error !== 'banned').map((error): ProfileError => ({ kind: 'username', error })),
-					...(context.similarUsername !== null ? [{ kind: 'usernameDupe', existing: context.similarUsername } as const] : []),
-					...usernameErrors.filter((error) => error === 'banned').map((error): ProfileError => ({ kind: 'username', error })),
-				);
-				rename = username;
-			}
-		}
 
 		// Seul un administrateur corrige le nombre de messages.
 		if (context.isAdmin) changes.numPosts = Math.max(0, Math.trunc(Number(input.numPosts)) || 0);
 	}
 
 	// Sans mot de passe, pas de lien de confirmation à envoyer : l'adresse se modifie dans le formulaire.
+	// Adresse facultative : le fournisseur SSO n'en donne pas toujours une (elle ne sert qu'aux notifications).
 	const email = limited('email', input.email, errors).toLowerCase();
-	if (!isValidEmail(email)) errors.push({ kind: 'invalidEmail' });
-	else if (!context.isAnyModerator && email !== context.currentEmail.toLowerCase()) {
+	if (email !== '' && !isValidEmail(email)) errors.push({ kind: 'invalidEmail' });
+	else if (email !== '' && !context.isAnyModerator && email !== context.currentEmail.toLowerCase()) {
 		if (isBannedEmail(email, context.bans) && !context.allowBannedEmail) errors.push({ kind: 'bannedEmail' });
 		if (context.emailOwners.length > 0 && !context.allowDupeEmail) errors.push({ kind: 'dupeEmail' });
 	}

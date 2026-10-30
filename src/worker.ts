@@ -11,8 +11,10 @@
 import { createAssetUrl } from './adapters/assetUrls.ts';
 import { DohHostResolver } from './adapters/hostResolver.ts';
 import { LogMailer } from './adapters/mailer.ts';
+import { FetchOAuthClient } from './adapters/oauth.ts';
 import { buildApp, type ForumApp } from './app.ts';
 import { loadConfig } from './config.ts';
+import type { RateLimiter } from './controllers/AuthController.ts';
 import { ScheduledTasks } from './controllers/ScheduledTasks.ts';
 import type { D1Database } from './db/d1.ts';
 import { createDatabase, type Db } from './db/database.ts';
@@ -22,6 +24,7 @@ import { type EdgeCache, withEdgeCache } from './http/edgeCache.ts';
 import { consoleLogger } from './http/log.ts';
 import { fr, frDateWords } from './lang/fr/index.ts';
 import { mail } from './lang/fr/mail.ts';
+import { AccountRepository } from './repositories/AccountRepository.ts';
 import { AdminStatsRepository } from './repositories/AdminStatsRepository.ts';
 import { AvatarFiles } from './repositories/AvatarFiles.ts';
 import { BanRepository } from './repositories/BanRepository.ts';
@@ -72,9 +75,17 @@ export interface Env {
 	DB: D1Database;
 	FILES: R2BucketLike;
 	ASSETS: AssetsBinding;
+	/** Limite de tentatives de connexion SSO (liaison Rate Limiting). */
+	AUTH_LIMITER?: RateLimiter;
 	SESSION_SECRET?: string;
 	COOKIE_SECURE?: string;
 	DEV_LOGIN?: string;
+	ENVIRONMENT?: string;
+	GITHUB_CLIENT_ID?: string;
+	GITHUB_CLIENT_SECRET?: string;
+	GOOGLE_CLIENT_ID?: string;
+	GOOGLE_CLIENT_SECRET?: string;
+	ADMIN_ACCOUNTS?: string;
 }
 
 /** Sous-ensemble d'ExecutionContext. */
@@ -138,6 +149,11 @@ async function createApp(env: Env, services: Services): Promise<ForumApp> {
 		members: users,
 		accounts: users,
 		devLogin: config.devLogin,
+		oauthClient: new FetchOAuthClient(),
+		oauthProviders: config.oauth,
+		adminAccounts: config.adminAccounts,
+		accountStore: new AccountRepository(db),
+		...(env.AUTH_LIMITER !== undefined ? { authRateLimiter: env.AUTH_LIMITER } : {}),
 		mailTemplates: { load: async (name) => mail[name] },
 		mailer: new LogMailer(consoleLogger),
 		profiles: users,

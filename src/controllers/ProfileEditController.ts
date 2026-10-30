@@ -18,7 +18,7 @@ import type { BanReader } from '../repositories/BanRepository.ts';
 import type { CensorReader } from '../repositories/CensorRepository.ts';
 import { normalizeUsername, usernameSkeleton } from '../services/accounts.ts';
 import { buildCensor, type Censor } from '../services/censor.ts';
-import { canRenameUsers, isAdmin, isAnyModerator } from '../services/permissions.ts';
+import { canRenameProfile, isAdmin, isAnyModerator, isSelfRename } from '../services/permissions.ts';
 import {
 	displayOptions,
 	type FormResult,
@@ -94,7 +94,7 @@ export class ProfileEditController {
 		switch (section) {
 			case 'essentials': {
 				const moderator = isAnyModerator(viewer);
-				const renaming = moderator && canRenameUsers(viewer) ? normalizeUsername(field(body, 'req_username')) : profile.username;
+				const renaming = canRenameProfile(viewer, profile) ? normalizeUsername(field(body, 'req_username')) : profile.username;
 				const email = field(body, 'req_email').trim().toLowerCase();
 				const [bans, censor, similarUsername, emailOwners] = await Promise.all([
 					this.deps.bans.listBans(),
@@ -118,7 +118,8 @@ export class ProfileEditController {
 					{
 						isAnyModerator: moderator,
 						isAdmin: isAdmin(viewer),
-						canRename: canRenameUsers(viewer),
+						canRename: canRenameProfile(viewer, profile),
+						selfRename: isSelfRename(viewer, profile),
 						currentUsername: profile.username,
 						currentEmail: profile.email,
 						guestLabel: lang.common.guest,

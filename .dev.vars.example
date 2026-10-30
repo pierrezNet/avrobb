@@ -5,3 +5,14 @@ SESSION_SECRET=
 COOKIE_SECURE=0
 # Connexion de test sans fournisseur SSO, depuis la machine seulement.
 DEV_LOGIN=1
+# Développement : la connexion de test reste permise (refusée si ENVIRONMENT=production).
+ENVIRONMENT=development
+# Application OAuth GitHub de développement (https://github.com/settings/developers) :
+# URL de retour http://localhost:8787/auth/github/callback
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
+# Google, facultatif : URL de retour http://localhost:8787/auth/google/callback
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+# Comptes administrateurs à leur création : github:<identifiant numérique>, séparés par des virgules.
+ADMIN_ACCOUNTS=

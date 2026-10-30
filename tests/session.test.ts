@@ -96,7 +96,7 @@ describe('session à chaque requête', () => {
 		const res = await inject(app, { url: '/index.php', headers: { cookie: sessionCookie(3, NOW + 1000) } });
 
 		const session = setCookies(res.headers['set-cookie']).find((c) => c.startsWith('avrobb_session='));
-		expect(session).toContain(buildSessionCookie(3, NOW + SESSION_SECONDS, SEED));
+		expect(session).toContain(buildSessionCookie({ userId: 3, version: 0, expires: NOW + SESSION_SECONDS }, SEED));
 		expect(session).toContain('HttpOnly');
 		expect(session).toContain(`Max-Age=${SESSION_SECONDS}`);
 		expect(online.log).toEqual(['refresh 3']);
@@ -118,7 +118,7 @@ describe('session à chaque requête', () => {
 	it('cookie falsifié : effacé, visiteur traité en invité', async () => {
 		const online = fakeOnline();
 		app = await buildApp({ ...base(), online });
-		const forged = `avrobb_session=${buildSessionCookie(3, NOW + 3600, 'autre-secret')}`;
+		const forged = `avrobb_session=${buildSessionCookie({ userId: 3, version: 0, expires: NOW + 3600 }, 'autre-secret')}`;
 		const res = await inject(app, { url: '/index.php', headers: { cookie: forged } });
 
 		expect(setCookies(res.headers['set-cookie']).find((c) => c.startsWith('avrobb_session='))).toMatch(/^avrobb_session=;/);

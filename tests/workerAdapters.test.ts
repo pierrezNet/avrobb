@@ -3,6 +3,8 @@
  * par DNS sur HTTPS, e-mails journalisés, configuration lue dans les variables du Worker.
  */
 
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { DohHostResolver } from '../src/adapters/hostResolver.ts';
 import { LogMailer } from '../src/adapters/mailer.ts';
@@ -108,15 +110,42 @@ describe('loadConfig', () => {
 	const secret = 's'.repeat(32);
 
 	it('cookies sécurisés par défaut, connexion de développement sur demande', () => {
-		expect(loadConfig({ SESSION_SECRET: secret })).toEqual({ cookie: { name: 'avrobb', secret, secure: true }, devLogin: false });
+		expect(loadConfig({ SESSION_SECRET: secret })).toEqual({
+			cookie: { name: 'avrobb', secret, secure: true },
+			devLogin: false,
+			oauth: {},
+			adminAccounts: new Set(),
+		});
 		expect(loadConfig({ SESSION_SECRET: secret, COOKIE_SECURE: '0', DEV_LOGIN: '1' })).toMatchObject({
 			cookie: { secure: false },
 			devLogin: true,
 		});
 	});
 
+	it('jamais de connexion de développement en production', () => {
+		expect(loadConfig({ SESSION_SECRET: secret, DEV_LOGIN: '1', ENVIRONMENT: 'production' }).devLogin).toBe(false);
+	});
+
+	it('fournisseurs configurés seulement avec identifiant et secret ; administrateurs initiaux', () => {
+		const config = loadConfig({
+			SESSION_SECRET: secret,
+			GITHUB_CLIENT_ID: 'id',
+			GITHUB_CLIENT_SECRET: 'secret',
+			GOOGLE_CLIENT_ID: 'sans-secret',
+			ADMIN_ACCOUNTS: 'github:123, Google:abc ,autre:1,github:',
+		});
+		expect(config.oauth).toEqual({ github: { clientId: 'id', clientSecret: 'secret' } });
+		expect(config.adminAccounts).toEqual(new Set(['github:123', 'google:abc']));
+	});
+
 	it('secret absent ou trop court : erreur explicite', () => {
 		expect(() => loadConfig({})).toThrow('SESSION_SECRET');
 		expect(() => loadConfig({ SESSION_SECRET: 'court' })).toThrow('32 caractères');
+	});
+
+	it('wrangler.jsonc : production déclarée, pas de connexion de développement', () => {
+		const wrangler = readFileSync(path.join(import.meta.dirname, '..', 'wrangler.jsonc'), 'utf8');
+		expect(wrangler).toContain('"ENVIRONMENT": "production"');
+		expect(wrangler).not.toContain('DEV_LOGIN');
 	});
 });

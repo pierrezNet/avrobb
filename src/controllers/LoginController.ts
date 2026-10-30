@@ -1,24 +1,31 @@
 /**
- * Contrôleur de login.php : page de connexion, connexion de développement (POST action=in) et
- * déconnexion (POST action=out, jeton CSRF vérifié en amont).
+ * Contrôleur de login.php : page de connexion (liens vers les fournisseurs SSO, voir
+ * AuthController), connexion de développement (POST action=in), déconnexion (POST action=out) et
+ * déconnexion de partout (POST action=out_all, users.session_version incrémenté). Jeton CSRF
+ * vérifié en amont pour les POST.
  *
- * Les comptes viendront d'un fournisseur SSO (lot 5) : il n'y a ni mot de passe ni inscription.
- * En attendant, DEV_LOGIN=1 permet de se connecter sous le nom d'un membre, depuis la machine
- * seulement (services/session.ts).
+ * Il n'y a ni mot de passe ni inscription. DEV_LOGIN=1 permet de se connecter sous le nom d'un
+ * membre, depuis la machine seulement et jamais en production (services/session.ts, config.ts).
  */
 
+import type { OAuthCredentials } from '../adapters/oauth.ts';
 import type { CookieConfig } from '../config.ts';
 import type { AppReply, AppRequest } from '../http/context.ts';
 import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { clearSessionCookie, setForumCookie, setSessionCookie, trackCookieName } from '../http/session.ts';
+import type { AccountStore } from '../repositories/AccountRepository.ts';
 import type { OnlineWriter } from '../repositories/OnlineRepository.ts';
-import type { AccountLookup } from '../repositories/UserRepository.ts';
+import type { AccountLookup, UserReader } from '../repositories/UserRepository.ts';
+import type { OAuthProviderId } from '../services/oauth.ts';
 import { safeRedirect } from '../services/redirects.ts';
 import { isDevLoginAllowed } from '../services/session.ts';
 
 export interface LoginControllerDeps extends LayoutDeps {
 	accounts: AccountLookup;
+	accountStore: AccountStore;
+	users: UserReader;
+	oauthProviders: Partial<Record<OAuthProviderId, OAuthCredentials>>;
 	online: OnlineWriter;
 	cookie: CookieConfig;
 	devLogin: boolean;
@@ -37,6 +44,14 @@ export class LoginController {
 
 		const { lang } = this.deps.page;
 		const referer = request.headers.referer;
+		const redirectUrl = referer !== undefined ? safeRedirect(referer, request.headers.host) : 'index.php';
+		const providers = (['github', 'google'] as const)
+			.filter((provider) => this.deps.oauthProviders[provider] !== undefined)
+			.map((provider) => ({
+				id: provider,
+				label: lang.login.signInWith(lang.login.providers[provider]),
+				href: `auth/${provider}?return=${encodeURIComponent(redirectUrl)}`,
+			}));
 		return renderPage(
 			request,
 			reply,
@@ -44,8 +59,9 @@ export class LoginController {
 			'login.njk',
 			{ pageId: 'login', titleParts: [request.board.boardTitle, lang.login.login], activeNav: 'login' },
 			{
+				providers,
 				devLogin: isDevLoginAllowed(this.deps.devLogin, request.ip),
-				redirectUrl: referer !== undefined ? safeRedirect(referer, request.headers.host) : 'index.php',
+				redirectUrl,
 			},
 		);
 	};
@@ -58,13 +74,14 @@ export class LoginController {
 
 		const username = field(request.body, 'req_username').trim();
 		const userId = username !== '' ? await this.deps.accounts.findIdByUsername(username) : null;
-		if (userId === null) return renderMessage(request, reply, this.deps, 200, lang.login.unknownUser);
+		const record = userId !== null ? await this.deps.users.findViewer(userId) : null;
+		if (userId === null || record === null) return renderMessage(request, reply, this.deps, 200, lang.login.unknownUser);
 
 		const config = request.board;
 		const now = this.deps.page.clock();
 		// L'entrée « invité » de ce navigateur quitte la liste des présents.
 		await this.deps.online.removeIdent(request.ip);
-		setSessionCookie(reply, this.deps, userId, now);
+		setSessionCookie(reply, this.deps, { userId, version: record.sessionVersion }, now);
 		setForumCookie(reply, this.deps.cookie, trackCookieName(this.deps.cookie), '', now + config.timeoutVisit, now, config.timeoutVisit);
 
 		return reply.redirect(safeRedirect(field(request.body, 'redirect_url'), request.headers.host), 303);
@@ -79,5 +96,11 @@ export class LoginController {
 		}
 		clearSessionCookie(reply, this.deps);
 		return reply.redirect('index.php', 303);
+	};
+
+	/** POST login.php?action=out_all : toutes les sessions du membre deviennent invalides. */
+	logoutEverywhere = async (request: AppRequest, reply: AppReply): Promise<AppReply> => {
+		if (!request.viewer.isGuest) await this.deps.accountStore.endAllSessions(request.viewer.id);
+		return this.logout(request, reply);
 	};
 }

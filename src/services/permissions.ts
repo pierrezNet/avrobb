@@ -209,3 +209,25 @@ export function canEditProfile(viewer: Viewer, target: { id: number; groupId: nu
 export function canRenameUsers(viewer: Viewer): boolean {
 	return isAdmin(viewer) || (viewer.group.isModerator && viewer.group.canModRenameUsers);
 }
+
+/**
+ * Changer le pseudo de ce profil : un administrateur ou modérateur qui renomme les membres, ou le
+ * membre lui-même une seule fois (AvroBB : le pseudo de départ vient du fournisseur SSO).
+ */
+export function canRenameProfile(viewer: Viewer, profile: { id: number; usernameChanged: boolean }): boolean {
+	if (isAnyModerator(viewer) && canRenameUsers(viewer)) return true;
+	return isSelfRename(viewer, profile);
+}
+
+/** Le membre change lui-même son pseudo (sa seule fois). */
+export function isSelfRename(viewer: Viewer, profile: { id: number; usernameChanged: boolean }): boolean {
+	return !viewer.isGuest && viewer.id === profile.id && !profile.usernameChanged && !(isAnyModerator(viewer) && canRenameUsers(viewer));
+}
+
+/**
+ * Supprimer son propre compte (AvroBB, politique de confidentialité). Pas un administrateur : il
+ * pourrait laisser le forum sans administrateur ; un autre administrateur le supprime.
+ */
+export function canDeleteOwnAccount(viewer: Viewer, profileId: number): boolean {
+	return !viewer.isGuest && viewer.id === profileId && !isAdmin(viewer);
+}

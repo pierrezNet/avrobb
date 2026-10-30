@@ -131,7 +131,7 @@ export interface UserAdminWriter {
  * (boucle sur les forums d'admin_users.php).
  */
 /** Membres retirés des listes de modérateurs des forums (les lectures ici, les écritures renvoyées). */
-async function removeFromModeratorsWrites(db: Db, ids: readonly number[]): Promise<Compilable[]> {
+export async function removeFromModeratorsWrites(db: Db, ids: readonly number[]): Promise<Compilable[]> {
 	const moderators = await db
 		.selectFrom('users')
 		.innerJoin('groups', 'groups.g_id', 'users.group_id')

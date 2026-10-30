@@ -15,6 +15,7 @@ import type { ProfileReader } from '../repositories/UserRepository.ts';
 import { buildCensor } from '../services/censor.ts';
 import { canEditProfile } from '../services/permissions.ts';
 import { isProfileSection } from '../services/profileForms.ts';
+import { AccountDeleteController, type AccountDeleteControllerDeps } from './AccountDeleteController.ts';
 import { AvatarController, type AvatarControllerDeps } from './AvatarController.ts';
 import { ProfileEditController, type ProfileEditControllerDeps } from './ProfileEditController.ts';
 import { positiveInt } from './params.ts';
@@ -22,7 +23,7 @@ import type { ProfileQuery } from './profileAccess.ts';
 
 export type { ProfileQuery } from './profileAccess.ts';
 
-export interface ProfileControllerDeps extends LayoutDeps, ProfileEditControllerDeps, AvatarControllerDeps {
+export interface ProfileControllerDeps extends LayoutDeps, ProfileEditControllerDeps, AvatarControllerDeps, AccountDeleteControllerDeps {
 	profiles: ProfileReader;
 }
 
@@ -34,10 +35,12 @@ const AVATAR_UPLOAD = new Set(['upload_avatar', 'upload_avatar2']);
 export class ProfileController {
 	readonly #edit: ProfileEditController;
 	readonly #avatar: AvatarController;
+	readonly #account: AccountDeleteController;
 
 	constructor(private readonly deps: ProfileControllerDeps) {
 		this.#edit = new ProfileEditController(deps);
 		this.#avatar = new AvatarController(deps);
+		this.#account = new AccountDeleteController(deps);
 	}
 
 	show = async (request: ProfileRequest, reply: AppReply): Promise<AppReply> => {
@@ -105,6 +108,8 @@ export class ProfileController {
 				break;
 			case 'delete_avatar':
 				return this.#avatar.delete(request, reply);
+			case 'delete_account':
+				return this.#account.delete(request, reply);
 			default:
 				if (AVATAR_UPLOAD.has(query.action)) return this.#avatar.upload(request, reply);
 				return renderMessage(request, reply, this.deps, 400, lang.common.badRequest);
@@ -117,6 +122,7 @@ export class ProfileController {
 		const action = request.query.action ?? '';
 		if (AVATAR_UPLOAD.has(action)) return this.#avatar.uploadForm(request, reply);
 		if (action === 'delete_avatar') return this.#avatar.deleteForm(request, reply);
+		if (action === 'delete_account') return this.#account.confirm(request, reply);
 		return renderMessage(request, reply, this.deps, 404, this.deps.page.lang.common.badRequest);
 	}
 }

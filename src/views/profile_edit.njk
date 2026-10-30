@@ -22,8 +22,9 @@
 		{% if f.usernameEditable %}
 		<p class="form__field">
 			<label for="req_username">{{ lang.profile.username }} <span class="form__required">{{ lang.profile.required }}</span></label>
-			<input type="text" id="req_username" name="req_username" value="{{ f.username }}" maxlength="25" required autocomplete="off" spellcheck="false">
+			<input type="text" id="req_username" name="req_username" value="{{ f.username }}" maxlength="25" required autocomplete="off" spellcheck="false"{% if f.usernameOnce %} aria-describedby="username-once"{% endif %}>
 		</p>
+		{% if f.usernameOnce %}<p class="form__help" id="username-once">{{ lang.profile.usernameOnce }}</p>{% endif %}
 		{% else %}
 		<p>{{ lang.profile.usernameInfo(f.username) }}</p>
 		{% endif %}
@@ -32,9 +33,10 @@
 	<fieldset class="form__fieldset">
 		<legend class="form__legend">{{ lang.profile.emailLegend }}</legend>
 		<p class="form__field">
-			<label for="req_email">{{ lang.profile.email }} <span class="form__required">{{ lang.profile.required }}</span></label>
-			<input type="email" id="req_email" name="req_email" value="{{ f.email }}" maxlength="80" required autocomplete="email">
+			<label for="req_email">{{ lang.profile.email }}</label>
+			<input type="email" id="req_email" name="req_email" value="{{ f.email }}" maxlength="80" autocomplete="email" aria-describedby="email-help">
 		</p>
+		<p class="form__help" id="email-help">{{ lang.profile.emailOptional }}</p>
 		{% if f.contactLinks.length %}<p class="form__links">{% for link in f.contactLinks %}<a href="{{ url(link.href) }}">{{ link.label }}</a>{% endfor %}</p>{% endif %}
 	</fieldset>
 
@@ -203,6 +205,20 @@
 
 	<p class="form__buttons"><button type="submit" class="button button--primary" name="update" value="1" accesskey="s">{{ lang.profile.submit }}</button> {{ lang.profile.instructions }}</p>
 </form>
+{% if view.section == 'essentials' and f.account %}
+<section class="form-box form" aria-labelledby="account-title">
+	<h2 class="form__legend" id="account-title">{{ lang.profile.accountLegend }}</h2>
+	<form method="post" action="{{ url(f.account.logoutEverywhereAction) }}">
+		{{ forms.csrf(layout) }}
+		<p class="form__help">{{ lang.login.logoutEverywhereInfo }}</p>
+		<p class="form__buttons"><button type="submit" class="button">{{ lang.login.logoutEverywhere }}</button></p>
+	</form>
+	{% if f.account.deleteHref %}
+	<p class="form__help">{{ lang.profile.deleteAccountInfo }}</p>
+	<p class="form__buttons"><a class="button" href="{{ url(f.account.deleteHref) }}">{{ lang.profile.deleteAccount }}</a></p>
+	{% endif %}
+</section>
+{% endif %}
 </div>
 </div>
 {% endblock %}

@@ -15,7 +15,7 @@ Cible : **100 % Cloudflare**. Un Worker (Hono), D1 (SQLite), R2 (fichiers), Stat
 - `FAILLES_PHP.md` (non versionné) : failles du PHP d'origine, liste de contrôle à ne pas reproduire.
 - Projet voisin sur le même modèle (Workers + D1 + Hono) : `../donnetonpoint`.
 
-> **Transition en cours** : lots 1 à 4 terminés (héritage PV retiré, Hono, base D1, Worker et R2). Le forum tourne sous `wrangler dev` ; les comptes SSO (lot 5), l'envoi réel des e-mails et la réduction des images par le navigateur (lot 6) restent à faire. Ce fichier décrit la **cible** : en attendant le lot 6, `LogMailer` note les e-mails dans le journal, et une image envoyée trop grande est refusée. La commande `npm run deploy` et le déploiement par GitHub Actions arrivent au lot 7.
+> **Transition en cours** : lots 1 à 5 terminés (héritage PV retiré, Hono, base D1, Worker et R2, SSO). Le forum tourne sous `wrangler dev` ; l'envoi réel des e-mails et la réduction des images par le navigateur (lot 6) restent à faire. Ce fichier décrit la **cible** : en attendant le lot 6, `LogMailer` note les e-mails dans le journal, et une image envoyée trop grande est refusée. Les cookies `__Host-`, la commande `npm run deploy` et le déploiement par GitHub Actions arrivent au lot 7.
 
 ## Commandes
 

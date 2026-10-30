@@ -502,6 +502,8 @@ export interface EditableProfile extends UserProfile {
 	registrationIp: string;
 	adminNote: string;
 	lastVisit: number;
+	/** Le membre a déjà changé lui-même son pseudo (une seule fois permise). */
+	usernameChanged: boolean;
 }
 
 /**
@@ -539,6 +541,8 @@ export interface ProfileChanges {
 	showAvatars?: boolean;
 	showSignatures?: boolean;
 	reputationEnabled?: boolean;
+	/** Pseudo changé par le membre lui-même : il ne pourra plus le changer. */
+	usernameChanged?: boolean;
 }
 
 /** Sujet trouvé par une recherche (affichage « discussions »). */

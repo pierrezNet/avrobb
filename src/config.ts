@@ -3,6 +3,9 @@
  * « vars », secrets, et .dev.vars en développement) par src/worker.ts.
  */
 
+import type { OAuthCredentials } from './adapters/oauth.ts';
+import { type OAuthProviderId, parseAdminAccounts } from './services/oauth.ts';
+
 /** Cookies du forum : `<name>_session`, `<name>_csrf`, `<name>_track`, tous sur le chemin /. */
 export interface CookieConfig {
 	name: string;
@@ -13,8 +16,15 @@ export interface CookieConfig {
 
 export interface AppConfig {
 	cookie: CookieConfig;
-	/** Connexion sans fournisseur SSO, pour le développement (DEV_LOGIN=1, depuis la machine seulement). */
+	/**
+	 * Connexion sans fournisseur SSO, pour le développement (DEV_LOGIN=1, depuis la machine
+	 * seulement) ; toujours refusée quand ENVIRONMENT vaut « production ».
+	 */
 	devLogin: boolean;
+	/** Fournisseurs configurés (identifiant et secret de l'application OAuth). */
+	oauth: Partial<Record<OAuthProviderId, OAuthCredentials>>;
+	/** ADMIN_ACCOUNTS : identités (« github:123456 ») qui deviennent administrateurs à la création du compte. */
+	adminAccounts: ReadonlySet<string>;
 }
 
 /** Variables texte du Worker (les liaisons D1, R2… sont à côté, ignorées ici). */
@@ -32,9 +42,19 @@ function sessionSecret(env: ConfigVars): string {
 	return secret;
 }
 
+function credentials(env: ConfigVars, prefix: 'GITHUB' | 'GOOGLE'): OAuthCredentials | null {
+	const clientId = text(env, `${prefix}_CLIENT_ID`);
+	const clientSecret = text(env, `${prefix}_CLIENT_SECRET`);
+	return clientId !== '' && clientSecret !== '' ? { clientId, clientSecret } : null;
+}
+
 export function loadConfig(env: ConfigVars): AppConfig {
+	const github = credentials(env, 'GITHUB');
+	const google = credentials(env, 'GOOGLE');
 	return {
 		cookie: { name: 'avrobb', secret: sessionSecret(env), secure: text(env, 'COOKIE_SECURE') !== '0' },
-		devLogin: text(env, 'DEV_LOGIN') === '1',
+		devLogin: text(env, 'DEV_LOGIN') === '1' && text(env, 'ENVIRONMENT') !== 'production',
+		oauth: { ...(github !== null ? { github } : {}), ...(google !== null ? { google } : {}) },
+		adminAccounts: parseAdminAccounts(text(env, 'ADMIN_ACCOUNTS')),
 	};
 }

@@ -6,6 +6,7 @@
 
 import { Hono } from 'hono';
 import type { Mailer } from './adapters/mailer.ts';
+import type { OAuthClient, OAuthCredentials } from './adapters/oauth.ts';
 import { AdminAppearanceController, type AdminAppearanceQuery } from './controllers/AdminAppearanceController.ts';
 import { AdminBansController, type AdminBansQuery } from './controllers/AdminBansController.ts';
 import { AdminCensoringController, type AdminCensoringQuery } from './controllers/AdminCensoringController.ts';
@@ -18,6 +19,7 @@ import { AdminPagesController, type AdminPagesQuery } from './controllers/AdminP
 import { AdminPermissionsController, type AdminPermissionsQuery } from './controllers/AdminPermissionsController.ts';
 import { AdminReportsController, type AdminReportsQuery } from './controllers/AdminReportsController.ts';
 import { AdminUsersController, type AdminUsersQuery } from './controllers/AdminUsersController.ts';
+import { AuthController, type AuthQuery, type RateLimiter } from './controllers/AuthController.ts';
 import { ContactController, type ContactQuery } from './controllers/ContactController.ts';
 import { DeleteController, type DeleteQuery } from './controllers/DeleteController.ts';
 import { DraftController, type DraftQuery } from './controllers/DraftController.ts';
@@ -53,6 +55,7 @@ import { silentLogger } from './http/log.ts';
 import { createRouter, type ForumApp, serveStoredFiles, useSecurityHeaders } from './http/server.ts';
 import { checkAccess, purgeOnline, type SessionDeps, startSession, trackCookieName as trackCookieOf } from './http/session.ts';
 import { createViews, type PrecompiledTemplates } from './http/views.ts';
+import type { AccountStore } from './repositories/AccountRepository.ts';
 import type { AdminStatsReader } from './repositories/AdminStatsRepository.ts';
 import type { AvatarLocator, AvatarStore } from './repositories/AvatarFiles.ts';
 import type { BanStore } from './repositories/BanRepository.ts';
@@ -90,6 +93,7 @@ import type { UserAdminReader, UserAdminWriter } from './repositories/UserAdminR
 import type { AccountLookup, MemberListReader, ProfileReader } from './repositories/UserRepository.ts';
 import type { UsersInfoReader } from './repositories/UsersInfoLoader.ts';
 import type { MailTemplateReader } from './services/mail.ts';
+import type { OAuthProviderId } from './services/oauth.ts';
 import { type BannedWriteQuery, canWriteWhileBanned, readOnlyViewer } from './services/permissions.ts';
 
 export type { ForumApp } from './http/server.ts';
@@ -98,8 +102,16 @@ export interface AppDeps extends Omit<LayoutDeps, 'views'>, SessionDeps {
 	config: ConfigReader;
 	members: MemberListReader;
 	accounts: AccountLookup;
-	/** Connexion de développement (DEV_LOGIN=1), depuis la machine seulement. */
+	/** Connexion de développement (DEV_LOGIN=1), depuis la machine seulement, jamais en production. */
 	devLogin: boolean;
+	/** Connexion SSO : appels aux fournisseurs, applications OAuth configurées, administrateurs initiaux. */
+	oauthClient: OAuthClient;
+	oauthProviders: Partial<Record<OAuthProviderId, OAuthCredentials>>;
+	adminAccounts: ReadonlySet<string>;
+	/** Comptes SSO : création, sessions, suppression par le membre. */
+	accountStore: AccountStore;
+	/** Liaison Rate Limiting de Workers sur /auth/* ; absente dans les tests. */
+	authRateLimiter?: RateLimiter;
 	mailTemplates: MailTemplateReader;
 	mailer: Mailer;
 	profiles: ProfileReader;
@@ -254,8 +266,19 @@ export async function buildApp(input: AppDeps): Promise<ForumApp> {
 	router.post<{ Querystring: LoginQuery; Body: FormBody }>('/login.php', [loginSession, verifyCsrf], (request, reply) => {
 		if (request.query.action === 'in') return login.login(request, reply);
 		if (request.query.action === 'out') return login.logout(request, reply);
+		if (request.query.action === 'out_all') return login.logoutEverywhere(request, reply);
 		return renderMessage(request, reply, deps, 400, deps.page.lang.common.badRequest);
 	});
+
+	// Connexion SSO : départ vers le fournisseur et retour. Accessible en maintenance, comme login.php.
+	const auth = new AuthController(deps);
+	const authSession = session({ quiet: true, allowDuringMaintenance: true });
+	for (const provider of ['github', 'google'] as const) {
+		router.get<{ Querystring: AuthQuery }>(`/auth/${provider}`, [authSession], (request, reply) => auth.start(request, reply, provider));
+		router.get<{ Querystring: AuthQuery }>(`/auth/${provider}/callback`, [authSession], (request, reply) =>
+			auth.callback(request, reply, provider),
+		);
+	}
 
 	// misc.php : visite discrète dès qu'une action est demandée (PUN_QUIET_VISIT).
 	const miscSession = session({ quiet: (request) => (request.query as MiscQuery).action !== undefined });

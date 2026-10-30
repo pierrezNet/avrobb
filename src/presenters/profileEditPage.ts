@@ -14,7 +14,7 @@ import { parseSignature } from '../services/bbcode.ts';
 import type { Censor } from '../services/censor.ts';
 import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
 import { forumNumberFormat } from '../services/numberFormat.ts';
-import { canRenameUsers, isAdmin, isAnyModerator } from '../services/permissions.ts';
+import { canDeleteOwnAccount, canRenameProfile, isAdmin, isAnyModerator, isSelfRename } from '../services/permissions.ts';
 import { displayOptions, type ProfileSection } from '../services/profileForms.ts';
 import { THEMES } from '../services/themes.ts';
 import { signatureParserOptions } from './parserOptions.ts';
@@ -71,6 +71,8 @@ export interface Checkbox {
 export interface EssentialsView {
 	username: string;
 	usernameEditable: boolean;
+	/** Le membre change lui-même son pseudo : une seule fois, c'est rappelé sous le champ. */
+	usernameOnce: boolean;
 	/** Adresse modifiable dans le formulaire, sinon affichée avec le lien de changement. */
 	email: string;
 	/** Liens des modérateurs : e-mail au membre, MP et contacts (plugins/apms/profile_add4.php). */
@@ -87,6 +89,8 @@ export interface EssentialsView {
 	searchLinks: Link[];
 	/** Note de l'administrateur (modérateurs), sinon null. */
 	adminNote: string | null;
+	/** Son propre profil : déconnexion de partout et, hors administrateurs, suppression du compte. */
+	account: { logoutEverywhereAction: string; deleteHref: string | null } | null;
 }
 
 export interface PersonalView {
@@ -183,7 +187,8 @@ function essentials(input: ProfileEditInput): EssentialsView {
 
 	return {
 		username: form.username,
-		usernameEditable: moderator && canRenameUsers(viewer),
+		usernameEditable: canRenameProfile(viewer, profile),
+		usernameOnce: isSelfRename(viewer, profile),
 		email: form.email,
 		contactLinks,
 		timezones: TIMEZONES.map((value) => ({
@@ -200,6 +205,13 @@ function essentials(input: ProfileEditInput): EssentialsView {
 		postsInfo: !isAdmin(viewer) && (config.showPostCount || moderator) ? t.postsInfo(forumNumberFormat(profile.numPosts)) : null,
 		searchLinks,
 		adminNote: moderator ? form.adminNote : null,
+		account:
+			!viewer.isGuest && viewer.id === profile.id
+				? {
+						logoutEverywhereAction: 'login.php?action=out_all',
+						deleteHref: canDeleteOwnAccount(viewer, profile.id) ? `profile.php?action=delete_account&id=${profile.id}` : null,
+					}
+				: null,
 	};
 }
 

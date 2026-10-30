@@ -21,6 +21,8 @@ export interface ViewerRecord {
 	viewer: Viewer;
 	/** Ligne online du membre (null s'il n'y figure pas), lue avec lui comme dans check_cookie(). */
 	presence: Presence | null;
+	/** users.session_version : doit être celui du cookie de session. */
+	sessionVersion: number;
 }
 
 export interface UserReader {
@@ -80,6 +82,7 @@ export class UserRepository implements UserReader, MemberListReader, ProfileRead
 				'u.last_post',
 				'u.auto_notify',
 				'u.last_search',
+				'u.session_version',
 				'g.g_id',
 				'g.g_title',
 				'g.g_user_title',
@@ -150,6 +153,7 @@ export class UserRepository implements UserReader, MemberListReader, ProfileRead
 		};
 
 		return {
+			sessionVersion: row.session_version,
 			presence: row.logged !== null && row.idle !== null ? { logged: row.logged, idle: row.idle === 1 } : null,
 			viewer: {
 				id: row.id,

@@ -8,12 +8,11 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.ts';
 import { GroupId, type UserProfile } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
-import { buildLegacyCookie } from '../src/services/legacySession.ts';
-import { type FakeData, fakeDeps, guest, NOW, viewer } from './fixtures.ts';
+import { type FakeData, fakeDeps, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
 
 const SEED = 'graine-de-test';
 const CSRF_SECRET = 'd'.repeat(64);
-const cookie = `punbb_cookie=${buildLegacyCookie(3, 'h3', NOW + 3600, SEED)}; punbb_cookie_csrf=${CSRF_SECRET}`;
+const cookie = `${sessionCookie(3)}; avrobb_csrf=${CSRF_SECRET}`;
 
 const tessyProfile: UserProfile = {
 	id: 3,
@@ -42,10 +41,7 @@ const tessyProfile: UserProfile = {
 
 function data(): FakeData {
 	return {
-		users: [
-			{ viewer: guest, passwordHash: '' },
-			{ viewer: viewer(), passwordHash: 'h3' },
-		],
+		users: [{ viewer: guest }, { viewer: viewer() }],
 		topics: [],
 		posts: new Map(),
 		profiles: [tessyProfile],

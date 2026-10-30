@@ -13,7 +13,6 @@ import { LabelsPlugin } from './adminPlugins/LabelsPlugin.ts';
 import { PrivateMessagesPlugin } from './adminPlugins/PrivateMessagesPlugin.ts';
 import type { AdminLoaderControllerDeps, AdminLoaderQuery, Plugin, PluginHandler } from './adminPlugins/pluginPage.ts';
 import { UploadilePlugin } from './adminPlugins/UploadilePlugin.ts';
-import { UserManagementPlugin } from './adminPlugins/UserManagementPlugin.ts';
 
 export type { AdminLoaderControllerDeps, AdminLoaderQuery } from './adminPlugins/pluginPage.ts';
 
@@ -24,7 +23,6 @@ export class AdminLoaderController {
 
 	constructor(private readonly deps: AdminLoaderControllerDeps) {
 		this.#pages = new Map<Plugin, PluginHandler>([
-			['AMP_Gestion_utilisateurs.php', new UserManagementPlugin(deps)],
 			['AP_Private_messaging.php', new PrivateMessagesPlugin(deps)],
 			['AP_Uploadile.php', new UploadilePlugin(deps)],
 			['AP_Balises.php', new LabelsPlugin(deps)],

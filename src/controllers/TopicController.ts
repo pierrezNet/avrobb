@@ -4,7 +4,7 @@
  */
 
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import type { LegacyCookieConfig } from '../config.ts';
+import type { CookieConfig } from '../config.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { setForumCookie } from '../http/session.ts';
 import { buildTopicPage, topicUrl } from '../presenters/topicPage.ts';
@@ -32,7 +32,7 @@ export interface TopicControllerDeps extends LayoutDeps {
 	topicLabels: TopicLabelReader;
 	topicViews: TopicWriter;
 	toolbar: ToolbarReader;
-	legacyCookie: LegacyCookieConfig;
+	cookie: CookieConfig;
 	trackCookieName: string;
 }
 
@@ -158,7 +158,7 @@ export class TopicController {
 			const tracked = markRead(parseTrackedTopics(request.cookies[this.deps.trackCookieName]), 'topics', topicId, now);
 			setForumCookie(
 				reply,
-				this.deps.legacyCookie,
+				this.deps.cookie,
 				this.deps.trackCookieName,
 				serializeTrackedTopics(tracked),
 				now + config.timeoutVisit,

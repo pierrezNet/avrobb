@@ -8,8 +8,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
-import { buildLegacyCookie } from '../src/services/legacySession.ts';
-import { type FakeData, fakeDeps, group, guest, NOW, viewer } from './fixtures.ts';
+import { type FakeData, fakeDeps, group, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
 import { optionsForm } from './optionsForm.ts';
 
 const SEED = 'graine-de-test';
@@ -17,8 +16,7 @@ const CSRF_SECRET = '9'.repeat(64);
 const mod = viewer({ id: 5, username: 'MaxDUO', group: group({ id: GroupId.Moderator, isModerator: true }) });
 const admin = viewer({ id: 2, username: 'admin', group: group({ id: GroupId.Admin }) });
 const hashes: Record<number, string> = { 5: 'h5', 2: 'h2' };
-const cookies = (userId: number): string =>
-	`punbb_cookie=${buildLegacyCookie(userId, hashes[userId] ?? '', NOW + 3600, SEED)}; punbb_cookie_csrf=${CSRF_SECRET}`;
+const cookies = (userId: number): string => `${sessionCookie(userId)}; avrobb_csrf=${CSRF_SECRET}`;
 
 const current = (): Map<string, string> =>
 	new Map([
@@ -34,11 +32,7 @@ afterEach(async () => app?.close());
 
 async function start(): Promise<{ server: FastifyInstance; fake: FakeData }> {
 	const fake: FakeData = {
-		users: [
-			{ viewer: guest, passwordHash: '' },
-			{ viewer: mod, passwordHash: 'h5' },
-			{ viewer: admin, passwordHash: 'h2' },
-		],
+		users: [{ viewer: guest }, { viewer: mod }, { viewer: admin }],
 		topics: [],
 		posts: new Map(),
 		configValues: current(),

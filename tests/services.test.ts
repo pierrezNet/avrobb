@@ -5,10 +5,10 @@ import { TablePrefixPlugin } from '../src/db/TablePrefixPlugin.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { frDateWords } from '../src/lang/fr/index.ts';
 import { formatTime, viewerTimeSettings } from '../src/services/dateFormat.ts';
-import { forumHmac, isCookiePasswordValid, isCookieSignatureValid, parseLegacyCookie } from '../src/services/legacySession.ts';
 import { clampPage, paginate } from '../src/services/pagination.ts';
 import { canReply, postActions } from '../src/services/permissions.ts';
 import { parseModerators } from '../src/services/phpSerialize.ts';
+import { buildSessionCookie, isDevLoginAllowed, readSessionCookie, SESSION_SECONDS, shouldRenewSession } from '../src/services/session.ts';
 import { group, guest, NOW, topic, viewer } from './fixtures.ts';
 
 describe('parseModerators', () => {
@@ -26,23 +26,37 @@ describe('parseModerators', () => {
 	});
 });
 
-describe('cookie de session FluxBB', () => {
-	const seed = 'graine';
+describe('cookie de session', () => {
+	const secret = 'secret-de-test';
 	const now = 1_000_000;
-	const value = `3|${forumHmac('hash', `${seed}_password_hash`)}|${now + 60}|${forumHmac(`3|${now + 60}`, `${seed}_cookie_hash`)}`;
+	const value = buildSessionCookie(3, now + 60, secret);
 
-	it('valide signature, expiration et mot de passe', () => {
-		const cookie = parseLegacyCookie(value)!;
-		expect(isCookieSignatureValid(cookie, seed, now)).toBe(true);
-		expect(isCookieSignatureValid(cookie, seed, now + 61)).toBe(false);
-		expect(isCookieSignatureValid({ ...cookie, userId: 2 }, seed, now)).toBe(false);
-		expect(isCookiePasswordValid(cookie, 'hash', seed)).toBe(true);
-		expect(isCookiePasswordValid(cookie, 'autre', seed)).toBe(false);
+	it('valide signature et expiration', () => {
+		expect(readSessionCookie(value, secret, now)).toEqual({ userId: 3, expires: now + 60 });
+		expect(readSessionCookie(value, secret, now + 60)).toBeNull();
+		expect(readSessionCookie(value, 'autre-secret', now)).toBeNull();
+		// Membre ou échéance modifiés : la signature ne correspond plus.
+		expect(readSessionCookie(value.replace(/^3\./, '2.'), secret, now)).toBeNull();
+		expect(readSessionCookie(value.replace(`.${now + 60}.`, `.${now + 9999}.`), secret, now)).toBeNull();
 	});
 
 	it('rejette un format inattendu', () => {
-		expect(parseLegacyCookie('3|abc|x|def')).toBeNull();
-		expect(parseLegacyCookie(undefined)).toBeNull();
+		expect(readSessionCookie('3|abc|x|def', secret, now)).toBeNull();
+		expect(readSessionCookie(undefined, secret, now)).toBeNull();
+		expect(readSessionCookie(buildSessionCookie(0, now + 60, secret), secret, now)).toBeNull();
+	});
+
+	it("ne renouvelle le cookie qu'une fois par jour", () => {
+		expect(shouldRenewSession(now + SESSION_SECONDS, now)).toBe(false);
+		expect(shouldRenewSession(now + SESSION_SECONDS - 3600, now)).toBe(false);
+		expect(shouldRenewSession(now + SESSION_SECONDS - 86_401, now)).toBe(true);
+	});
+
+	it('réserve la connexion de développement à la machine elle-même', () => {
+		expect(isDevLoginAllowed(true, '127.0.0.1')).toBe(true);
+		expect(isDevLoginAllowed(true, '::1')).toBe(true);
+		expect(isDevLoginAllowed(true, '203.0.113.7')).toBe(false);
+		expect(isDevLoginAllowed(false, '127.0.0.1')).toBe(false);
 	});
 });
 

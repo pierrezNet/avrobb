@@ -7,10 +7,9 @@ import type { FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.ts';
 import type { ForumInfo } from '../src/domain/models.ts';
-import { buildLegacyCookie } from '../src/services/legacySession.ts';
-import { boardConfig, type FakeData, fakeDeps, guest, NOW, post, topic, viewer } from './fixtures.ts';
+import { boardConfig, type FakeData, fakeDeps, guest, NOW, post, sessionCookie, topic, viewer } from './fixtures.ts';
 
-const tessy = `punbb_cookie=${buildLegacyCookie(3, 'h', NOW + 3600, 'graine-de-test')}`;
+const tessy = `${sessionCookie(3)}`;
 const forumInfo: ForumInfo = {
 	id: 2,
 	name: 'Captures',
@@ -24,10 +23,7 @@ const forumInfo: ForumInfo = {
 
 function data(overrides: Partial<FakeData> = {}): FakeData {
 	return {
-		users: [
-			{ viewer: guest, passwordHash: '' },
-			{ viewer: viewer(), passwordHash: 'h' },
-		],
+		users: [{ viewer: guest }, { viewer: viewer() }],
 		topics: [topic({ id: 10 })],
 		posts: new Map([[10, [post(100)]]]),
 		forumInfos: [forumInfo],
@@ -44,7 +40,7 @@ async function confirm(server: FastifyInstance, url: string) {
 	const csrf =
 		[page.headers['set-cookie']]
 			.flat()
-			.find((c) => c?.startsWith('punbb_cookie_csrf='))
+			.find((c) => c?.startsWith('avrobb_csrf='))
 			?.split(';')[0] ?? '';
 	const token = /name="csrf_token" value="([0-9a-f]+)"/.exec(page.body)?.[1] ?? '';
 	const action = /<form class="message-box" method="post" action="([^"]+)"/.exec(page.body)?.[1]?.replaceAll('&amp;', '&') ?? '';

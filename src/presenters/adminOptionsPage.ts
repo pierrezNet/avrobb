@@ -5,8 +5,8 @@
  */
 
 import type { Lang } from '../lang/fr/index.ts';
+import { TIMEZONES } from '../services/accounts.ts';
 import { FEED_TTLS, type OptionChoices, type OptionInput, type OptionSection } from '../services/adminOptions.ts';
-import { TIMEZONES } from '../services/registration.ts';
 import { THEMES } from '../services/themes.ts';
 
 export interface OptionChoiceView {
@@ -45,7 +45,7 @@ function choiceList(choices: OptionChoices, current: string, lang: Lang): Option
 		entries.map(([value, label]) => ({ value, label, selected: value === current }));
 	switch (choices) {
 		case 'timezones':
-			return list(TIMEZONES.map((zone) => [String(zone), lang.register.timezones[String(zone)] ?? String(zone)] as const));
+			return list(TIMEZONES.map((zone) => [String(zone), lang.account.timezones[String(zone)] ?? String(zone)] as const));
 		case 'styles':
 			return list(THEMES.map((name) => [name, name] as const));
 		case 'feedTypes':

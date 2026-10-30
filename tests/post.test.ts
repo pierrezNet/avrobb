@@ -8,11 +8,10 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.ts';
 import type { ForumInfo, PostingTarget } from '../src/domain/models.ts';
 import { buildCensor } from '../src/services/censor.ts';
-import { buildLegacyCookie } from '../src/services/legacySession.ts';
 import { canPostIn } from '../src/services/permissions.ts';
 import { type PostContext, type PostForm, promotionGroup, quoteText, subscriptionChange, validatePost } from '../src/services/posting.ts';
 import { DEFAULT_SUBJECT_TAGS } from '../src/services/subjectTagConfig.ts';
-import { type FakeData, fakeDeps, group, guest, NOW, post, topic, viewer } from './fixtures.ts';
+import { type FakeData, fakeDeps, group, guest, NOW, post, sessionCookie, topic, viewer } from './fixtures.ts';
 
 const form = (overrides: Partial<PostForm> = {}): PostForm => ({
 	subject: null,
@@ -173,7 +172,7 @@ describe('abonnement, promotion et droit d’écrire', () => {
 // --- Page ----------------------------------------------------------------------------------------
 
 const SEED = 'graine-de-test';
-const memberCookie = `punbb_cookie=${buildLegacyCookie(3, 'h', NOW + 3600, SEED)}`;
+const memberCookie = `${sessionCookie(3)}`;
 
 const forumInfo = (overrides: Partial<ForumInfo> = {}): ForumInfo => ({
 	id: 2,
@@ -189,10 +188,7 @@ const forumInfo = (overrides: Partial<ForumInfo> = {}): ForumInfo => ({
 
 function data(overrides: Partial<FakeData> = {}): FakeData {
 	return {
-		users: [
-			{ viewer: guest, passwordHash: '' },
-			{ viewer: viewer({ numPosts: 9, group: group({ promoteNextGroup: 5, promoteMinPosts: 10 }) }), passwordHash: 'h' },
-		],
+		users: [{ viewer: guest }, { viewer: viewer({ numPosts: 9, group: group({ promoteNextGroup: 5, promoteMinPosts: 10 }) }) }],
 		topics: [topic({ id: 10, subject: 'Postez un « vintage »' }), topic({ id: 11, closed: true })],
 		posts: new Map([[10, [post(100, { message: 'Premier [img]http://a.fr/i.png[/img]' }), post(101, { message: 'Second' })]]]),
 		forumInfos: [forumInfo(), forumInfo({ id: 4, redirectUrl: 'https://example.test' })],
@@ -209,7 +205,7 @@ async function submit(server: FastifyInstance, url: string, fields: Record<strin
 	const csrf =
 		[page.headers['set-cookie']]
 			.flat()
-			.find((c) => c?.startsWith('punbb_cookie_csrf='))
+			.find((c) => c?.startsWith('avrobb_csrf='))
 			?.split(';')[0] ?? '';
 	const token = /name="csrf_token" value="([0-9a-f]+)"/.exec(page.body)?.[1] ?? '';
 	return server.inject({
@@ -327,7 +323,7 @@ describe('POST /post.php', () => {
 				now: NOW,
 			}),
 		]);
-		const track = [res.headers['set-cookie']].flat().find((c) => c?.startsWith('punbb_cookie_track='));
+		const track = [res.headers['set-cookie']].flat().find((c) => c?.startsWith('avrobb_track='));
 		expect(track).toContain(`t10%3D${NOW}`);
 		expect(fake.sentMails).toEqual([expect.objectContaining({ to: 'abonne@example.test', subject: 'Sujet new_reply_full' })]);
 	});

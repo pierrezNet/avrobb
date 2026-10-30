@@ -8,10 +8,9 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
-import { buildLegacyCookie } from '../src/services/legacySession.ts';
 import { applyPrefixes, normalizeSubjectTags, splitPrefixes } from '../src/services/subjectPrefixes.ts';
 import { DEFAULT_SUBJECT_TAGS as TAGS } from '../src/services/subjectTagConfig.ts';
-import { type FakeData, fakeDeps, group, guest, NOW, post, topic, viewer } from './fixtures.ts';
+import { type FakeData, fakeDeps, group, guest, NOW, post, sessionCookie, topic, viewer } from './fixtures.ts';
 
 const SEED = 'graine-de-test';
 const CSRF_SECRET = '9'.repeat(64);
@@ -19,8 +18,7 @@ const author = viewer();
 const other = viewer({ id: 7, username: 'Autre' });
 const mod = viewer({ id: 5, username: 'MaxDUO', group: group({ id: GroupId.Moderator, isModerator: true }) });
 const hashes: Record<number, string> = { 3: 'h3', 7: 'h7', 5: 'h5' };
-const cookies = (userId: number): string =>
-	`punbb_cookie=${buildLegacyCookie(userId, hashes[userId] ?? '', NOW + 3600, SEED)}; punbb_cookie_csrf=${CSRF_SECRET}`;
+const cookies = (userId: number): string => `${sessionCookie(userId)}; avrobb_csrf=${CSRF_SECRET}`;
 
 describe('réécriture du sujet', () => {
 	it('repère les préfixes connus en tête, quelle que soit la casse', () => {
@@ -50,12 +48,7 @@ afterEach(async () => app?.close());
 
 async function start(): Promise<{ server: FastifyInstance; fake: FakeData }> {
 	const fake: FakeData = {
-		users: [
-			{ viewer: guest, passwordHash: '' },
-			{ viewer: author, passwordHash: 'h3' },
-			{ viewer: other, passwordHash: 'h7' },
-			{ viewer: mod, passwordHash: 'h5' },
-		],
+		users: [{ viewer: guest }, { viewer: author }, { viewer: other }, { viewer: mod }],
 		topics: [
 			topic({
 				id: 10,

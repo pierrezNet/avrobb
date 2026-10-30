@@ -10,7 +10,6 @@ import type { BoardConfig, Topic, TopicLabel, Viewer } from '../domain/models.ts
 import type { Lang } from '../lang/fr/index.ts';
 import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
 import { headerImageHref } from '../services/headerImages.ts';
-import { logoutToken } from '../services/legacySession.ts';
 import { canSearch, canUsePrivateMessages, isAnyModerator, isForumModerator } from '../services/permissions.ts';
 import { plainExcerpt } from '../services/seo.ts';
 import { resolveTheme, type Theme } from '../services/themes.ts';
@@ -89,6 +88,8 @@ export interface NavLink {
 	mobileOnly: boolean;
 	/** Lien supplémentaire saisi par l'administrateur (o_additional_navlinks), HTML brut. */
 	trustedHtml: string | null;
+	/** Action qui écrit (déconnexion) : bouton d'un formulaire POST avec jeton CSRF, pas un lien. */
+	post: boolean;
 }
 
 export interface QuickSearch {
@@ -162,7 +163,6 @@ export interface LayoutInput {
 	lang: Lang;
 	dateWords: DateWords;
 	now: number;
-	remoteAddress: string;
 	csrfToken: string;
 	options: PageOptions;
 	pendingReports: boolean;
@@ -180,7 +180,7 @@ export function pageTitle(parts: readonly string[], pageNumber: number | null, l
 }
 
 function link(id: string, href: string, label: string, active: boolean): NavLink {
-	return { id, href, label, abbrTitle: null, count: null, active, trustedHtml: null, mobileOnly: false };
+	return { id, href, label, abbrTitle: null, count: null, active, trustedHtml: null, mobileOnly: false, post: false };
 }
 
 /**
@@ -216,7 +216,6 @@ function buildNav(input: LayoutInput): NavLink[] {
 
 	if (viewer.isGuest) {
 		links.push(...gallery);
-		links.push(link('navregister', 'register.php', t.register, active === 'register'));
 		links.push(link('navlogin', 'login.php', t.login, active === 'login'));
 	} else {
 		links.push(link('navprofile', `profile.php?id=${viewer.id}`, t.profile, active === 'profile'));
@@ -234,8 +233,7 @@ function buildNav(input: LayoutInput): NavLink[] {
 
 		if (isAnyModerator(viewer)) links.push({ ...link('navadminmenu', 'admin_index.php', t.admin, active === 'admin'), mobileOnly: true });
 
-		const token = logoutToken(viewer.id, input.remoteAddress);
-		links.push(link('navlogout', `login.php?action=out&id=${viewer.id}&csrf_token=${token}`, t.logout, false));
+		links.push({ ...link('navlogout', 'login.php?action=out', t.logout, false), post: true });
 	}
 
 	if (viewer.group.canReadBoard && config.additionalNavlinks !== '') insertAdditionalLinks(links, config.additionalNavlinks);

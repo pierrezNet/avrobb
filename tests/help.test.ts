@@ -12,7 +12,7 @@ afterEach(async () => app?.close());
 
 describe('GET /help.php', () => {
 	it('montre chaque balise et son rendu réel, et les émoticônes en émojis', async () => {
-		app = await buildApp(fakeDeps({ users: [{ viewer: guest, passwordHash: '' }], topics: [], posts: new Map() }));
+		app = await buildApp(fakeDeps({ users: [{ viewer: guest }], topics: [], posts: new Map() }));
 		const res = await app.inject('/help.php');
 
 		expect(res.statusCode).toBe(200);

@@ -98,21 +98,6 @@ describe('ProfileRepository', () => {
 		expect(await profiles.listUsernamesByEmail('tessy@example.test', 5)).toEqual(['Tessy']);
 	});
 
-	it('active une adresse ou un mot de passe en attente', async () => {
-		await inRollback(async (trx) => {
-			const profiles = new ProfileRepository(trx);
-			expect(await profiles.findPendingActivation(3)).toBeNull();
-			await profiles.setPendingEmail(3, 'neuve@example.test', 'abcd1234');
-			expect(await profiles.findPendingActivation(3)).toEqual({ value: 'neuve@example.test', key: 'abcd1234' });
-			await profiles.activateEmail(3);
-			const row = await trx.selectFrom('users').select(['email', 'activate_key', 'password']).where('id', '=', 3).executeTakeFirstOrThrow();
-			expect(row).toMatchObject({ email: 'neuve@example.test', activate_key: null });
-			// Sans valeur en attente, l'activation ne touche pas au mot de passe.
-			await profiles.activatePassword(3);
-			expect((await profiles.findPasswordHash(3)) ?? '').toBe(row.password);
-		});
-	});
-
 	it('sujets suivis lisibles par le groupe du lecteur, et désabonnement', async () => {
 		await inRollback(async (trx) => {
 			// Le jeu de données abonne déjà Tessy au sujet 10.

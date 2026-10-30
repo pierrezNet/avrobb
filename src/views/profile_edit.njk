@@ -27,19 +27,14 @@
 		{% else %}
 		<p>{{ lang.profile.usernameInfo(f.username) }}</p>
 		{% endif %}
-		{% if f.changePassUrl %}<p class="form__links"><a href="{{ url(f.changePassUrl) }}">{{ lang.profile.changePass }}</a></p>{% endif %}
 	</fieldset>
 
 	<fieldset class="form__fieldset">
 		<legend class="form__legend">{{ lang.profile.emailLegend }}</legend>
-		{% if f.emailEditable %}
 		<p class="form__field">
 			<label for="req_email">{{ lang.profile.email }} <span class="form__required">{{ lang.profile.required }}</span></label>
 			<input type="email" id="req_email" name="req_email" value="{{ f.email }}" maxlength="80" required autocomplete="email">
 		</p>
-		{% else %}
-		<p>{{ lang.profile.emailInfo(f.email) }}{% if f.changeEmailUrl %} - <a href="{{ url(f.changeEmailUrl) }}">{{ lang.profile.changeEmail }}</a>{% endif %}</p>
-		{% endif %}
 		{% if f.contactLinks.length %}<p class="form__links">{% for link in f.contactLinks %}<a href="{{ url(link.href) }}">{{ link.label }}</a>{% endfor %}</p>{% endif %}
 	</fieldset>
 

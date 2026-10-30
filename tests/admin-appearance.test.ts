@@ -12,16 +12,14 @@ import { buildApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
 import { HeaderImageFiles } from '../src/repositories/HeaderImageFiles.ts';
-import { buildLegacyCookie } from '../src/services/legacySession.ts';
-import { type FakeData, fakeDeps, group, guest, NOW, viewer } from './fixtures.ts';
+import { type FakeData, fakeDeps, group, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
 
 const SEED = 'graine-de-test';
 const CSRF_SECRET = '7'.repeat(64);
 const admin = viewer({ id: 2, username: 'admin', group: group({ id: GroupId.Admin }) });
 const mod = viewer({ id: 5, username: 'MaxDUO', group: group({ id: GroupId.Moderator, isModerator: true }) });
 const hashes: Record<number, string> = { 2: 'h2', 5: 'h5' };
-const cookies = (userId: number): string =>
-	`punbb_cookie=${buildLegacyCookie(userId, hashes[userId] ?? '', NOW + 3600, SEED)}; punbb_cookie_csrf=${CSRF_SECRET}`;
+const cookies = (userId: number): string => `${sessionCookie(userId)}; avrobb_csrf=${CSRF_SECRET}`;
 const png = Buffer.concat([
 	Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13]),
 	Buffer.from('IHDR'),
@@ -35,11 +33,7 @@ afterEach(async () => app?.close());
 
 async function start(): Promise<{ server: FastifyInstance; fake: FakeData }> {
 	const fake: FakeData = {
-		users: [
-			{ viewer: guest, passwordHash: '' },
-			{ viewer: admin, passwordHash: 'h2' },
-			{ viewer: mod, passwordHash: 'h5' },
-		],
+		users: [{ viewer: guest }, { viewer: admin }, { viewer: mod }],
 		topics: [],
 		posts: new Map(),
 	};
@@ -94,7 +88,7 @@ describe('admin_appearance.php', () => {
 	});
 
 	it('version dans les adresses du logo et de la bannière de l’en-tête', async () => {
-		const fake: FakeData = { users: [{ viewer: guest, passwordHash: '' }], topics: [], posts: new Map(), config: { headerVersion: 42 } };
+		const fake: FakeData = { users: [{ viewer: guest }], topics: [], posts: new Map(), config: { headerVersion: 42 } };
 		app = await buildApp(fakeDeps(fake));
 		const page = await app.inject('/index.php');
 		expect(page.body).toContain('src="http://php.test/img/logo.png?v=42"');

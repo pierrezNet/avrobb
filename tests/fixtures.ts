@@ -47,7 +47,6 @@ import type { OnlineWriter } from '../src/repositories/OnlineRepository.ts';
 import type { PostEditStore, PostUpdate } from '../src/repositories/PostEditRepository.ts';
 import type { NewReply, NewTopic, PostingStore } from '../src/repositories/PostingRepository.ts';
 import type { ProfileStore } from '../src/repositories/ProfileRepository.ts';
-import type { NewUser } from '../src/repositories/RegistrationRepository.ts';
 import type { ReportTarget } from '../src/repositories/ReportRepository.ts';
 import type { NewVote } from '../src/repositories/ReputationRepository.ts';
 import type { PostLocation } from '../src/repositories/TopicRepository.ts';
@@ -58,11 +57,20 @@ import type { Ban } from '../src/services/bans.ts';
 import type { CensoredWord } from '../src/services/censor.ts';
 import type { GroupForumPermissionRow } from '../src/services/forumPermissions.ts';
 import type { MailMessage } from '../src/services/mail.ts';
+import { buildSessionCookie } from '../src/services/session.ts';
 import { DEFAULT_SUBJECT_TAGS } from '../src/services/subjectTagConfig.ts';
 import type { UserSearchCriteria } from '../src/services/userSearch.ts';
 import { fakePrivateContacts, fakePrivateMessageStore, type PmData, pmData } from './fakePrivateMessages.ts';
 
 export const NOW = 1_782_900_000;
+
+/** Secret des signatures dans les tests (cookie de session, jeton CSRF). */
+export const COOKIE_SECRET = 'graine-de-test';
+
+/** En-tête Cookie d'une session ouverte pour ce membre (échéance par défaut : une heure). */
+export function sessionCookie(userId: number, expires: number = NOW + 3600): string {
+	return `avrobb_session=${buildSessionCookie(userId, expires, COOKIE_SECRET)}`;
+}
 
 export function group(overrides: Partial<Group> = {}): Group {
 	return {
@@ -312,12 +320,7 @@ export interface FakeData {
 	forumTopics?: Map<number, TopicSummary[]>;
 	labelDefinitions?: TopicLabel[];
 	members?: MemberSummary[];
-	/** Comptes trouvables par e-mail (mot de passe oublié). */
-	accounts?: { id: number; username: string; email: string; lastEmailSent: number | null }[];
-	pendingPasswords?: { userId: number; passwordHash: string; key: string; now: number }[];
 	sentMails?: MailMessage[];
-	recentRegistrationIps?: string[];
-	createdUsers?: NewUser[];
 	/** Sujets dont le compteur de vues a été incrémenté. */
 	viewedTopics?: number[];
 	profiles?: UserProfile[];
@@ -364,9 +367,6 @@ export interface FakeData {
 	/** Écritures de profile.php et de ses plugiles. */
 	profileUpdates?: { id: number; changes: ProfileChanges }[];
 	renames?: { id: number; from: string; to: string }[];
-	passwordHashes?: Map<number, string>;
-	pendingActivations?: Map<number, { value: string; key: string }>;
-	activationLog?: string[];
 	subscribedTopicList?: SubscribedTopic[];
 	unsubscribed?: { userId: number; topicIds: number[] }[];
 	uploadedBytes?: Map<number, number>;
@@ -469,20 +469,6 @@ function fakeProfileStore(data: FakeData): ProfileStore {
 			data.profiles?.find((p) => p.id !== excludeId && p.username.toLowerCase() === username.toLowerCase())?.username ?? null,
 		listUsernamesByEmail: async (email, excludeId) =>
 			(data.profiles ?? []).filter((p) => p.id !== excludeId && p.email === email).map((p) => p.username),
-		findPasswordHash: async (id) => data.passwordHashes?.get(id) ?? data.users.find((u) => u.viewer.id === id)?.passwordHash ?? null,
-		setPassword: async (id, hash) => {
-			data.passwordHashes = new Map([...(data.passwordHashes ?? []), [id, hash]]);
-		},
-		findPendingActivation: async (id) => data.pendingActivations?.get(id) ?? null,
-		activatePassword: async (id) => {
-			data.activationLog = [...(data.activationLog ?? []), `password ${id}`];
-		},
-		activateEmail: async (id) => {
-			data.activationLog = [...(data.activationLog ?? []), `email ${id}`];
-		},
-		setPendingEmail: async (id, email, key) => {
-			data.pendingActivations = new Map([...(data.pendingActivations ?? []), [id, { value: email, key }]]);
-		},
 		setUploadedBytes: async (id, bytes) => {
 			data.uploadedBytes = new Map([...(data.uploadedBytes ?? []), [id, bytes]]);
 			merge(id, { uploadedBytes: bytes });
@@ -962,29 +948,15 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 				return found === undefined ? null : { presence: null, ...found };
 			},
 		},
-		credentials: {
-			findCredentials: async (username) => {
-				const found = data.users.find((u) => !u.viewer.isGuest && u.viewer.username.toLowerCase() === username.toLowerCase());
-				return found === undefined
-					? null
-					: { id: found.viewer.id, username: found.viewer.username, passwordHash: found.passwordHash, groupId: found.viewer.group.id };
-			},
-			updatePasswordHash: async (userId, hash) => {
-				const found = data.users.find((u) => u.viewer.id === userId);
-				if (found !== undefined) found.passwordHash = hash;
-			},
-			setGroup: async (userId, groupId) => {
-				const found = data.users.find((u) => u.viewer.id === userId);
-				if (found !== undefined) found.viewer = { ...found.viewer, group: { ...found.viewer.group, id: groupId } };
-			},
+		accounts: {
+			findIdByUsername: async (username) =>
+				data.users.find((u) => !u.viewer.isGuest && u.viewer.username.toLowerCase() === username.toLowerCase())?.viewer.id ?? null,
+			findSimilarUsername: async (username, skeleton) =>
+				data.users.find(
+					(u) => [username.toUpperCase(), skeleton.toUpperCase()].includes(u.viewer.username.toUpperCase()) && !u.viewer.isGuest,
+				)?.viewer.username ?? null,
 		},
-		passwordResets: {
-			findByEmail: async (email) =>
-				(data.accounts ?? []).filter((a) => a.email === email).map(({ id, username, lastEmailSent }) => ({ id, username, lastEmailSent })),
-			setPendingPassword: async (userId, passwordHash, key, now) => {
-				data.pendingPasswords = [...(data.pendingPasswords ?? []), { userId, passwordHash, key, now }];
-			},
-		},
+		devLogin: true,
 		mailTemplates: {
 			load: async (name) => ({
 				subject: `Sujet ${name}`,
@@ -994,18 +966,6 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 		mailer: {
 			send: async (message) => {
 				data.sentMails = [...(data.sentMails ?? []), message];
-			},
-		},
-		registrations: {
-			hasRecentRegistration: async (ip) => (data.recentRegistrationIps ?? []).includes(ip),
-			findSimilarUsername: async (username, skeleton) =>
-				data.users.find(
-					(u) => [username.toUpperCase(), skeleton.toUpperCase()].includes(u.viewer.username.toUpperCase()) && !u.viewer.isGuest,
-				)?.viewer.username ?? null,
-			listUsernamesByEmail: async (email) => (data.accounts ?? []).filter((a) => a.email === email).map((a) => a.username),
-			createUser: async (user) => {
-				data.createdUsers = [...(data.createdUsers ?? []), user];
-				return 100 + (data.createdUsers?.length ?? 0);
 			},
 		},
 		profiles: { findProfile: async (id) => data.profiles?.find((p) => p.id === id) ?? null },
@@ -1253,7 +1213,7 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			listDefinitions: async () => data.labelDefinitions ?? [],
 		},
 		page: { lang: fr, dateWords: frDateWords, clock: () => NOW },
-		legacyCookie: { name: 'punbb_cookie', seed: 'graine-de-test', path: '/', domain: '', secure: false },
+		cookie: { name: 'avrobb', secret: COOKIE_SECRET, secure: false },
 		legacyBaseUrl: 'http://php.test',
 		...overrides,
 	};

@@ -9,7 +9,7 @@
 
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { Mailer } from '../adapters/mailer.ts';
-import type { LegacyCookieConfig } from '../config.ts';
+import type { CookieConfig } from '../config.ts';
 import type { BoardConfig, PostingTarget } from '../domain/models.ts';
 import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
@@ -20,16 +20,16 @@ import type { CensorReader } from '../repositories/CensorRepository.ts';
 import type { DraftStore } from '../repositories/DraftRepository.ts';
 import type { MailTemplateReader } from '../repositories/MailTemplateFiles.ts';
 import type { NewPostAuthor, PostingStore } from '../repositories/PostingRepository.ts';
-import type { RegistrationStore } from '../repositories/RegistrationRepository.ts';
 import type { StopwordsReader } from '../repositories/StopwordsLoader.ts';
 import type { ToolbarReader } from '../repositories/ToolbarRepository.ts';
+import type { AccountLookup } from '../repositories/UserRepository.ts';
+import { normalizeUsername, usernameSkeleton } from '../services/accounts.ts';
 import { bbcodeToEmail } from '../services/bbcodeEmail.ts';
 import { buildCensor, type Censor } from '../services/censor.ts';
 import type { MailMessage } from '../services/mail.ts';
 import { bannedEmailAlert, notifySubscribers, type PostLinks, replyValues, topicValues } from '../services/notifications.ts';
 import { canPostIn, isAnyModerator, isForumModerator } from '../services/permissions.ts';
 import { type PostForm, promotionGroup, quoteText, subscriptionChange, type ValidatedPost, validatePost } from '../services/posting.ts';
-import { normalizeUsername, usernameSkeleton } from '../services/registration.ts';
 import { indexWords } from '../services/searchIndex.ts';
 import { needsSimulatorTagWarning } from '../services/subjectPrefixes.ts';
 import { DEFAULT_TOOLBAR } from '../services/toolbar.ts';
@@ -41,11 +41,11 @@ export interface PostControllerDeps extends LayoutDeps {
 	posting: PostingStore;
 	bans: BanReader;
 	censorship: CensorReader;
-	registrations: RegistrationStore;
+	accounts: AccountLookup;
 	stopwords: StopwordsReader;
 	mailTemplates: MailTemplateReader;
 	mailer: Mailer;
-	legacyCookie: LegacyCookieConfig;
+	cookie: CookieConfig;
 	trackCookieName: string;
 	legacyBaseUrl: string;
 	toolbar: ToolbarReader;
@@ -240,7 +240,7 @@ export class PostController {
 			const tracked = markRead(parseTrackedTopics(request.cookies[this.deps.trackCookieName]), 'topics', topicId, now);
 			setForumCookie(
 				reply,
-				this.deps.legacyCookie,
+				this.deps.cookie,
 				this.deps.trackCookieName,
 				serializeTrackedTopics(tracked),
 				now + config.timeoutVisit,
@@ -316,7 +316,7 @@ export class PostController {
 
 	private async similarUsername(username: string): Promise<string | null> {
 		const normalized = normalizeUsername(username);
-		return this.deps.registrations.findSimilarUsername(normalized, usernameSkeleton(normalized));
+		return this.deps.accounts.findSimilarUsername(normalized, usernameSkeleton(normalized));
 	}
 
 	/**

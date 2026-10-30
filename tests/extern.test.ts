@@ -79,7 +79,7 @@ let app: FastifyInstance | undefined;
 afterEach(async () => app?.close());
 
 describe('GET /extern.php', () => {
-	const deps = (users = [{ viewer: guest, passwordHash: '' }]) => ({
+	const deps = (users = [{ viewer: guest }]) => ({
 		...fakeDeps({ users, topics: [], posts: new Map() }),
 		feeds: feeds(),
 	});
@@ -115,7 +115,7 @@ describe('GET /extern.php', () => {
 		expect((await app.inject('/extern.php?action=online')).body).toContain('Membres en ligne : 0<br />');
 		await app.close();
 
-		app = await buildApp(deps([{ viewer: { ...guest, group: group({ id: GroupId.Guest, canReadBoard: false }) }, passwordHash: '' }]));
+		app = await buildApp(deps([{ viewer: { ...guest, group: group({ id: GroupId.Guest, canReadBoard: false }) } }]));
 		const denied = await app.inject('/extern.php');
 		expect(denied.statusCode).toBe(401);
 		expect(denied.headers['www-authenticate']).toContain('External Syndication');

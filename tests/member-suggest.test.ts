@@ -5,27 +5,21 @@
 import type { FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.ts';
-import { buildLegacyCookie } from '../src/services/legacySession.ts';
-import { type FakeData, fakeDeps, group, guest, NOW, topic, viewer } from './fixtures.ts';
+import { type FakeData, fakeDeps, group, guest, NOW, sessionCookie, topic, viewer } from './fixtures.ts';
 
 const SEED = 'graine-de-test';
 const tessy = viewer();
 const max = viewer({ id: 5, username: 'MaxDUO' });
 const hidden = viewer({ id: 6, username: 'Discret', group: group({ id: 6, canViewUsers: false }) });
 const hashes: Record<number, string> = { 3: 'h3', 5: 'h5', 6: 'h6' };
-const cookie = (userId: number): string => `punbb_cookie=${buildLegacyCookie(userId, hashes[userId] ?? '', NOW + 3600, SEED)}`;
+const cookie = (userId: number): string => `${sessionCookie(userId)}`;
 
 let app: FastifyInstance | undefined;
 afterEach(async () => app?.close());
 
 async function start(): Promise<FastifyInstance> {
 	const fake: FakeData = {
-		users: [
-			{ viewer: guest, passwordHash: '' },
-			{ viewer: tessy, passwordHash: 'h3' },
-			{ viewer: max, passwordHash: 'h5' },
-			{ viewer: hidden, passwordHash: 'h6' },
-		],
+		users: [{ viewer: guest }, { viewer: tessy }, { viewer: max }, { viewer: hidden }],
 		topics: [topic({ id: 10 })],
 		posts: new Map([[10, []]]),
 	};

@@ -46,7 +46,6 @@ export async function loadLayout(request: FastifyRequest, deps: LayoutDeps, opti
 		lang: deps.page.lang,
 		dateWords: deps.page.dateWords,
 		now: deps.page.clock(),
-		remoteAddress: request.ip,
 		csrfToken: request.csrfToken,
 		options,
 		pendingReports,

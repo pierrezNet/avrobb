@@ -6,9 +6,8 @@ import type { FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.ts';
 import { type ForumInfo, GroupId, type TopicLabel, type TopicSummary } from '../src/domain/models.ts';
-import { forumHmac } from '../src/services/legacySession.ts';
 import { labelCss, styleSubject } from '../src/services/topicLabels.ts';
-import { fakeDeps, group, guest, NOW, viewer } from './fixtures.ts';
+import { fakeDeps, group, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
 
 const solved: TopicLabel = {
 	id: 1,
@@ -79,15 +78,11 @@ const forumInfo: ForumInfo = {
 
 const mod = viewer({ id: 5, username: 'MaxDUO', group: group({ id: GroupId.Moderator, isModerator: true }), lastVisit: NOW - 3600 });
 const tessy = viewer({ lastVisit: NOW - 3600, postsPerPage: 1 });
-const users = [
-	{ viewer: guest, passwordHash: '' },
-	{ viewer: tessy, passwordHash: 'hash-tessy' },
-	{ viewer: mod, passwordHash: 'hash-mod' },
-];
+const users = [{ viewer: guest }, { viewer: tessy }, { viewer: mod }];
 const SEED = 'graine-de-test';
 const cookie = (userId: number, hash: string): string => {
 	const expires = NOW + 3600;
-	return `punbb_cookie=${userId}|${forumHmac(hash, `${SEED}_password_hash`)}|${expires}|${forumHmac(`${userId}|${expires}`, `${SEED}_cookie_hash`)}`;
+	return `${sessionCookie(userId, expires)}`;
 };
 
 const topics = [

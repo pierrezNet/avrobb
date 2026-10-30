@@ -11,10 +11,9 @@ import { csrfToken } from '../src/http/csrf.ts';
 import { parseMultipartBody } from '../src/http/forms.ts';
 import { renameInList } from '../src/repositories/ProfileRepository.ts';
 import { checkAvatar, readImageInfo } from '../src/services/images.ts';
-import { buildLegacyCookie, punHash } from '../src/services/legacySession.ts';
 import { validWebsiteUrl } from '../src/services/links.ts';
 import { fileSize } from '../src/services/numberFormat.ts';
-import { canChangeEmail, canChangePassword, canUsePrivatePlugiles } from '../src/services/permissions.ts';
+import { canUsePrivatePlugiles } from '../src/services/permissions.ts';
 import {
 	forbiddenTitles,
 	readBiography,
@@ -26,7 +25,7 @@ import {
 	readSignature,
 } from '../src/services/profileForms.ts';
 import { checkUpload, cleanFileName, datedFileName, isListedUpload, uploadLimits, usedPercent } from '../src/services/uploads.ts';
-import { boardConfig, type FakeData, fakeDeps, group, guest, NOW, viewer } from './fixtures.ts';
+import { boardConfig, type FakeData, fakeDeps, group, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
 
 const SEED = 'graine-de-test';
 const CSRF_SECRET = 'a'.repeat(64);
@@ -51,7 +50,6 @@ describe('readEssentials', () => {
 		isAnyModerator: false,
 		isAdmin: false,
 		canRename: false,
-		emailEditable: true,
 		currentUsername: 'Tessy',
 		currentEmail: 'tessy@example.com',
 		guestLabel: 'Invité',
@@ -276,12 +274,7 @@ describe('Uploadile (règles)', () => {
 describe('droits des actions du profil', () => {
 	const member = { id: 6, groupId: GroupId.Member, groupIsModerator: false };
 	const mod = viewer({ id: 5, group: group({ id: GroupId.Moderator, isModerator: true, canModEditUsers: true }) });
-	it("mot de passe et adresse : soi-même, l'administrateur, un modérateur autorisé", () => {
-		expect(canChangePassword(viewer({ id: 6 }), member)).toBe(true);
-		expect(canChangePassword(mod, member)).toBe(false);
-		expect(canChangePassword(viewer({ ...mod, group: { ...mod.group, canModChangePasswords: true } }), member)).toBe(true);
-		expect(canChangeEmail(mod, member)).toBe(true);
-		expect(canChangeEmail(mod, { ...member, groupIsModerator: true })).toBe(false);
+	it('plugiles privés : soi-même seulement', () => {
 		expect(canUsePrivatePlugiles(mod, 6)).toBe(false);
 		expect(canUsePrivatePlugiles(viewer({ id: 6 }), 6)).toBe(true);
 	});
@@ -342,12 +335,7 @@ const admin = viewer({ id: 2, username: 'admin', group: group({ id: GroupId.Admi
 
 function data(overrides: Partial<FakeData> = {}): FakeData {
 	return {
-		users: [
-			{ viewer: guest, passwordHash: '' },
-			{ viewer: tessy, passwordHash: punHash('ancien-mdp') },
-			{ viewer: mod, passwordHash: punHash('mod-mdp') },
-			{ viewer: admin, passwordHash: punHash('admin-mdp') },
-		],
+		users: [{ viewer: guest }, { viewer: tessy }, { viewer: mod }, { viewer: admin }],
 		topics: [],
 		posts: new Map(),
 		profiles: [member(), member({ id: 2, username: 'admin', groupId: GroupId.Admin }), member({ id: 6, username: 'valdefsx' })],
@@ -355,9 +343,7 @@ function data(overrides: Partial<FakeData> = {}): FakeData {
 	};
 }
 
-const hashOf = (fake: FakeData, userId: number): string => fake.users.find((u) => u.viewer.id === userId)?.passwordHash ?? '';
-const cookies = (fake: FakeData, userId: number): string =>
-	`punbb_cookie=${buildLegacyCookie(userId, hashOf(fake, userId), NOW + 3600, SEED)}; punbb_cookie_csrf=${CSRF_SECRET}`;
+const cookies = (fake: FakeData, userId: number): string => `${sessionCookie(userId)}; avrobb_csrf=${CSRF_SECRET}`;
 
 let app: FastifyInstance | undefined;
 afterEach(async () => app?.close());
@@ -414,7 +400,6 @@ describe('profile.php : sections', () => {
 		expect(res.body).toContain('href="profile.php?section=essentials&amp;id=3" aria-current="page"');
 		expect(res.body).toContain('href="profile.php?plugin=UPP_Suivile.php&amp;id=3"');
 		expect(res.body).toContain('name="req_email" value="tessy@example.com"');
-		expect(res.body).toContain('href="profile.php?action=change_pass&amp;id=3"');
 		expect(res.body).not.toContain('admin_note');
 		expect(res.body).not.toContain('section=admin');
 	});
@@ -531,68 +516,6 @@ describe('profile.php : sections', () => {
 		expect(res.body).toContain('<strong>Bons vols</strong>');
 		expect(res.body).toContain('profile.php?action=upload_avatar&amp;id=3');
 		expect(res.body).toContain('400 caractères et 4 lignes autorisés');
-	});
-});
-
-describe('profile.php : mot de passe et adresse', () => {
-	it("change son mot de passe avec l'ancien, et renouvelle le cookie", async () => {
-		const fake = data();
-		const server = await start(fake);
-		const wrong = await post(server, fake, 3, '/profile.php?action=change_pass&id=3', {
-			req_old_password: 'faux',
-			req_new_password1: 'nouveau-mdp',
-			req_new_password2: 'nouveau-mdp',
-		});
-		expect(wrong.body).toContain('Ancien mot de passe incorrect.');
-
-		const ok = await post(server, fake, 3, '/profile.php?action=change_pass&id=3', {
-			req_old_password: 'ancien-mdp',
-			req_new_password1: 'nouveau-mdp',
-			req_new_password2: 'nouveau-mdp',
-		});
-		expect(ok.statusCode).toBe(303);
-		expect(fake.passwordHashes?.get(3)).toBe(punHash('nouveau-mdp'));
-		expect([ok.headers['set-cookie']].flat().join()).toContain('punbb_cookie=3|');
-	});
-
-	it("un modérateur sans g_mod_change_passwords n'y a pas accès", async () => {
-		const fake = data();
-		const server = await start(fake);
-		expect((await get(server, fake, 5, '/profile.php?action=change_pass&id=6')).statusCode).toBe(403);
-	});
-
-	it("lien d'activation d'un mot de passe oublié, pour un invité", async () => {
-		const fake = data({ pendingActivations: new Map([[3, { value: punHash('x'), key: 'abcd1234' }]]) });
-		const server = await start(fake);
-		expect((await server.inject('/profile.php?action=change_pass&id=3&key=mauvaise')).statusCode).toBe(400);
-		const ok = await server.inject('/profile.php?action=change_pass&id=3&key=abcd1234');
-		expect(ok.statusCode).toBe(200);
-		expect(ok.body).toContain('Votre mot de passe a été mis à jour.');
-		expect(fake.activationLog).toEqual(['password 3']);
-	});
-
-	it("changement d'adresse : mot de passe, e-mail d'activation, puis lien", async () => {
-		const fake = data();
-		const server = await start(fake);
-		const wrong = await post(server, fake, 3, '/profile.php?action=change_email&id=3', {
-			req_new_email: 'neuve@example.com',
-			req_password: 'x',
-		});
-		expect(wrong.body).toContain('Mot de passe incorrect.');
-
-		const ok = await post(server, fake, 3, '/profile.php?action=change_email&id=3', {
-			req_new_email: 'Neuve@Example.com',
-			req_password: 'ancien-mdp',
-		});
-		expect(ok.statusCode).toBe(200);
-		const pending = fake.pendingActivations?.get(3);
-		expect(pending?.value).toBe('neuve@example.com');
-		expect(fake.sentMails?.[0]?.to).toBe('neuve@example.com');
-		expect(fake.sentMails?.[0]?.text).toContain(`profile.php?action=change_email&id=3&key=${pending?.key}`);
-
-		const activated = await get(server, fake, 3, `/profile.php?action=change_email&id=3&key=${pending?.key}`);
-		expect(activated.body).toContain('Votre adresse électronique a été mise à jour.');
-		expect(fake.activationLog).toEqual(['email 3']);
 	});
 });
 

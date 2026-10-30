@@ -8,10 +8,9 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.ts';
 import { GroupId, type PrivateRecipient } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
-import { buildLegacyCookie } from '../src/services/legacySession.ts';
 import { markParticipantDeleted, parseParticipants, parseUsernames, validateSend } from '../src/services/privateMessages.ts';
 import { pmData } from './fakePrivateMessages.ts';
-import { type FakeData, fakeDeps, group, guest, NOW, viewer } from './fixtures.ts';
+import { type FakeData, fakeDeps, group, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
 
 const SEED = 'graine-de-test';
 const CSRF_SECRET = 'b'.repeat(64);
@@ -111,13 +110,7 @@ const mod = viewer({ id: 2, username: 'admin', group: group({ id: GroupId.Admin 
 
 function data(overrides: Partial<FakeData> = {}): FakeData {
 	return {
-		users: [
-			{ viewer: guest, passwordHash: '' },
-			{ viewer: tessy, passwordHash: 'h3' },
-			{ viewer: max, passwordHash: 'h5' },
-			{ viewer: val, passwordHash: 'h6' },
-			{ viewer: mod, passwordHash: 'h2' },
-		],
+		users: [{ viewer: guest }, { viewer: tessy }, { viewer: max }, { viewer: val }, { viewer: mod }],
 		topics: [],
 		posts: new Map(),
 		config: { privateMessagesEnabled: true },
@@ -134,8 +127,7 @@ function data(overrides: Partial<FakeData> = {}): FakeData {
 }
 
 const hashes: Record<number, string> = { 3: 'h3', 5: 'h5', 6: 'h6', 2: 'h2' };
-const cookies = (userId: number): string =>
-	`punbb_cookie=${buildLegacyCookie(userId, hashes[userId] ?? '', NOW + 3600, SEED)}; punbb_cookie_csrf=${CSRF_SECRET}`;
+const cookies = (userId: number): string => `${sessionCookie(userId)}; avrobb_csrf=${CSRF_SECRET}`;
 
 let app: FastifyInstance | undefined;
 afterEach(async () => app?.close());

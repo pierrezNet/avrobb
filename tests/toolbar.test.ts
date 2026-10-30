@@ -7,9 +7,8 @@ import type { FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.ts';
 import { fr } from '../src/lang/fr/index.ts';
-import { buildLegacyCookie } from '../src/services/legacySession.ts';
 import { DEFAULT_TOOLBAR, type ToolbarSettings, toolbarButtons } from '../src/services/toolbar.ts';
-import { fakeDeps, guest, NOW, post, topic, viewer } from './fixtures.ts';
+import { fakeDeps, guest, NOW, post, sessionCookie, topic, viewer } from './fixtures.ts';
 
 const all = { bbcode: true, imgTag: true, smilies: true };
 const names = (settings: ToolbarSettings, options = all, form: 'form' | 'quickform' = 'form'): string[] =>
@@ -54,12 +53,9 @@ let app: FastifyInstance | undefined;
 afterEach(async () => app?.close());
 
 describe('pages de rédaction', () => {
-	const cookie = `punbb_cookie=${buildLegacyCookie(3, 'h', NOW + 3600, 'graine-de-test')}`;
+	const cookie = `${sessionCookie(3)}`;
 	const data = () => ({
-		users: [
-			{ viewer: guest, passwordHash: '' },
-			{ viewer: viewer(), passwordHash: 'h' },
-		],
+		users: [{ viewer: guest }, { viewer: viewer() }],
 		topics: [topic({ id: 10 })],
 		posts: new Map([[10, [post(100)]]]),
 	});

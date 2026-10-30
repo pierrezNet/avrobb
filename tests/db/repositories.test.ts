@@ -34,7 +34,6 @@ import { PostRepository } from '../../src/repositories/PostRepository.ts';
 import { PrivateContactRepository } from '../../src/repositories/PrivateContactRepository.ts';
 import { PrivateMessageRepository } from '../../src/repositories/PrivateMessageRepository.ts';
 import { ProfileRepository } from '../../src/repositories/ProfileRepository.ts';
-import { RegistrationRepository } from '../../src/repositories/RegistrationRepository.ts';
 import { ReportRepository } from '../../src/repositories/ReportRepository.ts';
 import { ReputationRepository } from '../../src/repositories/ReputationRepository.ts';
 import { SearchRepository } from '../../src/repositories/SearchRepository.ts';
@@ -48,21 +47,19 @@ import { TopicRepository } from '../../src/repositories/TopicRepository.ts';
 import { UserAdminRepository } from '../../src/repositories/UserAdminRepository.ts';
 import { UserRepository } from '../../src/repositories/UserRepository.ts';
 import { UsersInfoLoader } from '../../src/repositories/UsersInfoLoader.ts';
-import { forumHmac } from '../../src/services/legacySession.ts';
+import { buildSessionCookie } from '../../src/services/session.ts';
 import { testDbConfig } from './testDatabase.ts';
 
 const db = createDatabase(testDbConfig());
 afterAll(async () => db.destroy());
 
 const NOW = 1_782_900_000;
-const PASSWORD_HASH = 'b9b7c1e5e7fb7a6e2b0c1a9ce4a5c9d2d6e0b6a1';
 
 describe('UserRepository', () => {
 	const users = new UserRepository(db);
 
 	it('charge un membre avec les droits de son groupe', async () => {
 		const record = await users.findViewer(3);
-		expect(record?.passwordHash).toBe(PASSWORD_HASH);
 		expect(record?.viewer).toMatchObject({
 			id: 3,
 			username: 'Tessy',
@@ -115,15 +112,12 @@ describe('liste des membres', () => {
 		expect(await members.findProfile(999)).toBeNull();
 	});
 
-	it('retrouve les comptes par e-mail et enregistre un mot de passe en attente', async () => {
-		expect(await members.findByEmail('tessy@example.test')).toEqual([{ id: 3, username: 'Tessy', lastEmailSent: null }]);
-		await members.setPendingPassword(5, 'hash', 'cle12345', NOW);
-		const row = await db
-			.selectFrom('users')
-			.select(['activate_string', 'activate_key', 'last_email_sent'])
-			.where('id', '=', 5)
-			.executeTakeFirstOrThrow();
-		expect(row).toEqual({ activate_string: 'hash', activate_key: 'cle12345', last_email_sent: NOW });
+	it('retrouve un membre par son pseudo, et un pseudo trop ressemblant', async () => {
+		expect(await members.findIdByUsername('TESSY')).toBe(3);
+		expect(await members.findIdByUsername('Invité')).toBeNull();
+		expect(await members.findSimilarUsername('tessy', 'tessy')).toBe('Tessy');
+		expect(await members.findSimilarUsername('Max.DUO', 'MaxDUO')).toBe('MaxDUO');
+		expect(await members.findSimilarUsername('Nouveau', 'Nouveau')).toBeNull();
 	});
 
 	it('propose tous les groupes sauf les invités', async () => {
@@ -382,41 +376,6 @@ describe('OnlineRepository et bannissements (écritures)', () => {
 	});
 });
 
-describe('RegistrationRepository', () => {
-	const registrations = new RegistrationRepository(db);
-
-	it('pseudo ressemblant, adresses utilisées, anti-flood par IP, création du compte', async () => {
-		expect(await registrations.findSimilarUsername('tessy', 'tessy')).toBe('Tessy');
-		expect(await registrations.findSimilarUsername('Max.DUO', 'MaxDUO')).toBe('MaxDUO');
-		expect(await registrations.findSimilarUsername('Nouveau', 'Nouveau')).toBeNull();
-		expect(await registrations.listUsernamesByEmail('tessy@example.test')).toEqual(['Tessy']);
-
-		const id = await registrations.createUser({
-			username: 'Nouveau',
-			groupId: 4,
-			passwordHash: 'h',
-			email: 'nouveau@example.test',
-			emailSetting: 1,
-			timezone: 1,
-			dst: true,
-			language: 'French',
-			style: 'Air',
-			registeredAt: NOW,
-			ip: '203.0.113.9',
-		});
-		expect(id).toBeGreaterThan(5);
-		expect(await registrations.hasRecentRegistration('203.0.113.9', NOW - 3600)).toBe(true);
-		expect(await registrations.hasRecentRegistration('203.0.113.10', NOW - 3600)).toBe(false);
-		expect((await new UserRepository(db).findViewer(id))?.viewer).toMatchObject({
-			username: 'Nouveau',
-			timezone: 1,
-			dst: true,
-			showSmilies: true,
-		});
-		await db.deleteFrom('users').where('id', '=', id).execute();
-	});
-});
-
 describe('ReportRepository et PrivateMessageRepository', () => {
 	it('détecte les signalements non traités', async () => {
 		expect(await new ReportRepository(db).hasPending()).toBe(true);
@@ -476,20 +435,15 @@ describe('ConfigLoader sur la table config', () => {
 
 describe('viewtopic de bout en bout', () => {
 	const seed = 'graine-de-test';
-	const cookie = (userId: number): string => {
-		const expires = NOW + 3600;
-		const value = `${userId}|${forumHmac(PASSWORD_HASH, `${seed}_password_hash`)}|${expires}|${forumHmac(`${userId}|${expires}`, `${seed}_cookie_hash`)}`;
-		return `punbb_cookie=${value}`;
-	};
+	const cookie = (userId: number): string => `avrobb_session=${buildSessionCookie(userId, NOW + 3600, seed)}`;
 
 	async function app() {
 		return buildApp({
 			config: new ConfigLoader(new ConfigRepository(db), null, () => NOW),
 			users: new UserRepository(db),
 			members: new UserRepository(db),
-			credentials: new UserRepository(db),
-			passwordResets: new UserRepository(db),
-			registrations: new RegistrationRepository(db),
+			accounts: new UserRepository(db),
+			devLogin: false,
 			mailTemplates: { load: async () => ({ subject: '', body: '' }) },
 			mailer: { send: async () => undefined },
 			profiles: new UserRepository(db),
@@ -552,7 +506,7 @@ describe('viewtopic de bout en bout', () => {
 				urlFor: () => '',
 			},
 			page: { lang: fr, dateWords: frDateWords, clock: () => NOW },
-			legacyCookie: { name: 'punbb_cookie', seed, path: '/', domain: '', secure: false },
+			cookie: { name: 'avrobb', secret: seed, secure: false },
 			online: new OnlineRepository(db),
 			phpCache: null,
 			legacyBaseUrl: 'http://php.test',

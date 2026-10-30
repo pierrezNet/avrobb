@@ -29,7 +29,7 @@ describe('en-têtes de sécurité', () => {
 	});
 
 	it('sur les pages et les fichiers statiques', async () => {
-		app = await buildApp(fakeDeps({ users: [{ viewer: guest, passwordHash: '' }], topics: [], posts: new Map() }));
+		app = await buildApp(fakeDeps({ users: [{ viewer: guest }], topics: [], posts: new Map() }));
 		for (const url of ['/index.php', '/assets/css/base.css', '/page-inconnue.php']) {
 			const res = await app.inject(url);
 			expect(res.headers['content-security-policy']).toContain("default-src 'self'");

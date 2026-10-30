@@ -39,13 +39,11 @@ import { LoginController, type LoginQuery } from './controllers/LoginController.
 import { MemberSuggestController, type MemberSuggestQuery } from './controllers/MemberSuggestController.ts';
 import { MiscController, type MiscQuery } from './controllers/MiscController.ts';
 import { type HostResolver, ModerateController, type ModerateQuery } from './controllers/ModerateController.ts';
-import { PasswordResetController } from './controllers/PasswordResetController.ts';
 import { PostController, type PostQuery } from './controllers/PostController.ts';
 import { PrivateContactController, type PrivateContactQuery } from './controllers/PrivateContactController.ts';
 import { PrivateMessageController, type PrivateMessageQuery } from './controllers/PrivateMessageController.ts';
 import { PrivateMessageSendController, type PrivateMessageSendQuery } from './controllers/PrivateMessageSendController.ts';
 import { ProfileController, type ProfileQuery } from './controllers/ProfileController.ts';
-import { RegisterController, type RegisterQuery } from './controllers/RegisterController.ts';
 import { ReputationController, type ReputationQuery } from './controllers/ReputationController.ts';
 import { SearchController, type SearchQuery } from './controllers/SearchController.ts';
 import { SeoController } from './controllers/SeoController.ts';
@@ -60,7 +58,7 @@ import { ensureCsrfToken, isValidCsrf } from './http/csrf.ts';
 import { type FormBody, registerFormParser } from './http/forms.ts';
 import { type LayoutDeps, renderBlock, renderMessage, renderMinimalMessage } from './http/layout.ts';
 import { securityHeaders } from './http/securityHeaders.ts';
-import { checkAccess, purgeOnline, type SessionDeps, startSession } from './http/session.ts';
+import { checkAccess, purgeOnline, type SessionDeps, startSession, trackCookieName as trackCookieOf } from './http/session.ts';
 import type { AdminStatsReader } from './repositories/AdminStatsRepository.ts';
 import type { BanStore } from './repositories/BanRepository.ts';
 import type { CensorStore } from './repositories/CensorRepository.ts';
@@ -87,7 +85,6 @@ import type { PostReader } from './repositories/PostRepository.ts';
 import type { PrivateContactStore, SendingListStore } from './repositories/PrivateContactRepository.ts';
 import type { PrivateMessageStore } from './repositories/PrivateMessageRepository.ts';
 import type { ProfileStore } from './repositories/ProfileRepository.ts';
-import type { RegistrationStore } from './repositories/RegistrationRepository.ts';
 import type { ReportStore, ReportWriter } from './repositories/ReportRepository.ts';
 import type { ReputationStore } from './repositories/ReputationRepository.ts';
 import type { SearchReader, SearchWriter } from './repositories/SearchRepository.ts';
@@ -100,7 +97,7 @@ import type { ToolbarReader } from './repositories/ToolbarRepository.ts';
 import type { TopicLabelReader } from './repositories/TopicLabelRepository.ts';
 import type { TopicReader, TopicWriter } from './repositories/TopicRepository.ts';
 import type { UploadileAdminStore, UserAdminReader, UserAdminWriter } from './repositories/UserAdminRepository.ts';
-import type { CredentialsStore, MemberListReader, PasswordResetStore, ProfileReader } from './repositories/UserRepository.ts';
+import type { AccountLookup, MemberListReader, ProfileReader } from './repositories/UserRepository.ts';
 import type { UsersInfoReader } from './repositories/UsersInfoLoader.ts';
 import type { AvatarLocator, AvatarStore } from './services/avatars.ts';
 import { type BannedWriteQuery, canWriteWhileBanned, readOnlyViewer } from './services/permissions.ts';
@@ -119,11 +116,11 @@ declare module 'fastify' {
 export interface AppDeps extends LayoutDeps, SessionDeps {
 	config: ConfigReader;
 	members: MemberListReader;
-	credentials: CredentialsStore;
-	passwordResets: PasswordResetStore;
+	accounts: AccountLookup;
+	/** Connexion de développement (DEV_LOGIN=1), depuis la machine seulement. */
+	devLogin: boolean;
 	mailTemplates: MailTemplateReader;
 	mailer: Mailer;
-	registrations: RegistrationStore;
 	profiles: ProfileReader;
 	profileStore: ProfileStore;
 	topics: TopicReader;
@@ -248,7 +245,6 @@ const PORTED_PAGES = new Set([
 	'pms_view.php',
 	'post.php',
 	'profile.php',
-	'register.php',
 	'reputation.php',
 	'search.php',
 	'userlist.php',
@@ -320,7 +316,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 			request.board = await deps.config.load();
 			const quiet = typeof options.quiet === 'function' ? options.quiet(request) : (options.quiet ?? false);
 			request.viewer = await startSession(request, reply, deps, request.board, now, { quiet });
-			request.csrfToken = ensureCsrfToken(request, reply, deps.legacyCookie, request.viewer.id);
+			request.csrfToken = ensureCsrfToken(request, reply, deps.cookie, request.viewer.id);
 
 			const block = await checkAccess(request, deps, request.viewer, request.board, now, options.allowDuringMaintenance ?? false);
 			// Banni : lecture seule (AvroBB) ; les écritures sont refusées par verifyCsrf.
@@ -336,7 +332,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 	 * ne peut que se connecter ou se déconnecter, marquer comme lu et gérer ses abonnements.
 	 */
 	const verifyCsrf = async (request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply | undefined> => {
-		if (!isValidCsrf(request, deps.legacyCookie, request.viewer.id))
+		if (!isValidCsrf(request, deps.cookie, request.viewer.id))
 			return renderMessage(request, reply, deps, 403, deps.page.lang.common.badCsrf);
 		const { ban } = request.viewer;
 		if (ban !== null && !canWriteWhileBanned(request.url.split('?')[0] ?? '', request.query as BannedWriteQuery))
@@ -356,7 +352,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 	app.get('/robots.txt', seo.robots);
 	app.get('/sitemap.xml', seo.sitemap);
 
-	const trackCookieName = `${deps.legacyCookie.name}_track`;
+	const trackCookieName = trackCookieOf(deps.cookie);
 	const index = new IndexController({ ...deps, trackCookieName });
 	app.get('/', { preHandler: authenticate }, index.show);
 	app.get('/index.php', { preHandler: authenticate }, index.show);
@@ -378,17 +374,13 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 	app.post<{ Querystring: GalleryQuery; Body: FormBody }>('/gallery.php', { preHandler: [authenticate, verifyCsrf] }, gallery.submit);
 
 	// login.php : visite discrète dès qu'une action est demandée (PUN_QUIET_VISIT), et accessible en
-	// maintenance pour qu'un administrateur puisse se connecter (le PHP le bloquait aussi).
+	// maintenance pour qu'un administrateur puisse se connecter.
 	const loginSession = session({ quiet: (request) => (request.query as LoginQuery).action !== undefined, allowDuringMaintenance: true });
 	const login = new LoginController(deps);
-	const passwordReset = new PasswordResetController(deps);
-	const isForget = (action: string | undefined): boolean => action === 'forget' || action === 'forget_2';
-	app.get<{ Querystring: LoginQuery }>('/login.php', { preHandler: loginSession }, (request, reply) =>
-		isForget(request.query.action) ? passwordReset.form(request, reply) : login.show(request, reply),
-	);
+	app.get<{ Querystring: LoginQuery }>('/login.php', { preHandler: loginSession }, login.show);
 	app.post<{ Querystring: LoginQuery; Body: FormBody }>('/login.php', { preHandler: [loginSession, verifyCsrf] }, (request, reply) => {
 		if (request.query.action === 'in') return login.login(request, reply);
-		if (isForget(request.query.action)) return passwordReset.submit(request, reply);
+		if (request.query.action === 'out') return login.logout(request, reply);
 		return renderMessage(request, reply, deps, 400, deps.page.lang.common.badRequest);
 	});
 
@@ -411,10 +403,6 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 			return misc.markRead(request, reply);
 		},
 	);
-
-	const register = new RegisterController(deps);
-	app.get<{ Querystring: RegisterQuery }>('/register.php', { preHandler: authenticate }, register.show);
-	app.post<{ Querystring: RegisterQuery; Body: FormBody }>('/register.php', { preHandler: [authenticate, verifyCsrf] }, register.submit);
 
 	const help = new HelpController(deps);
 	app.get('/help.php', { preHandler: authenticate }, help.show);

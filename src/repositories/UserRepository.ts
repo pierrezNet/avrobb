@@ -17,10 +17,8 @@ import {
 } from '../domain/models.ts';
 import type { Presence } from '../services/presence.ts';
 
-/** Viewer accompagné du hash de mot de passe, nécessaire à la vérification du cookie. */
 export interface ViewerRecord {
 	viewer: Viewer;
-	passwordHash: string;
 	/** Ligne online du membre (null s'il n'y figure pas), lue avec lui comme dans check_cookie(). */
 	presence: Presence | null;
 }
@@ -40,41 +38,17 @@ export interface ProfileReader {
 	findProfile(userId: number): Promise<UserProfile | null>;
 }
 
-/** Identifiants d'un compte, pour la connexion. */
-export interface Credentials {
-	id: number;
-	username: string;
-	passwordHash: string;
-	groupId: number;
-}
-
-export interface CredentialsStore {
-	/** Compte par pseudo (comparaison de la base, insensible à la casse comme en PHP sous MySQL). */
-	findCredentials(username: string): Promise<Credentials | null>;
-	/** Remplace un ancien hash (MD5 de FluxBB 1.2) par le SHA-1 actuel, après une connexion réussie. */
-	updatePasswordHash(userId: number, passwordHash: string): Promise<void>;
-	/** Première connexion d'un compte non validé : passage dans le groupe par défaut. */
-	setGroup(userId: number, groupId: number): Promise<void>;
-}
-
-/** Compte retrouvé par son adresse, pour le mot de passe oublié. */
-export interface EmailAccount {
-	id: number;
-	username: string;
-	/** Dernier e-mail de réinitialisation (users.last_email_sent), anti-flood d'une heure. */
-	lastEmailSent: number | null;
-}
-
-export interface PasswordResetStore {
-	findByEmail(email: string): Promise<EmailAccount[]>;
-	/** Nouveau mot de passe en attente (activate_string = son hash) et clé du lien d'activation. */
-	setPendingPassword(userId: number, passwordHash: string, key: string, now: number): Promise<void>;
+export interface AccountLookup {
+	/** Membre par pseudo (comparaison de la base, insensible à la casse), pour la connexion de développement. */
+	findIdByUsername(username: string): Promise<number | null>;
+	/** Pseudo existant identique ou trop ressemblant (sans la ponctuation), insensible à la casse. */
+	findSimilarUsername(username: string, skeleton: string): Promise<string | null>;
 }
 
 /** Comptes en attente de validation (PUN_UNVERIFIED) : jamais listés. */
 const UNVERIFIED_GROUP = 0;
 
-export class UserRepository implements UserReader, MemberListReader, ProfileReader, CredentialsStore, PasswordResetStore {
+export class UserRepository implements UserReader, MemberListReader, ProfileReader, AccountLookup {
 	constructor(private readonly db: Db) {}
 
 	async findViewer(userId: number): Promise<ViewerRecord | null> {
@@ -87,7 +61,6 @@ export class UserRepository implements UserReader, MemberListReader, ProfileRead
 				'o.idle',
 				'u.id',
 				'u.username',
-				'u.password',
 				'u.disp_topics',
 				'u.disp_posts',
 				'u.timezone',
@@ -177,7 +150,6 @@ export class UserRepository implements UserReader, MemberListReader, ProfileRead
 		};
 
 		return {
-			passwordHash: row.password,
 			presence: row.logged !== null && row.idle !== null ? { logged: row.logged, idle: row.idle === 1 } : null,
 			viewer: {
 				id: row.id,
@@ -323,39 +295,28 @@ export class UserRepository implements UserReader, MemberListReader, ProfileRead
 		};
 	}
 
-	async findCredentials(username: string): Promise<Credentials | null> {
+	async findIdByUsername(username: string): Promise<number | null> {
 		const row = await this.db
 			.selectFrom('users')
-			.select(['id', 'username', 'password', 'group_id'])
+			.select('id')
 			.where('username', '=', username)
 			.where('id', '>', GUEST_USER_ID)
 			.executeTakeFirst();
-		return row !== undefined ? { id: row.id, username: row.username, passwordHash: row.password, groupId: row.group_id } : null;
+		return row?.id ?? null;
 	}
 
-	async updatePasswordHash(userId: number, passwordHash: string): Promise<void> {
-		await this.db.updateTable('users').set({ password: passwordHash }).where('id', '=', userId).execute();
-	}
-
-	async setGroup(userId: number, groupId: number): Promise<void> {
-		await this.db.updateTable('users').set({ group_id: groupId }).where('id', '=', userId).execute();
-	}
-
-	async findByEmail(email: string): Promise<EmailAccount[]> {
-		const rows = await this.db
+	async findSimilarUsername(username: string, skeleton: string): Promise<string | null> {
+		const row = await this.db
 			.selectFrom('users')
-			.select(['id', 'username', 'last_email_sent'])
-			.where('email', '=', email)
+			.select('username')
+			.where((eb) =>
+				eb.or([
+					eb(eb.fn('upper', ['username']), '=', username.toUpperCase()),
+					eb(eb.fn('upper', ['username']), '=', skeleton.toUpperCase()),
+				]),
+			)
 			.where('id', '>', GUEST_USER_ID)
-			.execute();
-		return rows.map((row) => ({ id: row.id, username: row.username, lastEmailSent: row.last_email_sent }));
-	}
-
-	async setPendingPassword(userId: number, passwordHash: string, key: string, now: number): Promise<void> {
-		await this.db
-			.updateTable('users')
-			.set({ activate_string: passwordHash, activate_key: key, last_email_sent: now })
-			.where('id', '=', userId)
-			.execute();
+			.executeTakeFirst();
+		return row?.username ?? null;
 	}
 }

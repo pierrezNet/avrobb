@@ -6,7 +6,7 @@
 import { forumNumberFormat } from '../../services/numberFormat.ts';
 import { MAX_POST_SIZE, type PostError } from '../../services/posting.ts';
 import type { PreparseError } from '../../services/preparse.ts';
-import { register } from './register.ts';
+import { account } from './account.ts';
 
 /** Erreurs de preparse_bbcode() ; « message » désigne le texte saisi (message ou signature). */
 export function preparseErrorText(error: PreparseError): string {
@@ -48,9 +48,9 @@ export function postErrorText(error: PostError): string {
 		case 'allCapsSubject':
 			return post.allCapsSubject;
 		case 'username':
-			return register.errors[error.error];
+			return account.errors[error.error];
 		case 'usernameDupe':
-			return register.usernameDupe(error.existing);
+			return account.usernameDupe(error.existing);
 		case 'invalidEmail':
 			return post.invalidEmail;
 		case 'bannedEmail':

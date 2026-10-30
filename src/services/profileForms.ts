@@ -14,13 +14,13 @@
  */
 
 import type { ProfileChanges } from '../domain/models.ts';
+import { checkUsername, isBannedEmail, normalizeUsername, TIMEZONES, type UsernameError } from './accounts.ts';
 import type { Ban } from './bans.ts';
 import type { Censor } from './censor.ts';
 import { validWebsiteUrl } from './links.ts';
 import { isValidEmail } from './mail.ts';
 import { isAllUppercase, punLinebreaks, punTrim } from './phpString.ts';
 import { type PreparseError, type PreparseOptions, preparseBbcode } from './preparse.ts';
-import { checkUsername, isBannedEmail, normalizeUsername, TIMEZONES, type UsernameError } from './registration.ts';
 import { THEMES } from './themes.ts';
 
 /** Sections modifiables par Node ; « admin » reste servie par le PHP (lot Administration). */
@@ -92,8 +92,6 @@ export interface EssentialsContext {
 	isAdmin: boolean;
 	/** Administrateur, ou modérateur avec g_mod_rename_users. */
 	canRename: boolean;
-	/** L'adresse se modifie dans le formulaire (o_regs_verify désactivé, ou modérateur). */
-	emailEditable: boolean;
 	currentUsername: string;
 	currentEmail: string;
 	guestLabel: string;
@@ -142,15 +140,14 @@ export function readEssentials(input: EssentialsInput, context: EssentialsContex
 		if (context.isAdmin) changes.numPosts = Math.max(0, Math.trunc(Number(input.numPosts)) || 0);
 	}
 
-	if (context.emailEditable) {
-		const email = limited('email', input.email, errors).toLowerCase();
-		if (!isValidEmail(email)) errors.push({ kind: 'invalidEmail' });
-		else if (!context.isAnyModerator && email !== context.currentEmail.toLowerCase()) {
-			if (isBannedEmail(email, context.bans) && !context.allowBannedEmail) errors.push({ kind: 'bannedEmail' });
-			if (context.emailOwners.length > 0 && !context.allowDupeEmail) errors.push({ kind: 'dupeEmail' });
-		}
-		changes.email = email;
+	// Sans mot de passe, pas de lien de confirmation à envoyer : l'adresse se modifie dans le formulaire.
+	const email = limited('email', input.email, errors).toLowerCase();
+	if (!isValidEmail(email)) errors.push({ kind: 'invalidEmail' });
+	else if (!context.isAnyModerator && email !== context.currentEmail.toLowerCase()) {
+		if (isBannedEmail(email, context.bans) && !context.allowBannedEmail) errors.push({ kind: 'bannedEmail' });
+		if (context.emailOwners.length > 0 && !context.allowDupeEmail) errors.push({ kind: 'dupeEmail' });
 	}
+	changes.email = email;
 
 	return { changes, errors, rename };
 }

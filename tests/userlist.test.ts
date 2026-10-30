@@ -31,7 +31,7 @@ afterEach(async () => app?.close());
 
 const deps = (overrides = {}) =>
 	fakeDeps({
-		users: [{ viewer: guest, passwordHash: '' }],
+		users: [{ viewer: guest }],
 		topics: [],
 		posts: new Map(),
 		members,
@@ -65,7 +65,7 @@ describe('GET /userlist.php', () => {
 
 	it('sans g_search_users, le champ pseudo disparaît et le filtre est ignoré', async () => {
 		const noSearch = { ...guest, group: group({ id: GroupId.Guest, canSearchUsers: false }) };
-		app = await buildApp(deps({ users: [{ viewer: noSearch, passwordHash: '' }] }));
+		app = await buildApp(deps({ users: [{ viewer: noSearch }] }));
 		const res = await app.inject('/userlist.php?username=Tessy');
 
 		expect(res.body).not.toContain('name="username"');
@@ -74,7 +74,7 @@ describe('GET /userlist.php', () => {
 
 	it('refuse aux groupes qui ne peuvent pas voir les membres, aucun résultat sinon', async () => {
 		const blind = { ...guest, group: group({ id: GroupId.Guest, canViewUsers: false }) };
-		app = await buildApp(deps({ users: [{ viewer: blind, passwordHash: '' }] }));
+		app = await buildApp(deps({ users: [{ viewer: blind }] }));
 		expect((await app.inject('/userlist.php')).statusCode).toBe(403);
 		await app.close();
 

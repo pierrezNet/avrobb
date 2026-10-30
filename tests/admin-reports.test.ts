@@ -9,16 +9,14 @@ import { GroupId, type Report } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
 import { fr } from '../src/lang/fr/index.ts';
 import { buildAdminMenu } from '../src/presenters/adminMenu.ts';
-import { buildLegacyCookie } from '../src/services/legacySession.ts';
-import { boardConfig, type FakeData, fakeDeps, group, guest, NOW, viewer } from './fixtures.ts';
+import { boardConfig, type FakeData, fakeDeps, group, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
 
 const SEED = 'graine-de-test';
 const CSRF_SECRET = '8'.repeat(64);
 const mod = viewer({ id: 5, username: 'MaxDUO', group: group({ id: GroupId.Moderator, isModerator: true }) });
 const admin = viewer({ id: 2, username: 'admin', group: group({ id: GroupId.Admin }) });
 const hashes: Record<number, string> = { 5: 'h5', 3: 'h3', 2: 'h2' };
-const cookies = (userId: number): string =>
-	`punbb_cookie=${buildLegacyCookie(userId, hashes[userId] ?? '', NOW + 3600, SEED)}; punbb_cookie_csrf=${CSRF_SECRET}`;
+const cookies = (userId: number): string => `${sessionCookie(userId)}; avrobb_csrf=${CSRF_SECRET}`;
 
 const report = (id: number, overrides: Partial<Report> = {}): Report => ({
 	id,
@@ -33,9 +31,9 @@ const report = (id: number, overrides: Partial<Report> = {}): Report => ({
 });
 
 describe('menu de l’administration', () => {
-	it('modérateur : menu de modération et ajout de membre (AMP_) ; administrateur : tout, sans menu des plugins', () => {
+	it('modérateur : menu de modération ; administrateur : tout, sans menu des plugins', () => {
 		const forMod = buildAdminMenu(mod, boardConfig, 'reports', fr);
-		expect(forMod.moderator.map((i) => i.label)).toEqual(['Accueil', 'Utilisateurs', 'Ajouter un membre', 'Signalements']);
+		expect(forMod.moderator.map((i) => i.label)).toEqual(['Accueil', 'Utilisateurs', 'Signalements']);
 		expect(forMod.admin).toBeNull();
 		const forAdmin = buildAdminMenu(admin, boardConfig, 'index', fr);
 		expect(forAdmin.moderator.map((i) => i.href)).toContain('admin_bans.php');
@@ -61,12 +59,7 @@ afterEach(async () => app?.close());
 
 function data(): FakeData {
 	return {
-		users: [
-			{ viewer: guest, passwordHash: '' },
-			{ viewer: viewer(), passwordHash: 'h3' },
-			{ viewer: mod, passwordHash: 'h5' },
-			{ viewer: admin, passwordHash: 'h2' },
-		],
+		users: [{ viewer: guest }, { viewer: viewer() }, { viewer: mod }, { viewer: admin }],
 		topics: [],
 		posts: new Map(),
 		reportList: [

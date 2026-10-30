@@ -6,10 +6,9 @@ import type { FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.ts';
 import type { ForumSummary, IndexCategory } from '../src/domain/models.ts';
-import { forumHmac } from '../src/services/legacySession.ts';
 import { forumNumberFormat, niceNumber } from '../src/services/numberFormat.ts';
 import { forumHasNewPosts, parseTrackedTopics } from '../src/services/trackedTopics.ts';
-import { fakeDeps, group, guest, NOW, viewer } from './fixtures.ts';
+import { fakeDeps, group, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
 
 describe('formatage des nombres', () => {
 	it('bd_nice_number() et forum_number_format()', () => {
@@ -78,14 +77,11 @@ const categories: IndexCategory[] = [
 const SEED = 'graine-de-test';
 const cookie = (userId: number, hash: string, extra = ''): string => {
 	const expires = NOW + 3600;
-	return `punbb_cookie=${userId}|${forumHmac(hash, `${SEED}_password_hash`)}|${expires}|${forumHmac(`${userId}|${expires}`, `${SEED}_cookie_hash`)}${extra}`;
+	return `${sessionCookie(userId, expires)}${extra}`;
 };
 
 const tessy = viewer({ lastVisit: NOW - 3600 });
-const users = [
-	{ viewer: guest, passwordHash: '' },
-	{ viewer: tessy, passwordHash: 'hash-tessy' },
-];
+const users = [{ viewer: guest }, { viewer: tessy }];
 
 let app: FastifyInstance | undefined;
 afterEach(async () => app?.close());
@@ -162,13 +158,13 @@ describe('GET /index.php', () => {
 		expect(fresh.body).toContain('href="search.php?action=show_new&amp;fid=1">Nouveaux messages</a>');
 		expect(fresh.body).toContain('misc.php?action=markread');
 
-		const read = await app.inject({ url: '/index.php', headers: { cookie: `${cookie(3, 'hash-tessy')}; punbb_cookie_track=t7=${NOW}` } });
+		const read = await app.inject({ url: '/index.php', headers: { cookie: `${cookie(3, 'hash-tessy')}; avrobb_track=t7=${NOW}` } });
 		expect(read.body).not.toContain('Nouveaux messages');
 	});
 
 	it('refuse l’accès sans g_read_board', async () => {
 		const blind = { ...guest, group: group({ id: 3, canReadBoard: false }) };
-		app = await buildApp(fakeDeps({ users: [{ viewer: blind, passwordHash: '' }], topics: [], posts: new Map() }));
+		app = await buildApp(fakeDeps({ users: [{ viewer: blind }], topics: [], posts: new Map() }));
 		expect((await app.inject('/index.php')).statusCode).toBe(403);
 	});
 });

@@ -1,7 +1,7 @@
 /**
  * Contrôleur de profile.php : aiguillage entre la consultation d'un profil (ici), sa modification
  * (sections, ProfileEditController), les actions mot de passe, adresse et avatar
- * (AccountController, AvatarController) et les plugiles de PV (PlugileController).
+ * (AvatarController) et les plugiles de PV (PlugileController).
  *
  * Comme le PHP, un lecteur qui ne peut pas modifier le profil le consulte, quelle que soit la
  * section ou le plugile demandé. Seule la section « Administration » (groupe, modération,
@@ -16,7 +16,6 @@ import type { ProfileReader } from '../repositories/UserRepository.ts';
 import { buildCensor } from '../services/censor.ts';
 import { canEditProfile } from '../services/permissions.ts';
 import { isProfileSection } from '../services/profileForms.ts';
-import { AccountController, type AccountControllerDeps } from './AccountController.ts';
 import { AvatarController, type AvatarControllerDeps } from './AvatarController.ts';
 import { PlugileController, type PlugileControllerDeps } from './PlugileController.ts';
 import { ProfileEditController, type ProfileEditControllerDeps } from './ProfileEditController.ts';
@@ -25,12 +24,7 @@ import type { ProfileQuery } from './profileAccess.ts';
 
 export type { ProfileQuery } from './profileAccess.ts';
 
-export interface ProfileControllerDeps
-	extends LayoutDeps,
-		ProfileEditControllerDeps,
-		AccountControllerDeps,
-		AvatarControllerDeps,
-		PlugileControllerDeps {
+export interface ProfileControllerDeps extends LayoutDeps, ProfileEditControllerDeps, AvatarControllerDeps, PlugileControllerDeps {
 	profiles: ProfileReader;
 	/** Installation PHP, qui garde la section « Administration ». */
 	legacyBaseUrl: string;
@@ -43,13 +37,11 @@ const AVATAR_UPLOAD = new Set(['upload_avatar', 'upload_avatar2']);
 
 export class ProfileController {
 	readonly #edit: ProfileEditController;
-	readonly #account: AccountController;
 	readonly #avatar: AvatarController;
 	readonly #plugiles: PlugileController;
 
 	constructor(private readonly deps: ProfileControllerDeps) {
 		this.#edit = new ProfileEditController(deps);
-		this.#account = new AccountController(deps);
 		this.#avatar = new AvatarController(deps);
 		this.#plugiles = new PlugileController(deps);
 	}
@@ -124,10 +116,6 @@ export class ProfileController {
 		switch (query.action) {
 			case undefined:
 				break;
-			case 'change_pass':
-				return this.#account.changePassword(request, reply);
-			case 'change_email':
-				return this.#account.changeEmail(request, reply);
 			case 'delete_avatar':
 				return this.#avatar.delete(request, reply);
 			default:
@@ -143,8 +131,6 @@ export class ProfileController {
 
 	private showAction(request: ProfileRequest, reply: FastifyReply): Promise<FastifyReply> {
 		const action = request.query.action ?? '';
-		if (action === 'change_pass') return this.#account.passwordForm(request, reply);
-		if (action === 'change_email') return this.#account.emailForm(request, reply);
 		if (AVATAR_UPLOAD.has(action)) return this.#avatar.uploadForm(request, reply);
 		if (action === 'delete_avatar') return this.#avatar.deleteForm(request, reply);
 		return renderMessage(request, reply, this.deps, 404, this.deps.page.lang.common.badRequest);

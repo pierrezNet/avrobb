@@ -12,12 +12,6 @@ import { parseModerators, phpSerialize } from '../services/phpSerialize.ts';
 import { forumReadable } from './forumPermissions.ts';
 import { inTransaction } from './transactions.ts';
 
-/** Nouveau mot de passe ou nouvelle adresse en attente (activate_string), avec sa clé d'activation. */
-export interface PendingActivation {
-	value: string;
-	key: string;
-}
-
 export interface ProfileStore {
 	findEditableProfile(userId: number): Promise<EditableProfile | null>;
 	updateProfile(userId: number, changes: ProfileChanges): Promise<void>;
@@ -32,14 +26,6 @@ export interface ProfileStore {
 	findSimilarUsername(username: string, skeleton: string, excludeUserId: number): Promise<string | null>;
 	/** Pseudos des autres membres qui utilisent cette adresse. */
 	listUsernamesByEmail(email: string, excludeUserId: number): Promise<string[]>;
-	/** Hash du mot de passe (SHA-1, ou MD5 hérité), pour vérifier l'ancien mot de passe. */
-	findPasswordHash(userId: number): Promise<string | null>;
-	setPassword(userId: number, passwordHash: string): Promise<void>;
-	findPendingActivation(userId: number): Promise<PendingActivation | null>;
-	/** Mot de passe ou adresse en attente → valeur courante ; la clé est effacée. */
-	activatePassword(userId: number): Promise<void>;
-	activateEmail(userId: number): Promise<void>;
-	setPendingEmail(userId: number, email: string, key: string): Promise<void>;
 	setUploadedBytes(userId: number, bytes: number): Promise<void>;
 	/** Sujets suivis par un membre, lisibles par le groupe du lecteur (requête de UPP_Suivile). */
 	listSubscribedTopics(userId: number, readerGroupId: number): Promise<SubscribedTopic[]>;
@@ -245,41 +231,6 @@ export class ProfileRepository implements ProfileStore {
 	async listUsernamesByEmail(email: string, excludeUserId: number): Promise<string[]> {
 		const rows = await this.db.selectFrom('users').select('username').where('email', '=', email).where('id', '!=', excludeUserId).execute();
 		return rows.map((row) => row.username);
-	}
-
-	async findPasswordHash(userId: number): Promise<string | null> {
-		const row = await this.db.selectFrom('users').select('password').where('id', '=', userId).executeTakeFirst();
-		return row?.password ?? null;
-	}
-
-	async setPassword(userId: number, passwordHash: string): Promise<void> {
-		await this.db.updateTable('users').set({ password: passwordHash }).where('id', '=', userId).execute();
-	}
-
-	async findPendingActivation(userId: number): Promise<PendingActivation | null> {
-		const row = await this.db.selectFrom('users').select(['activate_string', 'activate_key']).where('id', '=', userId).executeTakeFirst();
-		if (row === undefined || row.activate_string === null || row.activate_key === null || row.activate_key === '') return null;
-		return { value: row.activate_string, key: row.activate_key };
-	}
-
-	async activatePassword(userId: number): Promise<void> {
-		await this.db
-			.updateTable('users')
-			.set((eb) => ({ password: eb.fn.coalesce('activate_string', 'password'), activate_string: null, activate_key: null }))
-			.where('id', '=', userId)
-			.execute();
-	}
-
-	async activateEmail(userId: number): Promise<void> {
-		await this.db
-			.updateTable('users')
-			.set((eb) => ({ email: eb.fn.coalesce('activate_string', 'email'), activate_string: null, activate_key: null }))
-			.where('id', '=', userId)
-			.execute();
-	}
-
-	async setPendingEmail(userId: number, email: string, key: string): Promise<void> {
-		await this.db.updateTable('users').set({ activate_string: email, activate_key: key }).where('id', '=', userId).execute();
 	}
 
 	async setUploadedBytes(userId: number, bytes: number): Promise<void> {

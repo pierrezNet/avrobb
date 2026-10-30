@@ -1,33 +1,20 @@
 /**
- * Début de chaque requête, comme include/common.php : identification par le cookie FluxBB
- * (check_cookie() / set_default_user()), renouvellement du cookie, liste des présents, mode
- * maintenance, bannissements (check_bans()) et purge des présents (update_users_online()).
- *
- * Ces étapes écrivent dans la base partagée exactement ce qu'écrit le PHP, pour que les deux
- * applications voient la même session et la même liste des présents.
+ * Début de chaque requête, comme include/common.php de FluxBB : identification par le cookie de
+ * session (services/session.ts), liste des présents, mode maintenance, bannissements
+ * (check_bans()) et purge des présents (update_users_online()).
  */
 
-import { randomBytes } from 'node:crypto';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import type { LegacyCookieConfig } from '../config.ts';
+import type { CookieConfig } from '../config.ts';
 import { type BoardConfig, GroupId, GUEST_USER_ID, type Viewer } from '../domain/models.ts';
 import type { BanReader, BanWriter } from '../repositories/BanRepository.ts';
 import type { OnlineWriter } from '../repositories/OnlineRepository.ts';
 import type { PhpCacheStore } from '../repositories/PhpCacheFiles.ts';
 import type { UserReader, ViewerRecord } from '../repositories/UserRepository.ts';
 import { checkBans } from '../services/bans.ts';
-import {
-	buildLegacyCookie,
-	cookieMaxAge,
-	GUEST_COOKIE_SECONDS,
-	isCookiePasswordValid,
-	isCookieSignatureValid,
-	parseLegacyCookie,
-	punHash,
-	renewedExpiry,
-} from '../services/legacySession.ts';
 import { isAnyModerator } from '../services/permissions.ts';
 import { memberPresenceUpdate, planOnlinePurge } from '../services/presence.ts';
+import { buildSessionCookie, cookieMaxAge, readSessionCookie, SESSION_SECONDS, shouldRenewSession } from '../services/session.ts';
 
 export interface SessionDeps {
 	users: UserReader;
@@ -35,7 +22,7 @@ export interface SessionDeps {
 	bans: BanReader & BanWriter;
 	/** Pour invalider cache_bans.php quand des bannissements échus sont supprimés ; null sans PHP. */
 	phpCache: PhpCacheStore | null;
-	legacyCookie: LegacyCookieConfig;
+	cookie: CookieConfig;
 }
 
 export interface SessionOptions {
@@ -46,10 +33,18 @@ export interface SessionOptions {
 /** Ce qu'une requête doit montrer au lieu de la page demandée. */
 export type SessionBlock = { kind: 'maintenance' } | { kind: 'banned'; expire: number | null; message: string };
 
-/** Pose un cookie au format de forum_setcookie() (HttpOnly, chemin et domaine du PHP). */
+export function sessionCookieName(cookie: CookieConfig): string {
+	return `${cookie.name}_session`;
+}
+
+export function trackCookieName(cookie: CookieConfig): string {
+	return `${cookie.name}_track`;
+}
+
+/** Pose un cookie du forum (HttpOnly, SameSite=Lax, chemin /) ; durée de vie comme forum_setcookie(). */
 export function setForumCookie(
 	reply: FastifyReply,
-	cookie: LegacyCookieConfig,
+	cookie: CookieConfig,
 	name: string,
 	value: string,
 	expires: number,
@@ -58,66 +53,54 @@ export function setForumCookie(
 ): void {
 	const maxAge = cookieMaxAge(expires, now, timeoutVisit);
 	reply.setCookie(name, value, {
-		path: cookie.path,
+		path: '/',
 		httpOnly: true,
 		secure: cookie.secure,
 		sameSite: 'lax',
-		...(cookie.domain !== '' ? { domain: cookie.domain } : {}),
 		...(maxAge !== null ? { maxAge } : {}),
 	});
 }
 
-/** pun_setcookie() */
-export function setSessionCookie(
-	reply: FastifyReply,
-	deps: Pick<SessionDeps, 'legacyCookie'>,
-	userId: number,
-	passwordHash: string,
-	expires: number,
-	now: number,
-	timeoutVisit: number,
-): void {
-	const value = buildLegacyCookie(userId, passwordHash, expires, deps.legacyCookie.seed);
-	setForumCookie(reply, deps.legacyCookie, deps.legacyCookie.name, value, expires, now, timeoutVisit);
+/** Ouvre (ou prolonge) la session du membre pour SESSION_SECONDS. */
+export function setSessionCookie(reply: FastifyReply, deps: Pick<SessionDeps, 'cookie'>, userId: number, now: number): void {
+	const expires = now + SESSION_SECONDS;
+	reply.setCookie(sessionCookieName(deps.cookie), buildSessionCookie(userId, expires, deps.cookie.secret), {
+		path: '/',
+		httpOnly: true,
+		secure: deps.cookie.secure,
+		sameSite: 'lax',
+		maxAge: SESSION_SECONDS,
+	});
 }
 
-/** Cookie invité posé après un cookie refusé, comme check_cookie() (hash aléatoire, un an). */
-function setGuestCookie(reply: FastifyReply, deps: SessionDeps, now: number, timeoutVisit: number): void {
-	setSessionCookie(reply, deps, GUEST_USER_ID, punHash(randomBytes(16).toString('hex')), now + GUEST_COOKIE_SECONDS, now, timeoutVisit);
+export function clearSessionCookie(reply: FastifyReply, deps: Pick<SessionDeps, 'cookie'>): void {
+	reply.clearCookie(sessionCookieName(deps.cookie), { path: '/' });
 }
 
 /** set_tracked_topics(null) : vide le cookie de suivi des sujets lus. */
 function resetTrackedTopics(reply: FastifyReply, deps: SessionDeps, now: number, timeoutVisit: number): void {
-	setForumCookie(reply, deps.legacyCookie, `${deps.legacyCookie.name}_track`, '', now + timeoutVisit, now, timeoutVisit);
+	setForumCookie(reply, deps.cookie, trackCookieName(deps.cookie), '', now + timeoutVisit, now, timeoutVisit);
 }
 
-/** check_cookie() : membre authentifié par son cookie, ou null s'il faut traiter le visiteur en invité. */
+/** Membre authentifié par son cookie de session, ou null s'il faut traiter le visiteur en invité. */
 async function authenticateMember(
 	request: FastifyRequest,
 	reply: FastifyReply,
 	deps: SessionDeps,
-	config: BoardConfig,
 	now: number,
 ): Promise<ViewerRecord | null> {
-	const cookie = parseLegacyCookie(request.cookies[deps.legacyCookie.name]);
-	if (cookie === null || cookie.userId <= GUEST_USER_ID || cookie.expires <= now) return null;
+	const raw = request.cookies[sessionCookieName(deps.cookie)];
+	if (raw === undefined) return null;
 
-	const record = isCookieSignatureValid(cookie, deps.legacyCookie.seed, now) ? await deps.users.findViewer(cookie.userId) : null;
-	if (record === null || !isCookiePasswordValid(cookie, record.passwordHash, deps.legacyCookie.seed)) {
-		// Cookie falsifié ou mot de passe changé : on le remplace par un cookie invité.
-		setGuestCookie(reply, deps, now, config.timeoutVisit);
+	const session = readSessionCookie(raw, deps.cookie.secret, now);
+	const record = session !== null && session.userId !== GUEST_USER_ID ? await deps.users.findViewer(session.userId) : null;
+	if (session === null || record === null) {
+		// Cookie falsifié, échu ou compte supprimé : on l'efface.
+		clearSessionCookie(reply, deps);
 		return null;
 	}
 
-	setSessionCookie(
-		reply,
-		deps,
-		record.viewer.id,
-		record.passwordHash,
-		renewedExpiry(cookie.expires, now, config.timeoutVisit),
-		now,
-		config.timeoutVisit,
-	);
+	if (shouldRenewSession(session.expires, now)) setSessionCookie(reply, deps, record.viewer.id, now);
 	return record;
 }
 
@@ -145,9 +128,9 @@ async function trackMember(
 	if (update.lastVisit !== null) await deps.online.setLastVisit(viewer.id, update.lastVisit);
 	await deps.online.refreshMember(viewer.id, now);
 
-	const track = request.cookies[`${deps.legacyCookie.name}_track`];
-	if (track !== undefined)
-		setForumCookie(reply, deps.legacyCookie, `${deps.legacyCookie.name}_track`, track, now + config.timeoutVisit, now, config.timeoutVisit);
+	const trackName = trackCookieName(deps.cookie);
+	const track = request.cookies[trackName];
+	if (track !== undefined) setForumCookie(reply, deps.cookie, trackName, track, now + config.timeoutVisit, now, config.timeoutVisit);
 
 	return { ...viewer, logged: record.presence?.logged ?? now, lastVisit: update.lastVisit ?? viewer.lastVisit };
 }
@@ -179,7 +162,7 @@ export async function startSession(
 	now: number,
 	options: SessionOptions,
 ): Promise<Viewer> {
-	const record = await authenticateMember(request, reply, deps, config, now);
+	const record = await authenticateMember(request, reply, deps, now);
 	return record !== null ? trackMember(request, reply, deps, record, config, now, options.quiet) : trackGuest(request, deps, now);
 }
 

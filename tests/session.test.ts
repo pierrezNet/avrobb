@@ -9,23 +9,12 @@ import { buildApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
 import { type Ban, checkBans } from '../src/services/bans.ts';
-import { buildLegacyCookie, cookieMaxAge, forumHmac, renewedExpiry } from '../src/services/legacySession.ts';
 import { memberPresenceUpdate, planOnlinePurge } from '../src/services/presence.ts';
-import { fakeDeps, fakeOnline, group, guest, NOW, viewer } from './fixtures.ts';
+import { buildSessionCookie, cookieMaxAge, SESSION_SECONDS } from '../src/services/session.ts';
+import { fakeDeps, fakeOnline, group, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
 
-describe('cookie FluxBB', () => {
-	it('format de pun_setcookie()', () => {
-		expect(buildLegacyCookie(3, 'hash', 1000, 'graine')).toBe(
-			`3|${forumHmac('hash', 'graine_password_hash')}|1000|${forumHmac('3|1000', 'graine_cookie_hash')}`,
-		);
-	});
-
-	it('renouvellement : 14 jours pour « se souvenir de moi », sinon une visite', () => {
-		expect(renewedExpiry(NOW + 100_000, NOW, 1800)).toBe(NOW + 1_209_600);
-		expect(renewedExpiry(NOW + 1000, NOW, 1800)).toBe(NOW + 1800);
-	});
-
-	it('cookie de session quand l’échéance ne dépasse pas la visite (forum_setcookie())', () => {
+describe('durée des cookies', () => {
+	it('cookie de session du navigateur quand l’échéance ne dépasse pas la visite (forum_setcookie())', () => {
 		expect(cookieMaxAge(NOW + 1800, NOW, 1800)).toBeNull();
 		expect(cookieMaxAge(NOW + 1_209_600, NOW, 1800)).toBe(1_209_600);
 	});
@@ -84,8 +73,6 @@ describe('présence', () => {
 });
 
 const SEED = 'graine-de-test';
-const cookieFor = (userId: number, hash: string, expires = NOW + 3600): string =>
-	`punbb_cookie=${buildLegacyCookie(userId, hash, expires, SEED)}`;
 const setCookies = (header: string | string[] | undefined): string[] =>
 	header === undefined ? [] : Array.isArray(header) ? header : [header];
 
@@ -98,45 +85,44 @@ afterEach(async () => app?.close());
 describe('session à chaque requête', () => {
 	const base = (overrides = {}) =>
 		fakeDeps({
-			users: [
-				{ viewer: guest, passwordHash: '' },
-				{ viewer: tessy, passwordHash: 'hash-tessy', presence: { logged: NOW - 100, idle: true } },
-				{ viewer: admin, passwordHash: 'hash-admin' },
-			],
+			users: [{ viewer: guest }, { viewer: tessy, presence: { logged: NOW - 100, idle: true } }, { viewer: admin }],
 			topics: [],
 			posts: new Map(),
 			...overrides,
 		});
 
-	it('membre : cookie renouvelé au format du PHP, présence rafraîchie', async () => {
+	it('membre : cookie prolongé une fois par jour, présence rafraîchie', async () => {
 		const online = fakeOnline();
 		app = await buildApp({ ...base(), online });
-		// Cookie de visite (échéance avant la fin de la visite) : renouvelé pour une visite, sans Max-Age.
-		const res = await app.inject({ url: '/index.php', headers: { cookie: cookieFor(3, 'hash-tessy', NOW + 1000) } });
+		const res = await app.inject({ url: '/index.php', headers: { cookie: sessionCookie(3, NOW + 1000) } });
 
-		const session = setCookies(res.headers['set-cookie']).find((c) => c.startsWith('punbb_cookie='));
-		expect(session).toContain(buildLegacyCookie(3, 'hash-tessy', NOW + 1800, SEED));
+		const session = setCookies(res.headers['set-cookie']).find((c) => c.startsWith('avrobb_session='));
+		expect(session).toContain(buildSessionCookie(3, NOW + SESSION_SECONDS, SEED));
 		expect(session).toContain('HttpOnly');
-		expect(session).not.toContain('Max-Age');
+		expect(session).toContain(`Max-Age=${SESSION_SECONDS}`);
 		expect(online.log).toEqual(['refresh 3']);
+
+		// Cookie récent : rien à reposer.
+		const fresh = await app.inject({ url: '/index.php', headers: { cookie: sessionCookie(3, NOW + SESSION_SECONDS - 60) } });
+		expect(setCookies(fresh.headers['set-cookie']).some((c) => c.startsWith('avrobb_session='))).toBe(false);
 	});
 
 	it('première page d’une visite : entrée dans la liste et cookie de suivi vidé', async () => {
 		const online = fakeOnline();
 		app = await buildApp({ ...base(), online });
-		const res = await app.inject({ url: '/index.php', headers: { cookie: cookieFor(2, 'hash-admin', NOW + 100_000) } });
+		const res = await app.inject({ url: '/index.php', headers: { cookie: sessionCookie(2) } });
 
 		expect(online.log).toEqual(['enter 2 admin']);
-		expect(setCookies(res.headers['set-cookie']).some((c) => c.startsWith('punbb_cookie_track=;'))).toBe(true);
-		expect(setCookies(res.headers['set-cookie']).find((c) => c.startsWith('punbb_cookie='))).toContain('Max-Age=1209600');
+		expect(setCookies(res.headers['set-cookie']).some((c) => c.startsWith('avrobb_track=;'))).toBe(true);
 	});
 
-	it('cookie falsifié : remplacé par un cookie invité, visiteur traité en invité', async () => {
+	it('cookie falsifié : effacé, visiteur traité en invité', async () => {
 		const online = fakeOnline();
 		app = await buildApp({ ...base(), online });
-		const res = await app.inject({ url: '/index.php', headers: { cookie: cookieFor(3, 'mauvais-hash') } });
+		const forged = `avrobb_session=${buildSessionCookie(3, NOW + 3600, 'autre-secret')}`;
+		const res = await app.inject({ url: '/index.php', headers: { cookie: forged } });
 
-		expect(setCookies(res.headers['set-cookie']).find((c) => c.startsWith('punbb_cookie='))).toMatch(/^punbb_cookie=1\|/);
+		expect(setCookies(res.headers['set-cookie']).find((c) => c.startsWith('avrobb_session='))).toMatch(/^avrobb_session=;/);
 		expect(online.log).toEqual(['enter 1 127.0.0.1']);
 		expect(res.body).toContain('Vous n&#39;êtes pas identifié(e).');
 	});
@@ -144,7 +130,7 @@ describe('session à chaque requête', () => {
 	it('extern.php ne touche pas à la présence d’un membre (PUN_QUIET_VISIT)', async () => {
 		const online = fakeOnline();
 		app = await buildApp({ ...base(), online });
-		await app.inject({ url: '/extern.php?action=stats', headers: { cookie: cookieFor(3, 'hash-tessy') } });
+		await app.inject({ url: '/extern.php?action=stats', headers: { cookie: sessionCookie(3) } });
 		expect(online.log).toEqual([]);
 	});
 
@@ -153,7 +139,7 @@ describe('session à chaque requête', () => {
 		const blocked = await app.inject('/index.php');
 		expect(blocked.statusCode).toBe(503);
 		expect(blocked.body).toContain('Le forum est fermé pour <b>maintenance</b>.');
-		expect((await app.inject({ url: '/index.php', headers: { cookie: cookieFor(2, 'hash-admin') } })).statusCode).toBe(200);
+		expect((await app.inject({ url: '/index.php', headers: { cookie: sessionCookie(2) } })).statusCode).toBe(200);
 	});
 
 	it('bannissement : lecture seule avec bandeau (échéance, motif), écritures refusées ; les échus sont supprimés', async () => {
@@ -168,7 +154,7 @@ describe('session à chaque requête', () => {
 			online,
 		};
 		app = await buildApp(deps);
-		const cookie = cookieFor(3, 'hash-tessy');
+		const cookie = sessionCookie(3);
 		const res = await app.inject({ url: '/index.php', headers: { cookie } });
 
 		expect(res.statusCode).toBe(200);
@@ -183,7 +169,7 @@ describe('session à chaque requête', () => {
 		const posted = await app.inject({
 			method: 'POST',
 			url: '/post.php?tid=1',
-			headers: { cookie: `${cookie}; punbb_cookie_csrf=${secret}`, 'content-type': 'application/x-www-form-urlencoded' },
+			headers: { cookie: `${cookie}; avrobb_csrf=${secret}`, 'content-type': 'application/x-www-form-urlencoded' },
 			payload: new URLSearchParams({ csrf_token: csrfToken(secret, SEED, 3), req_message: 'Coucou' }).toString(),
 		});
 		expect(posted.statusCode).toBe(403);
@@ -195,7 +181,7 @@ describe('session à chaque requête', () => {
 		expect(forGuest.statusCode).toBe(200);
 		expect(forGuest.body).not.toContain('ban-notice');
 
-		const forAdmin = await app.inject({ url: '/index.php', headers: { cookie: cookieFor(2, 'hash-admin') } });
+		const forAdmin = await app.inject({ url: '/index.php', headers: { cookie: sessionCookie(2) } });
 		expect(forAdmin.statusCode).toBe(200);
 		expect(forAdmin.body).not.toContain('ban-notice');
 	});

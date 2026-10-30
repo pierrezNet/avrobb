@@ -11,9 +11,9 @@
  * langue par défaut (forum en français), affichage du numéro de version de FluxBB.
  */
 
+import { TIMEZONES } from './accounts.ts';
 import { isValidEmail } from './mail.ts';
 import { punLinebreaks, punTrim } from './phpString.ts';
-import { TIMEZONES } from './registration.ts';
 import { THEMES } from './themes.ts';
 
 /** Durées de cache des flux proposées par le PHP (minutes, 0 : pas de cache). */

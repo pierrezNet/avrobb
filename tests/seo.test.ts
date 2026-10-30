@@ -46,7 +46,7 @@ describe('référencement : fonctions pures', () => {
 describe('référencement : pages', () => {
 	const deps = () =>
 		fakeDeps({
-			users: [{ viewer: guest, passwordHash: '' }],
+			users: [{ viewer: guest }],
 			topics: [topic({ id: 10 })],
 			posts: new Map([[10, [post(100, { message: 'Bonjour [b]à tous[/b] [img]https://img.test/a.png[/img]' }), post(101)]]]),
 		});

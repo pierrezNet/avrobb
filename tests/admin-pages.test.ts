@@ -9,9 +9,8 @@ import { buildApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
 import { toBoardConfig } from '../src/services/boardConfig.ts';
-import { buildLegacyCookie } from '../src/services/legacySession.ts';
 import { formatStaticBody, isSafeLink, parseStaticBody, readStaticPageForm } from '../src/services/staticPageConfig.ts';
-import { type FakeData, fakeDeps, group, guest, NOW, viewer } from './fixtures.ts';
+import { type FakeData, fakeDeps, group, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
 
 describe('balisage des pages d’information', () => {
 	it('rubriques, paragraphes et liens ; aller-retour avec le formulaire', () => {
@@ -59,19 +58,14 @@ const CSRF_SECRET = '6'.repeat(64);
 const admin = viewer({ id: 2, username: 'admin', group: group({ id: GroupId.Admin }) });
 const mod = viewer({ id: 5, username: 'MaxDUO', group: group({ id: GroupId.Moderator, isModerator: true }) });
 const hashes: Record<number, string> = { 2: 'h2', 5: 'h5' };
-const cookies = (userId: number): string =>
-	`punbb_cookie=${buildLegacyCookie(userId, hashes[userId] ?? '', NOW + 3600, SEED)}; punbb_cookie_csrf=${CSRF_SECRET}`;
+const cookies = (userId: number): string => `${sessionCookie(userId)}; avrobb_csrf=${CSRF_SECRET}`;
 
 let app: FastifyInstance | undefined;
 afterEach(async () => app?.close());
 
 function data(): FakeData {
 	return {
-		users: [
-			{ viewer: guest, passwordHash: '' },
-			{ viewer: admin, passwordHash: 'h2' },
-			{ viewer: mod, passwordHash: 'h5' },
-		],
+		users: [{ viewer: guest }, { viewer: admin }, { viewer: mod }],
 		topics: [],
 		posts: new Map(),
 		configValues: new Map(),

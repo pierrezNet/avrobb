@@ -13,7 +13,7 @@ afterEach(async () => app?.close());
 
 const deps = (config = {}, readBoard = true) =>
 	fakeDeps({
-		users: [{ viewer: { ...guest, group: group({ ...guest.group, canReadBoard: readBoard }) }, passwordHash: '' }],
+		users: [{ viewer: { ...guest, group: group({ ...guest.group, canReadBoard: readBoard }) } }],
 		topics: [],
 		posts: new Map(),
 		config,
@@ -58,7 +58,7 @@ describe('stats.php', () => {
 	it('totaux, dernier inscrit et présents, lien dans le pied de page', async () => {
 		app = await buildApp(
 			fakeDeps({
-				users: [{ viewer: guest, passwordHash: '' }],
+				users: [{ viewer: guest }],
 				topics: [],
 				posts: new Map(),
 				online: [

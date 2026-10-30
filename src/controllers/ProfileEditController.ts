@@ -16,6 +16,7 @@ import { buildProfileEditPage, sectionTitle } from '../presenters/profileEditPag
 import type { BanReader } from '../repositories/BanRepository.ts';
 import type { CensorReader } from '../repositories/CensorRepository.ts';
 import type { PhpCacheStore } from '../repositories/PhpCacheFiles.ts';
+import { normalizeUsername, usernameSkeleton } from '../services/accounts.ts';
 import type { AvatarLocator } from '../services/avatars.ts';
 import { buildCensor, type Censor } from '../services/censor.ts';
 import { canRenameUsers, isAdmin, isAnyModerator } from '../services/permissions.ts';
@@ -31,7 +32,6 @@ import {
 	readPrivacy,
 	readSignature,
 } from '../services/profileForms.ts';
-import { normalizeUsername, usernameSkeleton } from '../services/registration.ts';
 import { isProfile, loadEditableProfile, type ProfileAccessDeps, type ProfileQuery } from './profileAccess.ts';
 
 export interface ProfileEditControllerDeps extends LayoutDeps, ProfileAccessDeps {
@@ -106,7 +106,6 @@ export class ProfileEditController {
 			case 'essentials': {
 				const moderator = isAnyModerator(viewer);
 				const renaming = moderator && canRenameUsers(viewer) ? normalizeUsername(field(body, 'req_username')) : profile.username;
-				const emailEditable = moderator || !config.registration.verify;
 				const email = field(body, 'req_email').trim().toLowerCase();
 				const [bans, censor, similarUsername, emailOwners] = await Promise.all([
 					this.deps.bans.listBans(),
@@ -114,7 +113,7 @@ export class ProfileEditController {
 					renaming !== profile.username
 						? this.deps.profileStore.findSimilarUsername(renaming, usernameSkeleton(renaming), profile.id)
 						: Promise.resolve(null),
-					emailEditable && !moderator && email !== profile.email.toLowerCase()
+					!moderator && email !== profile.email.toLowerCase()
 						? this.deps.profileStore.listUsernamesByEmail(email, profile.id)
 						: Promise.resolve([]),
 				]);
@@ -131,7 +130,6 @@ export class ProfileEditController {
 						isAnyModerator: moderator,
 						isAdmin: isAdmin(viewer),
 						canRename: canRenameUsers(viewer),
-						emailEditable,
 						currentUsername: profile.username,
 						currentEmail: profile.email,
 						guestLabel: lang.common.guest,

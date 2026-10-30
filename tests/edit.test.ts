@@ -7,12 +7,11 @@ import type { FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
-import { buildLegacyCookie } from '../src/services/legacySession.ts';
 import { canDeletePost, canEditPost, EDIT_WINDOW_SECONDS, type PostOwnership } from '../src/services/permissions.ts';
-import { type FakeData, fakeDeps, group, guest, NOW, post, topic, viewer } from './fixtures.ts';
+import { type FakeData, fakeDeps, group, guest, NOW, post, sessionCookie, topic, viewer } from './fixtures.ts';
 
 const SEED = 'graine-de-test';
-const cookie = (id: number, hash: string): string => `punbb_cookie=${buildLegacyCookie(id, hash, NOW + 3600, SEED)}`;
+const cookie = (id: number, hash: string): string => `${sessionCookie(id)}`;
 const tessy = cookie(3, 'h');
 const max = viewer({ id: 5, username: 'MaxDUO', group: group({ id: GroupId.Moderator, isModerator: true }) });
 const modForum = { id: 1, name: 'Forum', moderators: new Map([['MaxDUO', 5]]) };
@@ -51,11 +50,7 @@ afterEach(async () => app?.close());
 
 function data(overrides: Partial<FakeData> = {}): FakeData {
 	return {
-		users: [
-			{ viewer: guest, passwordHash: '' },
-			{ viewer: viewer(), passwordHash: 'h' },
-			{ viewer: max, passwordHash: 'm' },
-		],
+		users: [{ viewer: guest }, { viewer: viewer() }, { viewer: max }],
 		topics: [topic({ id: 10, subject: 'Mon sujet', firstPostId: 100, forum: modForum })],
 		posts: new Map([[10, [post(100, { posted: NOW - 60 }), post(101, { posted: NOW - 30, message: 'Réponse [b]zut[/b]' })]]]),
 		...overrides,
@@ -67,7 +62,7 @@ async function submit(server: FastifyInstance, url: string, fields: Record<strin
 	const csrf =
 		[page.headers['set-cookie']]
 			.flat()
-			.find((c) => c?.startsWith('punbb_cookie_csrf='))
+			.find((c) => c?.startsWith('avrobb_csrf='))
 			?.split(';')[0] ?? '';
 	const token = /name="csrf_token" value="([0-9a-f]+)"/.exec(page.body)?.[1] ?? '';
 	return server.inject({

@@ -7,9 +7,8 @@ import type { FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.ts';
 import { GroupId, type UserProfile } from '../src/domain/models.ts';
-import { forumHmac } from '../src/services/legacySession.ts';
 import { canEditProfile } from '../src/services/permissions.ts';
-import { fakeDeps, group, guest, NOW, viewer } from './fixtures.ts';
+import { fakeDeps, group, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
 
 function profile(overrides: Partial<UserProfile> = {}): UserProfile {
 	return {
@@ -60,13 +59,9 @@ describe('canEditProfile (profile.php)', () => {
 const SEED = 'graine-de-test';
 const cookie = (userId: number, hash: string): string => {
 	const expires = NOW + 3600;
-	return `punbb_cookie=${userId}|${forumHmac(hash, `${SEED}_password_hash`)}|${expires}|${forumHmac(`${userId}|${expires}`, `${SEED}_cookie_hash`)}`;
+	return `${sessionCookie(userId, expires)}`;
 };
-const users = [
-	{ viewer: guest, passwordHash: '' },
-	{ viewer: tessy, passwordHash: 'hash-tessy' },
-	{ viewer: mod, passwordHash: 'hash-mod' },
-];
+const users = [{ viewer: guest }, { viewer: tessy }, { viewer: mod }];
 
 let app: FastifyInstance | undefined;
 afterEach(async () => app?.close());
@@ -125,7 +120,7 @@ describe('GET /profile.php', () => {
 		await app.close();
 
 		const blind = { ...guest, group: group({ id: GroupId.Guest, canViewUsers: false }) };
-		app = await buildApp(deps({ users: [{ viewer: blind, passwordHash: '' }] }));
+		app = await buildApp(deps({ users: [{ viewer: blind }] }));
 		expect((await app.inject('/profile.php?id=6')).statusCode).toBe(403);
 	});
 });

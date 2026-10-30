@@ -1,5 +1,6 @@
 {#- Mise en page commune (main.tpl + header.php + footer.php). Données : `layout` (presenters/layout.ts). -#}
 {%- import "partials/actions.njk" as actions -%}
+{%- import "partials/forms.njk" as forms -%}
 <!DOCTYPE html>
 <html lang="{{ lang.common.langCode }}">
 <head>
@@ -52,6 +53,8 @@
 					{%- if item.trustedHtml -%}
 						{#- HTML saisi par l'administrateur (o_additional_navlinks), affiché tel quel comme dans header.php. -#}
 						{{ item.trustedHtml | safe }}
+					{%- elif item.post -%}
+						<form class="site-nav__form" method="post" action="{{ url(item.href) }}">{{ forms.csrf(layout) }}<button type="submit" class="site-nav__button">{{ item.label }}</button></form>
 					{%- else -%}
 						<a href="{{ url(item.href) }}">{% if item.abbrTitle %}<abbr title="{{ item.abbrTitle }}">{{ item.label }}</abbr>{% else %}{{ item.label }}{% endif %}{% if item.count %} <span class="site-nav__count">{{ item.count }}<span class="visually-hidden"> {{ lang.common.unreadCount }}</span></span>{% endif %}</a>
 					{%- endif -%}

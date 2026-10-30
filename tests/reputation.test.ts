@@ -8,9 +8,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
-import { buildLegacyCookie } from '../src/services/legacySession.ts';
 import { canDeleteReputation, readReason, reputationAccessError, voteError } from '../src/services/reputation.ts';
-import { boardConfig, type FakeData, fakeDeps, group, guest, NOW, viewer } from './fixtures.ts';
+import { boardConfig, type FakeData, fakeDeps, group, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
 
 const SEED = 'graine-de-test';
 const CSRF_SECRET = 'c'.repeat(64);
@@ -58,11 +57,7 @@ const admin = viewer({ id: 2, username: 'admin', group: group({ id: GroupId.Admi
 
 function data(overrides: Partial<FakeData> = {}): FakeData {
 	return {
-		users: [
-			{ viewer: guest, passwordHash: '' },
-			{ viewer: tessy, passwordHash: 'h3' },
-			{ viewer: admin, passwordHash: 'h2' },
-		],
+		users: [{ viewer: guest }, { viewer: tessy }, { viewer: admin }],
 		topics: [],
 		posts: new Map(),
 		config: { reputationEnabled: true, reputationTimeout: 5 },
@@ -90,8 +85,7 @@ function data(overrides: Partial<FakeData> = {}): FakeData {
 }
 
 const hashes: Record<number, string> = { 3: 'h3', 2: 'h2' };
-const cookies = (userId: number): string =>
-	`punbb_cookie=${buildLegacyCookie(userId, hashes[userId] ?? '', NOW + 3600, SEED)}; punbb_cookie_csrf=${CSRF_SECRET}`;
+const cookies = (userId: number): string => `${sessionCookie(userId)}; avrobb_csrf=${CSRF_SECRET}`;
 
 let app: FastifyInstance | undefined;
 afterEach(async () => app?.close());

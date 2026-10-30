@@ -9,7 +9,7 @@
  */
 
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import type { LegacyCookieConfig } from '../config.ts';
+import type { CookieConfig } from '../config.ts';
 import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { setForumCookie } from '../http/session.ts';
@@ -20,7 +20,7 @@ import { positiveInt } from './params.ts';
 
 export interface MiscControllerDeps extends LayoutDeps {
 	online: OnlineWriter;
-	legacyCookie: LegacyCookieConfig;
+	cookie: CookieConfig;
 	legacyBaseUrl: string;
 	trackCookieName: string;
 	subscriptions: SubscriptionStore;
@@ -180,7 +180,7 @@ export class MiscController {
 		if (request.query.action === 'markread') {
 			// misc.php : last_visit = début de la visite, et suivi des sujets remis à zéro.
 			await this.deps.online.setLastVisit(viewer.id, viewer.logged);
-			setForumCookie(reply, this.deps.legacyCookie, cookieName, '', now + config.timeoutVisit, now, config.timeoutVisit);
+			setForumCookie(reply, this.deps.cookie, cookieName, '', now + config.timeoutVisit, now, config.timeoutVisit);
 			return reply.redirect('index.php', 303);
 		}
 
@@ -191,7 +191,7 @@ export class MiscController {
 		const tracked = markRead(parseTrackedTopics(request.cookies[cookieName]), 'forums', forumId, now);
 		setForumCookie(
 			reply,
-			this.deps.legacyCookie,
+			this.deps.cookie,
 			cookieName,
 			serializeTrackedTopics(tracked),
 			now + config.timeoutVisit,

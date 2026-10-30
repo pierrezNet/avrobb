@@ -4,6 +4,7 @@
  */
 
 import type { DateWords } from '../../services/dateFormat.ts';
+import { account } from './account.ts';
 import { admin } from './admin.ts';
 import { adminAppearance } from './adminAppearance.ts';
 import { adminBans } from './adminBans.ts';
@@ -29,7 +30,6 @@ import { moderate } from './moderate.ts';
 import { pms } from './pms.ts';
 import { post } from './post.ts';
 import { profile } from './profile.ts';
-import { register } from './register.ts';
 import { reputation } from './reputation.ts';
 import { search } from './search.ts';
 import { staticPages } from './staticPages.ts';
@@ -50,7 +50,7 @@ export const fr = {
 	gallery,
 	login,
 	misc,
-	register,
+	account,
 	pms,
 	post,
 	toolbar,

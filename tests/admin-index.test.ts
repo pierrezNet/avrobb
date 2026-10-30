@@ -6,23 +6,17 @@ import type { FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
-import { buildLegacyCookie } from '../src/services/legacySession.ts';
-import { type FakeData, fakeDeps, group, guest, NOW, viewer } from './fixtures.ts';
+import { type FakeData, fakeDeps, group, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
 
 const SEED = 'graine-de-test';
 const mod = viewer({ id: 5, username: 'MaxDUO', group: group({ id: GroupId.Moderator, isModerator: true }) });
 const tessy = viewer();
 const admin = viewer({ id: 2, username: 'admin', group: group({ id: GroupId.Admin }) });
 const hashes: Record<number, string> = { 5: 'h5', 3: 'h3', 2: 'h2' };
-const cookie = (userId: number): string => `punbb_cookie=${buildLegacyCookie(userId, hashes[userId] ?? '', NOW + 3600, SEED)}`;
+const cookie = (userId: number): string => `${sessionCookie(userId)}`;
 
 const data = (): FakeData => ({
-	users: [
-		{ viewer: guest, passwordHash: '' },
-		{ viewer: mod, passwordHash: 'h5' },
-		{ viewer: tessy, passwordHash: 'h3' },
-		{ viewer: admin, passwordHash: 'h2' },
-	],
+	users: [{ viewer: guest }, { viewer: mod }, { viewer: tessy }, { viewer: admin }],
 	topics: [],
 	posts: new Map(),
 });

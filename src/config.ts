@@ -2,12 +2,11 @@
  * Configuration de l'application, lue depuis l'environnement (.env).
  */
 
-/** $cookie_name, $cookie_seed, $cookie_path, $cookie_domain, $cookie_secure du config.php PHP. */
-export interface LegacyCookieConfig {
+/** Cookies du forum : `<name>_session`, `<name>_csrf`, `<name>_track`, tous sur le chemin /. */
+export interface CookieConfig {
 	name: string;
-	seed: string;
-	path: string;
-	domain: string;
+	/** Secret des signatures (session, jeton CSRF) : SESSION_SECRET, au moins 32 caractères. */
+	secret: string;
 	secure: boolean;
 }
 
@@ -21,8 +20,9 @@ export interface AppConfig {
 		database: string;
 		tablePrefix: string;
 	};
-	/** Cookie de session de l'installation FluxBB/PiloteVirtuel (cohabitation). */
-	legacyCookie: LegacyCookieConfig;
+	cookie: CookieConfig;
+	/** Connexion sans fournisseur SSO, pour le développement (DEV_LOGIN=1, depuis la machine seulement). */
+	devLogin: boolean;
 	/** URL de l'installation PHP, pour les pages pas encore portées. */
 	legacyBaseUrl: string;
 	/** Racine de l'installation PHP sur le disque (avatars, fichiers de cache) ; vide si inaccessible. */
@@ -41,6 +41,12 @@ function required(env: NodeJS.ProcessEnv, name: string): string {
 	return value;
 }
 
+function sessionSecret(env: NodeJS.ProcessEnv): string {
+	const secret = required(env, 'SESSION_SECRET');
+	if (secret.length < 32) throw new Error('SESSION_SECRET doit compter au moins 32 caractères');
+	return secret;
+}
+
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
 	return {
 		port: Number(env.PORT ?? 3000),
@@ -52,13 +58,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
 			database: required(env, 'DB_NAME'),
 			tablePrefix: env.DB_PREFIX ?? '',
 		},
-		legacyCookie: {
-			name: required(env, 'LEGACY_COOKIE_NAME'),
-			seed: required(env, 'LEGACY_COOKIE_SEED'),
-			path: env.LEGACY_COOKIE_PATH ?? '/',
-			domain: env.LEGACY_COOKIE_DOMAIN ?? '',
-			secure: env.LEGACY_COOKIE_SECURE === '1',
-		},
+		cookie: { name: 'avrobb', secret: sessionSecret(env), secure: env.COOKIE_SECURE === '1' },
+		devLogin: env.DEV_LOGIN === '1',
 		legacyBaseUrl: (env.LEGACY_BASE_URL ?? '').replace(/\/$/, ''),
 		legacyRoot: env.LEGACY_ROOT ?? '',
 		trustProxy: env.TRUST_PROXY === '1',

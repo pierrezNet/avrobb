@@ -9,21 +9,13 @@
 
 import type { BoardConfig, EditableProfile, Viewer } from '../domain/models.ts';
 import type { Lang } from '../lang/fr/index.ts';
+import { TIMEZONES } from '../services/accounts.ts';
 import { parseSignature } from '../services/bbcode.ts';
 import type { Censor } from '../services/censor.ts';
 import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
 import { forumNumberFormat } from '../services/numberFormat.ts';
-import {
-	canChangeEmail,
-	canChangePassword,
-	canRenameUsers,
-	canSeeProfileAdmin,
-	canUsePrivatePlugiles,
-	isAdmin,
-	isAnyModerator,
-} from '../services/permissions.ts';
+import { canRenameUsers, canSeeProfileAdmin, canUsePrivatePlugiles, isAdmin, isAnyModerator } from '../services/permissions.ts';
 import { displayOptions, type ProfileSection } from '../services/profileForms.ts';
-import { TIMEZONES } from '../services/registration.ts';
 import { THEMES } from '../services/themes.ts';
 import { signatureParserOptions } from './parserOptions.ts';
 import { type BbcodeStatus, signatureBbcodeStatus } from './postPage.ts';
@@ -102,11 +94,8 @@ export interface Checkbox {
 export interface EssentialsView {
 	username: string;
 	usernameEditable: boolean;
-	changePassUrl: string | null;
 	/** Adresse modifiable dans le formulaire, sinon affichée avec le lien de changement. */
 	email: string;
-	emailEditable: boolean;
-	changeEmailUrl: string | null;
 	/** Liens des modérateurs : e-mail au membre, MP et contacts (plugins/apms/profile_add4.php). */
 	contactLinks: Link[];
 	timezones: Option<number>[];
@@ -219,18 +208,14 @@ function essentials(input: ProfileEditInput): EssentialsView {
 			searchLinks.push({ href: `search.php?action=show_subscriptions&user_id=${profile.id}`, label: t.showSubscriptions });
 	}
 
-	const emailEditable = moderator || !config.registration.verify;
 	return {
 		username: form.username,
 		usernameEditable: moderator && canRenameUsers(viewer),
-		changePassUrl: canChangePassword(viewer, profile) ? `profile.php?action=change_pass&id=${profile.id}` : null,
 		email: form.email,
-		emailEditable,
-		changeEmailUrl: !emailEditable && canChangeEmail(viewer, profile) ? `profile.php?action=change_email&id=${profile.id}` : null,
 		contactLinks,
 		timezones: TIMEZONES.map((value) => ({
 			value,
-			label: lang.register.timezones[String(value)] ?? String(value),
+			label: lang.account.timezones[String(value)] ?? String(value),
 			selected: value === form.timezone,
 		})),
 		dst: form.dst,

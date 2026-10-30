@@ -1,26 +1,15 @@
 /**
- * Connexion et déconnexion (login.php) : mots de passe FluxBB, cookie, CSRF, adresse de retour.
+ * Connexion et déconnexion (login.php) : connexion de développement, cookie de session signé,
+ * CSRF, adresse de retour, déconnexion en POST.
  */
 
-import { createHash } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.ts';
-import { GroupId } from '../src/domain/models.ts';
-import { buildLegacyCookie, logoutToken, punHash } from '../src/services/legacySession.ts';
-import { checkPassword } from '../src/services/passwords.ts';
+import { csrfToken } from '../src/http/csrf.ts';
 import { safeRedirect } from '../src/services/redirects.ts';
-import { fakeDeps, fakeOnline, group, guest, NOW, viewer } from './fixtures.ts';
-
-describe('checkPassword', () => {
-	it('SHA-1 de FluxBB, MD5 hérité de 1.2 à remplacer', () => {
-		expect(checkPassword('secret', punHash('secret'))).toEqual({ valid: true, upgradeTo: null });
-		expect(checkPassword('autre', punHash('secret')).valid).toBe(false);
-		const md5 = createHash('md5').update('secret').digest('hex');
-		expect(checkPassword('secret', md5)).toEqual({ valid: true, upgradeTo: punHash('secret') });
-		expect(checkPassword('', '').valid).toBe(false);
-	});
-});
+import { readSessionCookie } from '../src/services/session.ts';
+import { COOKIE_SECRET, fakeDeps, fakeOnline, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
 
 describe('safeRedirect', () => {
 	it('ne garde que les pages du forum, sur ce site', () => {
@@ -33,126 +22,109 @@ describe('safeRedirect', () => {
 	});
 });
 
-const SEED = 'graine-de-test';
 const HOST = 'forum.test';
+const CSRF_SECRET = 'a'.repeat(64);
 
 let app: FastifyInstance | undefined;
 afterEach(async () => app?.close());
 
-/** Récupère le cookie CSRF et le jeton du formulaire de connexion. */
-async function loginForm(server: FastifyInstance): Promise<{ cookie: string; token: string }> {
-	const page = await server.inject({ url: '/login.php', headers: { host: HOST } });
-	const csrf = [page.headers['set-cookie']].flat().find((c) => c?.startsWith('punbb_cookie_csrf='));
-	const token = /name="csrf_token" value="([0-9a-f]+)"/.exec(page.body)?.[1] ?? '';
-	return { cookie: (csrf ?? '').split(';')[0] ?? '', token };
-}
+const tessy = viewer({ logged: NOW - 900 });
+const users = [{ viewer: guest }, { viewer: tessy, presence: { logged: NOW - 900, idle: false } }];
 
-const post = (server: FastifyInstance, body: string, cookie: string) =>
+const postForm = (server: FastifyInstance, url: string, body: string, cookie: string, remoteAddress = '127.0.0.1') =>
 	server.inject({
 		method: 'POST',
-		url: '/login.php?action=in',
+		url,
+		remoteAddress,
 		headers: { host: HOST, cookie, 'content-type': 'application/x-www-form-urlencoded' },
 		payload: body,
 	});
 
-describe('POST /login.php?action=in', () => {
-	const tessy = viewer();
-	const pending = viewer({ id: 7, username: 'Nouveau', group: group({ id: 0 }) });
-	const deps = () =>
-		fakeDeps({
-			users: [
-				{ viewer: guest, passwordHash: '' },
-				{ viewer: tessy, passwordHash: punHash('motdepasse') },
-				{ viewer: pending, passwordHash: createHash('md5').update('ancien').digest('hex') },
-			],
-			topics: [],
-			posts: new Map(),
-		});
+const sessionFrom = (headers: Record<string, unknown>): string | undefined =>
+	[headers['set-cookie']]
+		.flat()
+		.find((c): c is string => typeof c === 'string' && c.startsWith('avrobb_session='))
+		?.split(';')[0]
+		?.slice('avrobb_session='.length);
 
-	it('connecte : cookie FluxBB (14 jours avec « se souvenir de moi »), retour vers la page d’origine', async () => {
+describe('connexion de développement', () => {
+	const guestCookie = `avrobb_csrf=${CSRF_SECRET}`;
+	const guestToken = csrfToken(CSRF_SECRET, COOKIE_SECRET, 1);
+
+	it('ouvre une session signée sous le nom du membre et renvoie à l’adresse demandée', async () => {
 		const online = fakeOnline();
-		app = await buildApp({ ...deps(), online });
-		const { cookie, token } = await loginForm(app);
-		const res = await post(
-			app,
-			`csrf_token=${token}&req_username=TESSY&req_password=motdepasse&save_pass=1&redirect_url=viewtopic.php%3Fpid%3D12`,
-			cookie,
-		);
+		app = await buildApp({ ...fakeDeps({ users, topics: [], posts: new Map() }), online });
 
+		const res = await postForm(
+			app,
+			'/login.php?action=in',
+			`csrf_token=${guestToken}&req_username=TESSY&redirect_url=viewforum.php%3Fid%3D2`,
+			guestCookie,
+		);
 		expect(res.statusCode).toBe(303);
-		expect(res.headers.location).toBe('viewtopic.php?pid=12#p12');
-		const session = [res.headers['set-cookie']].flat().find((c) => c?.startsWith('punbb_cookie='));
-		expect(session).toContain(buildLegacyCookie(3, punHash('motdepasse'), NOW + 1_209_600, SEED));
+		expect(res.headers.location).toBe('viewforum.php?id=2');
+		expect(readSessionCookie(sessionFrom(res.headers), COOKIE_SECRET, NOW)?.userId).toBe(3);
 		expect(online.log).toContain('remove ident 127.0.0.1');
 	});
 
-	it('refuse un mot de passe faux, un formulaire sans jeton CSRF ou venu d’un autre site', async () => {
-		app = await buildApp(deps());
-		const { cookie, token } = await loginForm(app);
+	it('refuse un pseudo inconnu, un jeton absent, une machine distante ou DEV_LOGIN désactivé', async () => {
+		app = await buildApp(fakeDeps({ users, topics: [], posts: new Map() }));
+		const unknown = await postForm(app, '/login.php?action=in', `csrf_token=${guestToken}&req_username=Personne`, guestCookie);
+		expect(sessionFrom(unknown.headers)).toBeUndefined();
+		expect(unknown.body).toContain('Aucun membre ne porte ce nom');
 
-		const wrong = await post(app, `csrf_token=${token}&req_username=Tessy&req_password=faux`, cookie);
-		expect(wrong.body).toContain('Nom d&#39;utilisateur et/ou mot de passe incorrect.');
-		expect([wrong.headers['set-cookie']].flat().some((c) => c?.startsWith('punbb_cookie=3'))).toBe(false);
+		expect((await postForm(app, '/login.php?action=in', 'req_username=Tessy', guestCookie)).statusCode).toBe(403);
 
-		expect((await post(app, 'req_username=Tessy&req_password=motdepasse', cookie)).statusCode).toBe(403);
-		expect((await post(app, `csrf_token=${token}&req_username=Tessy&req_password=motdepasse`, '')).statusCode).toBe(403);
-		const foreign = await app.inject({
-			method: 'POST',
-			url: '/login.php?action=in',
-			headers: { host: HOST, origin: 'https://evil.test', cookie, 'content-type': 'application/x-www-form-urlencoded' },
-			payload: `csrf_token=${token}&req_username=Tessy&req_password=motdepasse`,
-		});
-		expect(foreign.statusCode).toBe(403);
-	});
+		const remote = await postForm(app, '/login.php?action=in', `csrf_token=${guestToken}&req_username=Tessy`, guestCookie, '203.0.113.7');
+		expect(remote.statusCode).toBe(403);
+		expect(sessionFrom(remote.headers)).toBeUndefined();
 
-	it('remplace un hash MD5 et valide un compte en attente à sa première connexion', async () => {
-		const d = deps();
-		app = await buildApp(d);
-		const { cookie, token } = await loginForm(app);
-		const res = await post(app, `csrf_token=${token}&req_username=Nouveau&req_password=ancien`, cookie);
-
-		expect(res.statusCode).toBe(303);
-		expect(await d.credentials.findCredentials('Nouveau')).toMatchObject({ passwordHash: punHash('ancien'), groupId: GroupId.Member });
-	});
-});
-
-describe('GET /login.php', () => {
-	const tessy = viewer({ logged: NOW - 900 });
-	const cookie = `punbb_cookie=${buildLegacyCookie(3, 'h', NOW + 3600, SEED)}`;
-
-	it('membre connecté : renvoi à l’index ; déconnexion avec le jeton de l’en-tête', async () => {
-		const online = fakeOnline();
-		app = await buildApp({
-			...fakeDeps({
-				users: [
-					{ viewer: guest, passwordHash: '' },
-					{ viewer: tessy, passwordHash: 'h', presence: { logged: NOW - 900, idle: false } },
-				],
-				topics: [],
-				posts: new Map(),
-			}),
-			online,
-		});
-
-		expect((await app.inject({ url: '/login.php', headers: { cookie } })).headers.location).toBe('index.php');
-
-		const bad = await app.inject({ url: '/login.php?action=out&id=3&csrf_token=faux', headers: { cookie } });
-		expect(bad.headers.location).toBe('index.php');
-		expect(online.log).not.toContain('remove 3');
-
-		const out = await app.inject({ url: `/login.php?action=out&id=3&csrf_token=${logoutToken(3, '127.0.0.1')}`, headers: { cookie } });
-		expect(out.headers.location).toBe('index.php');
-		expect(online.log.slice(-2)).toEqual(['remove 3', `last_visit 3 ${NOW - 900}`]);
-		expect([out.headers['set-cookie']].flat().find((c) => c?.startsWith('punbb_cookie='))).toMatch(/^punbb_cookie=1\|/);
+		await app.close();
+		app = await buildApp({ ...fakeDeps({ users, topics: [], posts: new Map() }), devLogin: false });
+		const disabled = await postForm(app, '/login.php?action=in', `csrf_token=${guestToken}&req_username=Tessy`, guestCookie);
+		expect(disabled.statusCode).toBe(403);
+		const page = await app.inject({ url: '/login.php', headers: { host: HOST } });
+		expect(page.body).not.toContain('name="req_username"');
 	});
 
 	it('formulaire accessible en maintenance, avec adresse de retour tirée du Referer', async () => {
-		app = await buildApp(
-			fakeDeps({ users: [{ viewer: guest, passwordHash: '' }], topics: [], posts: new Map(), config: { maintenance: true } }),
-		);
+		app = await buildApp(fakeDeps({ users: [{ viewer: guest }], topics: [], posts: new Map(), config: { maintenance: true } }));
 		const res = await app.inject({ url: '/login.php', headers: { host: HOST, referer: 'http://forum.test/viewforum.php?id=2' } });
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('name="redirect_url" value="viewforum.php?id=2"');
-		expect(res.body).toContain('autocomplete="current-password"');
+		expect(res.body).not.toContain('type="password"');
+	});
+});
+
+describe('session et déconnexion', () => {
+	const cookie = `${sessionCookie(3)}; avrobb_csrf=${CSRF_SECRET}`;
+
+	it('membre connecté : renvoi à l’index ; déconnexion en POST avec le jeton CSRF', async () => {
+		const online = fakeOnline();
+		app = await buildApp({ ...fakeDeps({ users, topics: [], posts: new Map() }), online });
+
+		expect((await app.inject({ url: '/login.php', headers: { cookie } })).headers.location).toBe('index.php');
+
+		// L'ancien lien GET ne déconnecte plus : aucune écriture en GET.
+		const get = await app.inject({ url: '/login.php?action=out', headers: { cookie } });
+		expect(get.headers.location).toBe('index.php');
+		expect(online.log).not.toContain('remove 3');
+
+		expect((await postForm(app, '/login.php?action=out', 'csrf_token=faux', cookie)).statusCode).toBe(403);
+		expect(online.log).not.toContain('remove 3');
+
+		const out = await postForm(app, '/login.php?action=out', `csrf_token=${csrfToken(CSRF_SECRET, COOKIE_SECRET, 3)}`, cookie);
+		expect(out.headers.location).toBe('index.php');
+		expect(online.log.slice(-2)).toEqual(['remove 3', `last_visit 3 ${NOW - 900}`]);
+		expect(sessionFrom(out.headers)).toBe('');
+	});
+
+	it('cookie falsifié ou échu : visiteur traité en invité, cookie effacé', async () => {
+		app = await buildApp(fakeDeps({ users, topics: [], posts: new Map() }));
+		for (const bad of [sessionCookie(3).replace('avrobb_session=3.', 'avrobb_session=2.'), sessionCookie(3, NOW - 1)]) {
+			const res = await app.inject({ url: '/login.php', headers: { cookie: bad } });
+			expect(res.statusCode).toBe(200);
+			expect(sessionFrom(res.headers)).toBe('');
+		}
 	});
 });

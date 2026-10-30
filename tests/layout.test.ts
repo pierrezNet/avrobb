@@ -8,8 +8,7 @@ import { buildApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { fr, frDateWords } from '../src/lang/fr/index.ts';
 import { buildLayout, type LayoutInput, pageTitle } from '../src/presenters/layout.ts';
-import { forumHmac, logoutToken } from '../src/services/legacySession.ts';
-import { boardConfig, fakeDeps, group, guest, NOW, topic, viewer } from './fixtures.ts';
+import { boardConfig, fakeDeps, group, guest, NOW, sessionCookie, topic, viewer } from './fixtures.ts';
 
 const mod = viewer({ id: 5, username: 'MaxDUO', group: group({ id: GroupId.Moderator, isModerator: true }) });
 
@@ -20,7 +19,6 @@ function input(overrides: Partial<LayoutInput> = {}): LayoutInput {
 		lang: fr,
 		dateWords: frDateWords,
 		now: NOW,
-		remoteAddress: '127.0.0.1',
 		csrfToken: 'jeton',
 		options: { pageId: 'test', titleParts: ['Forum', 'Page'] },
 		pendingReports: false,
@@ -41,7 +39,7 @@ describe('pageTitle', () => {
 describe('buildLayout', () => {
 	it('menu invité : inscription et identification, pas de profil', () => {
 		const layout = buildLayout(input({ viewer: guest }));
-		expect(navIds(layout)).toEqual(['navindex', 'navuserlist', 'navsearch', 'navgallery', 'navregister', 'navlogin']);
+		expect(navIds(layout)).toEqual(['navindex', 'navuserlist', 'navsearch', 'navgallery', 'navlogin']);
 		expect(layout.status).toBeNull();
 		expect(layout.quickSearches.map((s) => s.label)).toEqual(['Récentes', 'Sans réponse']);
 	});
@@ -50,7 +48,8 @@ describe('buildLayout', () => {
 		const layout = buildLayout(input({ options: { pageId: 'x', titleParts: [], activeNav: 'index' } }));
 		expect(navIds(layout)).toEqual(['navindex', 'navuserlist', 'navsearch', 'navprofile', 'navgallery', 'navdrafts', 'navlogout']);
 		expect(layout.nav[0]?.active).toBe(true);
-		expect(layout.nav.at(-1)?.href).toBe(`login.php?action=out&id=3&csrf_token=${logoutToken(3, '127.0.0.1')}`);
+		// Déconnexion en POST (formulaire avec jeton CSRF), pas un lien.
+		expect(layout.nav.at(-1)).toMatchObject({ href: 'login.php?action=out', post: true });
 		expect(layout.quickSearches).toHaveLength(4);
 		expect(layout.status?.showAdminLink).toBe(false);
 	});
@@ -65,16 +64,7 @@ describe('buildLayout', () => {
 	it('insère les liens additionnels à la position demandée', () => {
 		const config = { ...boardConfig, additionalNavlinks: '1 = <a href="/wiki">Wiki</a>\n10 = <a href="/x">X</a>' };
 		const layout = buildLayout(input({ viewer: guest, config }));
-		expect(navIds(layout)).toEqual([
-			'navindex',
-			'navextra1',
-			'navuserlist',
-			'navsearch',
-			'navgallery',
-			'navregister',
-			'navlogin',
-			'navextra2',
-		]);
+		expect(navIds(layout)).toEqual(['navindex', 'navextra1', 'navuserlist', 'navsearch', 'navgallery', 'navlogin', 'navextra2']);
 		expect(layout.nav[1]?.trustedHtml).toBe('<a href="/wiki">Wiki</a>');
 	});
 
@@ -132,13 +122,10 @@ describe('rendu de la mise en page', () => {
 	let app: FastifyInstance;
 	afterEach(async () => app.close());
 
-	const users = [
-		{ viewer: guest, passwordHash: '' },
-		{ viewer: mod, passwordHash: 'hash-mod' },
-	];
+	const users = [{ viewer: guest }, { viewer: mod }];
 	const cookie = (userId: number, hash: string): string => {
 		const expires = NOW + 3600;
-		return `punbb_cookie=${userId}|${forumHmac(hash, 'graine-de-test_password_hash')}|${expires}|${forumHmac(`${userId}|${expires}`, 'graine-de-test_cookie_hash')}`;
+		return `${sessionCookie(userId, expires)}`;
 	};
 
 	it("affiche l'annonce, les pages d'information, les signalements et le thème", async () => {

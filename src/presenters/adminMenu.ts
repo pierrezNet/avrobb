@@ -15,7 +15,7 @@ import type { MenuItem } from './profileEditPage.ts';
  * Installer, FluxToolBar, Plugile, Smilies et AP_Premium (promotion temporaire dans un groupe, table
  * premium jamais installée sur PV) ne font pas partie d'AvroBB.
  */
-export const ADMIN_PLUGINS = ['AMP_Gestion_utilisateurs.php', 'AP_Balises.php', 'AP_Private_messaging.php', 'AP_Uploadile.php'] as const;
+export const ADMIN_PLUGINS = ['AP_Balises.php', 'AP_Private_messaging.php', 'AP_Uploadile.php'] as const;
 
 export type AdminPage =
 	| 'index'
@@ -46,7 +46,6 @@ export function buildAdminMenu(viewer: Viewer, config: BoardConfig, active: Admi
 	const moderator = [
 		item('index', 'admin_index.php', t.index),
 		item('users', 'admin_users.php', t.users),
-		...(admin || viewer.group.isModerator ? [plugin('AMP_Gestion_utilisateurs.php', t.addUser)] : []),
 		...(admin || viewer.group.canModBanUsers ? [item('bans', 'admin_bans.php', t.bans)] : []),
 		...(admin || config.reportsByBoard ? [item('reports', 'admin_reports.php', t.reports)] : []),
 	];

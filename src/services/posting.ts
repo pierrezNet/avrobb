@@ -9,12 +9,12 @@
  */
 
 import type { SubjectTag, Viewer } from '../domain/models.ts';
+import { checkUsername, isBannedEmail, normalizeUsername, type UsernameError } from './accounts.ts';
 import type { Ban } from './bans.ts';
 import type { Censor } from './censor.ts';
 import { isValidEmail } from './mail.ts';
 import { isAllUppercase, punLinebreaks, punTrim } from './phpString.ts';
 import { type PreparseError, type PreparseOptions, preparseBbcode } from './preparse.ts';
-import { checkUsername, isBannedEmail, normalizeUsername, type UsernameError } from './registration.ts';
 import { normalizeSubjectTags } from './subjectPrefixes.ts';
 
 /** PUN_MAX_POSTSIZE : taille maximale d'un message, en octets. */

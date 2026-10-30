@@ -41,7 +41,6 @@ import { PostRepository } from './repositories/PostRepository.ts';
 import { PrivateContactRepository } from './repositories/PrivateContactRepository.ts';
 import { PrivateMessageRepository } from './repositories/PrivateMessageRepository.ts';
 import { ProfileRepository } from './repositories/ProfileRepository.ts';
-import { RegistrationRepository } from './repositories/RegistrationRepository.ts';
 import { ReportRepository } from './repositories/ReportRepository.ts';
 import { ReputationRepository } from './repositories/ReputationRepository.ts';
 import { SearchRepository } from './repositories/SearchRepository.ts';
@@ -90,11 +89,10 @@ const app = await buildApp({
 	userAdmin: new UserAdminRepository(db),
 	users,
 	members: users,
-	credentials: users,
-	passwordResets: users,
+	accounts: users,
+	devLogin: config.devLogin,
 	mailTemplates: new MailTemplateFiles(config.legacyRoot),
 	mailer: new NodeMailer(config.mailOutbox),
-	registrations: new RegistrationRepository(db),
 	profiles: users,
 	profileStore: new ProfileRepository(db),
 	topics,
@@ -140,7 +138,7 @@ const app = await buildApp({
 	avatarStore: avatars,
 	uploads: new MemberUploadFiles(config.legacyRoot, config.legacyBaseUrl),
 	page: { lang: fr, dateWords: frDateWords, clock },
-	legacyCookie: config.legacyCookie,
+	cookie: config.cookie,
 	legacyBaseUrl: config.legacyBaseUrl,
 	...(config.legacyRoot !== '' ? { legacyImagesRoot: path.join(config.legacyRoot, 'img') } : {}),
 	trustProxy: config.trustProxy,

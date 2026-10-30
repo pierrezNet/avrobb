@@ -20,7 +20,6 @@ export const admin = {
 	bans: 'Bannissements',
 	maintenance: 'Maintenance',
 	reports: 'Signalements',
-	addUser: 'Ajouter un membre',
 	labels: 'Balises',
 	privateMessages: 'Messagerie privée',
 	memberFiles: 'Fichiers des membres',

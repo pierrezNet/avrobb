@@ -9,8 +9,7 @@ import { buildApp } from '../src/app.ts';
 import { type GalleryImage, GroupId } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
 import { canDeleteGalleryImage, galleryInsertCode, validateGalleryUpload } from '../src/services/gallery.ts';
-import { buildLegacyCookie } from '../src/services/legacySession.ts';
-import { type FakeData, fakeDeps, group, guest, NOW, viewer } from './fixtures.ts';
+import { type FakeData, fakeDeps, group, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
 
 const SEED = 'graine-de-test';
 const CSRF_SECRET = 'e'.repeat(64);
@@ -64,17 +63,11 @@ describe('règles de la galerie', () => {
 const mod = viewer({ id: 5, username: 'MaxDUO', group: group({ id: GroupId.Moderator, isModerator: true }) });
 const val = viewer({ id: 6, username: 'valdefsx' });
 const hashes: Record<number, string> = { 5: 'h5', 6: 'h6', 3: 'h3' };
-const cookies = (userId: number): string =>
-	`punbb_cookie=${buildLegacyCookie(userId, hashes[userId] ?? '', NOW + 3600, SEED)}; punbb_cookie_csrf=${CSRF_SECRET}`;
+const cookies = (userId: number): string => `${sessionCookie(userId)}; avrobb_csrf=${CSRF_SECRET}`;
 
 function data(overrides: Partial<FakeData> = {}): FakeData {
 	return {
-		users: [
-			{ viewer: guest, passwordHash: '' },
-			{ viewer: mod, passwordHash: 'h5' },
-			{ viewer: val, passwordHash: 'h6' },
-			{ viewer: viewer(), passwordHash: 'h3' },
-		],
+		users: [{ viewer: guest }, { viewer: mod }, { viewer: val }, { viewer: viewer() }],
 		topics: [],
 		posts: new Map(),
 		galleryImages: Array.from({ length: 25 }, (_, i) => image(i + 1, i === 0 ? { userId: 3, username: 'Tessy' } : {})),

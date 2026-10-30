@@ -1,7 +1,7 @@
 /**
- * Règles de l'inscription (register.php, check_username(), is_banned_email()), sans accès à la base.
- * La recherche d'un pseudo trop ressemblant et des adresses déjà utilisées est faite par le
- * contrôleur, qui transmet les résultats.
+ * Règles des comptes (check_username(), is_banned_email() de FluxBB), sans accès à la base : pseudo
+ * choisi ou modifié, adresse bannie, fuseaux horaires. La recherche d'un pseudo trop ressemblant
+ * est faite par le contrôleur, qui transmet les résultats.
  */
 
 import type { Ban } from './bans.ts';
@@ -9,16 +9,13 @@ import type { Censor } from './censor.ts';
 import { isValidEmail } from './mail.ts';
 
 /**
- * Fuseaux proposés par register.php, en heures (libellés dans lang/fr/register.ts). FluxBB
+ * Fuseaux proposés par register.php, en heures (libellés dans lang/fr/account.ts). FluxBB
  * enregistre le décalage, sans gestion automatique de l'heure d'été.
  */
 export const TIMEZONES = [
 	-12, -11, -10, -9.5, -9, -8.5, -8, -7, -6, -5, -4, -3.5, -3, -2, -1, 0, 1, 2, 3, 3.5, 4, 4.5, 5, 5.5, 5.75, 6, 6.5, 7, 8, 8.75, 9, 9.5,
 	10, 10.5, 11, 11.5, 12, 12.75, 13, 14,
 ] as const;
-
-/** Longueur minimale d'un mot de passe : celle annoncée par le formulaire PHP (son code acceptait 4). */
-export const MIN_PASSWORD_LENGTH = 6;
 
 export type UsernameError = 'tooShort' | 'tooLong' | 'guest' | 'ip' | 'reservedChars' | 'bbcode' | 'censored' | 'banned';
 
@@ -65,64 +62,4 @@ export function isBannedEmail(email: string, bans: readonly Ban[]): boolean {
 			ban.email !== '' &&
 			(email === ban.email || (!ban.email.includes('@') && email.toLowerCase().includes(`@${ban.email.toLowerCase()}`))),
 	);
-}
-
-export interface RegistrationInput {
-	username: string;
-	password1: string;
-	password2: string;
-	email1: string;
-	email2: string;
-	timezone: string;
-	dst: boolean;
-	emailSetting: string;
-}
-
-export interface RegistrationValues {
-	username: string;
-	email: string;
-	/** Mot de passe choisi, ou tiré au sort quand l'adresse doit être vérifiée (o_regs_verify). */
-	password: string;
-	timezone: number;
-	dst: boolean;
-	emailSetting: 0 | 1 | 2;
-}
-
-export type RegistrationError = UsernameError | 'passTooShort' | 'passNotMatch' | 'invalidEmail' | 'emailNotMatch';
-
-/**
- * Lecture et validation du formulaire de register.php, sauf ce qui dépend de la base (doublons) et
- * des bannissements d'adresse (selon p_allow_banned_email).
- */
-export function readRegistration(
-	input: RegistrationInput,
-	options: { verifyEmail: boolean; defaultEmailSetting: number; generatedPassword: string },
-): { values: RegistrationValues; errors: RegistrationError[] } {
-	const errors: RegistrationError[] = [];
-	const username = normalizeUsername(input.username);
-	const email = input.email1.trim().toLowerCase();
-	const password = options.verifyEmail ? options.generatedPassword : input.password1.trim();
-
-	if (!options.verifyEmail) {
-		if ([...password].length < MIN_PASSWORD_LENGTH) errors.push('passTooShort');
-		else if (password !== input.password2.trim()) errors.push('passNotMatch');
-	}
-
-	if (!isValidEmail(email)) errors.push('invalidEmail');
-	else if (options.verifyEmail && email !== input.email2.trim().toLowerCase()) errors.push('emailNotMatch');
-
-	const timezone = Number(input.timezone);
-	const setting = Number(input.emailSetting);
-
-	return {
-		values: {
-			username,
-			email,
-			password,
-			timezone: (TIMEZONES as readonly number[]).includes(timezone) ? timezone : 0,
-			dst: input.dst,
-			emailSetting: setting === 0 || setting === 1 || setting === 2 ? setting : (options.defaultEmailSetting as 0 | 1 | 2),
-		},
-		errors,
-	};
 }

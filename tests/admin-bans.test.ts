@@ -9,8 +9,7 @@ import { buildApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
 import { normalizeBanIps, readBanForm } from '../src/services/banForm.ts';
-import { buildLegacyCookie } from '../src/services/legacySession.ts';
-import { type FakeData, fakeDeps, group, guest, NOW, viewer } from './fixtures.ts';
+import { type FakeData, fakeDeps, group, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
 
 const SEED = 'graine-de-test';
 const CSRF_SECRET = '9'.repeat(64);
@@ -19,8 +18,7 @@ const banMod = viewer({ id: 6, username: 'Garde', group: group({ id: 6, isModera
 const tessy = viewer();
 const admin = viewer({ id: 2, username: 'admin', group: group({ id: GroupId.Admin }) });
 const hashes: Record<number, string> = { 5: 'h5', 6: 'h6', 3: 'h3', 2: 'h2' };
-const cookies = (userId: number): string =>
-	`punbb_cookie=${buildLegacyCookie(userId, hashes[userId] ?? '', NOW + 3600, SEED)}; punbb_cookie_csrf=${CSRF_SECRET}`;
+const cookies = (userId: number): string => `${sessionCookie(userId)}; avrobb_csrf=${CSRF_SECRET}`;
 
 describe('formulaire de bannissement', () => {
 	it('adresses et plages IP normalisées comme le PHP', () => {
@@ -45,13 +43,7 @@ afterEach(async () => app?.close());
 
 async function start(): Promise<{ server: FastifyInstance; fake: FakeData }> {
 	const fake: FakeData = {
-		users: [
-			{ viewer: guest, passwordHash: '' },
-			{ viewer: mod, passwordHash: 'h5' },
-			{ viewer: banMod, passwordHash: 'h6' },
-			{ viewer: tessy, passwordHash: 'h3' },
-			{ viewer: admin, passwordHash: 'h2' },
-		],
+		users: [{ viewer: guest }, { viewer: mod }, { viewer: banMod }, { viewer: tessy }, { viewer: admin }],
 		topics: [],
 		posts: new Map(),
 		bans: [{ id: 4, username: 'Troll', ip: '', email: '', message: 'Au revoir', expire: null }],

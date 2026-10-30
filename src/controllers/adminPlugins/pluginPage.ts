@@ -18,14 +18,12 @@ import type { MailTemplateReader } from '../../repositories/MailTemplateFiles.ts
 import type { UploadStore } from '../../repositories/MemberUploadFiles.ts';
 import type { PhpCacheStore } from '../../repositories/PhpCacheFiles.ts';
 import type { ProfileStore } from '../../repositories/ProfileRepository.ts';
-import type { RegistrationStore } from '../../repositories/RegistrationRepository.ts';
 import type { SubjectPrefixStore } from '../../repositories/SubjectPrefixRepository.ts';
 import type { UploadileAdminStore } from '../../repositories/UserAdminRepository.ts';
 import { changedOptions } from '../../services/adminOptions.ts';
 import { renderAdminPage } from '../adminPage.ts';
 
 export interface AdminLoaderControllerDeps extends LayoutDeps {
-	registrations: RegistrationStore;
 	bans: BanReader;
 	censorship: CensorReader;
 	mailTemplates: MailTemplateReader;

@@ -216,18 +216,6 @@ export interface ProfileTarget {
 const moderatesMember = (viewer: Viewer, target: ProfileTarget): boolean =>
 	viewer.group.isModerator && viewer.group.canModEditUsers && target.groupId !== GroupId.Admin && !target.groupIsModerator;
 
-/** profile.php?action=change_email : soi-même, un administrateur, ou un modérateur autorisé. */
-export function canChangeEmail(viewer: Viewer, target: ProfileTarget): boolean {
-	if (!viewer.isGuest && viewer.id === target.id) return true;
-	return isAdmin(viewer) || moderatesMember(viewer, target);
-}
-
-/** profile.php?action=change_pass : comme l'adresse, avec g_mod_change_passwords pour un modérateur. */
-export function canChangePassword(viewer: Viewer, target: ProfileTarget): boolean {
-	if (!viewer.isGuest && viewer.id === target.id) return true;
-	return isAdmin(viewer) || (moderatesMember(viewer, target) && viewer.group.canModChangePasswords);
-}
-
 /** Renommer un membre (champ « Nom d'utilisateur » de la section Principal). */
 export function canRenameUsers(viewer: Viewer): boolean {
 	return isAdmin(viewer) || (viewer.group.isModerator && viewer.group.canModRenameUsers);

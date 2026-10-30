@@ -7,7 +7,6 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.ts';
 import type { SearchPost, SearchTopic } from '../src/domain/models.ts';
 import type { SearchReader } from '../src/repositories/SearchRepository.ts';
-import { forumHmac } from '../src/services/legacySession.ts';
 import { phpUnserialize } from '../src/services/phpSerialize.ts';
 import {
 	combineKeywords,
@@ -17,7 +16,7 @@ import {
 	splitSearchWords,
 	type WordHit,
 } from '../src/services/search.ts';
-import { type FakeData, fakeDeps, guest, NOW, viewer } from './fixtures.ts';
+import { type FakeData, fakeDeps, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
 
 const member = { id: 3, isGuest: false, isAdmMod: false };
 
@@ -174,12 +173,9 @@ function fakeSearch(overrides: Partial<SearchReader> = {}): SearchReader {
 const SEED = 'graine-de-test';
 const cookie = (userId: number, hash: string): string => {
 	const expires = NOW + 3600;
-	return `punbb_cookie=${userId}|${forumHmac(hash, `${SEED}_password_hash`)}|${expires}|${forumHmac(`${userId}|${expires}`, `${SEED}_cookie_hash`)}`;
+	return `${sessionCookie(userId, expires)}`;
 };
-const users = [
-	{ viewer: guest, passwordHash: '' },
-	{ viewer: viewer({ lastVisit: NOW - 3600 }), passwordHash: 'hash-tessy' },
-];
+const users = [{ viewer: guest }, { viewer: viewer({ lastVisit: NOW - 3600 }) }];
 
 let app: FastifyInstance | undefined;
 afterEach(async () => app?.close());
@@ -271,9 +267,7 @@ describe('GET /search.php', () => {
 			...member,
 			users: {
 				findViewer: async (uid: number) =>
-					uid === 3
-						? { presence: null, passwordHash: 'hash-tessy', viewer: viewer({ lastSearch: NOW - 5 }) }
-						: member.users.findViewer(uid),
+					uid === 3 ? { presence: null, viewer: viewer({ lastSearch: NOW - 5 }) } : member.users.findViewer(uid),
 			},
 		});
 		const flood = await app.inject({ url: '/search.php?action=search&keywords=vintage', headers: { cookie: cookie(3, 'hash-tessy') } });

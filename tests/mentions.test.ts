@@ -7,10 +7,9 @@ import type { FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.ts';
 import { GroupId, type PrivateRecipient } from '../src/domain/models.ts';
-import { buildLegacyCookie } from '../src/services/legacySession.ts';
 import { extractMentionIds, MAX_MENTIONS, mentionRecipients } from '../src/services/mentions.ts';
 import { pmData } from './fakePrivateMessages.ts';
-import { type FakeData, fakeDeps, guest, NOW, post, topic, viewer } from './fixtures.ts';
+import { type FakeData, fakeDeps, guest, NOW, post, sessionCookie, topic, viewer } from './fixtures.ts';
 
 const BASE = 'http://forum.test';
 const mention = (id: number, name: string): string => `[url=${BASE}/profile.php?id=${id}]@${name}[/url]`;
@@ -54,17 +53,14 @@ describe('repérage des mentions', () => {
 
 const SEED = 'graine-de-test';
 const tessy = viewer();
-const cookie = `punbb_cookie=${buildLegacyCookie(3, 'h3', NOW + 3600, SEED)}`;
+const cookie = `${sessionCookie(3)}`;
 
 let app: FastifyInstance | undefined;
 afterEach(async () => app?.close());
 
 function data(overrides: Partial<FakeData> = {}): FakeData {
 	return {
-		users: [
-			{ viewer: guest, passwordHash: '' },
-			{ viewer: tessy, passwordHash: 'h3' },
-		],
+		users: [{ viewer: guest }, { viewer: tessy }],
 		topics: [topic({ id: 10, subject: 'Vol de nuit', forum: { id: 2, name: 'Captures', moderators: new Map() } })],
 		posts: new Map([[10, [post(100)]]]),
 		forumInfos: [
@@ -92,7 +88,7 @@ async function reply(server: FastifyInstance, message: string) {
 	const csrf =
 		[page.headers['set-cookie']]
 			.flat()
-			.find((c) => c?.startsWith('punbb_cookie_csrf='))
+			.find((c) => c?.startsWith('avrobb_csrf='))
 			?.split(';')[0] ?? '';
 	const token = /name="csrf_token" value="([0-9a-f]+)"/.exec(page.body)?.[1] ?? '';
 	return server.inject({

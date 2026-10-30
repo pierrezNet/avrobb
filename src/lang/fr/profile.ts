@@ -7,8 +7,8 @@
 import type { AvatarError } from '../../services/images.ts';
 import type { LimitedField, ProfileError } from '../../services/profileForms.ts';
 import type { UploadError } from '../../services/uploads.ts';
+import { account } from './account.ts';
 import { preparseErrorText } from './post.ts';
-import { register } from './register.ts';
 
 const FIELD_LABELS: Record<LimitedField, string> = {
 	realname: 'Nom',
@@ -29,7 +29,7 @@ function profileErrorText(error: ProfileError): string {
 		case 'tooLong':
 			return `Le champ « ${FIELD_LABELS[error.field]} » ne doit pas dépasser ${error.max} caractères.`;
 		case 'username':
-			return register.errors[error.error];
+			return account.errors[error.error];
 		case 'usernameDupe':
 			return `Il existe déjà une personne inscrite avec ce nom d'utilisateur. ${error.existing}. Ce nom d'utilisateur est trop ressemblant. Il doit différer par au moins un caractère alpha-numérique (a-z ou 0-9). Veuillez essayer un autre nom d'utilisateur.`;
 		case 'invalidEmail':
@@ -126,12 +126,9 @@ export const profile = {
 	submit: 'Valider',
 	required: '(obligatoire)',
 
-	usernameAndPassLegend: "Nom d'utilisateur et mot de passe",
+	usernameAndPassLegend: "Nom d'utilisateur",
 	usernameInfo: (username: string) => `Nom d'utilisateur\u00a0: ${username}`,
-	changePass: 'Changer de mot de passe',
 	emailLegend: 'Indiquez une adresse électronique valide',
-	emailInfo: (email: string) => `E-mail\u00a0: ${email}`,
-	changeEmail: "Changer l'adresse électronique",
 	localisationLegend: 'Définissez vos options géographiques',
 	timeZone: 'Fuseau horaire',
 	timeZoneInfo: "Afin que le forum affiche correctement l'heure, vous devez sélectionner votre fuseau horaire.",
@@ -196,30 +193,6 @@ export const profile = {
 	notifyPm: 'Notification des messages privés par courriel',
 	notifyPmInfo: 'En activant cette option, un courriel sera envoyé pour tout nouveau message privé.',
 	notifyPmFull: 'Inclure le contenu des messages privés',
-
-	// Mot de passe et adresse (actions change_pass, change_email)
-	changePassLegend: 'Saisissez et confirmez votre mot de passe',
-	oldPass: 'Ancien mot de passe',
-	newPass: 'Nouveau mot de passe',
-	confirmNewPass: 'Confirmez le nouveau mot de passe',
-	passInfo: 'Les mots de passe doivent comporter au moins 6 caractères. Ils sont sensibles à la casse.',
-	passTooShort: 'Les mots de passe doivent comporter au moins 6 caractères. Veuillez choisir un autre mot de passe.',
-	passNotMatch: 'Les mots de passe ne coïncident pas. Veuillez recommencer.',
-	wrongPass: 'Ancien mot de passe incorrect.',
-	wrongCurrentPass: 'Mot de passe incorrect.',
-	passUpdated: 'Votre mot de passe a été mis à jour. Vous pouvez à présent vous identifier avec votre nouveau mot de passe.',
-	passKeyBad:
-		"La clef d'activation du mot de passe est incorrecte ou a expiré. Veuillez demander un nouveau mot de passe. Si cela ne marche pas, contactez l'administrateur.",
-	newEmailLegend: 'Saisissez la nouvelle adresse électronique',
-	newEmail: 'Nouvelle adresse électronique',
-	password: 'Mot de passe',
-	emailInstructions:
-		"Indiquez la nouvelle adresse électronique. Un e-mail comportant un lien d'activation y sera envoyé. Vous devrez cliquer sur ce lien pour activer l'adresse.",
-	activateEmailSent:
-		"Un e-mail comportant les instructions pour activer la nouvelle adresse électronique a été envoyé. S'il n'arrive pas, contactez l'administrateur\u00a0:",
-	emailKeyBad:
-		"La clef d'activation d'adresse électronique est incorrecte ou a expiré. Veuillez demander à nouveau un changement d'adresse électronique. Si cela échoue, contactez l'administrateur",
-	emailUpdated: 'Votre adresse électronique a été mise à jour.',
 
 	// Avatar (actions upload_avatar, delete_avatar)
 	avatarsDisabled: 'La prise en charge des avatars est désactivée.',

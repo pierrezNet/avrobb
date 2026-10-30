@@ -8,10 +8,9 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.ts';
 import { validateEmail, validateReport } from '../src/services/contact.ts';
 import { floodWait } from '../src/services/flood.ts';
-import { buildLegacyCookie } from '../src/services/legacySession.ts';
-import { boardConfig, type FakeData, fakeDeps, group, guest, NOW, post, topic, viewer } from './fixtures.ts';
+import { boardConfig, type FakeData, fakeDeps, group, guest, NOW, post, sessionCookie, topic, viewer } from './fixtures.ts';
 
-const tessy = `punbb_cookie=${buildLegacyCookie(3, 'h', NOW + 3600, 'graine-de-test')}`;
+const tessy = `${sessionCookie(3)}`;
 
 describe('règles des formulaires', () => {
 	it('anti-flood : délai restant, sauf envoi daté dans le futur', () => {
@@ -44,10 +43,7 @@ afterEach(async () => app?.close());
 
 function data(overrides: Partial<FakeData> = {}): FakeData {
 	return {
-		users: [
-			{ viewer: guest, passwordHash: '' },
-			{ viewer: viewer(), passwordHash: 'h' },
-		],
+		users: [{ viewer: guest }, { viewer: viewer() }],
 		topics: [topic({ id: 10, subject: 'Sujet signalé', forum: { id: 2, name: 'Captures', moderators: new Map() } })],
 		posts: new Map([[10, [post(100)]]]),
 		recipients: new Map([
@@ -63,7 +59,7 @@ async function submit(server: FastifyInstance, url: string, fields: Record<strin
 	const csrf =
 		[page.headers['set-cookie']]
 			.flat()
-			.find((c) => c?.startsWith('punbb_cookie_csrf='))
+			.find((c) => c?.startsWith('avrobb_csrf='))
 			?.split(';')[0] ?? '';
 	const token = /name="csrf_token" value="([0-9a-f]+)"/.exec(page.body)?.[1] ?? '';
 	const redirect = /name="redirect_url" value="([^"]*)"/.exec(page.body)?.[1]?.replaceAll('&amp;', '&');
@@ -123,10 +119,7 @@ describe('misc.php?email=', () => {
 		app = await buildApp(
 			fakeDeps(
 				data({
-					users: [
-						{ viewer: guest, passwordHash: '' },
-						{ viewer: viewer({ group: group({ canSendEmail: false }) }), passwordHash: 'h' },
-					],
+					users: [{ viewer: guest }, { viewer: viewer({ group: group({ canSendEmail: false }) }) }],
 				}),
 			),
 		);
@@ -135,10 +128,7 @@ describe('misc.php?email=', () => {
 		app = await buildApp(
 			fakeDeps(
 				data({
-					users: [
-						{ viewer: guest, passwordHash: '' },
-						{ viewer: viewer({ group: group({ isModerator: true }) }), passwordHash: 'h' },
-					],
+					users: [{ viewer: guest }, { viewer: viewer({ group: group({ isModerator: true }) }) }],
 				}),
 			),
 		);

@@ -1,10 +1,9 @@
 /**
- * Doublures en mémoire de la messagerie privée : table messages, contacts et listes d'envoi, avec
+ * Doublures en mémoire de la messagerie privée (table messages), avec
  * les mêmes règles que les repositories (exemplaire par détenteur, tête de conversation, num_pms).
  */
 
-import type { PrivateContact, PrivateMessage, PrivateRecipient, SendingList } from '../src/domain/models.ts';
-import type { PrivateContactStore, SendingListStore } from '../src/repositories/PrivateContactRepository.ts';
+import type { PrivateMessage, PrivateRecipient } from '../src/domain/models.ts';
 import type { OutgoingMessage, PrivateMessageStore } from '../src/repositories/PrivateMessageRepository.ts';
 import { markParticipantDeleted, parseParticipants } from '../src/services/privateMessages.ts';
 
@@ -21,15 +20,11 @@ export interface PmData {
 	rows: PmRow[];
 	/** Membres joignables, avec leur compteur num_pms (modifié en place). */
 	members: PrivateRecipient[];
-	/** Blocages : « destinataire→expéditeur ». */
-	blocked: Set<string>;
-	contacts: (PrivateContact & { userId: number })[];
-	lists: (SendingList & { userId: number })[];
 	nextId: number;
 }
 
 export function pmData(overrides: Partial<PmData> = {}): PmData {
-	return { rows: [], members: [], blocked: new Set(), contacts: [], lists: [], nextId: 500, ...overrides };
+	return { rows: [], members: [], nextId: 500, ...overrides };
 }
 
 const member = (data: PmData, id: number) => data.members.find((m) => m.id === id);
@@ -76,11 +71,6 @@ function toConversation(row: PmRow) {
 	};
 }
 
-const recipient = (data: PmData, senderId: number) => (m: PrivateRecipient) => ({
-	...m,
-	blocksSender: data.blocked.has(`${m.id}→${senderId}`),
-});
-
 export function fakePrivateMessageStore(data: PmData): PrivateMessageStore {
 	const heads = (ownerId: number) => data.rows.filter((r) => r.ownerId === ownerId && r.isHead);
 	const copiesOf = (sharedId: number, ownerId: number) =>
@@ -123,9 +113,9 @@ export function fakePrivateMessageStore(data: PmData): PrivateMessageStore {
 			for (const row of heads(ownerId)) if (row.sharedId === sharedId) row.showed = true;
 		},
 		listHolders: async (sharedId) => [...new Set(data.rows.filter((r) => r.sharedId === sharedId && r.isHead).map((r) => r.ownerId))],
-		findRecipientsByName: async (usernames, senderId) =>
-			data.members.filter((m) => usernames.some((name) => name.toLowerCase() === m.username.toLowerCase())).map(recipient(data, senderId)),
-		findRecipientsById: async (ids, senderId) => data.members.filter((m) => ids.includes(m.id)).map(recipient(data, senderId)),
+		findRecipientsByName: async (usernames) =>
+			data.members.filter((m) => usernames.some((name) => name.toLowerCase() === m.username.toLowerCase())),
+		findRecipientsById: async (ids) => data.members.filter((m) => ids.includes(m.id)),
 		createConversation: async (message) => {
 			const sharedId = Math.max(0, ...data.rows.map((r) => r.sharedId)) + 1;
 			const copies = new Map<number, number>();
@@ -167,57 +157,6 @@ export function fakePrivateMessageStore(data: PmData): PrivateMessageStore {
 			const owners = new Set(data.rows.filter((r) => r.sharedId === message.sharedId && r.isHead).map((r) => r.ownerId));
 			data.rows = data.rows.filter((r) => r.sharedId !== message.sharedId);
 			for (const owner of owners) adjust(data, owner, -1);
-		},
-	};
-}
-
-export function fakePrivateContacts(data: PmData): PrivateContactStore & SendingListStore {
-	const own = (userId: number) => data.contacts.filter((c) => c.userId === userId);
-	return {
-		listContacts: async (userId) => own(userId).map(({ userId: _, ...contact }) => contact),
-		findCandidate: async (userId, target) => {
-			const found = data.members.find((m) => ('id' in target ? m.id === target.id : m.username === target.username));
-			return found === undefined
-				? null
-				: {
-						id: found.id,
-						username: found.username,
-						groupCanUsePrivateMessages: found.groupCanUsePrivateMessages,
-						alreadyContact: own(userId).some((c) => c.contactId === found.id),
-					};
-		},
-		addContact: async (userId, contact, allowMessages) => {
-			data.contacts.push({ id: data.nextId++, userId, contactId: contact.id, name: contact.username, allowMessages });
-		},
-		listContactUserIds: async (userId, ids) =>
-			own(userId)
-				.filter((c) => ids.includes(c.id))
-				.map((c) => c.contactId),
-		setAllowed: async (userId, ids, allowed) => {
-			for (const c of own(userId)) if (ids.includes(c.id)) c.allowMessages = allowed;
-		},
-		toggleAllowed: async (userId, id) => {
-			const found = own(userId).find((c) => c.id === id);
-			if (found !== undefined) found.allowMessages = !found.allowMessages;
-			return found !== undefined;
-		},
-		deleteContacts: async (userId, ids) => {
-			const before = data.contacts.length;
-			data.contacts = data.contacts.filter((c) => !(c.userId === userId && ids.includes(c.id)));
-			return before - data.contacts.length;
-		},
-		listSendingLists: async (userId) => data.lists.filter((l) => l.userId === userId).map(({ userId: _, ...list }) => list),
-		findSendingList: async (userId, id) => {
-			const found = data.lists.find((l) => l.userId === userId && l.id === id);
-			return found === undefined ? null : { id: found.id, name: found.name, members: found.members };
-		},
-		createSendingList: async (userId, name, members) => {
-			data.lists.push({ id: data.nextId++, userId, name, members: [...members] });
-		},
-		deleteSendingLists: async (userId, ids) => {
-			const before = data.lists.length;
-			data.lists = data.lists.filter((l) => !(l.userId === userId && ids.includes(l.id)));
-			return before - data.lists.length;
 		},
 	};
 }

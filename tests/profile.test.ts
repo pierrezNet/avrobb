@@ -55,11 +55,6 @@ describe('canEditProfile (profile.php)', () => {
 	});
 });
 
-const SEED = 'graine-de-test';
-const cookie = (userId: number, hash: string): string => {
-	const expires = NOW + 3600;
-	return `${sessionCookie(userId, expires)}`;
-};
 const users = [{ viewer: guest }, { viewer: tessy }, { viewer: mod }];
 
 let app: FastifyInstance | undefined;
@@ -71,7 +66,7 @@ const deps = (overrides = {}) =>
 describe('GET /profile.php', () => {
 	it('affiche le profil public, échappé, avec signature, biographie et recherches', async () => {
 		app = await buildApp(deps());
-		const res = await app.inject({ url: '/profile.php?id=6', headers: { cookie: cookie(3, 'hash-tessy') } });
+		const res = await app.inject({ url: '/profile.php?id=6', headers: { cookie: sessionCookie(3) } });
 
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('<title>Profil de valdefsx / Forum de test</title>');
@@ -94,14 +89,14 @@ describe('GET /profile.php', () => {
 
 	it('modification servie par le forum ; plus de section Administration', async () => {
 		app = await buildApp(deps());
-		const own = await app.inject({ url: '/profile.php?id=3', headers: { cookie: cookie(3, 'hash-tessy') } });
+		const own = await app.inject({ url: '/profile.php?id=3', headers: { cookie: sessionCookie(3) } });
 		expect(own.statusCode).toBe(200);
 		expect(own.body).toContain('Tessy - Principal');
 
-		const asMod = await app.inject({ url: '/profile.php?id=6', headers: { cookie: cookie(5, 'hash-mod') } });
+		const asMod = await app.inject({ url: '/profile.php?id=6', headers: { cookie: sessionCookie(5) } });
 		expect(asMod.body).toContain('valdefsx - Principal');
 		// La section Administration de FluxBB n'existe plus : admin_users.php la remplace.
-		const admin = await app.inject({ url: '/profile.php?section=admin&id=6', headers: { cookie: cookie(5, 'hash-mod') } });
+		const admin = await app.inject({ url: '/profile.php?section=admin&id=6', headers: { cookie: sessionCookie(5) } });
 		expect(admin.statusCode).toBe(404);
 
 		// Un lecteur qui ne peut pas modifier consulte, quelle que soit la section.

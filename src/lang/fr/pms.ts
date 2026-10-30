@@ -25,8 +25,6 @@ function sendErrorText(error: SendError): string {
 			return `${error.username} a désactivé les messages privés.`;
 		case 'receiverFull':
 			return `La boîte de réception de ${error.username} est pleine, vous ne pouvez pas envoyer de message à cet utilisateur.`;
-		case 'userBlocked':
-			return `${error.username} refuse les messages privés.`;
 		case 'noSubject':
 			return post.noSubject;
 		case 'tooLongSubject':
@@ -51,8 +49,6 @@ export const pms = {
 	pmMenu: 'Messagerie privée',
 	inbox: 'Boîte de réception',
 	writeMessage: 'Nouveau message',
-	sendingLists: "Listes d'envoi",
-	contacts: 'Contacts',
 	sendAMessage: 'Envoyer un message',
 	view: 'Voir une discussion privée',
 
@@ -99,60 +95,10 @@ export const pms = {
 	sendTo: 'Envoyer à',
 	sendMultiple: (max: number) =>
 		`Vous pouvez envoyer le message à plusieurs destinataires en les séparant par des virgules. Maximum : ${max}`,
-	chooseList: "Ou choisir une liste d'envoi",
-	selectAList: 'Sélectionner une liste',
 	sendError: sendErrorText,
 	sent: 'Message envoyé.',
 	edited: 'Message modifié.',
 
-	// Contacts
-	addContact: 'Ajouter un contact',
-	contactName: 'Nom du contact',
-	refuseUser: 'Refuser les messages privés provenant de ce contact',
-	add: 'Ajouter',
-	rightsContact: 'Droits du contact',
-	authorizedMessages: 'Messages autorisés',
-	refusedMessages: 'Messages refusés',
-	authorize: 'Autoriser',
-	refuse: 'Refuser',
-	authorizeFrom: (name: string) => `Autoriser ${name} à vous envoyer des messages privés`,
-	refuseFrom: (name: string) => `Refuser les messages privés de ${name}`,
-	quickMessage: 'Envoyer un message privé',
-	quickMessageTo: (name: string) => `Envoyer un message privé à ${name}`,
-	deleteContact: (name: string) => `Supprimer le contact ${name}`,
-	selectContact: (name: string) => `Sélectionner ${name}`,
-	noContacts: 'Aucun contact',
-	mustSelectContacts: 'Vous devez sélectionner des contacts',
-	userAlreadyContact: 'Cet utilisateur est déjà dans votre liste de contacts',
-	userCannotUse: "L'utilisateur ne peut pas utiliser la messagerie",
-	userNotExists: "L'utilisateur ne semble pas exister.",
-	contactAdded: 'Contact ajouté.',
-	contactStatusChanged: 'Statut du contact modifié.',
-	contactsStatusChanged: 'Statuts des contacts modifiés.',
-	contactsDeleted: 'Contacts supprimés.',
-	confirmAddContact: (name: string) => `Ajouter ${name} à vos contacts ?`,
-	confirmDeleteContact: 'Êtes-vous sûr de vouloir supprimer ce contact ?',
-	confirmSwitchContact: (name: string) => `Changer les droits de ${name} ?`,
-	deleteContactsComply: 'Êtes-vous sûr de vouloir supprimer les contacts sélectionnés ?',
-	multideleteContacts: 'Supprimer plusieurs contacts',
-
-	// Listes d'envoi
-	addAList: 'Ajouter une liste',
-	listName: 'Nom de la liste',
-	listUsernamesComma: "Liste des noms d'utilisateur (séparés par des virgules)",
-	listUsernames: "Liste des noms d'utilisateur",
-	noSendingLists: "Aucune liste d'envoi",
-	deleteThisList: 'Supprimer cette liste',
-	selectList: (name: string) => `Sélectionner la liste ${name}`,
-	mustSelectLists: 'Vous devez sélectionner des listes',
-	yourself: "Vous ne pouvez pas vous inclure dans une liste d'envoi.",
-	noListName: 'Vous devez donner un nom à la liste.',
-	listAdded: "Liste d'envoi ajoutée.",
-	listsDeleted: "Listes d'envoi supprimées.",
-	confirmDeleteList: "Êtes-vous sûr de vouloir supprimer la liste d'envoi sélectionnée ?",
-	deleteListsComply: "Êtes-vous sûr de vouloir supprimer les listes d'envoi sélectionnées ?",
-	multideleteLists: 'Supprimer plusieurs listes',
-	listErrors: "Erreurs dans la liste d'envoi",
 	errorsTitle: 'Erreurs dans le message',
 	errorsInfo: 'Les erreurs suivantes doivent être corrigées pour que le message puisse être envoyé :',
 	formErrorsTitle: 'Erreur',

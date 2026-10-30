@@ -9,7 +9,7 @@ import { buildApp } from '../src/app.ts';
 import { GroupId, type PrivateRecipient } from '../src/domain/models.ts';
 import { extractMentionIds, MAX_MENTIONS, mentionRecipients } from '../src/services/mentions.ts';
 import { pmData } from './fakePrivateMessages.ts';
-import { type FakeData, fakeDeps, guest, NOW, post, sessionCookie, topic, viewer } from './fixtures.ts';
+import { type FakeData, fakeDeps, guest, post, sessionCookie, topic, viewer } from './fixtures.ts';
 
 const BASE = 'http://forum.test';
 const mention = (id: number, name: string): string => `[url=${BASE}/profile.php?id=${id}]@${name}[/url]`;
@@ -26,7 +26,6 @@ function recipient(overrides: Partial<PrivateRecipient> = {}): PrivateRecipient 
 		privateMessageCount: 0,
 		notifyPrivateMessages: false,
 		notifyPrivateMessagesFull: false,
-		blocksSender: false,
 		...overrides,
 	};
 }
@@ -39,19 +38,16 @@ describe('repérage des mentions', () => {
 		expect(extractMentionIds(many, BASE, 3)).toHaveLength(MAX_MENTIONS);
 	});
 
-	it('destinataires : messagerie active, boîte non pleine, pas de blocage (sauf modérateur)', () => {
+	it('destinataires : messagerie active, boîte non pleine', () => {
 		const list = [
 			recipient(),
 			recipient({ id: 6, usesPrivateMessages: false }),
 			recipient({ id: 7, privateMessageLimit: 5, privateMessageCount: 5 }),
-			recipient({ id: 8, blocksSender: true }),
 		];
-		expect(mentionRecipients(list, false).map((r) => r.id)).toEqual([5]);
-		expect(mentionRecipients(list, true).map((r) => r.id)).toEqual([5, 8]);
+		expect(mentionRecipients(list).map((r) => r.id)).toEqual([5]);
 	});
 });
 
-const SEED = 'graine-de-test';
 const tessy = viewer();
 const cookie = `${sessionCookie(3)}`;
 

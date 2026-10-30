@@ -171,7 +171,6 @@ describe('abonnement, promotion et droit d’écrire', () => {
 
 // --- Page ----------------------------------------------------------------------------------------
 
-const SEED = 'graine-de-test';
 const memberCookie = `${sessionCookie(3)}`;
 
 const forumInfo = (overrides: Partial<ForumInfo> = {}): ForumInfo => ({

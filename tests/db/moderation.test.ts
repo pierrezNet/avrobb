@@ -7,7 +7,7 @@
  * (admin) ; sujet 12 (forum 1) : lien de redirection vers le 10 ; sujet 11 dans le forum 3.
  */
 
-import { type Kysely, sql } from 'kysely';
+import type { Kysely } from 'kysely';
 import { afterAll, describe, expect, it } from 'vitest';
 import { createDatabase } from '../../src/db/database.ts';
 import type { Database } from '../../src/db/schema.ts';

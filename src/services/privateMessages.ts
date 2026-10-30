@@ -64,7 +64,6 @@ export type SendError =
 	| { kind: 'noUser'; username: string }
 	| { kind: 'userDisabled'; username: string }
 	| { kind: 'receiverFull'; username: string }
-	| { kind: 'userBlocked'; username: string }
 	| { kind: 'noSubject' }
 	| { kind: 'tooLongSubject' }
 	| { kind: 'noMessage' }
@@ -106,13 +105,12 @@ export interface ValidatedSend {
 }
 
 /** Contrôles d'un destinataire (pms_send.php), dans l'ordre du PHP ; aussi pour les mentions. */
-export function recipientError(recipient: PrivateRecipient, senderIsModerator: boolean): SendError | null {
+export function recipientError(recipient: PrivateRecipient): SendError | null {
 	const { username } = recipient;
 	if (!recipient.usesPrivateMessages || !recipient.groupCanUsePrivateMessages) return { kind: 'userDisabled', username };
 	// g_id > PUN_GUEST : les boîtes des administrateurs et modérateurs ne sont jamais pleines.
 	if (recipient.groupId > 3 && recipient.privateMessageLimit !== 0 && recipient.privateMessageCount >= recipient.privateMessageLimit)
 		return { kind: 'receiverFull', username };
-	if (!senderIsModerator && recipient.blocksSender) return { kind: 'userBlocked', username };
 	return null;
 }
 
@@ -147,7 +145,7 @@ export function validateSend(input: SendInput, context: SendContext): ValidatedS
 			}
 			if (recipients.some((already) => already.id === recipient.id)) continue;
 			recipients.push(recipient);
-			const error = recipientError(recipient, sender.isModerator);
+			const error = recipientError(recipient);
 			if (error !== null) errors.push(error);
 		}
 	}

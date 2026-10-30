@@ -9,7 +9,7 @@ import { buildApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
 import { type AdminGroup, type GroupColumn, readGroupForm, visibleGroupColumns } from '../src/services/adminGroups.ts';
-import { type FakeData, fakeDeps, group, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
+import { type FakeData, fakeDeps, group, guest, sessionCookie, viewer } from './fixtures.ts';
 
 const SEED = 'graine-de-test';
 const CSRF_SECRET = '9'.repeat(64);

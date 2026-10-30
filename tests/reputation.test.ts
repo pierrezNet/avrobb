@@ -84,7 +84,6 @@ function data(overrides: Partial<FakeData> = {}): FakeData {
 	};
 }
 
-const hashes: Record<number, string> = { 3: 'h3', 2: 'h2' };
 const cookies = (userId: number): string => `${sessionCookie(userId)}; avrobb_csrf=${CSRF_SECRET}`;
 
 let app: FastifyInstance | undefined;

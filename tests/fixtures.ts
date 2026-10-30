@@ -56,7 +56,7 @@ import type { MailMessage } from '../src/services/mail.ts';
 import { buildSessionCookie } from '../src/services/session.ts';
 import { DEFAULT_SUBJECT_TAGS } from '../src/services/subjectTagConfig.ts';
 import type { UserSearchCriteria } from '../src/services/userSearch.ts';
-import { fakePrivateContacts, fakePrivateMessageStore, type PmData, pmData } from './fakePrivateMessages.ts';
+import { fakePrivateMessageStore, type PmData, pmData } from './fakePrivateMessages.ts';
 
 export const NOW = 1_782_900_000;
 
@@ -680,7 +680,6 @@ function matchesAge(topic: TopicSummary, age: TopicAgeFilter | null): boolean {
 
 export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppDeps {
 	data.pm ??= pmData();
-	const contactsAndLists = fakePrivateContacts(data.pm);
 	const allPosts = (): { topicId: number; post: Post; position: number }[] =>
 		[...data.posts].flatMap(([topicId, posts]) => posts.map((post, i) => ({ topicId, post, position: i + 1 })));
 
@@ -931,8 +930,6 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 				data.deletedVotes = [...(data.deletedVotes ?? []), { userId, ids: [...ids] }];
 			},
 		},
-		privateContacts: contactsAndLists,
-		sendingLists: contactsAndLists,
 		avatarStore: {
 			save: async (userId, _dir, type) => {
 				data.avatarLog = [...(data.avatarLog ?? []), `save ${userId}.${type}`];

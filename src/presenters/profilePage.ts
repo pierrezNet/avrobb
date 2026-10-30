@@ -4,7 +4,7 @@
 
 import type { BoardConfig, UserProfile, Viewer } from '../domain/models.ts';
 import type { Lang } from '../lang/fr/index.ts';
-import { type BbcodeOptions, parseMessage, parseSignature } from '../services/bbcode.ts';
+import { type BbcodeOptions, parseSignature } from '../services/bbcode.ts';
 import type { Censor } from '../services/censor.ts';
 import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
 import { safeExternalUrl } from '../services/links.ts';
@@ -95,7 +95,6 @@ export function buildProfilePage(input: ProfilePageInput): ProfilePageView {
 	// plugins/apms/profile_add3.php
 	if (canUsePrivateMessages(viewer, config) && profile.acceptsPrivateMessages) {
 		personal.push(links(t.pm, [{ href: `pms_send.php?uid=${profile.id}`, label: t.quickMessage, external: false }]));
-		personal.push(links(t.contacts, [{ href: `pms_contacts.php?add=${profile.id}`, label: t.addToContacts, external: false }]));
 	}
 
 	const messaging: ProfileField[] = [

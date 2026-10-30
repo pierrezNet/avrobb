@@ -24,7 +24,7 @@ export function extractMentionIds(message: string, baseUrl: string, authorId: nu
 	return ids;
 }
 
-/** Destinataires qui peuvent recevoir le message privé (messagerie active, boîte non pleine, pas de blocage). */
-export function mentionRecipients(recipients: readonly PrivateRecipient[], authorIsModerator: boolean): PrivateRecipient[] {
-	return recipients.filter((recipient) => recipientError(recipient, authorIsModerator) === null);
+/** Destinataires qui peuvent recevoir le message privé (messagerie active, boîte non pleine). */
+export function mentionRecipients(recipients: readonly PrivateRecipient[]): PrivateRecipient[] {
+	return recipients.filter((recipient) => recipientError(recipient) === null);
 }

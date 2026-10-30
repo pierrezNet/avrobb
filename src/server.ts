@@ -35,7 +35,6 @@ import { OnlineRepository } from './repositories/OnlineRepository.ts';
 import { PostEditRepository } from './repositories/PostEditRepository.ts';
 import { PostingRepository } from './repositories/PostingRepository.ts';
 import { PostRepository } from './repositories/PostRepository.ts';
-import { PrivateContactRepository } from './repositories/PrivateContactRepository.ts';
 import { PrivateMessageRepository } from './repositories/PrivateMessageRepository.ts';
 import { ProfileRepository } from './repositories/ProfileRepository.ts';
 import { ReportRepository } from './repositories/ReportRepository.ts';
@@ -64,7 +63,6 @@ const reports = new ReportRepository(db);
 const search = new SearchRepository(db);
 const avatars = new FileAvatarLocator(config.storageDir);
 const privateMessages = new PrivateMessageRepository(db);
-const privateContacts = new PrivateContactRepository(db);
 
 const bans = new BanRepository(db);
 const configStore = new ConfigRepository(db);
@@ -111,8 +109,6 @@ const app = await buildApp({
 	reports,
 	privateMessages,
 	privateMessageStore: privateMessages,
-	privateContacts,
-	sendingLists: privateContacts,
 	bans,
 	banStore: bans,
 	online: new OnlineRepository(db),

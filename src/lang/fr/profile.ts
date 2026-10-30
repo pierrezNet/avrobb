@@ -83,8 +83,6 @@ export const profile = {
 	pm: 'MP',
 	pmTitle: 'Messages privés',
 	quickMessage: 'Envoyer un message privé',
-	contacts: 'Contacts',
-	addToContacts: 'Ajouter aux contacts',
 	jabber: 'Jabber',
 	icq: 'ICQ',
 	msn: 'Compte Microsoft',

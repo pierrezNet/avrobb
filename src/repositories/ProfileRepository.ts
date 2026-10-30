@@ -8,7 +8,6 @@ import type { Db } from '../db/database.ts';
 import type { UsersTable } from '../db/schema.ts';
 import { type EditableProfile, GUEST_USER_ID, type ProfileChanges } from '../domain/models.ts';
 import { parseModerators, phpSerialize } from '../services/phpSerialize.ts';
-import { forumReadable } from './forumPermissions.ts';
 import { inTransaction } from './transactions.ts';
 
 export interface ProfileStore {
@@ -173,7 +172,6 @@ export class ProfileRepository implements ProfileStore {
 			// (le REPLACE() du PHP renommait aussi « MaxDUO » en renommant « Max »).
 			await trx.updateTable('messages').set({ sender: newUsername }).where('sender', '=', oldUsername).execute();
 			await trx.updateTable('messages').set({ last_poster: newUsername }).where('last_poster', '=', oldUsername).execute();
-			await trx.updateTable('contacts').set({ contact_name: newUsername }).where('contact_name', '=', oldUsername).execute();
 			const received = await trx
 				.selectFrom('messages')
 				.select(['id', 'receiver'])

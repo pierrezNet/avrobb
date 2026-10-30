@@ -97,7 +97,7 @@ export class AvatarController {
 	}
 
 	private renderUpload(request: AvatarRequest, reply: FastifyReply, id: number, username: string, errors: string[]): Promise<FastifyReply> {
-		const { viewer, board: config } = request;
+		const { board: config } = request;
 		const { lang } = this.deps.page;
 		return renderPage(
 			request,
@@ -106,7 +106,7 @@ export class AvatarController {
 			'profile_avatar.njk',
 			{ pageId: 'profile', titleParts: [config.boardTitle, lang.common.profile, lang.profile.uploadAvatar], activeNav: 'profile' },
 			{
-				menu: buildProfileMenu(viewer, config, id, 'personality', lang),
+				menu: buildProfileMenu(config, id, 'personality', lang),
 				heading: lang.profile.sectionHeading(username, lang.profile.uploadAvatar),
 				formAction: `profile.php?action=upload_avatar2&id=${id}`,
 				maxBytes: config.avatarMaxBytes,

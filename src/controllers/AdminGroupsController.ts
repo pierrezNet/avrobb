@@ -104,9 +104,8 @@ export class AdminGroupsController {
 		if (await store.titleExists(settings.title, mode === 'edit' ? target.id : null))
 			return this.#renderForm(request, reply, mode, target, groups, [lang.adminGroups.titleExists(settings.title)], 400);
 
-		const groupId = mode === 'edit' ? target.id : await store.addGroup(settings, target.id);
 		if (mode === 'edit') await store.updateGroup(target.id, settings);
-		// generate_quickjump_cache($group_id) : la liste « Atteindre » de ce groupe sera régénérée.
+		else await store.addGroup(settings, target.id);
 		return reply.redirect(`admin_groups.php?done=${mode === 'edit' ? 'edited' : 'added'}`, 303);
 	}
 

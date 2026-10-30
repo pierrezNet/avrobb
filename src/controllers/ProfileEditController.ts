@@ -77,10 +77,7 @@ export class ProfileEditController {
 		}
 
 		if (rename === null) await this.deps.profileStore.updateProfile(profile.id, result.changes);
-		else {
-			const { bansUpdated } = await this.deps.profileStore.renameUser(profile.id, profile.username, rename, result.changes);
-			// generate_users_info_cache() et, si un bannissement a suivi le pseudo, generate_bans_cache().
-		}
+		else await this.deps.profileStore.renameUser(profile.id, profile.username, rename, result.changes);
 		return reply.redirect(`profile.php?section=${section}&id=${profile.id}&updated=1`, 303);
 	};
 

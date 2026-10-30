@@ -16,7 +16,6 @@ import type { TopicReader, TopicWriter } from '../repositories/TopicRepository.t
 import type { AvatarLocator } from '../services/avatars.ts';
 import { buildCensor } from '../services/censor.ts';
 import { clampPage, pageCount } from '../services/pagination.ts';
-import { isForumModerator } from '../services/permissions.ts';
 import { firstImageUrl, plainExcerpt } from '../services/seo.ts';
 import { DEFAULT_TOOLBAR } from '../services/toolbar.ts';
 import { markRead, parseTrackedTopics, serializeTrackedTopics } from '../services/trackedTopics.ts';

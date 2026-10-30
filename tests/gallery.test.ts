@@ -62,7 +62,6 @@ describe('règles de la galerie', () => {
 
 const mod = viewer({ id: 5, username: 'MaxDUO', group: group({ id: GroupId.Moderator, isModerator: true }) });
 const val = viewer({ id: 6, username: 'valdefsx' });
-const hashes: Record<number, string> = { 5: 'h5', 6: 'h6', 3: 'h3' };
 const cookies = (userId: number): string => `${sessionCookie(userId)}; avrobb_csrf=${CSRF_SECRET}`;
 
 function data(overrides: Partial<FakeData> = {}): FakeData {

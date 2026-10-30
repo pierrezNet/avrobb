@@ -8,13 +8,12 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
-import { type FakeData, fakeDeps, group, guest, NOW, post, sessionCookie, viewer } from './fixtures.ts';
+import { type FakeData, fakeDeps, group, guest, post, sessionCookie, viewer } from './fixtures.ts';
 
 const SEED = 'graine-de-test';
 const CSRF_SECRET = '9'.repeat(64);
 const admin = viewer({ id: 2, username: 'admin', group: group({ id: GroupId.Admin }) });
 const mod = viewer({ id: 5, username: 'MaxDUO', group: group({ id: GroupId.Moderator, isModerator: true }) });
-const hashes: Record<number, string> = { 2: 'h2', 5: 'h5' };
 const cookies = (userId: number): string => `${sessionCookie(userId)}; avrobb_csrf=${CSRF_SECRET}`;
 
 let app: FastifyInstance | undefined;

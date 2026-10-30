@@ -36,7 +36,7 @@ export async function notifyMentions(deps: MentionNotifierDeps, input: MentionIn
 	if (ids.length === 0) return;
 	const t = deps.page.lang.post;
 	try {
-		const recipients = mentionRecipients(await deps.privateMessageStore.findRecipientsById(ids, author.id), author.isModerator);
+		const recipients = mentionRecipients(await deps.privateMessageStore.findRecipientsById(ids));
 		const link = `[url=${config.baseUrl}/viewtopic.php?pid=${input.postId}#p${input.postId}]${input.subject}[/url]`;
 		for (const recipient of recipients) {
 			// Discussion illisible pour son groupe (forum réservé) : pas de message, rien ne doit fuiter.

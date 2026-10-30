@@ -4,7 +4,6 @@ import { buildApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { boardConfig, type FakeData, fakeDeps, group, guest, NOW, post, sessionCookie, topic, viewer } from './fixtures.ts';
 
-const SEED = 'graine-de-test';
 const tessy = viewer();
 const admin = viewer({ id: 2, username: 'admin', group: group({ id: GroupId.Admin, title: 'Administrateurs' }) });
 

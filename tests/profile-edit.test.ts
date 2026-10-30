@@ -22,7 +22,7 @@ import {
 	readPrivacy,
 	readSignature,
 } from '../src/services/profileForms.ts';
-import { boardConfig, type FakeData, fakeDeps, group, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
+import { type FakeData, fakeDeps, group, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
 
 const SEED = 'graine-de-test';
 const CSRF_SECRET = 'a'.repeat(64);
@@ -286,7 +286,7 @@ function data(overrides: Partial<FakeData> = {}): FakeData {
 	};
 }
 
-const cookies = (fake: FakeData, userId: number): string => `${sessionCookie(userId)}; avrobb_csrf=${CSRF_SECRET}`;
+const cookies = (userId: number): string => `${sessionCookie(userId)}; avrobb_csrf=${CSRF_SECRET}`;
 
 let app: FastifyInstance | undefined;
 afterEach(async () => app?.close());
@@ -297,30 +297,22 @@ async function start(fake: FakeData, config = {}): Promise<FastifyInstance> {
 	return app;
 }
 
-function get(server: FastifyInstance, fake: FakeData, userId: number, url: string) {
-	return server.inject({ url, headers: { cookie: cookies(fake, userId) } });
+function get(server: FastifyInstance, userId: number, url: string) {
+	return server.inject({ url, headers: { cookie: cookies(userId) } });
 }
 
-function post(server: FastifyInstance, fake: FakeData, userId: number, url: string, fields: Record<string, string | string[]>) {
+function post(server: FastifyInstance, userId: number, url: string, fields: Record<string, string | string[]>) {
 	const body = new URLSearchParams({ csrf_token: csrfToken(CSRF_SECRET, SEED, userId) });
 	for (const [name, value] of Object.entries(fields)) for (const item of [value].flat()) body.append(name, item);
 	return server.inject({
 		method: 'POST',
 		url,
-		headers: { cookie: cookies(fake, userId), 'content-type': 'application/x-www-form-urlencoded' },
+		headers: { cookie: cookies(userId), 'content-type': 'application/x-www-form-urlencoded' },
 		payload: body.toString(),
 	});
 }
 
-async function postFile(
-	server: FastifyInstance,
-	fake: FakeData,
-	userId: number,
-	url: string,
-	field: string,
-	name: string,
-	content: Buffer,
-) {
+async function postFile(server: FastifyInstance, userId: number, url: string, field: string, name: string, content: Buffer) {
 	const form = new FormData();
 	form.append('csrf_token', csrfToken(CSRF_SECRET, SEED, userId));
 	form.append(field, new Blob([new Uint8Array(content)]), name);
@@ -328,7 +320,7 @@ async function postFile(
 	return server.inject({
 		method: 'POST',
 		url,
-		headers: { cookie: cookies(fake, userId), 'content-type': request.headers.get('content-type') ?? '' },
+		headers: { cookie: cookies(userId), 'content-type': request.headers.get('content-type') ?? '' },
 		payload: Buffer.from(await request.arrayBuffer()),
 	});
 }
@@ -337,7 +329,7 @@ describe('profile.php : sections', () => {
 	it('son propre profil ouvre la section Principal, avec le menu', async () => {
 		const fake = data();
 		const server = await start(fake);
-		const res = await get(server, fake, 3, '/profile.php?id=3');
+		const res = await get(server, 3, '/profile.php?id=3');
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('<h1 class="page-title">Tessy - Principal</h1>');
 		expect(res.body).toContain('href="profile.php?section=essentials&amp;id=3" aria-current="page"');
@@ -349,11 +341,11 @@ describe('profile.php : sections', () => {
 	it("le profil d'un autre reste en consultation, quelle que soit la section demandée", async () => {
 		const fake = data();
 		const server = await start(fake);
-		const res = await get(server, fake, 3, '/profile.php?section=personal&id=6');
+		const res = await get(server, 3, '/profile.php?section=personal&id=6');
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('Profil de valdefsx');
 		expect(res.body).not.toContain('name="form[realname]"');
-		const forbidden = await post(server, fake, 3, '/profile.php?section=personal&id=6', { form_sent: '1', 'form[realname]': 'X' });
+		const forbidden = await post(server, 3, '/profile.php?section=personal&id=6', { form_sent: '1', 'form[realname]': 'X' });
 		expect(forbidden.statusCode).toBe(403);
 		expect(fake.profileUpdates).toBeUndefined();
 	});
@@ -361,7 +353,7 @@ describe('profile.php : sections', () => {
 	it('enregistre une section et redirige avec un avis ; les erreurs réaffichent la saisie', async () => {
 		const fake = data();
 		const server = await start(fake);
-		const ok = await post(server, fake, 3, '/profile.php?section=personal&id=3', {
+		const ok = await post(server, 3, '/profile.php?section=personal&id=3', {
 			form_sent: '1',
 			'form[realname]': 'Tess',
 			title: 'Pilote',
@@ -373,9 +365,9 @@ describe('profile.php : sections', () => {
 		expect(fake.profileUpdates).toEqual([
 			{ id: 3, changes: { realname: 'Tess', location: 'Lyon', url: 'https://www.tess.fr', title: 'Pilote' } },
 		]);
-		expect((await get(server, fake, 3, '/profile.php?section=personal&id=3&updated=1')).body).toContain('Profil mis à jour.');
+		expect((await get(server, 3, '/profile.php?section=personal&id=3&updated=1')).body).toContain('Profil mis à jour.');
 
-		const bad = await post(server, fake, 3, '/profile.php?section=personal&id=3', {
+		const bad = await post(server, 3, '/profile.php?section=personal&id=3', {
 			form_sent: '1',
 			'form[realname]': '<Tess>',
 			'form[url]': 'javascript:alert(1)',
@@ -392,7 +384,7 @@ describe('profile.php : sections', () => {
 		const res = await server.inject({
 			method: 'POST',
 			url: '/profile.php?section=messaging&id=3',
-			headers: { cookie: cookies(fake, 3), 'content-type': 'application/x-www-form-urlencoded' },
+			headers: { cookie: cookies(3), 'content-type': 'application/x-www-form-urlencoded' },
 			payload: 'form_sent=1&form%5Bicq%5D=1',
 		});
 		expect(res.statusCode).toBe(403);
@@ -402,19 +394,19 @@ describe('profile.php : sections', () => {
 	it('un modérateur autorisé modifie un membre, mais pas un administrateur ; plus de section Administration', async () => {
 		const fake = data();
 		const server = await start(fake);
-		const res = await get(server, fake, 5, '/profile.php?id=6');
+		const res = await get(server, 5, '/profile.php?id=6');
 		expect(res.body).toContain('valdefsx - Principal');
 		expect(res.body).toContain('name="admin_note"');
 		expect(res.body).toContain('moderate.php?get_host=192.0.2.7');
-		expect((await get(server, fake, 5, '/profile.php?id=2')).body).toContain('Profil de admin');
+		expect((await get(server, 5, '/profile.php?id=2')).body).toContain('Profil de admin');
 
-		expect((await get(server, fake, 2, '/profile.php?section=admin&id=6')).statusCode).toBe(404);
+		expect((await get(server, 2, '/profile.php?section=admin&id=6')).statusCode).toBe(404);
 	});
 
 	it("l'administrateur renomme : effets de bord", async () => {
 		const fake = data({ bans: [{ id: 1, username: 'valdefsx', ip: '', email: '', message: '', expire: null }] });
 		app = await buildApp(fakeDeps(fake));
-		const res = await post(app, fake, 2, '/profile.php?section=essentials&id=6', {
+		const res = await post(app, 2, '/profile.php?section=essentials&id=6', {
 			form_sent: '1',
 			req_username: 'Valentin',
 			req_email: 'val@example.com',
@@ -430,10 +422,10 @@ describe('profile.php : sections', () => {
 	it('Affichage et Vie privée : thèmes, cases conditionnelles', async () => {
 		const fake = data();
 		const server = await start(fake, { privateMessagesEnabled: true });
-		const display = await get(server, fake, 3, '/profile.php?section=display&id=3');
+		const display = await get(server, 3, '/profile.php?section=display&id=3');
 		expect(display.body).toContain('<option value="GreenDark">GreenDark</option>');
 		expect(display.body).not.toContain('reputation_enable');
-		const privacy = await get(server, fake, 3, '/profile.php?section=privacy&id=3');
+		const privacy = await get(server, 3, '/profile.php?section=privacy&id=3');
 		expect(privacy.body).toContain('name="form[use_pm]" value="1" checked');
 		expect(privacy.body).not.toContain('notify_pm_full');
 	});
@@ -441,7 +433,7 @@ describe('profile.php : sections', () => {
 	it('Personnalité : aperçu de la signature et liens de l’avatar', async () => {
 		const fake = data();
 		const server = await start(fake, { avatars: true });
-		const res = await get(server, fake, 3, '/profile.php?section=personality&id=3');
+		const res = await get(server, 3, '/profile.php?section=personality&id=3');
 		expect(res.body).toContain('<strong>Bons vols</strong>');
 		expect(res.body).toContain('profile.php?action=upload_avatar&amp;id=3');
 		expect(res.body).toContain('400 caractères et 4 lignes autorisés');
@@ -452,19 +444,19 @@ describe('profile.php : avatar', () => {
 	it('envoie un avatar contrôlé sur son contenu, et refuse un faux', async () => {
 		const fake = data();
 		const server = await start(fake, { avatars: true });
-		const form = await get(server, fake, 3, '/profile.php?action=upload_avatar&id=3');
+		const form = await get(server, 3, '/profile.php?action=upload_avatar&id=3');
 		expect(form.body).toContain('enctype="multipart/form-data"');
 
-		const ok = await postFile(server, fake, 3, '/profile.php?action=upload_avatar2&id=3', 'req_file', 'moi.png', png(50, 50));
+		const ok = await postFile(server, 3, '/profile.php?action=upload_avatar2&id=3', 'req_file', 'moi.png', png(50, 50));
 		expect(ok.statusCode).toBe(303);
 		expect(fake.avatarLog).toEqual(['save 3.png']);
 
-		const bad = await postFile(server, fake, 3, '/profile.php?action=upload_avatar2&id=3', 'req_file', 'moi.png', Buffer.from('<?php'));
+		const bad = await postFile(server, 3, '/profile.php?action=upload_avatar2&id=3', 'req_file', 'moi.png', Buffer.from('<?php'));
 		expect(bad.body).toContain('Ce type de fichier n&#39;est pas autorisé');
 		expect(fake.avatarLog).toHaveLength(1);
 
 		// Trop grande : réduite automatiquement au lieu d'être refusée.
-		const big = await postFile(server, fake, 3, '/profile.php?action=upload_avatar2&id=3', 'req_file', 'grand.png', png(800, 600));
+		const big = await postFile(server, 3, '/profile.php?action=upload_avatar2&id=3', 'req_file', 'grand.png', png(800, 600));
 		expect(big.statusCode).toBe(303);
 		expect(fake.avatarLog).toEqual(['save 3.png', 'save 3.png']);
 	});
@@ -472,16 +464,16 @@ describe('profile.php : avatar', () => {
 	it("efface l'avatar après confirmation (POST)", async () => {
 		const fake = data();
 		const server = await start(fake, { avatars: true });
-		const confirm = await get(server, fake, 3, '/profile.php?action=delete_avatar&id=3');
+		const confirm = await get(server, 3, '/profile.php?action=delete_avatar&id=3');
 		expect(confirm.body).toContain('action="profile.php?action=delete_avatar&amp;id=3"');
 		expect(fake.avatarLog).toBeUndefined();
-		expect((await post(server, fake, 3, '/profile.php?action=delete_avatar&id=3', {})).statusCode).toBe(303);
+		expect((await post(server, 3, '/profile.php?action=delete_avatar&id=3', {})).statusCode).toBe(303);
 		expect(fake.avatarLog).toEqual(['delete 3']);
 	});
 
 	it('avatars désactivés : action refusée', async () => {
 		const fake = data();
 		const server = await start(fake, { avatars: false });
-		expect((await get(server, fake, 3, '/profile.php?action=upload_avatar&id=3')).statusCode).toBe(404);
+		expect((await get(server, 3, '/profile.php?action=upload_avatar&id=3')).statusCode).toBe(404);
 	});
 });

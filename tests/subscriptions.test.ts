@@ -7,7 +7,7 @@ import type { FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.ts';
 import type { ForumInfo } from '../src/domain/models.ts';
-import { boardConfig, type FakeData, fakeDeps, guest, NOW, post, sessionCookie, topic, viewer } from './fixtures.ts';
+import { boardConfig, type FakeData, fakeDeps, guest, post, sessionCookie, topic, viewer } from './fixtures.ts';
 
 const tessy = `${sessionCookie(3)}`;
 const forumInfo: ForumInfo = {

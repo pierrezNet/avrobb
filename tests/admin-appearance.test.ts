@@ -18,7 +18,6 @@ const SEED = 'graine-de-test';
 const CSRF_SECRET = '7'.repeat(64);
 const admin = viewer({ id: 2, username: 'admin', group: group({ id: GroupId.Admin }) });
 const mod = viewer({ id: 5, username: 'MaxDUO', group: group({ id: GroupId.Moderator, isModerator: true }) });
-const hashes: Record<number, string> = { 2: 'h2', 5: 'h5' };
 const cookies = (userId: number): string => `${sessionCookie(userId)}; avrobb_csrf=${CSRF_SECRET}`;
 const png = Buffer.concat([
 	Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13]),

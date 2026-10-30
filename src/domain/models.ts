@@ -679,23 +679,6 @@ export interface PrivateRecipient {
 	privateMessageCount: number;
 	notifyPrivateMessages: boolean;
 	notifyPrivateMessagesFull: boolean;
-	/** Le destinataire a bloqué l'expéditeur dans ses contacts (allow_msg = 0). */
-	blocksSender: boolean;
-}
-
-/** Contact du carnet d'adresses de la messagerie. */
-export interface PrivateContact {
-	id: number;
-	contactId: number;
-	name: string;
-	allowMessages: boolean;
-}
-
-/** Liste d'envoi : un nom et des destinataires. */
-export interface SendingList {
-	id: number;
-	name: string;
-	members: { id: number; username: string }[];
 }
 
 /** Vote de renommée reçu par un membre (reputation.php?uid=…). */

@@ -170,11 +170,6 @@ function fakeSearch(overrides: Partial<SearchReader> = {}): SearchReader {
 	};
 }
 
-const SEED = 'graine-de-test';
-const cookie = (userId: number, hash: string): string => {
-	const expires = NOW + 3600;
-	return `${sessionCookie(userId, expires)}`;
-};
 const users = [{ viewer: guest }, { viewer: viewer({ lastVisit: NOW - 3600 }) }];
 
 let app: FastifyInstance | undefined;
@@ -270,7 +265,7 @@ describe('GET /search.php', () => {
 					uid === 3 ? { presence: null, viewer: viewer({ lastSearch: NOW - 5 }) } : member.users.findViewer(uid),
 			},
 		});
-		const flood = await app.inject({ url: '/search.php?action=search&keywords=vintage', headers: { cookie: cookie(3, 'hash-tessy') } });
+		const flood = await app.inject({ url: '/search.php?action=search&keywords=vintage', headers: { cookie: sessionCookie(3) } });
 		expect(flood.statusCode).toBe(429);
 		expect(flood.body).toContain('Vous devez patienter au minimum 30 secondes');
 	});
@@ -280,7 +275,7 @@ describe('GET /search.php', () => {
 		const data = `a:6:{s:10:"search_ids";s:${inner.length}:"${inner}";s:8:"num_hits";i:2;s:7:"sort_by";i:0;s:8:"sort_dir";s:4:"DESC";s:7:"show_as";s:6:"topics";s:11:"search_type";a:2:{i:0;s:6:"action";i:1;s:15:"show_unanswered";}}`;
 		app = await buildApp(deps({ findCachedSearch: async (id, ident) => (id === 77 && ident === 'Tessy' ? data : null) }));
 
-		const own = await app.inject({ url: '/search.php?search_id=77', headers: { cookie: cookie(3, 'hash-tessy') } });
+		const own = await app.inject({ url: '/search.php?search_id=77', headers: { cookie: sessionCookie(3) } });
 		expect(own.body.match(/<h3 class="forum-row__name/g)).toHaveLength(2);
 		expect(own.body).toContain('>Sans réponse</a>');
 		expect((await app.inject('/search.php?search_id=77')).body).toContain('aucun résultat');

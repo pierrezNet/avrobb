@@ -6,7 +6,6 @@
 
 import type { Ban } from './bans.ts';
 import type { Censor } from './censor.ts';
-import { isValidEmail } from './mail.ts';
 
 /**
  * Fuseaux proposés par register.php, en heures (libellés dans lang/fr/account.ts). FluxBB

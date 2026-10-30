@@ -70,7 +70,6 @@ describe('ProfileRepository', () => {
 					show_message: 1,
 				})
 				.execute();
-			await trx.insertInto('contacts').values({ user_id: 3, contact_id: 5, contact_name: 'MaxDUO', allow_msg: 1 }).execute();
 
 			const result = await new ProfileRepository(trx).renameUser(5, 'MaxDUO', 'Maxime', { location: 'Toulon' });
 			expect(result).toEqual({ bansUpdated: true });
@@ -83,8 +82,6 @@ describe('ProfileRepository', () => {
 			expect(online.ident).toBe('Maxime');
 			const message = await trx.selectFrom('messages').select(['sender', 'receiver']).where('shared_id', '=', 9).executeTakeFirstOrThrow();
 			expect(message).toEqual({ sender: 'Maxime', receiver: 'Max, Maxime' });
-			const contact = await trx.selectFrom('contacts').select('contact_name').where('contact_id', '=', 5).executeTakeFirstOrThrow();
-			expect(contact.contact_name).toBe('Maxime');
 			const user = await trx.selectFrom('users').select(['username', 'location']).where('id', '=', 5).executeTakeFirstOrThrow();
 			expect(user).toEqual({ username: 'Maxime', location: 'Toulon' });
 		});

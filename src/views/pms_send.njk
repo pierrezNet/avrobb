@@ -4,8 +4,6 @@
 {% import "partials/postFields.njk" as postFields %}
 {% import "partials/sideMenu.njk" as sideMenu %}
 
-{% block head %}{% if view.newConversation and view.newConversation.lists.length %}<script src="{{ asset('js/pms.js') }}" defer></script>{% endif %}{% endblock %}
-
 {% block main %}
 <h1 class="page-title">{{ view.heading }}</h1>
 <div class="side-layout">
@@ -30,15 +28,6 @@
 			<input type="text" id="p_username" name="p_username" value="{{ view.newConversation.usernames }}" required autocomplete="off" data-member-list>
 		</p>
 		<p class="form__help">{{ lang.pms.sendMultiple(view.newConversation.maxReceivers) }}</p>
-		{% if view.newConversation.lists.length %}
-		<p class="form__field" id="sending-list" hidden>
-			<label for="sending_list">{{ lang.pms.chooseList }}</label>
-			<select id="sending_list" data-target="p_username">
-				<option value="">{{ lang.pms.selectAList }}</option>
-				{% for list in view.newConversation.lists %}<option value="{{ list.value }}">{{ list.label }}</option>{% endfor %}
-			</select>
-		</p>
-		{% endif %}
 		<p class="form__field">
 			<label for="req_subject">{{ lang.pms.subject }} <span class="form__required">{{ lang.post.required }}</span></label>
 			<input type="text" id="req_subject" name="req_subject" value="{{ view.newConversation.subject }}" maxlength="70" required>

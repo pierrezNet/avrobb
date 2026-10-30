@@ -18,7 +18,6 @@ const mod = viewer({ id: 5, username: 'MaxDUO', group: group({ id: GroupId.Moder
 const banMod = viewer({ id: 6, username: 'Garde', group: group({ id: 6, isModerator: true, canModBanUsers: true }) });
 const admin = viewer({ id: 2, username: 'admin', group: group({ id: GroupId.Admin }) });
 const tessy = viewer();
-const hashes: Record<number, string> = { 5: 'h5', 3: 'h3', 6: 'h6', 2: 'h2' };
 const cookie = (userId: number): string => `${sessionCookie(userId)}; avrobb_csrf=${CSRF_SECRET}`;
 
 describe('critères de recherche', () => {

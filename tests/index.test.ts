@@ -74,11 +74,7 @@ const categories: IndexCategory[] = [
 	},
 ];
 
-const SEED = 'graine-de-test';
-const cookie = (userId: number, hash: string, extra = ''): string => {
-	const expires = NOW + 3600;
-	return `${sessionCookie(userId, expires)}${extra}`;
-};
+const cookie = (userId: number, extra = ''): string => `${sessionCookie(userId)}${extra}`;
 
 const tessy = viewer({ lastVisit: NOW - 3600 });
 const users = [{ viewer: guest }, { viewer: tessy }];
@@ -154,11 +150,11 @@ describe('GET /index.php', () => {
 			}),
 		);
 
-		const fresh = await app.inject({ url: '/index.php', headers: { cookie: cookie(3, 'hash-tessy') } });
+		const fresh = await app.inject({ url: '/index.php', headers: { cookie: cookie(3) } });
 		expect(fresh.body).toContain('href="search.php?action=show_new&amp;fid=1">Nouveaux messages</a>');
 		expect(fresh.body).toContain('misc.php?action=markread');
 
-		const read = await app.inject({ url: '/index.php', headers: { cookie: `${cookie(3, 'hash-tessy')}; avrobb_track=t7=${NOW}` } });
+		const read = await app.inject({ url: '/index.php', headers: { cookie: `${cookie(3)}; avrobb_track=t7=${NOW}` } });
 		expect(read.body).not.toContain('Nouveaux messages');
 	});
 

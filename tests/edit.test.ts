@@ -10,9 +10,7 @@ import { GroupId } from '../src/domain/models.ts';
 import { canDeletePost, canEditPost, EDIT_WINDOW_SECONDS, type PostOwnership } from '../src/services/permissions.ts';
 import { type FakeData, fakeDeps, group, guest, NOW, post, sessionCookie, topic, viewer } from './fixtures.ts';
 
-const SEED = 'graine-de-test';
-const cookie = (id: number, hash: string): string => `${sessionCookie(id)}`;
-const tessy = cookie(3, 'h');
+const tessy = sessionCookie(3);
 const max = viewer({ id: 5, username: 'MaxDUO', group: group({ id: GroupId.Moderator, isModerator: true }) });
 const modForum = { id: 1, name: 'Forum', moderators: new Map([['MaxDUO', 5]]) };
 
@@ -130,13 +128,13 @@ describe('edit.php', () => {
 	it('modérateur : modification silencieuse et épinglage', async () => {
 		const fake = data({ posts: new Map([[10, [post(100, { posted: 0 })]]]) });
 		app = await buildApp(fakeDeps(fake));
-		const page = await app.inject({ url: '/edit.php?id=100', headers: { cookie: cookie(5, 'm') } });
+		const page = await app.inject({ url: '/edit.php?id=100', headers: { cookie: sessionCookie(5) } });
 		expect(page.body).toContain('name="silent" value="1" checked');
 		const res = await submit(
 			app,
 			'/edit.php?id=100&action=edit',
 			{ req_subject: 'S', req_message: 'M', silent: '1', stick_topic: '1' },
-			cookie(5, 'm'),
+			sessionCookie(5),
 		);
 		expect(res.statusCode).toBe(302);
 		expect(fake.postUpdates?.[0]).toMatchObject({ edited: null, topic: { subject: 'S', sticky: true } });
@@ -185,7 +183,7 @@ describe('delete.php', () => {
 		const res = await app.inject({
 			method: 'POST',
 			url: '/delete.php?id=100',
-			headers: { cookie: cookie(5, 'm'), 'content-type': 'application/x-www-form-urlencoded' },
+			headers: { cookie: sessionCookie(5), 'content-type': 'application/x-www-form-urlencoded' },
 			payload: 'delete=1',
 		});
 		expect(res.statusCode).toBe(403);

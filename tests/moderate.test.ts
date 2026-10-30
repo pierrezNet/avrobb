@@ -17,7 +17,6 @@ const CSRF_SECRET = '9'.repeat(64);
 const mod = viewer({ id: 5, username: 'MaxDUO', group: group({ id: GroupId.Moderator, isModerator: true }) });
 const tessy = viewer();
 const admin = viewer({ id: 2, username: 'admin', group: group({ id: GroupId.Admin }) });
-const hashes: Record<number, string> = { 5: 'h5', 3: 'h3', 2: 'h2' };
 const cookies = (userId: number): string => `${sessionCookie(userId)}; avrobb_csrf=${CSRF_SECRET}`;
 
 const forum: ForumInfo = {

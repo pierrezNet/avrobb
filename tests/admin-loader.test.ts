@@ -8,13 +8,12 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
-import { boardConfig, type FakeData, fakeDeps, group, guest, NOW, sessionCookie, topic, viewer } from './fixtures.ts';
+import { boardConfig, type FakeData, fakeDeps, group, guest, sessionCookie, topic, viewer } from './fixtures.ts';
 
 const SEED = 'graine-de-test';
 const CSRF_SECRET = '9'.repeat(64);
 const mod = viewer({ id: 5, username: 'MaxDUO', group: group({ id: GroupId.Moderator, isModerator: true }) });
 const admin = viewer({ id: 2, username: 'admin', group: group({ id: GroupId.Admin }) });
-const hashes: Record<number, string> = { 5: 'h5', 2: 'h2' };
 const cookies = (userId: number): string => `${sessionCookie(userId)}; avrobb_csrf=${CSRF_SECRET}`;
 const PLUGIN = '/admin_loader.php?plugin=AP_Private_messaging.php';
 
@@ -35,15 +34,6 @@ async function start(): Promise<{ server: FastifyInstance; fake: FakeData }> {
 }
 
 const get = (server: FastifyInstance, userId: number, url: string) => server.inject({ url, headers: { cookie: cookies(userId) } });
-function post(server: FastifyInstance, userId: number, fields: Record<string, string>) {
-	return server.inject({
-		method: 'POST',
-		url: PLUGIN,
-		headers: { cookie: cookies(userId), 'content-type': 'application/x-www-form-urlencoded' },
-		payload: new URLSearchParams({ csrf_token: csrfToken(CSRF_SECRET, SEED, userId), ...fields }).toString(),
-	});
-}
-
 describe('admin_loader.php', () => {
 	it('droits : AP_ pour les administrateurs ; plugin inconnu refusé', async () => {
 		const { server } = await start();

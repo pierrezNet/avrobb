@@ -6,13 +6,11 @@ import type { FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
-import { type FakeData, fakeDeps, group, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
+import { type FakeData, fakeDeps, group, guest, sessionCookie, viewer } from './fixtures.ts';
 
-const SEED = 'graine-de-test';
 const mod = viewer({ id: 5, username: 'MaxDUO', group: group({ id: GroupId.Moderator, isModerator: true }) });
 const tessy = viewer();
 const admin = viewer({ id: 2, username: 'admin', group: group({ id: GroupId.Admin }) });
-const hashes: Record<number, string> = { 5: 'h5', 3: 'h3', 2: 'h2' };
 const cookie = (userId: number): string => `${sessionCookie(userId)}`;
 
 const data = (): FakeData => ({

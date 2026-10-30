@@ -1,14 +1,12 @@
 /**
- * Messagerie privée sur une vraie base (PrivateMessageRepository, PrivateContactRepository) :
- * création et réponse, num_pms, départ d'une conversation, suppression pour tous, contacts et
- * listes d'envoi au format sérialisé du PHP. Chaque test s'exécute dans une transaction annulée.
+ * Messagerie privée sur une vraie base (PrivateMessageRepository) : création et réponse, num_pms,
+ * départ d'une conversation, suppression pour tous. Chaque test s'exécute dans une transaction annulée.
  */
 
 import type { Kysely } from 'kysely';
 import { afterAll, describe, expect, it } from 'vitest';
 import { createDatabase } from '../../src/db/database.ts';
 import type { Database } from '../../src/db/schema.ts';
-import { PrivateContactRepository } from '../../src/repositories/PrivateContactRepository.ts';
 import { PrivateMessageRepository } from '../../src/repositories/PrivateMessageRepository.ts';
 import { testDbConfig } from './testDatabase.ts';
 
@@ -36,7 +34,7 @@ describe('PrivateMessageRepository', () => {
 	it('crée une conversation, y répond, puis un participant la quitte', async () => {
 		await inRollback(async (trx) => {
 			const store = new PrivateMessageRepository(trx);
-			const recipients = await store.findRecipientsByName(['MaxDUO', 'tessy'], 3);
+			const recipients = await store.findRecipientsByName(['MaxDUO', 'tessy']);
 			expect(recipients.map((r) => r.username).sort()).toEqual(['MaxDUO', 'Tessy']);
 			const before = { tessy: await numPms(trx, 3), max: await numPms(trx, 5) };
 
@@ -97,60 +95,6 @@ describe('PrivateMessageRepository', () => {
 			await store.deleteForEverybody(message);
 			expect(await store.findConversation(1, 2)).toBeNull();
 			expect(await numPms(trx, 2)).toBe(Math.max(0, before - 1));
-		});
-	});
-
-	it('lit le blocage de l’expéditeur dans les contacts du destinataire', async () => {
-		await inRollback(async (trx) => {
-			await trx.insertInto('contacts').values({ user_id: 5, contact_id: 3, contact_name: 'Tessy', allow_msg: 0 }).execute();
-			const [max] = await new PrivateMessageRepository(trx).findRecipientsById([5], 3);
-			expect(max?.blocksSender).toBe(true);
-			const [other] = await new PrivateMessageRepository(trx).findRecipientsById([5], 2);
-			expect(other?.blocksSender).toBe(false);
-		});
-	});
-});
-
-describe('PrivateContactRepository', () => {
-	it('contacts : ajout, droits, suppression limités au membre', async () => {
-		await inRollback(async (trx) => {
-			const store = new PrivateContactRepository(trx);
-			const candidate = await store.findCandidate(3, { username: 'MaxDUO' });
-			expect(candidate).toMatchObject({ id: 5, alreadyContact: false, groupCanUsePrivateMessages: true });
-			await store.addContact(3, { id: 5, username: 'MaxDUO' }, true);
-			expect((await store.findCandidate(3, { id: 5 }))?.alreadyContact).toBe(true);
-
-			const [contact] = await store.listContacts(3);
-			expect(contact).toMatchObject({ contactId: 5, name: 'MaxDUO', allowMessages: true });
-			expect(await store.toggleAllowed(5, contact?.id ?? 0)).toBe(false);
-			expect(await store.toggleAllowed(3, contact?.id ?? 0)).toBe(true);
-			expect((await store.listContacts(3))[0]?.allowMessages).toBe(false);
-			expect(await store.listContactUserIds(3, [contact?.id ?? 0])).toEqual([5]);
-			expect(await store.deleteContacts(5, [contact?.id ?? 0])).toBe(0);
-			expect(await store.deleteContacts(3, [contact?.id ?? 0])).toBe(1);
-		});
-	});
-
-	it('listes d’envoi sérialisées comme le PHP', async () => {
-		await inRollback(async (trx) => {
-			const store = new PrivateContactRepository(trx);
-			await store.createSendingList(3, 'Escadrille', [
-				{ id: 5, username: 'MaxDUO' },
-				{ id: 2, username: 'admin' },
-			]);
-			const row = await trx.selectFrom('sending_lists').selectAll().where('user_id', '=', 3).executeTakeFirstOrThrow();
-			expect(row.receivers).toBe('a:2:{i:0;s:6:"MaxDUO";i:1;s:5:"admin";}');
-			expect(row.array_id).toBe('a:2:{i:0;i:5;i:1;i:2;}');
-			expect(await store.findSendingList(3, row.id)).toEqual({
-				id: row.id,
-				name: 'Escadrille',
-				members: [
-					{ id: 5, username: 'MaxDUO' },
-					{ id: 2, username: 'admin' },
-				],
-			});
-			expect(await store.findSendingList(5, row.id)).toBeNull();
-			expect(await store.deleteSendingLists(3, [row.id])).toBe(1);
 		});
 	});
 });

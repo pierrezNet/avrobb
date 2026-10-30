@@ -39,7 +39,6 @@ import { MemberSuggestController, type MemberSuggestQuery } from './controllers/
 import { MiscController, type MiscQuery } from './controllers/MiscController.ts';
 import { type HostResolver, ModerateController, type ModerateQuery } from './controllers/ModerateController.ts';
 import { PostController, type PostQuery } from './controllers/PostController.ts';
-import { PrivateContactController, type PrivateContactQuery } from './controllers/PrivateContactController.ts';
 import { PrivateMessageController, type PrivateMessageQuery } from './controllers/PrivateMessageController.ts';
 import { PrivateMessageSendController, type PrivateMessageSendQuery } from './controllers/PrivateMessageSendController.ts';
 import { ProfileController, type ProfileQuery } from './controllers/ProfileController.ts';
@@ -78,7 +77,6 @@ import type { ModerationStore } from './repositories/ModerationRepository.ts';
 import type { PostEditStore } from './repositories/PostEditRepository.ts';
 import type { PostingStore } from './repositories/PostingRepository.ts';
 import type { PostReader } from './repositories/PostRepository.ts';
-import type { PrivateContactStore, SendingListStore } from './repositories/PrivateContactRepository.ts';
 import type { PrivateMessageStore } from './repositories/PrivateMessageRepository.ts';
 import type { ProfileStore } from './repositories/ProfileRepository.ts';
 import type { ReportStore, ReportWriter } from './repositories/ReportRepository.ts';
@@ -125,10 +123,8 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	posting: PostingStore;
 	postEdits: PostEditStore;
 	drafts: DraftStore;
-	/** Messagerie privée (mod APMS) : conversations, contacts, listes d'envoi. */
+	/** Messagerie privée (mod APMS, simplifié) : conversations. */
 	privateMessageStore: PrivateMessageStore;
-	privateContacts: PrivateContactStore;
-	sendingLists: SendingListStore;
 	subscriptions: SubscriptionStore;
 	reputation: ReputationStore;
 	/** Modération des sujets et messages (moderate.php) et résolution inverse des IP. */
@@ -466,24 +462,6 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 		'/pms_send.php',
 		{ preHandler: [authenticate, verifyCsrf] },
 		pmSend.send,
-	);
-
-	const pmContacts = new PrivateContactController(deps);
-	app.get<{ Querystring: PrivateContactQuery }>('/pms_contacts.php', { preHandler: authenticate }, (request, reply) =>
-		pmContacts.contacts(request, reply),
-	);
-	app.post<{ Querystring: PrivateContactQuery; Body: FormBody }>(
-		'/pms_contacts.php',
-		{ preHandler: [authenticate, verifyCsrf] },
-		pmContacts.updateContacts,
-	);
-	app.get<{ Querystring: PrivateContactQuery }>('/pms_sending_lists.php', { preHandler: authenticate }, (request, reply) =>
-		pmContacts.sendingLists(request, reply),
-	);
-	app.post<{ Querystring: PrivateContactQuery; Body: FormBody }>(
-		'/pms_sending_lists.php',
-		{ preHandler: [authenticate, verifyCsrf] },
-		pmContacts.updateSendingLists,
 	);
 
 	const post = new PostController({ ...deps, trackCookieName });

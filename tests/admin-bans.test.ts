@@ -17,7 +17,6 @@ const mod = viewer({ id: 5, username: 'MaxDUO', group: group({ id: GroupId.Moder
 const banMod = viewer({ id: 6, username: 'Garde', group: group({ id: 6, isModerator: true, canModBanUsers: true }) });
 const tessy = viewer();
 const admin = viewer({ id: 2, username: 'admin', group: group({ id: GroupId.Admin }) });
-const hashes: Record<number, string> = { 5: 'h5', 6: 'h6', 3: 'h3', 2: 'h2' };
 const cookies = (userId: number): string => `${sessionCookie(userId)}; avrobb_csrf=${CSRF_SECRET}`;
 
 describe('formulaire de bannissement', () => {

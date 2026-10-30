@@ -1,16 +1,14 @@
 /**
- * Modèles de vue de la messagerie privée (mod APMS) : boîte de réception, conversation, formulaire
- * d'envoi, contacts et listes d'envoi. Fonctions pures.
+ * Modèles de vue de la messagerie privée : boîte de réception, conversation et formulaire d'envoi.
+ * Fonctions pures.
  */
 
 import {
 	type BoardConfig,
 	GroupId,
-	type PrivateContact,
 	type PrivateConversation,
 	type PrivateMessage,
 	type PrivateMessageWithAuthor,
-	type SendingList,
 	type Viewer,
 } from '../domain/models.ts';
 import type { Lang } from '../lang/fr/index.ts';
@@ -26,18 +24,13 @@ import { type BbcodeStatus, bbcodeStatus } from './postPage.ts';
 import type { MenuItem } from './profileEditPage.ts';
 import { authorContactLinks, type PostAction, type PostView } from './topicPage.ts';
 
-export type PmPage = 'inbox' | 'send' | 'lists' | 'contacts';
+export type PmPage = 'inbox' | 'send';
 
 /** Menu « Messagerie privée » commun aux pages pms_*.php. */
 export function pmMenu(active: PmPage, lang: Lang): MenuItem[] {
 	const t = lang.pms;
 	const item = (page: PmPage, href: string, label: string): MenuItem => ({ href, label, active: page === active });
-	return [
-		item('inbox', 'pms_inbox.php', t.inbox),
-		item('send', 'pms_send.php', t.writeMessage),
-		item('lists', 'pms_sending_lists.php', t.sendingLists),
-		item('contacts', 'pms_contacts.php', t.contacts),
-	];
+	return [item('inbox', 'pms_inbox.php', t.inbox), item('send', 'pms_send.php', t.writeMessage)];
 }
 
 interface DateContext {
@@ -274,7 +267,7 @@ export interface SendFormView {
 	heading: string;
 	formAction: string;
 	/** Destinataires et sujet saisis (nouvelle conversation) ; null pour une réponse ou une modification. */
-	newConversation: { usernames: string; subject: string; maxReceivers: number; lists: { value: string; label: string }[] } | null;
+	newConversation: { usernames: string; subject: string; maxReceivers: number } | null;
 	message: string;
 	hideSmilies: boolean;
 	showSmiliesOption: boolean;
@@ -289,7 +282,7 @@ export function buildSendForm(input: {
 	lang: Lang;
 	formAction: string;
 	heading: string;
-	newConversation: { usernames: string; subject: string; lists: readonly SendingList[] } | null;
+	newConversation: { usernames: string; subject: string } | null;
 	message: string;
 	hideSmilies: boolean;
 	errors: string[];
@@ -307,10 +300,6 @@ export function buildSendForm(input: {
 						usernames: input.newConversation.usernames,
 						subject: input.newConversation.subject,
 						maxReceivers: config.privateMessageMaxReceivers - 1,
-						lists: input.newConversation.lists.map((list) => ({
-							value: list.members.map((member) => member.username).join(', '),
-							label: list.name,
-						})),
 					}
 				: null,
 		message: input.message,
@@ -322,74 +311,5 @@ export function buildSendForm(input: {
 			input.preview !== null
 				? parseMessage(input.preview, messageParserOptions(config, viewer, lang, input.censor, input.hideSmilies))
 				: null,
-	};
-}
-
-// ——— Contacts ———
-
-export interface ContactRowView {
-	id: number;
-	name: { href: string | null; label: string };
-	allowed: boolean;
-	switchLabel: string;
-	switchTitle: string;
-	messageUrl: string;
-	messageTitle: string;
-	deleteTitle: string;
-	selectLabel: string;
-}
-
-export function buildContacts(input: {
-	viewer: Viewer;
-	contacts: readonly PrivateContact[];
-	lang: Lang;
-	notice: string | null;
-	errors: string[];
-}) {
-	const { viewer, lang } = input;
-	const t = lang.pms;
-	return {
-		menu: pmMenu('contacts', lang),
-		contacts: input.contacts.map(
-			(contact): ContactRowView => ({
-				id: contact.id,
-				name: profileLink(viewer, contact.contactId, contact.name),
-				allowed: contact.allowMessages,
-				switchLabel: contact.allowMessages ? t.refuse : t.authorize,
-				switchTitle: contact.allowMessages ? t.refuseFrom(contact.name) : t.authorizeFrom(contact.name),
-				messageUrl: `pms_send.php?uid=${contact.contactId}`,
-				messageTitle: t.quickMessageTo(contact.name),
-				deleteTitle: t.deleteContact(contact.name),
-				selectLabel: t.selectContact(contact.name),
-			}),
-		),
-		notice: input.notice,
-		errors: input.errors,
-	};
-}
-
-// ——— Listes d'envoi ———
-
-export function buildSendingLists(input: {
-	viewer: Viewer;
-	lists: readonly SendingList[];
-	lang: Lang;
-	form: { name: string; usernames: string };
-	notice: string | null;
-	errors: string[];
-}) {
-	const { viewer, lang } = input;
-	return {
-		menu: pmMenu('lists', lang),
-		lists: input.lists.map((list) => ({
-			id: list.id,
-			name: list.name,
-			members: list.members.map((member) => profileLink(viewer, member.id, member.username)),
-			messageUrl: `pms_send.php?lid=${list.id}`,
-			selectLabel: lang.pms.selectList(list.name),
-		})),
-		form: input.form,
-		notice: input.notice,
-		errors: input.errors,
 	};
 }

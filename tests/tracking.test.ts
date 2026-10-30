@@ -23,7 +23,6 @@ describe('serializeTrackedTopics (set_tracked_topics())', () => {
 	});
 });
 
-const SEED = 'graine-de-test';
 const cookie = (extra = ''): string => `${sessionCookie(3)}${extra}`;
 const setCookie = (header: string | string[] | undefined, name: string): string | undefined =>
 	[header].flat().find((c) => c?.startsWith(`${name}=`));

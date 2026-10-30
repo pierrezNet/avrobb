@@ -5,13 +5,11 @@
 import type { FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.ts';
-import { type FakeData, fakeDeps, group, guest, NOW, sessionCookie, topic, viewer } from './fixtures.ts';
+import { type FakeData, fakeDeps, group, guest, sessionCookie, topic, viewer } from './fixtures.ts';
 
-const SEED = 'graine-de-test';
 const tessy = viewer();
 const max = viewer({ id: 5, username: 'MaxDUO' });
 const hidden = viewer({ id: 6, username: 'Discret', group: group({ id: 6, canViewUsers: false }) });
-const hashes: Record<number, string> = { 3: 'h3', 5: 'h5', 6: 'h6' };
 const cookie = (userId: number): string => `${sessionCookie(userId)}`;
 
 let app: FastifyInstance | undefined;

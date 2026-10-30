@@ -53,8 +53,8 @@ export interface PrivateMessageStore extends PrivateMessageReader {
 	markConversationRead(sharedId: number, ownerId: number): Promise<void>;
 	/** Membres qui détiennent encore la conversation. */
 	listHolders(sharedId: number): Promise<number[]>;
-	findRecipientsByName(usernames: readonly string[], senderId: number): Promise<PrivateRecipient[]>;
-	findRecipientsById(ids: readonly number[], senderId: number): Promise<PrivateRecipient[]>;
+	findRecipientsByName(usernames: readonly string[]): Promise<PrivateRecipient[]>;
+	findRecipientsById(ids: readonly number[]): Promise<PrivateRecipient[]>;
 	createConversation(message: OutgoingMessage): Promise<{ sharedId: number; copies: SentCopies }>;
 	reply(sharedId: number, message: OutgoingMessage): Promise<SentCopies>;
 	/** Modifie toutes les copies d'un message (même conversation, même auteur, même date). */
@@ -77,7 +77,6 @@ const RECIPIENT_COLUMNS = [
 	'u.notify_pm_full',
 	'g.g_pm',
 	'g.g_pm_limit',
-	'c.allow_msg',
 ] as const;
 
 export class PrivateMessageRepository implements PrivateMessageStore {
@@ -286,24 +285,23 @@ export class PrivateMessageRepository implements PrivateMessageStore {
 		return [...new Set(rows.map((row) => row.owner))];
 	}
 
-	#recipients(senderId: number) {
+	#recipients() {
 		return this.db
 			.selectFrom('users as u')
 			.innerJoin('groups as g', 'g.g_id', 'u.group_id')
-			.leftJoin('contacts as c', (join) => join.onRef('c.user_id', '=', 'u.id').on('c.contact_id', '=', senderId))
 			.select(RECIPIENT_COLUMNS)
 			.where('u.id', '!=', GUEST_USER_ID);
 	}
 
-	async findRecipientsByName(usernames: readonly string[], senderId: number): Promise<PrivateRecipient[]> {
+	async findRecipientsByName(usernames: readonly string[]): Promise<PrivateRecipient[]> {
 		if (usernames.length === 0) return [];
-		const rows = await this.#recipients(senderId).where('u.username', 'in', usernames).execute();
+		const rows = await this.#recipients().where('u.username', 'in', usernames).execute();
 		return rows.map(toRecipient);
 	}
 
-	async findRecipientsById(ids: readonly number[], senderId: number): Promise<PrivateRecipient[]> {
+	async findRecipientsById(ids: readonly number[]): Promise<PrivateRecipient[]> {
 		if (ids.length === 0) return [];
-		const rows = await this.#recipients(senderId).where('u.id', 'in', ids).execute();
+		const rows = await this.#recipients().where('u.id', 'in', ids).execute();
 		return rows.map(toRecipient);
 	}
 
@@ -501,7 +499,6 @@ function toRecipient(row: {
 	notify_pm_full: number;
 	g_pm: number;
 	g_pm_limit: number;
-	allow_msg: number | null;
 }): PrivateRecipient {
 	return {
 		id: row.id,
@@ -514,6 +511,5 @@ function toRecipient(row: {
 		privateMessageCount: row.num_pms,
 		notifyPrivateMessages: row.notify_pm === 1,
 		notifyPrivateMessagesFull: row.notify_pm_full === 1,
-		blocksSender: row.allow_msg === 0,
 	};
 }

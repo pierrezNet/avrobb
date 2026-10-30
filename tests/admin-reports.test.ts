@@ -15,7 +15,6 @@ const SEED = 'graine-de-test';
 const CSRF_SECRET = '8'.repeat(64);
 const mod = viewer({ id: 5, username: 'MaxDUO', group: group({ id: GroupId.Moderator, isModerator: true }) });
 const admin = viewer({ id: 2, username: 'admin', group: group({ id: GroupId.Admin }) });
-const hashes: Record<number, string> = { 5: 'h5', 3: 'h3', 2: 'h2' };
 const cookies = (userId: number): string => `${sessionCookie(userId)}; avrobb_csrf=${CSRF_SECRET}`;
 
 const report = (id: number, overrides: Partial<Report> = {}): Report => ({

@@ -1,6 +1,6 @@
 /**
  * Écriture d'un message privé (pms_send.php) : nouvelle conversation (destinataires saisis, issus
- * d'un profil ?uid= ou d'une liste d'envoi ?lid=), réponse (?reply=, citation &quote=), modification
+ * d'un profil ?uid=), réponse (?reply=, citation &quote=), modification
  * (?edit=), prévisualisation, et alertes par e-mail (new_pm.tpl, new_pm_full.tpl).
  *
  * Écarts assumés : on ne répond qu'à une conversation qu'on détient, et on ne modifie ou ne cite
@@ -16,7 +16,6 @@ import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { buildSendForm, conversationUrl } from '../presenters/privateMessagesPage.ts';
 import type { CensorReader } from '../repositories/CensorRepository.ts';
-import type { SendingListStore } from '../repositories/PrivateContactRepository.ts';
 import type { PrivateMessageStore, SentCopies } from '../repositories/PrivateMessageRepository.ts';
 import { bbcodeToEmail } from '../services/bbcodeEmail.ts';
 import { buildCensor } from '../services/censor.ts';
@@ -29,7 +28,6 @@ import { positiveInt } from './params.ts';
 
 export interface PrivateMessageSendControllerDeps extends LayoutDeps {
 	privateMessageStore: PrivateMessageStore;
-	sendingLists: SendingListStore;
 	censorship: CensorReader;
 	mailTemplates: MailTemplateReader;
 	mailer: Mailer;
@@ -37,7 +35,6 @@ export interface PrivateMessageSendControllerDeps extends LayoutDeps {
 
 export interface PrivateMessageSendQuery {
 	uid?: string;
-	lid?: string;
 	reply?: string;
 	quote?: string;
 	edit?: string;
@@ -107,9 +104,9 @@ export class PrivateMessageSendController {
 		let usernames: string[] = [];
 		if (mode.kind === 'new') {
 			usernames = parseUsernames(state.usernames);
-			recipients = await store.findRecipientsByName([...usernames, viewer.username], viewer.id);
+			recipients = await store.findRecipientsByName([...usernames, viewer.username]);
 		} else if (mode.kind === 'reply') {
-			recipients = await store.findRecipientsById([...(await store.listHolders(mode.sharedId)), viewer.id], viewer.id);
+			recipients = await store.findRecipientsById([...(await store.listHolders(mode.sharedId)), viewer.id]);
 			usernames = recipients.map((recipient) => recipient.username);
 		}
 
@@ -200,20 +197,16 @@ export class PrivateMessageSendController {
 		return message !== null && message.ownerId === request.viewer.id ? message : null;
 	}
 
-	/** Destinataires proposés par un lien : membres ?uid=2-5, ou liste d'envoi ?lid=. Null si invalide. */
+	/** Destinataires proposés par un lien : membres ?uid=2-5. Null si invalide. */
 	private async presetRecipients(request: SendRequest): Promise<string[] | null> {
-		const { query, viewer } = request;
+		const { query } = request;
 		if (query.uid !== undefined) {
 			const ids = query.uid
 				.split('-')
 				.map((id) => positiveInt(id))
 				.filter((id) => id > 0);
-			const found = await this.deps.privateMessageStore.findRecipientsById(ids, viewer.id);
+			const found = await this.deps.privateMessageStore.findRecipientsById(ids);
 			return found.length === new Set(ids).size ? ids.map((id) => found.find((r) => r.id === id)?.username ?? '') : null;
-		}
-		if (query.lid !== undefined) {
-			const list = await this.deps.sendingLists.findSendingList(viewer.id, positiveInt(query.lid));
-			return list !== null ? list.members.map((member) => member.username) : null;
 		}
 		return [];
 	}
@@ -272,10 +265,7 @@ export class PrivateMessageSendController {
 			lang,
 			formAction,
 			heading,
-			newConversation:
-				mode.kind === 'new'
-					? { usernames: state.usernames, subject: state.subject, lists: await this.deps.sendingLists.listSendingLists(viewer.id) }
-					: null,
+			newConversation: mode.kind === 'new' ? { usernames: state.usernames, subject: state.subject } : null,
 			message: state.message,
 			hideSmilies: state.hideSmilies,
 			errors,

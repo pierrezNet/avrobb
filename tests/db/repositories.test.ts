@@ -30,7 +30,6 @@ import { OnlineRepository } from '../../src/repositories/OnlineRepository.ts';
 import { PostEditRepository } from '../../src/repositories/PostEditRepository.ts';
 import { PostingRepository } from '../../src/repositories/PostingRepository.ts';
 import { PostRepository } from '../../src/repositories/PostRepository.ts';
-import { PrivateContactRepository } from '../../src/repositories/PrivateContactRepository.ts';
 import { PrivateMessageRepository } from '../../src/repositories/PrivateMessageRepository.ts';
 import { ProfileRepository } from '../../src/repositories/ProfileRepository.ts';
 import { ReportRepository } from '../../src/repositories/ReportRepository.ts';
@@ -466,8 +465,6 @@ describe('viewtopic de bout en bout', () => {
 			reports: new ReportRepository(db),
 			privateMessages: new PrivateMessageRepository(db),
 			privateMessageStore: new PrivateMessageRepository(db),
-			privateContacts: new PrivateContactRepository(db),
-			sendingLists: new PrivateContactRepository(db),
 			bans: new BanRepository(db),
 			censorship: new CensorRepository(db),
 			stats: new StatsRepository(db),
@@ -494,9 +491,7 @@ describe('viewtopic de bout en bout', () => {
 		await server.close();
 
 		expect(res.statusCode).toBe(200);
-		expect(res.body).toContain(
-			'<title>Postez un « vintage » (Page 2) / Captures d&#39;écran &amp; Vidéos / Forum de test</title>',
-		);
+		expect(res.body).toContain('<title>Postez un « vintage » (Page 2) / Captures d&#39;écran &amp; Vidéos / Forum de test</title>');
 		expect(res.body).toContain('themes/GreenDark.css');
 		expect(res.body).toContain('id="p101"');
 		expect(res.body).not.toContain('id="p100"');

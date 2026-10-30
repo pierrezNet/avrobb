@@ -27,7 +27,6 @@ function recipient(overrides: Partial<PrivateRecipient> = {}): PrivateRecipient 
 		privateMessageCount: 0,
 		notifyPrivateMessages: false,
 		notifyPrivateMessagesFull: false,
-		blocksSender: false,
 		...overrides,
 	};
 }
@@ -67,11 +66,10 @@ describe('règles de la messagerie', () => {
 	it('erreurs dans l’ordre du PHP : flood, boîte pleine, destinataires, sujet, message', () => {
 		const result = validateSend(
 			{
-				usernames: ['Inconnu', 'MaxDUO', 'Bloqueur', 'Plein'],
+				usernames: ['Inconnu', 'MaxDUO', 'Plein'],
 				recipients: [
 					recipient({ usesPrivateMessages: false }),
 					tessy,
-					recipient({ id: 7, username: 'Bloqueur', blocksSender: true }),
 					recipient({ id: 8, username: 'Plein', privateMessageLimit: 5, privateMessageCount: 5 }),
 				],
 				subject: '',
@@ -86,16 +84,13 @@ describe('règles de la messagerie', () => {
 			'tooManyReceivers',
 			'noUser',
 			'userDisabled',
-			'userBlocked',
 			'receiverFull',
 			'noSubject',
 			'noMessage',
 		]);
 	});
 
-	it('un modérateur passe outre les blocages ; une modification ne contrôle ni destinataires ni flood', () => {
-		const blocked = { ...input, recipients: [recipient({ blocksSender: true }), tessy] };
-		expect(validateSend(blocked, { ...context, sender: { ...context.sender, isModerator: true } }).errors).toEqual([]);
+	it('une modification ne contrôle ni destinataires ni flood', () => {
 		expect(validateSend({ ...input, subject: null, usernames: [] }, { ...context, editing: true, lastPost: NOW }).errors).toEqual([]);
 		expect(validateSend({ ...input, subject: 'TOUT EN CAPITALES' }, context).subject).toBe('Tout En Capitales');
 	});
@@ -126,7 +121,6 @@ function data(overrides: Partial<FakeData> = {}): FakeData {
 	};
 }
 
-const hashes: Record<number, string> = { 3: 'h3', 5: 'h5', 6: 'h6', 2: 'h2' };
 const cookies = (userId: number): string => `${sessionCookie(userId)}; avrobb_csrf=${CSRF_SECRET}`;
 
 let app: FastifyInstance | undefined;
@@ -202,7 +196,6 @@ describe('pms_send.php et pms_inbox.php', () => {
 
 	it('réaffiche le formulaire avec les erreurs, et prévisualise', async () => {
 		const fake = data();
-		fake.pm?.blocked.add('5→3');
 		const server = await start(fake);
 		const res = await post(server, 3, '/pms_send.php', {
 			form_sent: '1',
@@ -211,7 +204,6 @@ describe('pms_send.php et pms_inbox.php', () => {
 			req_message: 'Y',
 		});
 		expect(res.statusCode).toBe(200);
-		expect(res.body).toContain('MaxDUO refuse les messages privés.');
 		expect(res.body).toContain('Il n&#39;y a pas de membre avec le nom d&#39;utilisateur « Fantôme ».');
 		expect(fake.pm?.rows).toEqual([]);
 
@@ -225,22 +217,11 @@ describe('pms_send.php et pms_inbox.php', () => {
 		expect(preview.body).toContain('<strong>Gras</strong>');
 	});
 
-	it('préremplit les destinataires depuis un profil ou une liste d’envoi', async () => {
+	it('préremplit les destinataires depuis un profil', async () => {
 		const fake = data();
-		fake.pm?.lists.push({
-			id: 9,
-			userId: 3,
-			name: 'Escadrille',
-			members: [
-				{ id: 5, username: 'MaxDUO' },
-				{ id: 6, username: 'valdefsx' },
-			],
-		});
 		const server = await start(fake);
 		expect((await get(server, 3, '/pms_send.php?uid=5-6')).body).toContain('value="MaxDUO, valdefsx"');
-		expect((await get(server, 3, '/pms_send.php?lid=9')).body).toContain('value="MaxDUO, valdefsx"');
 		expect((await get(server, 3, '/pms_send.php?uid=999')).statusCode).toBe(404);
-		expect((await get(server, 5, '/pms_send.php?lid=9')).statusCode).toBe(404);
 	});
 
 	it('marque comme lu ou non lu, et supprime après confirmation', async () => {
@@ -318,60 +299,5 @@ describe('pms_view.php', () => {
 		expect(confirm.body).not.toContain('delete_all');
 		await post(server, 5, `/pms_view.php?action=delete&mid=${maxCopy?.id}&tid=${head?.sharedId}`, { delete_comply: '1' });
 		expect(fake.pm?.rows.some((row) => row.ownerId === 5)).toBe(false);
-	});
-});
-
-describe('pms_contacts.php et pms_sending_lists.php', () => {
-	it('ajoute, bloque et supprime des contacts ; le lien du profil demande confirmation', async () => {
-		const fake = data();
-		const server = await start(fake);
-		const confirm = await get(server, 3, '/pms_contacts.php?add=5');
-		expect(confirm.body).toContain('Ajouter MaxDUO à vos contacts');
-		expect(fake.pm?.contacts).toEqual([]);
-
-		const fromProfile = await post(server, 3, '/pms_contacts.php', { add: '5' });
-		expect(fromProfile.headers.location).toBe('profile.php?id=5');
-		const byName = await post(server, 3, '/pms_contacts.php', { add: '1', req_username: 'valdefsx', req_refuse: '1' });
-		expect(byName.headers.location).toBe('pms_contacts.php?done=added');
-		expect(fake.pm?.contacts.map((c) => [c.name, c.allowMessages])).toEqual([
-			['MaxDUO', true],
-			['valdefsx', false],
-		]);
-		expect((await post(server, 3, '/pms_contacts.php', { add: '1', req_username: 'MaxDUO' })).body).toContain('déjà dans votre liste');
-
-		const maxContact = fake.pm?.contacts[0];
-		await post(server, 3, '/pms_contacts.php', { switch: String(maxContact?.id) });
-		expect(maxContact?.allowMessages).toBe(false);
-		const ids = (fake.pm?.contacts ?? []).map((c) => String(c.id));
-		expect((await post(server, 3, '/pms_contacts.php', { action: 'send', selected: ids })).headers.location).toBe('pms_send.php?uid=5-6');
-		// Un autre membre ne touche pas aux contacts de Tessy.
-		expect((await post(server, 5, '/pms_contacts.php', { delete: String(maxContact?.id) })).statusCode).toBe(404);
-		await post(server, 3, '/pms_contacts.php', { action: 'delete_multiple', contacts: ids.join(','), delete_multiple_comply: '1' });
-		expect(fake.pm?.contacts).toEqual([]);
-	});
-
-	it('crée une liste d’envoi valide, refuse soi-même et les inconnus', async () => {
-		const fake = data();
-		const server = await start(fake);
-		const bad = await post(server, 3, '/pms_sending_lists.php', { form_sent: '1', list_name: 'Moi', req_username: 'Tessy, Fantôme' });
-		expect(bad.body).toContain('Vous ne pouvez pas vous inclure dans une liste d&#39;envoi.');
-		expect(bad.body).toContain('Fantôme');
-		expect(fake.pm?.lists).toEqual([]);
-
-		const ok = await post(server, 3, '/pms_sending_lists.php', {
-			form_sent: '1',
-			list_name: 'Escadrille',
-			req_username: 'maxduo, valdefsx',
-		});
-		expect(ok.headers.location).toBe('pms_sending_lists.php?done=added');
-		expect(fake.pm?.lists[0]?.members).toEqual([
-			{ id: 5, username: 'MaxDUO' },
-			{ id: 6, username: 'valdefsx' },
-		]);
-		const page = await get(server, 3, '/pms_sending_lists.php');
-		expect(page.body).toContain('Escadrille');
-		expect(page.body).toContain(`pms_send.php?lid=${fake.pm?.lists[0]?.id}`);
-		await post(server, 3, '/pms_sending_lists.php', { delete: String(fake.pm?.lists[0]?.id) });
-		expect(fake.pm?.lists).toEqual([]);
 	});
 });

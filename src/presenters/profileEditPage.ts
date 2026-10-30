@@ -33,7 +33,7 @@ export interface ProfileMenuView {
 	sections: MenuItem[];
 }
 
-export function buildProfileMenu(viewer: Viewer, config: BoardConfig, userId: number, active: ProfilePage, lang: Lang): ProfileMenuView {
+export function buildProfileMenu(config: BoardConfig, userId: number, active: ProfilePage, lang: Lang): ProfileMenuView {
 	const t = lang.profile;
 	const section = (id: ProfilePage, label: string): MenuItem => ({
 		href: `profile.php?section=${id}&id=${userId}`,
@@ -168,11 +168,7 @@ function essentials(input: ProfileEditInput): EssentialsView {
 	const contactLinks: Link[] = [];
 	if (moderator) {
 		contactLinks.push({ href: `misc.php?email=${profile.id}`, label: t.sendEmail });
-		if (profile.acceptsPrivateMessages)
-			contactLinks.push(
-				{ href: `pms_send.php?uid=${profile.id}`, label: t.quickMessage },
-				{ href: `pms_contacts.php?add=${profile.id}`, label: t.addToContacts },
-			);
+		if (profile.acceptsPrivateMessages) contactLinks.push({ href: `pms_send.php?uid=${profile.id}`, label: t.quickMessage });
 	}
 
 	const searchLinks: Link[] = [];
@@ -329,10 +325,10 @@ export function sectionTitle(section: ProfileSection, lang: Lang): string {
 }
 
 export function buildProfileEditPage(input: ProfileEditInput): ProfileEditView {
-	const { viewer, config, profile, section, lang } = input;
+	const { config, profile, section, lang } = input;
 	return {
 		...sectionView(input),
-		menu: buildProfileMenu(viewer, config, profile.id, section, lang),
+		menu: buildProfileMenu(config, profile.id, section, lang),
 		heading: lang.profile.sectionHeading(profile.username, sectionTitle(section, lang)),
 		formAction: `profile.php?section=${section}&id=${profile.id}`,
 		errors: input.errors,

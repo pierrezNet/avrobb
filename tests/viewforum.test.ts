@@ -39,11 +39,6 @@ const forumInfo: ForumInfo = {
 const mod = viewer({ id: 5, username: 'MaxDUO', group: group({ id: GroupId.Moderator, isModerator: true }), lastVisit: NOW - 3600 });
 const tessy = viewer({ lastVisit: NOW - 3600, postsPerPage: 1 });
 const users = [{ viewer: guest }, { viewer: tessy }, { viewer: mod }];
-const SEED = 'graine-de-test';
-const cookie = (userId: number, hash: string): string => {
-	const expires = NOW + 3600;
-	return `${sessionCookie(userId, expires)}`;
-};
 
 const topics = [
 	summary(10, { sticky: true, subject: 'Règles du forum' }),
@@ -88,7 +83,7 @@ describe('GET /viewforum.php', () => {
 
 	it('membre : nouveaux messages, mini-pagination, abonnement, point', async () => {
 		app = await buildApp(deps({ config: { showDot: true } }));
-		const res = await app.inject({ url: '/viewforum.php?id=2', headers: { cookie: cookie(3, 'hash-tessy') } });
+		const res = await app.inject({ url: '/viewforum.php?id=2', headers: { cookie: sessionCookie(3) } });
 
 		expect(res.body).toContain('viewtopic.php?id=13&amp;action=new');
 		expect(res.body).not.toContain('viewtopic.php?id=12&amp;action=new');
@@ -101,7 +96,7 @@ describe('GET /viewforum.php', () => {
 
 	it('modérateur du forum : lien de modération du pied', async () => {
 		app = await buildApp(deps());
-		const res = await app.inject({ url: '/viewforum.php?id=2', headers: { cookie: cookie(5, 'hash-mod') } });
+		const res = await app.inject({ url: '/viewforum.php?id=2', headers: { cookie: sessionCookie(5) } });
 		expect(res.body).toContain('moderate.php?fid=2&amp;p=1');
 	});
 

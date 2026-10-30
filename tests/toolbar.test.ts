@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.ts';
 import { fr } from '../src/lang/fr/index.ts';
 import { DEFAULT_TOOLBAR, type ToolbarSettings, toolbarButtons } from '../src/services/toolbar.ts';
-import { fakeDeps, guest, NOW, post, sessionCookie, topic, viewer } from './fixtures.ts';
+import { fakeDeps, guest, post, sessionCookie, topic, viewer } from './fixtures.ts';
 
 const all = { bbcode: true, imgTag: true, smilies: true };
 const names = (settings: ToolbarSettings, options = all, form: 'form' | 'quickform' = 'form'): string[] =>

@@ -9,7 +9,6 @@ import { buildApp } from '../src/app.ts';
 import type { Draft, ForumInfo } from '../src/domain/models.ts';
 import { type FakeData, fakeDeps, guest, NOW, post, sessionCookie, topic, viewer } from './fixtures.ts';
 
-const SEED = 'graine-de-test';
 const tessy = `${sessionCookie(3)}`;
 
 const draft = (overrides: Partial<Draft> = {}): Draft => ({

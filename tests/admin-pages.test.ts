@@ -57,7 +57,6 @@ const SEED = 'graine-de-test';
 const CSRF_SECRET = '6'.repeat(64);
 const admin = viewer({ id: 2, username: 'admin', group: group({ id: GroupId.Admin }) });
 const mod = viewer({ id: 5, username: 'MaxDUO', group: group({ id: GroupId.Moderator, isModerator: true }) });
-const hashes: Record<number, string> = { 2: 'h2', 5: 'h5' };
 const cookies = (userId: number): string => `${sessionCookie(userId)}; avrobb_csrf=${CSRF_SECRET}`;
 
 let app: FastifyInstance | undefined;

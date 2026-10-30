@@ -123,16 +123,12 @@ describe('rendu de la mise en page', () => {
 	afterEach(async () => app.close());
 
 	const users = [{ viewer: guest }, { viewer: mod }];
-	const cookie = (userId: number, hash: string): string => {
-		const expires = NOW + 3600;
-		return `${sessionCookie(userId, expires)}`;
-	};
 
 	it("affiche l'annonce, les pages d'information, les signalements et le thème", async () => {
 		const config = { announcement: '<b>Maintenance dimanche</b>' };
 		app = await buildApp(fakeDeps({ users, topics: [], posts: new Map(), config, pendingReports: true }));
 
-		const res = await app.inject({ url: '/nimporte.php', headers: { cookie: cookie(5, 'hash-mod') } });
+		const res = await app.inject({ url: '/nimporte.php', headers: { cookie: sessionCookie(5) } });
 		expect(res.statusCode).toBe(404);
 		expect(res.body).toContain('<b>Maintenance dimanche</b>');
 		expect(res.body).not.toContain('id="qjump"');
@@ -145,7 +141,7 @@ describe('rendu de la mise en page', () => {
 		app = await buildApp(
 			fakeDeps({ users, topics: [], posts: new Map(), config: { privateMessagesEnabled: true }, unreadPrivateMessages: new Map([[5, 3]]) }),
 		);
-		const res = await app.inject({ url: '/index.php', headers: { cookie: cookie(5, 'hash-mod') } });
+		const res = await app.inject({ url: '/index.php', headers: { cookie: sessionCookie(5) } });
 		expect(res.body).toContain('<li id="navpm" class="site-nav__item has-news">');
 		// Modérateur : lien Administration dans le menu burger (masqué sur grand écran).
 		expect(res.body).toContain(
@@ -154,7 +150,7 @@ describe('rendu de la mise en page', () => {
 		expect(res.body).toContain('<span class="site-nav__count">3<span class="visually-hidden"> non lus</span></span>');
 		await app.close();
 		app = await buildApp(fakeDeps({ users, topics: [], posts: new Map(), config: { privateMessagesEnabled: true } }));
-		const none = await app.inject({ url: '/index.php', headers: { cookie: cookie(5, 'hash-mod') } });
+		const none = await app.inject({ url: '/index.php', headers: { cookie: sessionCookie(5) } });
 		expect(none.body).toContain('<li id="navpm" class="site-nav__item">');
 		expect(none.body).not.toContain('site-nav__count');
 	});

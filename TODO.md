@@ -204,6 +204,7 @@ Vigilance :
 - [ ] Mesures : CPU par page, lignes D1 lues par page, poids des pages
 - [ ] Catégories et forums de départ créés, premier message publié
 - [ ] `AMELIORATIONS.md` mis à jour
+- [ ] **Limite de 100 paramètres par requête de D1** (premier message refusé en production le 2026-10-30, `too many SQL variables`) : l'index de recherche écrit désormais par paquets, et le pilote (`db/d1Dialect.ts`) refuse toute requête au-delà de 100 paramètres, en local aussi. Restent à découper avec `chunks()` les listes `IN (…)` qui peuvent dépasser 100 éléments : modération de messages ou de sujets en masse (`ModerationRepository`), élagage d'un forum (`pruning.ts`), votes de réputation d'un membre supprimé (`ReputationRepository`) ; vérifier aussi `SearchRepository`, `BanRepository` et `ForumAdminRepository`. Un test `test:db` par cas, avec plus de 100 éléments
 
 ---
 
@@ -223,6 +224,7 @@ Vigilance :
 - [ ] Biographie du membre (retirée avec Plugile) : la remettre comme champ de la section Personnalité du profil ?
 - [ ] Thème aux couleurs d'AvroBB (bordeaux et or du logo) comme thème par défaut, à la place d'Air (bleu), qui jure avec la bannière.
 - [ ] Notifications sur le site (page « Notifications ») à la place des messages privés pour les mentions, si la messagerie se révèle inutile.
+- [ ] Adresses propres pour les pages d'action aussi (`/nouvelle-discussion/1` au lieu de `post.php?action=post&fid=1`, jugée étrange) : gardées en `.php` pour l'instant, un changement dans `services/routes.ts`.
 
 ## Estimation globale
 

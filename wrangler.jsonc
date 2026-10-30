@@ -19,7 +19,7 @@
 			"binding": "DB",
 			"database_name": "avrobb",
 			// Identifiant de la base distante, donné par « wrangler d1 create avrobb --location weur » (README, Déploiement).
-			"database_id": "00000000-0000-0000-0000-000000000000",
+			"database_id": "cc42e32d-72d7-4f35-b3c9-626ba0244919",
 			"migrations_dir": "migrations"
 		}
 	],
@@ -38,8 +38,9 @@
 		{ "name": "SEARCH_LIMITER", "namespace_id": "1003", "simple": { "limit": 30, "period": 60 } }
 	],
 	"observability": { "enabled": true },
-	// Domaine du forum (README, Déploiement) : à décommenter avec le vrai nom, dans une zone de ce compte.
-	// "routes": [{ "pattern": "forum.example.org", "custom_domain": true }],
+	// Domaine du forum, acheté chez Cloudflare Registrar : le Worker le reçoit directement (DNS et
+	// certificat créés par Cloudflare au déploiement).
+	"routes": [{ "pattern": "avrobb.org", "custom_domain": true }],
 	// Port fixe : o_base_url et l'URL de retour OAuth (http://localhost:8787/auth/github/callback) en
 	// dépendent ; un port occupé doit être une erreur, pas un glissement silencieux vers 8788.
 	"dev": { "port": 8787 }

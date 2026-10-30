@@ -57,10 +57,10 @@ Une fois pour toutes (compte Cloudflare sur l'offre **Workers Paid**, `npx wrang
 3. Secrets : `npx wrangler secret put` pour `SESSION_SECRET` (`openssl rand -hex 32`),
    `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`,
    `ADMIN_ACCOUNTS` (`github:…,google:…`), `RESEND_API_KEY`, `MAIL_FROM`.
-4. Domaine : décommenter `routes` dans `wrangler.jsonc` avec le nom choisi (zone gérée par ce compte
-   Cloudflare ; HTTPS et certificat automatiques).
+4. Domaine : `avrobb.org`, acheté chez Cloudflare Registrar, déclaré dans `routes` de
+   `wrangler.jsonc` (domaine personnalisé du Worker : DNS et certificat créés au déploiement).
 5. Premier déploiement : `npm run deploy`, puis l'adresse du forum dans la base :
-   `npx wrangler d1 execute avrobb --remote --command "UPDATE config SET conf_value = 'https://forum.example.org' WHERE conf_name = 'o_base_url'"`.
+   `npx wrangler d1 execute avrobb --remote --command "UPDATE config SET conf_value = 'https://avrobb.org' WHERE conf_name = 'o_base_url'"`.
 6. Applications OAuth de production (GitHub : nouvelle application ; Google : ajouter l'URI) avec
    l'adresse de retour `https://<domaine>/auth/github/callback` (et `/auth/google/callback`).
 7. GitHub : secrets `CLOUDFLARE_API_TOKEN` (jeton limité au compte : Workers Scripts, D1, Workers R2

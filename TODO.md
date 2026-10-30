@@ -139,6 +139,12 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonc
 
 ## À décider (mis de côté)
 
+- [ ] **Inscriptions motivées et validées** (aujourd'hui, PV ferme les inscriptions : les candidats écrivent à une adresse e-mail et un administrateur crée le compte avec « Ajouter un membre ») :
+  - formulaire d'inscription avec un champ obligatoire « Pourquoi souhaitez-vous rejoindre Pilote-Virtuel ? » (longueur minimale, ex. 50 caractères) ;
+  - compte créé dans un groupe « En attente de validation » sans droit d'écriture, motivation rangée dans `admin_note` (aucun changement de schéma) ; message « demande en cours d'examen » au candidat ;
+  - page d'administration « Inscriptions à valider » (pseudo, e-mail, IP, motivation, date) : **Accepter** (passage dans Membres + e-mail de bienvenue) ou **Refuser** (suppression, bannissement facultatif de l'e-mail ou de l'IP) ; compteur dans la ligne d'état des modérateurs, comme les signalements ;
+  - anti-robots invisible : champ piège caché, délai minimal de remplissage, limite d'inscriptions par IP
+
 - [ ] **Soutenir Pilote-Virtuel** : remettre à plat le besoin de soutien financier (dons, abonnement, Tipeee…) avant tout développement : ce que reçoit le donateur (badge, remerciement, avantages ?), moyen de paiement, gestion côté administration. L'ancien Premium (codes PV15/PV365, boutique Digiseller) n'est pas repris
 
 - [x] Plugin FluxToolBar (`AP_FluxToolBar.php`) : abandonné (la barre d'outils est définie par AvroBB ; les tables `toolbar_conf`/`toolbar_tags` restent lues si elles sont remplies)

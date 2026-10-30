@@ -349,7 +349,7 @@ describe('UserAdminRepository (actions groupées)', () => {
 		await inRollback(async (trx) => {
 			const store = new UserAdminRepository(trx);
 			expect(await store.countPrivileged([2, 3, 5])).toEqual({ admins: 1, moderators: 1 });
-			expect((await store.listMoveTargets()).map((g) => g.id).sort()).toEqual([2, 4]);
+			expect((await store.listMoveTargets()).map((g) => g.id).sort()).toEqual([1, 2, 4]);
 			await store.moveUsers([5], 4, false);
 			expect(await forumRow(trx, 2)).toBeDefined();
 			const forum = await trx.selectFrom('forums').select('moderators').where('id', '=', 2).executeTakeFirstOrThrow();

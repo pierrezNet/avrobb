@@ -285,7 +285,7 @@ export class UserAdminRepository implements UserAdminReader, UserAdminWriter {
 		const rows = await this.db
 			.selectFrom('groups')
 			.select(['g_id', 'g_title', 'g_moderator'])
-			.where('g_id', 'not in', [GroupId.Guest, GroupId.Admin])
+			.where('g_id', '!=', GroupId.Guest)
 			.orderBy('g_title')
 			.execute();
 		return rows.map((row) => ({ id: row.g_id, title: row.g_title, isModerator: row.g_moderator === 1 }));

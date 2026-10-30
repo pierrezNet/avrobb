@@ -2,8 +2,9 @@
  * Utilisateurs dans l'administration (admin_users.php), pour les administrateurs et modérateurs :
  * formulaire de recherche, statistiques d'adresses IP d'un membre (ip_stats), membres ayant écrit
  * depuis une adresse (show_users), résultats de recherche (find_user), et actions groupées sur les
- * comptes sélectionnés : changer de groupe et supprimer (administrateurs), bannir (administrateurs et
- * modérateurs autorisés). Chaque action passe par une étape de confirmation, comme le PHP.
+ * comptes sélectionnés : changer de groupe (Administrateurs compris, sauf pour soi-même) et supprimer
+ * (administrateurs), bannir (administrateurs et modérateurs autorisés). Chaque action passe par une
+ * étape de confirmation, comme le PHP.
  */
 
 import type { AppReply, AppRequest } from '../http/context.ts';
@@ -159,14 +160,12 @@ export class AdminUsersController {
 		const ids = readUserIds(body);
 		if (ids.length === 0) return renderMessage(request, reply, this.deps, 400, t.noUsersSelected);
 		const privileged = await this.deps.userAdmin.countPrivileged(ids);
-		if (privileged.admins > 0)
-			return renderMessage(
-				request,
-				reply,
-				this.deps,
-				400,
-				action === 'move' ? t.noMoveAdmins : action === 'delete' ? t.noDeleteAdmins : t.noBanAdmins,
-			);
+		// Écart avec FluxBB : un administrateur change de groupe ici (AvroBB n'a pas la section
+		// « Administration » du profil, seul autre moyen de nommer ou retirer un administrateur),
+		// sauf lui-même, pour ne jamais perdre son propre accès.
+		if (action === 'move' && ids.includes(request.viewer.id)) return renderMessage(request, reply, this.deps, 400, t.noMoveSelf);
+		if (action !== 'move' && privileged.admins > 0)
+			return renderMessage(request, reply, this.deps, 400, action === 'delete' ? t.noDeleteAdmins : t.noBanAdmins);
 		if (action === 'ban' && privileged.moderators > 0) return renderMessage(request, reply, this.deps, 400, t.noBanMods);
 
 		if (action === 'move') return this.#move(request, reply, ids);

@@ -838,6 +838,7 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 				};
 			},
 			listMoveTargets: async () => [
+				{ id: 1, title: 'Administrateurs', isModerator: false },
 				{ id: 2, title: 'Modérateurs', isModerator: true },
 				{ id: 4, title: 'Membres', isModerator: false },
 			],

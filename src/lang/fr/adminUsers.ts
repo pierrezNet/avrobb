@@ -85,8 +85,8 @@ export const adminUsers = {
 	// Actions groupées
 	selectAll: 'Tout sélectionner',
 	noUsersSelected: 'Aucun utilisateur sélectionné.',
-	noMoveAdmins:
-		"Pour des raisons de sécurité, vous n'êtes pas autorisé(e) à déplacer plusieurs administrateurs vers un autre groupe. Si vous souhaitez déplacer ces administrateurs, vous pouvez le faire dans le profil de chacun.",
+	noMoveSelf:
+		'Vous ne pouvez pas changer votre propre groupe : un autre administrateur doit le faire, pour que le forum ne reste jamais sans administrateur.',
 	noDeleteAdmins:
 		"Les administrateurs ne peuvent être supprimés. Pour supprimer des administrateurs, vous devez d'abord les déplacer vers un autre groupe d'utilisateurs.",
 	noBanAdmins:

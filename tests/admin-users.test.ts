@@ -164,12 +164,17 @@ describe('actions groupées', () => {
 		const confirm = await post(server, 2, { move_users: '1', 'users[3]': '1' });
 		expect(confirm.body).toContain('name="users" value="3"');
 		expect(confirm.body).toContain('<option value="4">Membres</option>');
+		expect(confirm.body).toContain('<option value="1">Administrateurs</option>');
 		await post(server, 2, { move_users_comply: '1', users: '3', new_group: '4' });
-		expect((await post(server, 2, { move_users_comply: '1', users: '3', new_group: '1' })).statusCode).toBe(400);
+		// Nommer un administrateur ; jamais changer son propre groupe ; groupe inconnu refusé.
+		await post(server, 2, { move_users_comply: '1', users: '3', new_group: '1' });
+		expect((await post(server, 2, { move_users: '1', 'users[2]': '1' })).body).toContain('Vous ne pouvez pas changer votre propre groupe');
+		expect((await post(server, 2, { move_users_comply: '1', users: '2,3', new_group: '4' })).statusCode).toBe(400);
+		expect((await post(server, 2, { move_users_comply: '1', users: '3', new_group: '3' })).statusCode).toBe(400);
 		expect((await post(server, 2, { delete_users: '1', 'users[2]': '1' })).body).toContain('Les administrateurs ne peuvent être supprimés');
 		const deleted = await post(server, 2, { delete_users_comply: '1', users: '3', delete_posts: '1' });
 		expect(deleted.headers.location).toBe('admin_users.php?done=deleted');
-		expect(fake.userActionLog).toEqual(['move 3 -> 4', 'delete 3 +posts']);
+		expect(fake.userActionLog).toEqual(['move 3 -> 4', 'move 3 -> 1', 'delete 3 +posts']);
 	});
 
 	it('bannir : pas les modérateurs, date future', async () => {

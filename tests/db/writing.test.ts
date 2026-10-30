@@ -17,7 +17,6 @@ import { ReportRepository } from '../../src/repositories/ReportRepository.ts';
 import { SearchRepository } from '../../src/repositories/SearchRepository.ts';
 import { SubscriptionRepository } from '../../src/repositories/SubscriptionRepository.ts';
 import { stripSearchIndex, updateSearchIndex } from '../../src/repositories/searchIndexSql.ts';
-import { ToolbarRepository } from '../../src/repositories/ToolbarRepository.ts';
 import { testDbConfig } from './testDatabase.ts';
 
 const db = createDatabase(testDbConfig());
@@ -221,38 +220,6 @@ describe('PostingRepository', () => {
 		expect(await posting.listTopicSubscribers(10, 2, 2)).toEqual([{ email: 'tessy@example.test', notifyWithPost: false }]);
 		expect(await posting.listTopicSubscribers(10, 2, 3)).toEqual([]);
 		expect(await posting.listForumSubscribers(2, 5)).toEqual([{ email: 'tessy@example.test', notifyWithPost: false }]);
-	});
-});
-
-describe('ToolbarRepository', () => {
-	it('null sans boutons, sinon réglages et boutons dans l’ordre, images filtrées', async () => {
-		expect(await new ToolbarRepository(db).load()).toBeNull();
-		await inRollback(async (trx) => {
-			await trx
-				.insertInto('toolbar_conf')
-				.values([
-					{ conf_name: 'enable_form', conf_value: '1' },
-					{ conf_name: 'enable_quick', conf_value: '0' },
-					{ conf_name: 'img_pack', conf_value: '../x' },
-				])
-				.execute();
-			await trx
-				.insertInto('toolbar_tags')
-				.values([
-					{ name: 'italic', code: 'i', enable_form: 1, enable_quick: 0, image: 'bt_italic.png', func: '0', position: 2 },
-					{ name: 'link', code: 'url', enable_form: 1, enable_quick: 1, image: '../evil.png', func: '2', position: 1 },
-				])
-				.execute();
-			expect(await new ToolbarRepository(trx).load()).toEqual({
-				enableForm: true,
-				enableQuick: false,
-				imagePack: 'smooth',
-				tags: [
-					{ name: 'link', code: 'url', func: 2, image: '', enableForm: true, enableQuick: true },
-					{ name: 'italic', code: 'i', func: 0, image: 'bt_italic.png', enableForm: true, enableQuick: false },
-				],
-			});
-		});
 	});
 });
 

@@ -14,18 +14,16 @@ import { buildDraftEditPage, buildDraftList } from '../presenters/draftPage.ts';
 import type { BanReader } from '../repositories/BanRepository.ts';
 import type { CensorReader } from '../repositories/CensorRepository.ts';
 import type { DraftStore } from '../repositories/DraftRepository.ts';
-import type { ToolbarReader } from '../repositories/ToolbarRepository.ts';
 import { buildCensor, type Censor } from '../services/censor.ts';
 import { isAnyModerator } from '../services/permissions.ts';
 import { validatePost } from '../services/posting.ts';
-import { DEFAULT_TOOLBAR } from '../services/toolbar.ts';
+import { TOOLBAR } from '../services/toolbar.ts';
 import { positiveInt } from './params.ts';
 
 export interface DraftControllerDeps extends LayoutDeps {
 	drafts: DraftStore;
 	bans: BanReader;
 	censorship: CensorReader;
-	toolbar: ToolbarReader;
 }
 
 export interface DraftQuery {
@@ -184,7 +182,7 @@ export class DraftController {
 			form,
 			errors,
 			preview,
-			toolbar: (await this.deps.toolbar.load()) ?? DEFAULT_TOOLBAR,
+			toolbar: TOOLBAR,
 			censor: await this.censor(config),
 			lang,
 		});

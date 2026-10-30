@@ -16,12 +16,11 @@ import type { BanReader } from '../repositories/BanRepository.ts';
 import type { CensorReader } from '../repositories/CensorRepository.ts';
 import type { PostEditStore } from '../repositories/PostEditRepository.ts';
 import type { StopwordsReader } from '../repositories/StopwordsLoader.ts';
-import type { ToolbarReader } from '../repositories/ToolbarRepository.ts';
 import { buildCensor, type Censor } from '../services/censor.ts';
 import { canEditPost, isAnyModerator, isForumModerator, ownershipOf } from '../services/permissions.ts';
 import { validatePost } from '../services/posting.ts';
 import { indexWords } from '../services/searchIndex.ts';
-import { DEFAULT_TOOLBAR } from '../services/toolbar.ts';
+import { TOOLBAR } from '../services/toolbar.ts';
 import { positiveInt } from './params.ts';
 
 export interface EditControllerDeps extends LayoutDeps {
@@ -29,7 +28,6 @@ export interface EditControllerDeps extends LayoutDeps {
 	bans: BanReader;
 	censorship: CensorReader;
 	stopwords: StopwordsReader;
-	toolbar: ToolbarReader;
 }
 
 export interface EditQuery {
@@ -194,7 +192,7 @@ export class EditController {
 			form,
 			errors,
 			preview,
-			toolbar: (await this.deps.toolbar.load()) ?? DEFAULT_TOOLBAR,
+			toolbar: TOOLBAR,
 			censor,
 			lang,
 		});

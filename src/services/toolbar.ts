@@ -1,11 +1,17 @@
 /**
- * Barre d'outils BBCode (mod FluxToolBar) : boutons proposés au-dessus d'un champ de message,
- * d'après generate_ftb_cache() de include/cache_fluxtoolbar.php. Fonctions pures ; le dessin et
- * l'insertion des balises sont faits dans le navigateur (public/js/toolbar.js).
+ * Barre d'outils BBCode : boutons proposés au-dessus d'un champ de message, d'après
+ * generate_ftb_cache() du mod FluxToolBar. Fonctions pures ; le dessin et l'insertion des balises
+ * sont faits dans le navigateur (public/js/toolbar.js).
  *
- * Les réglages de l'administrateur (toolbar_conf, toolbar_tags) sont suivis s'ils existent ; sinon
- * (tables vides, comme sur une base de test) on reprend les boutons livrés avec le mod et PV.
+ * La liste des boutons est fixée dans le code (TOOLBAR) ; les icônes sont des SVG d'AvroBB
+ * (public/img/toolbar/<nom>.svg), dessinées en masque CSS pour suivre la couleur du thème.
  */
+
+/**
+ * Dossier des icônes. Les fichiers statiques sont servis avec un cache long sans empreinte ici :
+ * changer le dessin d'une icône impose de changer son nom.
+ */
+const ICON_DIR = '/assets/img/toolbar/';
 
 /** Action d'un bouton : func de toolbar_tags, ou bouton particulier. */
 export type ToolbarAction =
@@ -32,63 +38,60 @@ export interface ToolbarTag {
 export interface ToolbarSettings {
 	enableForm: boolean;
 	enableQuick: boolean;
-	/** Jeu d'icônes (img/fluxtoolbar/<pack>/). */
-	imagePack: string;
-	/** Boutons dans l'ordre de leur position. */
+	/** Boutons dans l'ordre d'affichage. */
 	tags: readonly ToolbarTag[];
 }
 
-const tag = (name: string, code: string, func: number, image: string): ToolbarTag => ({
+const tag = (name: string, code: string, func: number): ToolbarTag => ({
 	name,
 	code,
 	func,
-	image: `bt_${image}.png`,
+	image: `${name}.svg`,
 	enableForm: true,
 	enableQuick: true,
 });
 
-/** Boutons livrés avec FluxToolBar, complétés des balises ajoutées par PV. */
-export const DEFAULT_TOOLBAR: ToolbarSettings = {
+/** Boutons de la barre, ceux de FluxToolBar complétés des balises propres au forum. */
+export const TOOLBAR: ToolbarSettings = {
 	enableForm: true,
 	enableQuick: true,
-	imagePack: 'smooth',
 	tags: [
-		tag('smilies', '', 0, 'smilies'),
-		tag('bold', 'b', 0, 'bold'),
-		tag('italic', 'i', 0, 'italic'),
-		tag('underline', 'u', 0, 'underline'),
-		tag('strike', 's', 0, 'strike'),
-		tag('color', 'color', 0, 'color'),
-		tag('heading', 'h', 0, 'size_plus'),
-		tag('link', 'url', 2, 'link'),
-		tag('email', 'email', 2, 'email'),
-		tag('img', 'img', 2, 'img'),
-		tag('quote', 'quote', 1, 'quote'),
-		tag('code', 'code', 0, 'pre'),
-		tag('list', 'list', 1, 'ul'),
-		tag('li', '*', 0, 'li'),
-		tag('sup', 'sup', 0, 'sup'),
-		tag('sub', 'sub', 0, 'sub'),
-		tag('q', 'q', 0, 'bquote'),
-		tag('acronym', 'acronym', 1, 'acronym'),
-		tag('left', 'left', 0, 'align_left'),
-		tag('center', 'center', 0, 'align_center'),
-		tag('right', 'right', 0, 'align_right'),
-		tag('justify', 'justify', 0, 'align_justify'),
-		tag('video', 'video', 3, 'video'),
+		tag('smilies', '', 0),
+		tag('bold', 'b', 0),
+		tag('italic', 'i', 0),
+		tag('underline', 'u', 0),
+		tag('strike', 's', 0),
+		tag('color', 'color', 0),
+		tag('heading', 'h', 0),
+		tag('link', 'url', 2),
+		tag('email', 'email', 2),
+		tag('img', 'img', 2),
+		tag('quote', 'quote', 1),
+		tag('code', 'code', 0),
+		tag('list', 'list', 1),
+		tag('li', '*', 0),
+		tag('sup', 'sup', 0),
+		tag('sub', 'sub', 0),
+		tag('q', 'q', 0),
+		tag('acronym', 'acronym', 1),
+		tag('left', 'left', 0),
+		tag('center', 'center', 0),
+		tag('right', 'right', 0),
+		tag('justify', 'justify', 0),
+		tag('video', 'video', 3),
 	],
 };
 
 export interface ToolbarButton {
 	name: string;
 	label: string;
-	/** Fichier de l'icône dans img/fluxtoolbar/<pack>/ (vide : libellé seul). */
+	/** Fichier de l'icône dans ICON_DIR (vide : libellé seul). */
 	image: string;
 	action: ToolbarAction;
 }
 
 export interface Toolbar {
-	/** Dossier des icônes, relatif à la racine de l'installation PHP. */
+	/** Dossier des icônes (adresse absolue). */
 	imageDir: string;
 	buttons: ToolbarButton[];
 }
@@ -153,5 +156,5 @@ export function toolbarButtons(
 		.map(button);
 	const smilies = enabled.find((tagRow) => tagRow.name === 'smilies');
 	if (smilies !== undefined && options.smilies) buttons.push(button(smilies));
-	return { imageDir: `img/fluxtoolbar/${settings.imagePack}/`, buttons };
+	return { imageDir: ICON_DIR, buttons };
 }

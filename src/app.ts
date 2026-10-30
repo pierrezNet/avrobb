@@ -87,7 +87,6 @@ import type { StatsReader } from './repositories/StatsRepository.ts';
 import type { StopwordsReader } from './repositories/StopwordsLoader.ts';
 import type { SubjectPrefixStore } from './repositories/SubjectPrefixRepository.ts';
 import type { SubscriptionStore } from './repositories/SubscriptionRepository.ts';
-import type { ToolbarReader } from './repositories/ToolbarRepository.ts';
 import type { TopicReader, TopicWriter } from './repositories/TopicRepository.ts';
 import type { UserAdminReader, UserAdminWriter } from './repositories/UserAdminRepository.ts';
 import type { AccountLookup, MemberListReader, ProfileReader } from './repositories/UserRepository.ts';
@@ -154,7 +153,6 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	groupAdmin: GroupAdminStore;
 	/** Recherche d'utilisateurs et d'adresses IP (admin_users.php). */
 	userAdmin: UserAdminReader & UserAdminWriter;
-	toolbar: ToolbarReader;
 	avatars: AvatarLocator;
 	avatarStore: AvatarStore;
 	/** Conversion des images envoyées en WebP (sharp). */

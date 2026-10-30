@@ -39,7 +39,6 @@ import { SitemapRepository } from '../../src/repositories/SitemapRepository.ts';
 import { StatsRepository } from '../../src/repositories/StatsRepository.ts';
 import { SubjectPrefixRepository } from '../../src/repositories/SubjectPrefixRepository.ts';
 import { SubscriptionRepository } from '../../src/repositories/SubscriptionRepository.ts';
-import { ToolbarRepository } from '../../src/repositories/ToolbarRepository.ts';
 import { TopicRepository } from '../../src/repositories/TopicRepository.ts';
 import { UserAdminRepository } from '../../src/repositories/UserAdminRepository.ts';
 import { UserRepository } from '../../src/repositories/UserRepository.ts';
@@ -460,7 +459,6 @@ describe('viewtopic de bout en bout', () => {
 			banStore: new BanRepository(db),
 			configCache: { invalidate: async () => {} },
 			serverInfo: new NodeServerInfo(),
-			toolbar: new ToolbarRepository(db),
 			forums: new ForumRepository(db),
 			reports: new ReportRepository(db),
 			privateMessages: new PrivateMessageRepository(db),

@@ -66,11 +66,11 @@
 		element.title = label;
 		element.setAttribute('aria-label', label);
 		if (image) {
-			const icon = document.createElement('img');
-			icon.src = imageDir + image;
-			icon.alt = '';
-			icon.width = 16;
-			icon.height = 16;
+			// Icône en masque CSS : elle prend la couleur du texte, quel que soit le thème.
+			const icon = document.createElement('span');
+			icon.className = 'bbcode-toolbar__icon';
+			icon.setAttribute('aria-hidden', 'true');
+			icon.style.setProperty('--icon', `url("${imageDir}${image}")`);
 			element.append(icon);
 		} else element.textContent = text;
 		return element;

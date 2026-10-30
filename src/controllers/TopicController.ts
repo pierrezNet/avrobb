@@ -11,13 +11,12 @@ import { buildTopicPage, topicUrl } from '../presenters/topicPage.ts';
 import type { BanReader } from '../repositories/BanRepository.ts';
 import type { CensorReader } from '../repositories/CensorRepository.ts';
 import type { PostReader } from '../repositories/PostRepository.ts';
-import type { ToolbarReader } from '../repositories/ToolbarRepository.ts';
 import type { TopicReader, TopicWriter } from '../repositories/TopicRepository.ts';
 import type { AvatarLocator } from '../services/avatars.ts';
 import { buildCensor } from '../services/censor.ts';
 import { clampPage, pageCount } from '../services/pagination.ts';
 import { firstImageUrl, plainExcerpt } from '../services/seo.ts';
-import { DEFAULT_TOOLBAR } from '../services/toolbar.ts';
+import { TOOLBAR } from '../services/toolbar.ts';
 import { markRead, parseTrackedTopics, serializeTrackedTopics } from '../services/trackedTopics.ts';
 import { positiveInt } from './params.ts';
 
@@ -28,7 +27,6 @@ export interface TopicControllerDeps extends LayoutDeps {
 	bans: BanReader;
 	censorship: CensorReader;
 	topicViews: TopicWriter;
-	toolbar: ToolbarReader;
 	cookie: CookieConfig;
 	trackCookieName: string;
 }
@@ -80,11 +78,10 @@ export class TopicController {
 		const page = clampPage(request.query.p, numPages);
 		const offset = (page - 1) * perPage;
 
-		const [posts, bannedUsernames, censoredWords, toolbar] = await Promise.all([
+		const [posts, bannedUsernames, censoredWords] = await Promise.all([
 			this.deps.posts.listPage(topic.id, offset, perPage),
 			this.deps.bans.listBannedUsernames(),
 			config.censoring ? this.deps.censorship.listWords() : [],
-			this.deps.toolbar.load(),
 		]);
 
 		const avatars = new Map<number, string | null>();
@@ -110,7 +107,7 @@ export class TopicController {
 			avatars,
 			bannedUsernames,
 			censor,
-			toolbar: toolbar ?? DEFAULT_TOOLBAR,
+			toolbar: TOOLBAR,
 			lang,
 			dateWords: this.deps.page.dateWords,
 			now: this.deps.page.clock(),

@@ -20,7 +20,6 @@ import type { CensorReader } from '../repositories/CensorRepository.ts';
 import type { DraftStore } from '../repositories/DraftRepository.ts';
 import type { NewPostAuthor, PostingStore } from '../repositories/PostingRepository.ts';
 import type { StopwordsReader } from '../repositories/StopwordsLoader.ts';
-import type { ToolbarReader } from '../repositories/ToolbarRepository.ts';
 import type { AccountLookup } from '../repositories/UserRepository.ts';
 import { normalizeUsername, usernameSkeleton } from '../services/accounts.ts';
 import { bbcodeToEmail } from '../services/bbcodeEmail.ts';
@@ -31,7 +30,7 @@ import { canPostIn, isAnyModerator, isForumModerator } from '../services/permiss
 import { type PostForm, promotionGroup, quoteText, subscriptionChange, type ValidatedPost, validatePost } from '../services/posting.ts';
 import { indexWords } from '../services/searchIndex.ts';
 import { needsSimulatorTagWarning } from '../services/subjectPrefixes.ts';
-import { DEFAULT_TOOLBAR } from '../services/toolbar.ts';
+import { TOOLBAR } from '../services/toolbar.ts';
 import { markRead, parseTrackedTopics, serializeTrackedTopics } from '../services/trackedTopics.ts';
 import { type MentionNotifierDeps, notifyMentions } from './mentionNotifier.ts';
 import { positiveInt } from './params.ts';
@@ -46,7 +45,6 @@ export interface PostControllerDeps extends LayoutDeps {
 	mailer: Mailer;
 	cookie: CookieConfig;
 	trackCookieName: string;
-	toolbar: ToolbarReader;
 	drafts: DraftStore;
 	privateMessageStore: MentionNotifierDeps['privateMessageStore'];
 	topics: MentionNotifierDeps['topics'];
@@ -352,12 +350,10 @@ export class PostController {
 	): Promise<FastifyReply> {
 		const { viewer, board: config } = request;
 		const { lang } = this.deps.page;
-		const [review, toolbar] = await Promise.all([
+		const review =
 			target.topic !== null && config.posting.topicReview > 0
-				? this.deps.posting.listReview(target.topic.id, config.posting.topicReview)
-				: [],
-			this.deps.toolbar.load(),
-		]);
+				? await this.deps.posting.listReview(target.topic.id, config.posting.topicReview)
+				: [];
 
 		const view = buildPostPage({
 			viewer,
@@ -368,7 +364,7 @@ export class PostController {
 			errors,
 			preview,
 			review,
-			toolbar: toolbar ?? DEFAULT_TOOLBAR,
+			toolbar: TOOLBAR,
 			censor,
 			lang,
 			dateWords: this.deps.page.dateWords,

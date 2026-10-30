@@ -2504,6 +2504,15 @@ a.site-status__alert {
 	border-color: var(--color-accent);
 }
 
+/* Icône SVG de public/img/toolbar/ appliquée en masque : elle suit la couleur du texte. */
+.bbcode-toolbar__icon {
+	display: block;
+	width: 1.25rem;
+	height: 1.25rem;
+	background: currentColor;
+	mask: var(--icon) center / contain no-repeat;
+}
+
 .bbcode-toolbar__button[aria-expanded="true"] {
 	background: var(--color-surface);
 	border-color: var(--color-accent);

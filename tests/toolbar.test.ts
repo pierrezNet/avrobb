@@ -1,13 +1,13 @@
 /**
- * Barre d'outils BBCode (FluxToolBar) : choix des boutons selon les réglages, et présence sur les
- * pages de rédaction.
+ * Barre d'outils BBCode : choix des boutons selon les réglages du forum, et présence sur les pages
+ * de rédaction.
  */
 
 import type { FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.ts';
 import { fr } from '../src/lang/fr/index.ts';
-import { DEFAULT_TOOLBAR, type ToolbarSettings, toolbarButtons } from '../src/services/toolbar.ts';
+import { TOOLBAR, type ToolbarSettings, toolbarButtons } from '../src/services/toolbar.ts';
 import { fakeDeps, guest, post, sessionCookie, topic, viewer } from './fixtures.ts';
 
 const all = { bbcode: true, imgTag: true, smilies: true };
@@ -16,12 +16,12 @@ const names = (settings: ToolbarSettings, options = all, form: 'form' | 'quickfo
 
 describe('toolbarButtons (generate_ftb_cache())', () => {
 	it('boutons par défaut, émoticônes en dernier, actions des balises', () => {
-		const toolbar = toolbarButtons(DEFAULT_TOOLBAR, 'form', all, fr.toolbar);
-		expect(toolbar?.imageDir).toBe('img/fluxtoolbar/smooth/');
+		const toolbar = toolbarButtons(TOOLBAR, 'form', all, fr.toolbar);
+		expect(toolbar?.imageDir).toBe('/assets/img/toolbar/');
 		expect(toolbar?.buttons.at(-1)).toMatchObject({ name: 'smilies', action: { kind: 'smilies' } });
 		const byName = new Map(toolbar?.buttons.map((b) => [b.name, b]));
 		expect(byName.get('bold')).toMatchObject({
-			image: 'bt_bold.png',
+			image: 'bold.svg',
 			action: { kind: 'wrap', tag: 'b' },
 			label: 'Texte en gras : [b]texte[/b]',
 		});
@@ -33,16 +33,16 @@ describe('toolbarButtons (generate_ftb_cache())', () => {
 	});
 
 	it('suit o_smilies, p_message_img_tag et p_message_bbcode', () => {
-		expect(names(DEFAULT_TOOLBAR, { ...all, smilies: false })).not.toContain('smilies');
-		expect(names(DEFAULT_TOOLBAR, { ...all, imgTag: false })).not.toContain('img');
-		expect(names(DEFAULT_TOOLBAR, { bbcode: false, imgTag: true, smilies: true })).toEqual(['img', 'smilies']);
+		expect(names(TOOLBAR, { ...all, smilies: false })).not.toContain('smilies');
+		expect(names(TOOLBAR, { ...all, imgTag: false })).not.toContain('img');
+		expect(names(TOOLBAR, { bbcode: false, imgTag: true, smilies: true })).toEqual(['img', 'smilies']);
 	});
 
-	it('réglages de l’administrateur : barre désactivée ou boutons choisis par formulaire', () => {
+	it('barre désactivée ou bouton retiré pour un formulaire', () => {
 		const custom: ToolbarSettings = {
-			...DEFAULT_TOOLBAR,
+			...TOOLBAR,
 			enableQuick: false,
-			tags: DEFAULT_TOOLBAR.tags.map((t) => (t.name === 'strike' ? { ...t, enableForm: false } : t)),
+			tags: TOOLBAR.tags.map((t) => (t.name === 'strike' ? { ...t, enableForm: false } : t)),
 		};
 		expect(toolbarButtons(custom, 'quickform', all, fr.toolbar)).toBeNull();
 		expect(names(custom)).not.toContain('strike');
@@ -65,17 +65,15 @@ describe('pages de rédaction', () => {
 		for (const url of ['/post.php?tid=10', '/viewtopic.php?id=10']) {
 			const res = await app.inject({ url, headers: { cookie } });
 			expect(res.body).toMatch(/<div class="bbcode-toolbar" data-toolbar="\{&quot;label&quot;:/);
-			expect(res.body).toContain('data-toolbar-images="img/fluxtoolbar/smooth/"');
+			expect(res.body).toContain('data-toolbar-images="/assets/img/toolbar/"');
 			expect(res.body).toContain('/assets/js/toolbar.js?v=');
 			// Bouton image d'un membre : URL, galerie ou nouvelle image.
 			expect(res.body).toContain('&quot;galleryUrl&quot;:&quot;gallery.php?info=pick&amp;embed=1&quot;');
 		}
 	});
 
-	it('pas de barre quand l’administrateur l’a désactivée', async () => {
-		app = await buildApp(fakeDeps(data(), { toolbar: { load: async () => ({ ...DEFAULT_TOOLBAR, enableForm: false }) } }));
-		const res = await app.inject({ url: '/post.php?tid=10', headers: { cookie } });
-		expect(res.body).not.toContain('data-toolbar=');
-		expect(res.body).not.toContain('toolbar.js');
+	it('chaque bouton a son icône dans public/', async () => {
+		const { existsSync } = await import('node:fs');
+		for (const button of TOOLBAR.tags) expect(existsSync(`public/img/toolbar/${button.image}`), button.image).toBe(true);
 	});
 });

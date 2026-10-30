@@ -45,7 +45,6 @@ import { StatsRepository } from './repositories/StatsRepository.ts';
 import { BuiltinStopwords } from './repositories/StopwordsLoader.ts';
 import { SubjectPrefixRepository } from './repositories/SubjectPrefixRepository.ts';
 import { SubscriptionRepository } from './repositories/SubscriptionRepository.ts';
-import { ToolbarRepository } from './repositories/ToolbarRepository.ts';
 import { TopicRepository } from './repositories/TopicRepository.ts';
 import { UserAdminRepository } from './repositories/UserAdminRepository.ts';
 import { UserRepository } from './repositories/UserRepository.ts';
@@ -104,7 +103,6 @@ const app = await buildApp({
 	reportStore: reports,
 	adminStats: new AdminStatsRepository(db, config.db.tablePrefix),
 	serverInfo: new NodeServerInfo(),
-	toolbar: new ToolbarRepository(db),
 	forums: new ForumRepository(db),
 	reports,
 	privateMessages,

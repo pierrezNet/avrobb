@@ -1,174 +1,186 @@
-# TODO — Portage de Pilote-Virtuel vers Node.js
+# TODO — AvroBB sur Cloudflare
 
-Méthode : lots ordonnés, chaque lot livrable seul. Le forum reste utilisable de bout en bout à chaque étape, car PHP et Node partagent la base et le cookie. Chaque page suit le skill `port-page` et passe `mvc-review` avant d'être cochée.
+Méthode : lots ordonnés, chacun **livrable et testé** (`npm run check` et `npm run test:db` passent à la fin de chaque lot, commit par étape cohérente). Chaque lot passe `mvc-review` avant d'être coché.
 
-Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé · **(PV)** = fonctionnalité propre à Pilote-Virtuel (absente de FluxBB standard).
+Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé.
+
+Estimations en **jours de travail effectif** (développement, tests et vérification à la main), relecture comprise.
 
 ## Pourquoi cet ordre
 
-1. **Socle d'abord** : outillage, mise en page et CSS responsive sont partagés par toutes les pages. Les refaire après coup coûterait N fois.
-2. **Lecture avant écriture** : les pages en lecture seule ne présentent aucun risque pour la base partagée, couvrent la majorité du trafic et valident l'architecture (on part du POC `viewtopic`).
-3. **Authentification avant écriture** : poster, éditer ou envoyer un MP suppose une session, un CSRF et des bannissements fiables.
-4. **Rédaction avec l'index de recherche** : un message posté par Node doit être indexé comme le fait le PHP, sinon la recherche PHP se dégrade.
-5. **Communauté (MP, réputation, sondages…) ensuite** : ces modules dépendent de la session et de l'éditeur.
-6. **Modération puis administration en dernier** : peu d'utilisateurs, et le back-office PHP continue de fonctionner sur la même base pendant tout ce temps. C'est aussi là que se trouvent les invalidations de cache les plus délicates.
-7. **Bascule** : retrait du PHP une fois tout porté.
+1. **Retirer avant de déplacer** : l'héritage PV (session FluxBB, caches PHP, SHA-1, plugins) représente une bonne part du code. Le retirer d'abord réduit tout ce qu'il faudra ensuite adapter à Hono et à D1.
+2. **HTTP avant base** : passer de Fastify à Hono se fait encore sur Node et MariaDB, avec les tests existants comme filet. On ne change qu'une chose à la fois.
+3. **D1 ensuite** : le plus gros lot (schéma neuf, réécriture SQL, fin des transactions). Une fois terminé, l'application tourne pour la première fois dans `wrangler dev`.
+4. **R2, SSO, images, e-mails** : chacun est une brique indépendante branchée sur le Worker.
+5. **Déploiement puis mise en ligne** : la chaîne de livraison est en place avant l'ouverture au public.
+
+## Faisabilité (vérifiée sur le dépôt le 2026-10-30)
+
+| Sujet                   | Constat                                                                                                                                                                                                                                                                                                                                                                               | Verdict                                                                                                                                                                                                      |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Nunjucks dans un Worker | Le seul `new Function` de Nunjucks est dans `Environment._compile`, appelé uniquement quand un gabarit n'est pas précompilé. `PrecompiledLoader` fournit l'objet déjà compilé. 83 vues et 10 partiels (406 Ko de source, 260 `include`/`import`/`extends`), résolus par nom à l'exécution.                                                                                            | **OK** : précompiler au build vers un module ES (option `wrapper` de `precompile`), importer le runtime sans les chargeurs de fichiers. À valider par un essai au lot 2 (taille du module, rendu identique). |
+| Kysely + D1             | Kysely fournit le dialecte SQLite (adaptateur, compilateur) ; il manque un pilote D1 (~60 lignes, pas de dépendance). **D1 refuse les transactions interactives** : `inTransaction()` est utilisé **34 fois dans 13 repositories**, et `.forUpdate()` 1 fois. Il y a 15 `sql` bruts (dont `ALTER TABLE` pour PunBalise, `AUTO_INCREMENT`), 1 `onDuplicateKeyUpdate` et 10 `insertId`. | **OK, avec réécriture** : `db.batch()` atomique, `RETURNING`, sous-requêtes, `INSERT … ON CONFLICT`. C'est le cœur du lot 3.                                                                                 |
+| Multipart               | `http/forms.ts` lit déjà le multipart avec `Request.formData()` (API Web), et seulement 5 usages de `request.uploads`.                                                                                                                                                                                                                                                                | **OK** : natif dans Workers. Abaisser la limite d'envoi (16 Mo → ~5 Mo) à cause des 128 Mo de mémoire.                                                                                                       |
+| Ressources statiques    | `public/` pèse 156 Ko (CSS, 7 scripts, icônes). Les empreintes sont calculées à l'exécution avec `fs.readFileSync`.                                                                                                                                                                                                                                                                   | **OK** : Workers Static Assets (gratuit, sans invocation du Worker), empreintes calculées au build.                                                                                                          |
+| API Node                | `node:crypto` (8 fichiers), `node:fs`/`path` (13, tous liés aux fichiers PHP ou locaux), `node:dns` et `node:os` (1 chacun), `Buffer` (20).                                                                                                                                                                                                                                           | **OK** : `nodejs_compat` couvre `crypto` et `Buffer`.`fs`, `dns` et `os` disparaissent avec l'héritage PV ou R2.                                                                                             |
+| Couplage à Fastify      | 61 fichiers importent `fastify`, mais les contrôleurs n'utilisent que `query`, `body`, `viewer`, `board`, `url`, `ip`, `cookies`, `headers`, `uploads` et `redirect`/`code`/`type`/`send`.                                                                                                                                                                                            | **OK** : un contexte de requête maison et un adaptateur Hono évitent de réécrire 51 contrôleurs en profondeur.                                                                                               |
+| CPU                     | 10 ms par requête sur l'offre gratuite : un sujet de 25 messages (BBCode + Nunjucks) risque de dépasser.                                                                                                                                                                                                                                                                              | **Workers Paid (5 $/mois)** : 30 s de CPU, 10 Mo de bundle, D1 et R2 largement suffisants. Le cache en bordure absorbe les visiteurs.                                                                        |
+| Mémoire, bundle         | 128 Mo par isolat ; bundle à 10 Mo compressé sur Paid (Nunjucks ~150 Ko, Kysely ~200 Ko, Hono ~20 Ko, gabarits compilés estimés à 1–2 Mo).                                                                                                                                                                                                                                            | **OK** : à mesurer au lot 3 (`wrangler deploy --dry-run --outdir`).                                                                                                                                          |
+| Recherche               | Index maison `search_words`/`search_matches` comme FluxBB, avec mots vides lus dans les fichiers PHP.                                                                                                                                                                                                                                                                                 | **Remplacé** par FTS5 (pris en charge par D1). Attention : `wrangler d1 export` ne sait pas exporter les tables virtuelles (voir lot 7, sauvegardes).                                                        |
+
+Budget : Workers Paid à 5 $/mois (~4,60 €) inclut 10 M de requêtes, 25 G de lignes lues et 50 M de lignes écrites en D1 par mois, et 5 Go de stockage D1. R2 est gratuit jusqu'à 10 Go, sans frais de sortie. Resend est gratuit jusqu'à 3 000 e-mails par mois. Total attendu : **5 $/mois**, nom de domaine en plus. Chiffres à revérifier au lot 7.
 
 ---
 
-## Lot 0 — Socle technique
+## Lot 1 — Retrait de l'héritage PV · 2 à 3 jours
 
-- [x] `git init` et premier commit du POC (le projet PHP n'est pas versionné : se protéger ici)
-- [x] Lint et formatage (Biome : une seule dépendance, configuré pour tabulations et apostrophes simples) + script `npm run check` (lint, typecheck, test)
-- [x] Gestion d'erreurs centralisée (`setErrorHandler`, 404 et 500 rendus avec `message.njk`, journalisation sans fuite d'informations)
-- [x] Mise en page commune complète : en-tête (menu selon droits, bienvenue, nouveaux MP, liens de modération), pied (quickjump, « Propulsé par »), fil d'Ariane réutilisable
-- [x] **CSS responsive** : feuille de base mobile d'abord + 6 thèmes FluxBB réduits à des variables CSS ; choix du thème utilisateur (`users.style`)
-- [x] Chargement de `config` (table) avec invalidation, lecture des caches PHP
-- [x] Langue : structurer `src/lang/fr.ts` par page → `src/lang/fr/` (fichiers `lang/French/*.php` comme source)
-- [x] Tests d'intégration contre une vraie base (conteneur `pv_db`, base de test dédiée) en complément des doublures
-- [x] Mesure de parité : script qui compare le HTML ou le texte utile d'une page PHP et de son équivalent Node
+Le code tourne encore sur Fastify et MariaDB (base locale, plus partagée avec personne). On retire, on ne déplace pas.
 
-## Lot 1 — Lecture publique
+- [ ] Cohabitation PHP : `LEGACY_BASE_URL`, `LEGACY_ROOT`, `PORTED_PAGES` et les redirections vers le PHP des cas non portés, `legacyImagesRoot`
+- [ ] Caches PHP : `PhpCacheFiles`, `phpVarExport`, `UsersInfoLoader` (cache `users_info`), invalidations dans l'administration (la page « vider les caches » de la Maintenance disparaît)
+- [ ] Session FluxBB (`legacySession.ts`, cookie `punbb_cookie`) remplacée par un **cookie signé** provisoire, avec une **connexion de développement** (`DEV_LOGIN=1`) pour pouvoir se connecter jusqu'au lot 5
+- [ ] Mots de passe et comptes locaux : `passwords.ts` (SHA-1), connexion par formulaire, inscription (`register.php`, règles), mot de passe oublié, changement de mot de passe et d'adresse dans le profil, envoi de mot de passe par l'administration
+- [ ] Gabarits d'e-mails lus dans les fichiers du PHP (`MailTemplateFiles`) : déplacés dans `src/lang/fr/`
+- [ ] Plugins PV : PunBalise (`balises_modo`, `TopicLabel*`, `LabelAdmin*`, page d'administration), Plugile (`PlugileController`, page de profil), Uploadile et le gestionnaire de fichiers (`FileManagerController`, `MemberUploadFiles`, `uploadActions`) : les images passent toutes par la galerie
+- [ ] Messagerie privée (APMS) **simplifiée** : on garde les conversations, on retire contacts, listes d'envoi et plugin d'administration. Elle reste le canal des notifications de mention
+- [ ] Spécificités PV restantes : simulateurs de l'activité de la semaine, bannière et textes PV, `toolbar_conf`/`toolbar_tags` (barre d'outils fixée dans le code), tables Premium et sondages, `hostResolver` (DNS inverse) et `serverInfo` (`node:os`)
+- [ ] Outils de parité : `scripts/parity.ts`, `scripts/bbcode-reference.*` (les cas de `tests/bbcode/` restent comme tests de non-régression), `AdminStatsRepository` (`SHOW TABLE STATUS`)
+- [ ] `package.json` (nom `avrobb`, description), `README.md` réécrit, `.env.example` épuré, skills `mvc-review` et `responsive-ui` réécrits, `port-page` remplacé par `new-page`
+- [ ] Textes « Pilote-Virtuel » restants dans `src/lang/fr/` et les pages d'information → AvroBB
 
-- [x] **viewtopic** : terminer le POC
-  - [x] BBCode complet (`include/parser.php`) : parité vérifiée contre le vrai parseur PHP (`npm run bbcode:reference`)
-  - [x] Smileys en émojis Unicode (décision du 24/10/2026, pas d'images) et censure (`censoring`)
-  - [x] Balises propres à PV (`balises`, `balises_modo`) en préfixe du sujet **(PV)**
-  - [x] Titre des bannis (`get_title()` complet ; FluxBB 1.5 n'a plus de rangs)
-  - [x] Affichage de la réputation sous l'auteur (`include/reputation/rep_viewtopic.php`) et lien MP (APMS) **(PV)**
-  - [x] ~~Affichage du sondage du sujet~~ : sans objet, PV n'affiche aucun sondage (`AP_Sondage` est un reste sans table ni affichage)
-  - [x] ~~Pièces jointes~~ : sans objet, les uploads sont insérés par `[img]`/`[url]` (gestionnaire : lot 5)
-- [x] **index** : catégories, forums, derniers messages, statistiques, utilisateurs en ligne (nouveau gabarit en `<div>`)
-- [x] **viewforum** : liste des sujets, pagination, épinglés, déplacés, icônes lu/non lu (lecture seule)
-- [x] **userlist** : recherche, tri, pagination
-- [x] **profile** (consultation) : sections publiques, biographie (`UP_Ma_biographie`) **(PV)** ; la modification (soi-même, modérateurs autorisés, `section`, `action`, autres plugiles) est renvoyée vers le PHP
-- [x] **help** (aide BBCode et émoticônes, exemples rendus par le parseur) — `balises.php` n'est pas une page mais l'inclusion qui colore les balises dans viewforum (fait, `styleSubject()`)
-- [x] **search** : formulaire et résultats (lecture de l'index existant `search_*`, `search_cache`) — résultats mémorisés dans `search_cache` et anti-flood (repris après le lot 3)
-- [x] **extern.php** : flux RSS/Atom/XML et HTML externe (identiques au PHP) — authentification HTTP Basic (lot 2) et cache `o_feed_ttl` non repris
-- [x] **gallery** (consultation) **(PV)** — envoi et modération renvoyés vers le PHP (lot 5) ; table `fo_gallery` absente du schéma local, reconstituée pour les tests
+Vigilance :
+- Retirer **avec les tests** : supprimer les tests des fonctions retirées, pas les affaiblir. Le nombre de tests baisse, la couverture de ce qui reste ne doit pas baisser.
+- `phpSerialize` sert encore à lire la liste des modérateurs d'un forum (`forums.moderators`) : le garder jusqu'au lot 3, où cette colonne devient une table de liaison.
+- `legacySession` est importé par 48 fichiers (surtout des tests) : introduire d'abord la nouvelle session derrière la même interface, puis supprimer l'ancienne.
+- Le schéma MariaDB ne change pas encore : des tables deviennent inutilisées, elles disparaîtront au lot 3.
 
-## Lot 2 — Authentification et session
+## Lot 2 — Couche HTTP Hono · 3 à 4 jours
 
-- [x] Émission du cookie FluxBB par Node (`pun_setcookie()`), renouvellement et expiration (vérifié dans les deux sens avec le PHP)
-- [x] **login** / **logout**, « se souvenir de moi », redirection (limitée aux pages du forum), MD5 hérité mis à niveau
-- [x] Mot de passe oublié (e-mail, jeton d'activation) : service d'envoi d'e-mails (nodemailer) et modèles `mail_templates` ; activation par `profile.php?action=change_pass` (portée au lot 4)
-- [x] **register** : règles, validation, vérification par e-mail, `check_username()`, alertes à la liste d'administration
-- [x] Jeton CSRF commun à tous les formulaires (double soumission + Origin, `partials/forms.njk`)
-- [x] Bannissements (`bans` : pseudo, IP, expiration ; l'e-mail ne sert qu'à l'inscription) + mode maintenance
-- [x] Table `online` : présence et invités, mise à jour par requête, `last_visit`, purge (`update_users_online()`)
-- [x] Suivi des sujets lus (`action=new`, marquer comme lu en POST, règles) — `misc.php` en partie porté
-- [x] Compteur de vues des sujets
-- [x] Contrôle d'accès par groupe et par forum (`forum_perms`) généralisé (`repositories/forumPermissions.ts`)
+Toujours sur Node et MariaDB (`@hono/node-server` provisoire), mais avec le code qui tournera dans le Worker.
 
-## Lot 3 — Rédaction
+- [ ] Contexte de requête maison (`src/http/`) : `query`, `form`, `uploads`, `viewer`, `board`, `ip` (`CF-Connecting-IP` derrière Cloudflare), `cookies`, et un résultat (`page`, `redirect`, `message`) que l'adaptateur Hono transforme en `Response`
+- [ ] Contrôleurs basculés de `FastifyRequest`/`FastifyReply` vers ce contexte (changement surtout mécanique)
+- [ ] Middlewares Hono : authentification, CSRF, en-têtes de sécurité, lecture des formulaires (`application/x-www-form-urlencoded` et multipart, limites de taille), gestion des erreurs (pages 404 et 500 en français)
+- [ ] **Gabarits précompilés** : `scripts/build-templates.mjs` → `src/generated/templates.js`, `PrecompiledLoader`, globals `url` et `asset` ; en développement, recompilation par `--watch`
+- [ ] Manifeste des ressources (`src/generated/assets.json`) à la place de `fs.readFileSync` dans `http/assets.ts`
+- [ ] Tests : `app.inject()` remplacé par `app.request()` (petit utilitaire de test pour garder des assertions lisibles)
+- [ ] Retrait de `fastify`, `@fastify/*`, `node:path` du code applicatif
 
-- [x] Service d'**indexation de recherche** (`include/search_idx.php`) : ajout, mise à jour, suppression — `preparse_bbcode()` porté avec, parité vérifiée contre le PHP
-- [x] **post** : nouveau sujet, réponse, citation, prévisualisation, anti-flood, mise à jour des compteurs (notifications aux abonnés comprises)
-- [x] Réponse rapide sous viewtopic
-- [x] Barre d’outils BBCode (FluxToolBar : `toolbar_conf`, `toolbar_tags`) en JS progressif
-- [x] **edit** et **delete** (message, sujet)
-- [x] Brouillons (`brouillons`, `draft_list`, `draft_edit`) **(PV)**
-- [x] Abonnements aux sujets et forums + notifications par e-mail
-- [x] Signalement d'un message (`misc.php?report`) et e-mail à un membre (`misc.php?email`)
-- [x] ~~Création et vote dans les sondages~~ : sans objet, `AP_Sondage` est un reste sans table ni affichage (voir lot 1) **(PV)**
-- [x] Balises du sujet (« préfixes » : `[MSFS]`, `[FS-24]`… et `[Résolu]`, `[Réel]`, `[Video]`) : l'auteur peut toujours en ajouter ou en retirer sur sa discussion, **même après les 30 minutes** de modification du message (action dédiée qui ne touche qu'au sujet ; listes aujourd'hui en dur dans `post.php`/`edit.php` et `presenters/postPage.ts`) **(PV)** — page `topic_prefixes.php` (propre à Node), bouton « Préfixes du sujet » sur viewtopic pour l'auteur et les modérateurs
+Vigilance :
+- Les paramètres de requête typés par Fastify (`Querystring`, champs décorés comme `sortDir` ou `showAs`) : les remplacer par des fonctions de lecture validées, pas par des `as`.
+- Comparer le HTML rendu avant et après (instantanés de quelques pages : index, viewforum, viewtopic, post, profil, administration) pour détecter un écart de rendu des gabarits précompilés.
+- `throwOnUndefined` doit rester actif en précompilé.
+- Ordre des middlewares : la CSP et les en-têtes doivent s'appliquer aussi aux pages d'erreur et aux redirections.
 
-## Lot 4 — Profil (édition)
+## Lot 3 — D1 : schéma SQLite neuf et migrations · 6 à 8 jours
 
-- [x] Sections du profil : essentiel, personnel, messagerie, personnalité, affichage, confidentialité (renommage et ses effets de bord compris ; la section « Administration » reste en PHP jusqu'au lot 7)
-- [x] Avatar : téléversement et contrôles (type lu dans le contenu, poids, dimensions), effacement confirmé en POST
-- [x] Signature (prévisualisation, limites)
-- [x] Changement de mot de passe et d'e-mail, liens d'activation (y compris celui du mot de passe oublié)
-- [x] Plugiles : Ma biographie, Suivi des sujets (`UPP_Suivile`), Mes uploads (`UPP_Mes_uploads`) **(PV)**
+Le plus gros lot. À la fin, l'application tourne dans `wrangler dev` (Worker, D1 local) ; MariaDB et `mysql2` disparaissent.
 
-## Lot 5 — Fonctionnalités communautaires PV
+- [ ] `wrangler.jsonc` (Worker, liaisons `DB`, `ASSETS`, `nodejs_compat`), `src/worker.ts` (câblage des dépendances à partir de `env`), `.dev.vars`
+- [ ] Pilote Kysely pour D1 (`src/db/d1Dialect.ts`) et utilitaire `batch()` qui compile des requêtes Kysely et les envoie en un seul `db.batch()`
+- [ ] **Schéma neuf** (`migrations/0001_initial.sql`) pensé pour SQLite et pour AvroBB, sans préfixe `fo_` : `users` (avec `provider`, `provider_id`, `session_version`, sans `password`), `groups`, `categories`, `forums`, `forum_perms`, `forum_moderators` (table de liaison à la place du tableau PHP sérialisé), `topics`, `posts`, `subscriptions`, `online` (membres seulement), `bans`, `reports`, `config`, `censoring`, `messages`, `reputation`, `gallery`, `drafts`, `subject_prefixes` ; clés étrangères et index dès le départ
+- [ ] Recherche FTS5 : table virtuelle `posts_fts` (contenu externe sur `posts`) tenue à jour par déclencheurs ; `SearchRepository` et `services/search.ts` réécrits (échappement des expressions `MATCH`) ; suppression de `search_words`/`search_matches`/`searchIndex`/`StopwordsLoader` ; `search_cache` remplacé par une recherche sans cache (rejouée à chaque page) ou un cache court
+- [ ] **Réécriture des 49 repositories** : dialecte SQLite, `RETURNING` à la place de `insertId`, `ON CONFLICT` à la place de `ON DUPLICATE KEY`, les 34 `inTransaction()` remplacés par des lots atomiques
+- [ ] `ConfigLoader` : table `config` avec cache par isolat (30 s)
+- [ ] Graines : `migrations/` pour la structure, `scripts/seed.sql` pour un forum de démonstration en local (catégories, forums, groupes, réglages par défaut)
+- [ ] `test:db` sur une D1 locale (`getPlatformProxy` de Wrangler, migrations rejouées à chaque lancement)
+- [ ] Tâche planifiée (Cron Trigger) : purge de `online` et des brouillons anciens
+- [ ] Retrait de `mysql2`, `TablePrefixPlugin`, `docker compose`, `vitest.db.config.ts` adapté
 
-- [x] Messagerie privée : boîte de réception, lecture, envoi, contacts, listes d'envoi (`messages`, `contacts`, `sending_lists`) **(PV)** — alertes par e-mail (`new_pm*.tpl`) comprises ; vérifiée dans les deux sens avec le PHP
-- [x] Réputation : vote, historique, page `reputation.php` **(PV)** — suppression de votes par les administrateurs et modérateurs
-- [x] Uploads et gestionnaire de fichiers (`gestionnaire.php`, Uploadile) **(PV)** — envoi, suppression et insertion dans le message ; pas de création de miniatures (le PHP utilisait GD)
-- [x] Galerie : ajout et gestion **(PV)** — vignette calculée par le navigateur (canvas), suppression par l'auteur et l'équipe
-  - [x] Tuiles : image collée en haut de la tuile (sans marge au-dessus)
-  - [x] Filtre « Mes images » pour ne voir que les siennes
-  - [x] Insertion d'image dans un message : en plus de l'URL, choisir parmi ses images de la galerie, ou
-    téléverser une image depuis l'édition du message (elle rejoint alors la galerie) — `gallery.php?info=pick`,
-    ouvert par le bouton image de la barre d'outils (menu : URL, mes images de la galerie, nouvelle image)
-    dans une popin : ses images par défaut, recherche titre/description, « Fermer » et « Insérer et fermer »
-  - [x] Image insérée avec son titre et sa description (la description, obligatoire dans la galerie, est
-    aujourd'hui perdue à l'insertion), affichée en **carte** (image, titre, légende)
-- [x] Premium (`premium.php`) **(PV)** — porté puis retiré : statut sans effet dans le forum, page liée nulle part (tables conservées)
+Vigilance :
+- **Transactions** : pour chaque `inTransaction()`, écrire ce qui doit rester cohérent (compteurs `num_posts`/`num_replies`/`last_post*`) et vérifier que le lot atomique le garantit **sans lecture intermédiaire**. Les compteurs se mettent à jour de façon relative (`num_replies = num_replies + 1`) ou se recalculent par sous-requête. `forUpdate()` (messagerie) devient une condition dans le `UPDATE … WHERE`.
+- Pas de `last_insert_rowid()` entre deux requêtes d'un lot pour l'instant : préférer un identifiant connu d'avance ou une sous-requête sur une colonne unique. Cas typique : nouveau sujet + premier message.
+- Collation : SQLite compare en binaire. Les recherches de pseudo insensibles à la casse se font avec `COLLATE NOCASE` (ASCII seulement) ou une colonne normalisée (`username_key`, en minuscules et sans accents).
+- Dates : entiers Unix comme aujourd'hui, pas de `DATETIME` SQLite.
+- **Coût en lignes** : chaque index ajouté rend les écritures plus chères, et `COUNT(*)` sur une grande table lit toutes les lignes. Garder les compteurs dénormalisés de FluxBB.
+- Limites D1 : 100 paramètres liés par requête (attention aux `IN (…)` longs, à découper) et 100 Ko par instruction SQL.
+- Pas d'import des données de Pilote-Virtuel : AvroBB démarre vide.
 
-## Lot 6 — Modération
+## Lot 4 — R2 pour les fichiers · 1 à 2 jours
 
-- [x] `moderate.php` : fermer/ouvrir, épingler, déplacer, fusionner, scinder, suppression multiple (actions en POST, anciens liens GET confirmés)
-- [x] Consultation d'IP (`get_host`)
-- [x] Traitement des signalements (`admin_reports.php`, premier écran de l'administration avec son menu)
-- [x] Balises réservées aux modérateurs (`balises_modo`) **(PV)** — dans le pied de viewtopic, en POST
+- [ ] Liaison `FILES` (bucket `avrobb-files`), interface `FileStore` (`put`, `get`, `delete`) et doublure en mémoire pour les tests
+- [ ] Galerie, avatars, logo et bannière (`GalleryFiles`, `avatars.ts`, `HeaderImageFiles`) passés sur R2 ; clés générées par le serveur (`gallery/<id>-<aléa>.webp`)
+- [ ] Route `GET /files/*` : lecture R2, `Content-Type` fixé par le serveur, `ETag`, `Cache-Control: public, max-age=31536000, immutable` (une clé ne change jamais de contenu), cache en bordure
+- [ ] Suppression : effacement R2 **après** la suppression en base (un fichier orphelin vaut mieux qu'une ligne qui pointe dans le vide) ; tâche planifiée de nettoyage des orphelins
 
-## Lot 7 — Administration
+Vigilance :
+- Même origine que le forum : la CSP `img-src 'self'` suffit, et le domaine public `r2.dev` reste désactivé.
+- Taille max par fichier et quota par membre (nombre d'images), à vérifier avant l'écriture.
 
-- [x] Accueil et statistiques
-- [x] Options (`admin_options`) avec invalidation de `cache_config.php`
-- [x] Catégories, forums, permissions par forum
-- [x] Groupes, utilisateurs (recherche, actions de masse), gestion utilisateurs (AMP) **(PV)**
-- [x] Bannissements, censure, rapports
-- [x] Maintenance : reconstruction de l'index de recherche, vidage des caches, mode maintenance
-- [x] Plugins d'administration : balises, smileys, premium, sondages, uploads, messagerie privée, Plugile, gestion d'utilisateur **(PV)**
+## Lot 5 — SSO (GitHub, Google en option) · 2 à 3 jours
 
-## Ajouts AvroBB
+- [ ] Adaptateur OAuth générique (`src/adapters/oauth.ts`) : URL d'autorisation, échange du code, lecture du profil ; GitHub d'abord (`read:user`, `user:email` facultatif), Google ensuite (OpenID Connect, `openid profile`)
+- [ ] `state` + PKCE dans un cookie de courte durée, URL de retour fixe par fournisseur
+- [ ] Création du compte à la première connexion : pseudo proposé depuis le fournisseur, rendu unique (suffixe), modifiable une fois dans le profil ; avatar du fournisseur **non** recopié automatiquement
+- [ ] Page de connexion « Se connecter avec GitHub / Google » (sans JS), déconnexion en POST, « Me déconnecter de partout » (incrémente `session_version`)
+- [ ] Administrateurs initiaux par `ADMIN_ACCOUNTS`
+- [ ] Suppression de son compte par le membre (messages conservés sous « Membre supprimé »), exigée par la politique de confidentialité
+- [ ] Retrait de `DEV_LOGIN` en production (test qui le garantit)
 
-- [x] Mentions @membre : complètement des noms (`member_suggest.php`, `public/js/mentions.js`) dans les messages et les destinataires de la messagerie ; insertion d'un lien BBCode vers le profil
-- [x] Images envoyées converties en WebP (1024 px), variante mobile (640 px) servie par `<picture>`, chargement à la demande
-- [x] Avatar recadré automatiquement aux dimensions permises
-- [x] Mentions : le membre mentionné est prévenu par message privé (nouveaux messages ; 5 mentions au plus)
+Vigilance :
+- Identifier par `(provider, provider_id)`, jamais par e-mail ; un e-mail fourni par GitHub peut être absent ou non vérifié.
+- Un membre banni qui se reconnecte reste banni (bannissement porté par le compte, pas par la session).
+- Limitation de débit sur `/auth/*`.
+- Mettre à jour la politique de confidentialité : données reçues du fournisseur et durée de conservation.
 
-- [x] Balises de sujet en pastilles colorées (sans crochets) dans les listes et les titres
-- [x] Balises de sujet : balises inventées retirées et doublons supprimés à l'enregistrement, masqués à l'affichage
-- [ ] Balises de sujet : nettoyer en base les anciens sujets (balises inventées, doublons), pour que le PHP les affiche aussi proprement
-- [x] Balises de sujet : liste et couleurs réglables dans l'administration (page Balises, clé `o_subject_tags`), renommage reporté dans les sujets
+## Lot 6 — Images et e-mails · 2 à 3 jours
 
-- [x] Accueil : activité de la semaine (en ligne avec avatars, discussions les plus commentées en cartes, simulateurs, nouveaux membres) ; page Statistiques ; boutique Digiseller retirée de la page Premium
-- [x] Pied de page : pages Termes et règles, Politique de confidentialité, Aide (à la place de « Atteindre »)
-- [ ] Pages d'information : faire relire les textes (responsable du traitement, hébergeur et mentions légales à compléter)
-- [x] Bannière de PV sur grand écran ; page Apparence (logo et bannière remplaçables, retour à l'image précédente)
-- [x] Bannissement en lecture seule : le banni lit le forum mais n'écrit plus (bandeau, écritures refusées)
-- [x] Contenu chaud / froid : l'élagage est remplacé par un seuil « Discussions anciennes » (Maintenance) et une page « Anciennes discussions » par forum
-- [x] Galerie : recherche (titre, description) ; sélecteur d'images en popin dans l'éditeur
-- [x] Administration sans « Menu des plugins » : pages propres à PV intégrées au menu ; FluxToolBar, Plugile, Smilies, AP_Premium et la miniaturisation Uploadile retirés ; plus de flux Atom (RSS seulement, liens masqués avec le réglage actuel de PV) ; pagination discrète
-- [ ] **Éditeur WYSIWYG** avec bouton « Source BBCode », basé sur **SCEditor** (MIT, mode source BBCode natif) : le BBCode reste le format enregistré (compatibilité PHP, index de recherche) ; amélioration progressive du champ actuel (sans JS : BBCode) ; déclarer les balises PV (spoiler, vidéo, alignements, cartes de la galerie, mentions…), brancher la popin galerie, les mentions et les émojis ; thèmes ; tests aller-retour BBCode → éditeur → BBCode ; la prévisualisation serveur reste la référence. Estimation : 2 à 3 jours
-- [x] Ménage « projet à part » : Sondage (sans objet) et Mod Installer retirés ; plus d'installation/désinstallation de mods (PunBalise, Plugile, Uploadile) ; options sans effet retirées (GZip, formats de date et d'heure, langue par défaut, numéro de version) ; plus de version FluxBB (pied de page, accueil de l'administration, flux)
+- [ ] **Images côté navigateur** : script d'amélioration progressive qui redimensionne (1024 px, plus une variante 640 px) et convertit en WebP par `canvas` avant l'envoi ; recadrage de l'avatar ; repris de ce que fait déjà la vignette de galerie
+- [ ] Côté serveur, sans sharp : type lu dans le contenu, **dimensions lues dans l'en-tête** (WebP, PNG, JPEG, GIF) par une fonction pure, refus au-delà des limites ; sans JS, le fichier d'origine est accepté tel quel s'il respecte taille (~2 Mo) et dimensions
+- [ ] Retrait de `sharp` et de `SharpImageProcessor`
+- [ ] **E-mails** : `Mailer` par API HTTP (Resend, comme donnetonpoint), `NullMailer` par défaut tant que la clé n'est pas configurée ; notifications d'abonnement et alertes de message privé ; retrait de `nodemailer` et de `MAIL_OUTBOX`
+- [ ] Envoi des e-mails hors du chemin de la réponse (`ctx.waitUntil`) pour ne pas ralentir la publication
 
-## À décider (mis de côté)
+Vigilance :
+- L'orientation EXIF des photos de téléphone : `createImageBitmap(file, { imageOrientation: 'from-image' })` avant de dessiner.
+- Les navigateurs sans encodeur WebP (anciens Safari) renvoient du PNG avec `toBlob('image/webp')` : vérifier le type obtenu et repasser en JPEG si besoin.
+- E-mail : domaine d'envoi vérifié (SPF, DKIM) chez le fournisseur ; lien de désabonnement dans chaque notification.
+- Option à garder en tête : Cloudflare Images (redimensionnement à la volée, 5 000 transformations gratuites par mois) si le traitement côté navigateur ne suffit pas.
 
-- [ ] **Inscriptions motivées et validées** (aujourd'hui, PV ferme les inscriptions : les candidats écrivent à une adresse e-mail et un administrateur crée le compte avec « Ajouter un membre ») :
-  - formulaire d'inscription avec un champ obligatoire « Pourquoi souhaitez-vous rejoindre Pilote-Virtuel ? » (longueur minimale, ex. 50 caractères) ;
-  - compte créé dans un groupe « En attente de validation » sans droit d'écriture, motivation rangée dans `admin_note` (aucun changement de schéma) ; message « demande en cours d'examen » au candidat ;
-  - page d'administration « Inscriptions à valider » (pseudo, e-mail, IP, motivation, date) : **Accepter** (passage dans Membres + e-mail de bienvenue) ou **Refuser** (suppression, bannissement facultatif de l'e-mail ou de l'IP) ; compteur dans la ligne d'état des modérateurs, comme les signalements ;
-  - anti-robots invisible : champ piège caché, délai minimal de remplissage, limite d'inscriptions par IP
+## Lot 7 — Déploiement : Wrangler, GitHub Actions, domaine, cache · 2 jours
 
-- [ ] **Soutenir Pilote-Virtuel** : remettre à plat le besoin de soutien financier (dons, abonnement, Tipeee…) avant tout développement : ce que reçoit le donateur (badge, remerciement, avantages ?), moyen de paiement, gestion côté administration. L'ancien Premium (codes PV15/PV365, boutique Digiseller) n'est pas repris
+- [ ] Ressources Cloudflare : base D1 (région Europe), bucket R2, Worker, secrets (`SESSION_SECRET`, identifiants OAuth, clé Resend)
+- [ ] GitHub Actions : `npm run check` et `test:db` sur chaque push et PR ; sur `main`, `wrangler d1 migrations apply --remote` puis `wrangler deploy` (jeton d'API limité au compte et aux ressources du projet, en secret du dépôt)
+- [ ] Domaine personnalisé sur le Worker, HTTPS, HSTS
+- [ ] **Cache en bordure** : middleware Cache API pour les `GET` sans cookie de session, durée courte (60 s), en-tête `Cache-Control` adapté ; aucune réponse avec `Set-Cookie` mise en cache ; vérifier qu'aucune page publique ne pose de cookie
+- [ ] Observabilité : journaux Workers activés, alerte en cas d'erreurs, mesure du CPU par page
+- [ ] Sauvegardes : D1 Time Travel (30 jours sur Paid) ; export hebdomadaire par une Action (`wrangler d1 export`, sans la table FTS5, recréée à la restauration) vers un artefact privé ou R2
+- [ ] Limitation de débit (liaison Rate Limiting) sur connexion, publication, envoi de fichiers et recherche
 
-- [x] Plugin FluxToolBar (`AP_FluxToolBar.php`) : abandonné (la barre d'outils est définie par AvroBB ; les tables `toolbar_conf`/`toolbar_tags` restent lues si elles sont remplies)
+Vigilance :
+- Le jeton Cloudflare de la CI ne doit pas pouvoir toucher d'autres zones ou comptes.
+- Une migration D1 appliquée avant le déploiement doit rester compatible avec la version précédente du code (ajouter, puis retirer dans un déploiement suivant).
+- Purge du cache : la durée courte évite d'avoir à purger ; ne pas monter au-delà de quelques minutes sans mécanisme de purge.
 
-## Lot 8 — Bascule et décommissionnement
+## Lot 8 — Mise en ligne · 1 jour, plus la relecture des textes
 
-- [ ] **Hébergement Node** : la production actuelle est un hébergement PHP (Apache/LiteSpeed). Choisir la cible (VPS, Node géré, Passenger…). **Décision à prendre tôt**, idéalement pendant le lot 1, car elle conditionne le déploiement.
-- [ ] Déploiement : reverse proxy, HTTPS, gestion des processus, journaux, sauvegardes de la base
-- [x] Build de production : `npm run build` (tsc → `dist/`, vues copiées), `npm run start` sur `dist/server.js` sans tsx
-- [ ] Performance : index SQL manquants, cache HTTP des pages publiques, ressources statiques
-- [x] En-têtes de sécurité : CSP, X-Frame-Options, nosniff, Referrer-Policy, Permissions-Policy, HSTS en HTTPS
-- [ ] Sécurité : limitation de débit sur login et inscription, audit (`/security-review`)
-- [ ] Migration des mots de passe SHA-1 vers argon2 au fil des connexions (seulement après l'arrêt du PHP)
-- [ ] URL propres sans `.php` (`/sujet/4`, `/forum/2`…) avec redirections 301 depuis les anciennes (`viewtopic.php?id=4`), pour garder liens externes et référencement ; d'ici là, Node conserve volontairement les URL du PHP pour cohabiter avec lui
-- [ ] Retrait de `LEGACY_BASE_URL`
-- [ ] Arrêt de l'installation PHP
+- [ ] Pages d'information relues et complétées : responsable du traitement, hébergeur (Cloudflare), mentions légales, politique de confidentialité (SSO, cookies, journaux)
+- [ ] `robots.txt`, `sitemap.xml`, URL canoniques sur le domaine final
+- [ ] Revue de sécurité (`/security-review`) et passage de `FAILLES_PHP.md` comme liste de contrôle
+- [ ] Contrôle à la main, sur mobile et bureau, avec et sans JS : lecture anonyme (servie par le cache), connexion GitHub, publication, édition, galerie, messagerie, modération, administration
+- [ ] Mesures : CPU par page, lignes D1 lues par page, poids des pages
+- [ ] Catégories et forums de départ créés, premier message publié
+- [ ] `AMELIORATIONS.md` mis à jour
 
 ---
 
-## Écarts connus du POC (rappel du README)
+## À décider
 
-- Dates du POC au format de la config au lieu de `d/m/Y H:i` de PV → corrigé au lot 0 (trouvé par `npm run parity`)
+- [ ] **URL propres** (`/sujet/4`, `/forum/2`) : à faire **avant** la mise en ligne si on la veut. Il n'y a aucun lien externe à préserver aujourd'hui ; après l'ouverture, il faudrait des redirections. Recommandation : oui, en fin de lot 3 ou entre les lots 7 et 8 (1 à 2 jours).
+- [ ] **Éditeur WYSIWYG** (SCEditor, mode source BBCode) : repris de la TODO de pv-forum, après la mise en ligne (2 à 3 jours).
+- [ ] Réputation : utile sur un forum personnel ? À trancher au lot 1 ; on la garde par défaut.
+- [ ] Notifications sur le site (page « Notifications ») à la place des messages privés pour les mentions, si la messagerie se révèle inutile.
 
-- Pas d'écriture (vues, sujets lus) → lot 2
-- BBCode partiel, smileys, censure, balises PV → lot 1
-- Rangs et bannis absents du titre → lot 1
-- Pas de réponse rapide → lot 3
+## Estimation globale
+
+| Lot                         | Durée             |
+| --------------------------- | ----------------- |
+| 1. Retrait de l'héritage PV | 2–3 j             |
+| 2. Couche HTTP Hono         | 3–4 j             |
+| 3. D1                       | 6–8 j             |
+| 4. R2                       | 1–2 j             |
+| 5. SSO                      | 2–3 j             |
+| 6. Images et e-mails        | 2–3 j             |
+| 7. Déploiement              | 2 j               |
+| 8. Mise en ligne            | 1 j + textes      |
+| **Total**                   | **19 à 26 jours** |

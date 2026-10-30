@@ -10,8 +10,8 @@ schéma FluxBB. Cible : **Cloudflare** (Workers, D1, R2). Le plan de portage est
 
 ## État actuel
 
-Lots 1 à 5 terminés (retrait de l'héritage PV, Hono et gabarits précompilés, base D1, Worker et
-R2, connexion SSO). L'application est un **Worker Cloudflare** (`src/worker.ts`), lancé en local par
+Lots 1 à 6 terminés (retrait de l'héritage PV, Hono et gabarits précompilés, base D1, Worker et
+R2, connexion SSO, images et e-mails). L'application est un **Worker Cloudflare** (`src/worker.ts`), lancé en local par
 `wrangler dev` avec D1 et R2 locaux (`.wrangler/state`). Comptes par **GitHub** (Google en option) :
 créer une application OAuth (URL de retour `http://localhost:8787/auth/github/callback`) et
 renseigner `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` et `ADMIN_ACCOUNTS` dans `.dev.vars`. La
@@ -223,15 +223,15 @@ Front-end : `public/assets/css/base.css` (mobile d'abord) et un fichier de varia
   Les anciens sujets ne sont pas réécrits, mais leurs balises inventées et doublons ne sont plus
   affichés par Node (le PHP les montre toujours). Les boutons du formulaire ajoutent une balise ou la
   retirent si elle y est déjà.
-- Images envoyées (galerie, avatars, logo, bannière) : GIF, JPEG, PNG ou WebP, type et dimensions
-  lus dans le contenu, gardées telles quelles (pas de bibliothèque d'images dans le Worker ; la
-  réduction et la conversion en WebP par le navigateur arrivent au lot 6). Galerie : 1,5 Mio et
-  4 096 px de côté au plus, l'image sert aussi de vignette (`mini_`) et, en WebP, de variante mobile
-  (`mobile_`). Avatar trop grand ou logo hors cadre : refusé, comme dans FluxBB. La galerie insère une
-  adresse relative (`[img]/img/gallery/…[/img]`, acceptée par `[img]` pour les seuls fichiers du
-  forum) qui survit à un changement de domaine ; les anciennes adresses absolues restent reconnues.
-  Dans les messages, une image WebP du forum est servie dans un `<picture>` qui donne la variante
-  mobile aux écrans de 640 px au plus ; toutes les images sont chargées à la demande (`loading="lazy"`).
+- Images envoyées (galerie, avatars, logo, bannière) : réduites par le navigateur avant l'envoi
+  (`js/image-resize.js` : orientation EXIF, WebP, galerie à 1 024 px avec variante mobile de 640 px et
+  vignette de 150 px, avatar recadré, logo et bannière dans leur cadre). Le serveur, sans
+  bibliothèque d'images, lit type et dimensions dans le contenu et refuse ce qui dépasse ; sans
+  JavaScript, le fichier part tel quel dans ces limites (galerie : 1,5 Mio, 4 096 px, 200 images par
+  membre). La galerie insère une adresse relative (`[img]/img/gallery/…[/img]`, acceptée par `[img]`
+  pour les seuls fichiers du forum) ; les anciennes adresses absolues restent reconnues. Dans les
+  messages, une image WebP du forum est servie dans un `<picture>` qui donne la variante mobile aux
+  écrans de 640 px au plus ; toutes les images sont chargées à la demande (`loading="lazy"`).
 - Avatar : une image trop grande ou trop lourde est recadrée automatiquement aux dimensions permises
   (centre d'intérêt de l'image), au lieu d'être refusée ; elle garde le format GIF, JPEG ou PNG, les
   seuls que le PHP affiche, et passe en JPEG plus compressé si son poids dépasse encore la limite.

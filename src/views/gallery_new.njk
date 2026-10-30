@@ -4,6 +4,8 @@
 {% import "partials/galleryForm.njk" as galleryForm %}
 
 
+{% block head %}<script src="{{ asset('js/image-resize.js') }}" defer></script>{% endblock %}
+
 {% block main %}
 <h1 class="page-title">{{ lang.gallery.postTitle }}</h1>
 <div class="form-box">

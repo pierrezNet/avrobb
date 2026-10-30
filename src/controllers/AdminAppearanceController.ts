@@ -13,6 +13,7 @@ import type { ConfigCache } from '../repositories/ConfigLoader.ts';
 import type { ConfigStore } from '../repositories/ConfigRepository.ts';
 import type { HeaderImageStore } from '../repositories/HeaderImageFiles.ts';
 import { HEADER_IMAGES, type HeaderImageKind, headerImageHref, isHeaderImageKind } from '../services/headerImages.ts';
+import { headerImageResize, resizeView } from '../services/imageResize.ts';
 import { IMAGE_CONTENT_TYPES, readImageInfo } from '../services/images.ts';
 import { adminDenied, renderAdminPage } from './adminPage.ts';
 
@@ -79,6 +80,7 @@ export class AdminAppearanceController {
 				help: t.kinds[kind].help,
 				href: headerImageHref(kind, version),
 				canRestore: await this.deps.headerImages.hasPrevious(kind),
+				resize: resizeView(headerImageResize(kind)),
 			})),
 		);
 		reply.code(status);

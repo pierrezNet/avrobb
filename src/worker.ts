@@ -10,7 +10,7 @@
 
 import { createAssetUrl } from './adapters/assetUrls.ts';
 import { DohHostResolver } from './adapters/hostResolver.ts';
-import { LogMailer } from './adapters/mailer.ts';
+import { LogMailer, ResendMailer } from './adapters/mailer.ts';
 import { FetchOAuthClient } from './adapters/oauth.ts';
 import { buildApp, type ForumApp } from './app.ts';
 import { loadConfig } from './config.ts';
@@ -86,6 +86,8 @@ export interface Env {
 	GOOGLE_CLIENT_ID?: string;
 	GOOGLE_CLIENT_SECRET?: string;
 	ADMIN_ACCOUNTS?: string;
+	RESEND_API_KEY?: string;
+	MAIL_FROM?: string;
 }
 
 /** Sous-ensemble d'ExecutionContext. */
@@ -155,7 +157,7 @@ async function createApp(env: Env, services: Services): Promise<ForumApp> {
 		accountStore: new AccountRepository(db),
 		...(env.AUTH_LIMITER !== undefined ? { authRateLimiter: env.AUTH_LIMITER } : {}),
 		mailTemplates: { load: async (name) => mail[name] },
-		mailer: new LogMailer(consoleLogger),
+		mailer: config.mail !== null ? new ResendMailer(config.mail.apiKey, config.mail.from) : new LogMailer(consoleLogger),
 		profiles: users,
 		profileStore: new ProfileRepository(db),
 		topics,

@@ -11,6 +11,7 @@ import type { Mailer } from '../adapters/mailer.ts';
 import type { AppReply, AppRequest } from '../http/context.ts';
 import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
+import { sendInBackground } from '../http/mail.ts';
 import { buildEmailPage, buildReportPage } from '../presenters/contactPage.ts';
 import type { CensorReader } from '../repositories/CensorRepository.ts';
 import type { ContactStore } from '../repositories/ContactRepository.ts';
@@ -74,19 +75,23 @@ export class ContactController {
 			return this.renderEmail(request, reply, recipient, redirectUrl, values, errors.map(this.deps.page.lang.misc.emailErrors));
 
 		const template = await this.deps.mailTemplates.load('form_email');
-		await this.deps.mailer.send(
-			{
-				to: recipient.recipient.email,
-				subject: fillTemplate(template.subject, { mail_subject: values.subject }),
-				text: fillTemplate(template.body, {
-					sender: viewer.username,
-					board_title: config.boardTitle,
-					mail_message: values.message,
-					board_mailer: config.boardTitle,
-				}),
-				// Le destinataire répond directement à l'expéditeur.
-				replyTo: { email: viewer.email, name: viewer.username },
-			},
+		sendInBackground(
+			request,
+			this.deps.mailer,
+			[
+				{
+					to: recipient.recipient.email,
+					subject: fillTemplate(template.subject, { mail_subject: values.subject }),
+					text: fillTemplate(template.body, {
+						sender: viewer.username,
+						board_title: config.boardTitle,
+						mail_message: values.message,
+						board_mailer: config.boardTitle,
+					}),
+					// Le destinataire répond directement à l'expéditeur.
+					replyTo: { email: viewer.email, name: viewer.username },
+				},
+			],
 			config,
 		);
 		await this.deps.contacts.markEmailSent(viewer.id, now);
@@ -116,17 +121,21 @@ export class ContactController {
 		if (config.reportsByBoard) await this.deps.reportWriter.create({ target, reportedBy: viewer.id, created: now, message: reason });
 		if (config.reportsByEmail && config.registration.mailingList !== '') {
 			const template = await this.deps.mailTemplates.load('new_report');
-			await this.deps.mailer.send(
-				{
-					to: config.registration.mailingList,
-					subject: fillTemplate(template.subject, { forum_id: String(target.forumId), topic_subject: target.subject }),
-					text: fillTemplate(template.body, {
-						username: viewer.username,
-						post_url: `${config.baseUrl}/viewtopic.php?pid=${target.postId}#p${target.postId}`,
-						reason,
-						board_mailer: config.boardTitle,
-					}),
-				},
+			sendInBackground(
+				request,
+				this.deps.mailer,
+				[
+					{
+						to: config.registration.mailingList,
+						subject: fillTemplate(template.subject, { forum_id: String(target.forumId), topic_subject: target.subject }),
+						text: fillTemplate(template.body, {
+							username: viewer.username,
+							post_url: `${config.baseUrl}/viewtopic.php?pid=${target.postId}#p${target.postId}`,
+							reason,
+							board_mailer: config.boardTitle,
+						}),
+					},
+				],
 				config,
 			);
 		}

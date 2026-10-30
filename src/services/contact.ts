@@ -55,6 +55,8 @@ export function validateReport(
 }
 
 /** Formulaire d'e-mail ouvert : pas si le membre l'a désactivé, sauf pour un modérateur. */
-export function canEmailMember(recipient: { emailSetting: number }, isAnyModerator: boolean): boolean {
+export function canEmailMember(recipient: { emailSetting: number; email: string }, isAnyModerator: boolean): boolean {
+	// Adresse facultative (comptes SSO) : un membre sans adresse ne peut pas être joint par e-mail.
+	if (recipient.email === '') return false;
 	return recipient.emailSetting !== 2 || isAnyModerator;
 }

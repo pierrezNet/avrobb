@@ -25,6 +25,8 @@ export interface AppConfig {
 	oauth: Partial<Record<OAuthProviderId, OAuthCredentials>>;
 	/** ADMIN_ACCOUNTS : identités (« github:123456 ») qui deviennent administrateurs à la création du compte. */
 	adminAccounts: ReadonlySet<string>;
+	/** Envoi des e-mails par Resend (RESEND_API_KEY, MAIL_FROM) ; null : e-mails seulement journalisés. */
+	mail: { apiKey: string; from: string } | null;
 }
 
 /** Variables texte du Worker (les liaisons D1, R2… sont à côté, ignorées ici). */
@@ -56,5 +58,9 @@ export function loadConfig(env: ConfigVars): AppConfig {
 		devLogin: text(env, 'DEV_LOGIN') === '1' && text(env, 'ENVIRONMENT') !== 'production',
 		oauth: { ...(github !== null ? { github } : {}), ...(google !== null ? { google } : {}) },
 		adminAccounts: parseAdminAccounts(text(env, 'ADMIN_ACCOUNTS')),
+		mail:
+			text(env, 'RESEND_API_KEY') !== '' && text(env, 'MAIL_FROM') !== ''
+				? { apiKey: text(env, 'RESEND_API_KEY'), from: text(env, 'MAIL_FROM') }
+				: null,
 	};
 }

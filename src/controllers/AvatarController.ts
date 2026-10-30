@@ -13,6 +13,7 @@ import type { FormBody } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { buildProfileMenu } from '../presenters/profileEditPage.ts';
 import type { AvatarStore } from '../repositories/AvatarFiles.ts';
+import { avatarResize, resizeView } from '../services/imageResize.ts';
 import { checkAvatar } from '../services/images.ts';
 import { fileSize, forumNumberFormat } from '../services/numberFormat.ts';
 import { isProfile, loadEditableProfile, type ProfileAccessDeps, type ProfileQuery } from './profileAccess.ts';
@@ -93,6 +94,7 @@ export class AvatarController {
 				menu: buildProfileMenu(config, id, 'personality', lang),
 				heading: lang.profile.sectionHeading(username, lang.profile.uploadAvatar),
 				formAction: `profile.php?action=upload_avatar2&id=${id}`,
+				resize: resizeView(avatarResize(config.avatarMaxWidth, config.avatarMaxHeight)),
 				maxBytes: config.avatarMaxBytes,
 				description: lang.profile.avatarDesc(
 					config.avatarMaxWidth,

@@ -14,12 +14,13 @@ import type { PrivateMessage, PrivateRecipient } from '../domain/models.ts';
 import type { AppReply, AppRequest } from '../http/context.ts';
 import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
+import { sendInBackground } from '../http/mail.ts';
 import { buildSendForm, conversationUrl } from '../presenters/privateMessagesPage.ts';
 import type { CensorReader } from '../repositories/CensorRepository.ts';
 import type { PrivateMessageStore, SentCopies } from '../repositories/PrivateMessageRepository.ts';
 import { bbcodeToEmail } from '../services/bbcodeEmail.ts';
 import { buildCensor } from '../services/censor.ts';
-import type { MailTemplateReader } from '../services/mail.ts';
+import type { MailMessage, MailTemplateReader } from '../services/mail.ts';
 import { fillTemplate } from '../services/mail.ts';
 import { isAnyModerator } from '../services/permissions.ts';
 import { canEditPrivateMessage, parseUsernames, validateSend } from '../services/privateMessages.ts';
@@ -222,6 +223,7 @@ export class PrivateMessageSendController {
 		if (targets.length === 0) return;
 
 		const [short, full] = await Promise.all([this.deps.mailTemplates.load('new_pm'), this.deps.mailTemplates.load('new_pm_full')]);
+		const mails: MailMessage[] = [];
 		for (const recipient of targets) {
 			const template = recipient.notifyPrivateMessagesFull ? full : short;
 			const values = {
@@ -231,11 +233,9 @@ export class PrivateMessageSendController {
 				pm_url: `${config.baseUrl}/pms_view.php?tid=${sharedId}&mid=${copies.get(recipient.id) ?? 0}&box=inbox`,
 				board_mailer: config.boardTitle,
 			};
-			await this.deps.mailer.send(
-				{ to: recipient.email, subject: fillTemplate(template.subject, values), text: fillTemplate(template.body, values) },
-				config,
-			);
+			mails.push({ to: recipient.email, subject: fillTemplate(template.subject, values), text: fillTemplate(template.body, values) });
 		}
+		sendInBackground(request, this.deps.mailer, mails, config);
 	}
 
 	private async render(

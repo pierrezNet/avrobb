@@ -9,6 +9,7 @@ import { parseMessage } from '../services/bbcode.ts';
 import type { Censor } from '../services/censor.ts';
 import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
 import { canDeleteGalleryImage, galleryFiles, galleryInsertCode } from '../services/gallery.ts';
+import { galleryResize, type ResizeView, resizeView } from '../services/imageResize.ts';
 import { type PaginationLink, paginationLinks } from './navigation.ts';
 import { messageParserOptions } from './parserOptions.ts';
 
@@ -116,6 +117,8 @@ export interface GalleryFormView {
 	title: string;
 	description: string;
 	errors: string[];
+	/** Réduction dans le navigateur avant l'envoi. */
+	resize: ResizeView;
 }
 
 // ——— Sélecteur d'images pour un message ———
@@ -173,7 +176,7 @@ export function buildGalleryPicker(input: {
 				codeLabel: t.insertCode(image.title),
 			};
 		}),
-		form: { formAction: `gallery.php?info=new&from=pick${embed}`, ...input.form },
+		form: { formAction: `gallery.php?info=new&from=pick${embed}`, ...input.form, resize: resizeView(galleryResize()) },
 		notice: input.notice,
 		search: { action: 'gallery.php', query: input.search, allImages: input.allImages, embedded: input.embedded },
 		embedded: input.embedded,

@@ -86,7 +86,8 @@ export function buildProfilePage(input: ProfilePageInput): ProfilePageView {
 		const url = censored(profile.url);
 		personal.push(links(t.website, [{ href: safeExternalUrl(url), label: url, external: true }]));
 	}
-	if (member && viewer.group.canSendEmail) {
+	// Adresse facultative (comptes SSO) : rien à proposer sans adresse.
+	if (member && viewer.group.canSendEmail && profile.email !== '') {
 		if (profile.emailSetting === 0)
 			personal.push(links(t.email, [{ href: `mailto:${profile.email}`, label: profile.email, external: false }]));
 		else if (profile.emailSetting === 1)

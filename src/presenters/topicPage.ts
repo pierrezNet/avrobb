@@ -197,7 +197,8 @@ export function authorContactLinks(
 	const { viewer, config, lang, censor } = context;
 	const links: ContactLink[] = [];
 
-	if (viewer.group.canSendEmail) {
+	// Adresse facultative (comptes SSO) : rien à proposer sans adresse.
+	if (viewer.group.canSendEmail && author.email !== '') {
 		if ((author.emailSetting === 0 && !viewer.isGuest) || isAnyModerator(viewer))
 			links.push(contactLink('email', `mailto:${author.email}`, lang.topic.email));
 		else if (author.emailSetting === 1 && !viewer.isGuest)

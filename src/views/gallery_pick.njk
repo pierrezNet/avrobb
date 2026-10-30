@@ -4,7 +4,7 @@
 {% import "partials/galleryForm.njk" as galleryForm %}
 {% import "partials/sideMenu.njk" as sideMenu %}
 
-{% block head %}{% if not view.embedded %}<script src="{{ asset('js/insert-into-message.js') }}" defer></script>{% endif %}{% endblock %}
+{% block head %}{% if not view.embedded %}<script src="{{ asset('js/insert-into-message.js') }}" defer></script>{% endif %}<script src="{{ asset('js/image-resize.js') }}" defer></script>{% endblock %}
 
 {% block main %}
 {% if not view.embedded %}

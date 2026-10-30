@@ -13,6 +13,7 @@ import type { BoardConfig, PostingTarget } from '../domain/models.ts';
 import type { AppReply, AppRequest } from '../http/context.ts';
 import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
+import { sendInBackground } from '../http/mail.ts';
 import { setForumCookie } from '../http/session.ts';
 import { buildPostPage, type PostFormState } from '../presenters/postPage.ts';
 import type { BanReader } from '../repositories/BanRepository.ts';
@@ -475,13 +476,7 @@ export class PostController {
 			);
 		}
 
-		for (const mail of mails) {
-			try {
-				await this.deps.mailer.send(mail, config);
-			} catch (error) {
-				request.log.error({ err: error }, "Échec de l'envoi d'une notification");
-			}
-		}
+		sendInBackground(request, this.deps.mailer, mails, config);
 	}
 }
 

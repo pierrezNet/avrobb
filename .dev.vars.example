@@ -16,3 +16,7 @@ GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 # Comptes administrateurs à leur création : github:<identifiant numérique>, séparés par des virgules.
 ADMIN_ACCOUNTS=
+# E-mails (facultatif) : clé d'API Resend et expéditeur d'un domaine vérifié chez Resend.
+# Sans eux, les e-mails sont seulement notés dans le journal.
+RESEND_API_KEY=
+MAIL_FROM=forum@example.org

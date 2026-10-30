@@ -459,6 +459,9 @@ describe('profile.php : avatar', () => {
 		const server = await start(fake, { avatars: true });
 		const form = await get(server, 3, '/profile.php?action=upload_avatar&id=3');
 		expect(form.body).toContain('enctype="multipart/form-data"');
+		// Recadrage par le navigateur aux dimensions permises (js/image-resize.js).
+		expect(form.body).toMatch(/data-resize="cover" data-resize-width="\d+" data-resize-height="\d+"/);
+		expect(form.body).toContain('js/image-resize.js');
 
 		const ok = await postFile(server, 3, '/profile.php?action=upload_avatar2&id=3', 'req_file', 'moi.png', png(50, 50));
 		expect(ok.statusCode).toBe(303);

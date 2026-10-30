@@ -16,7 +16,15 @@ import type { CensorReader } from '../repositories/CensorRepository.ts';
 import type { GalleryFileStore } from '../repositories/GalleryFiles.ts';
 import type { GalleryStore } from '../repositories/GalleryRepository.ts';
 import { buildCensor } from '../services/censor.ts';
-import { canDeleteGalleryImage, validateGalleryUpload } from '../services/gallery.ts';
+import {
+	acceptedVariant,
+	canDeleteGalleryImage,
+	galleryQuotaReached,
+	THUMBNAIL_MAX_SIDE,
+	validateGalleryUpload,
+} from '../services/gallery.ts';
+import { GALLERY_MOBILE_FIELD, GALLERY_THUMB_FIELD, galleryResize, resizeView } from '../services/imageResize.ts';
+import { MOBILE_MAX_SIDE } from '../services/imageVariants.ts';
 import { clampPage, pageCount } from '../services/pagination.ts';
 import { punTrim } from '../services/phpString.ts';
 import { positiveInt } from './params.ts';
@@ -144,25 +152,26 @@ export class GalleryController {
 			image: request.uploads.get('req_file')?.data ?? null,
 		});
 		const source = request.uploads.get('req_file')?.data;
-		if (result.errors.length > 0 || result.image === null || source === undefined) {
+		const errors = [...result.errors];
+		if (galleryQuotaReached(viewer, await this.deps.gallery.countImages(viewer.id))) errors.push('quota');
+		if (errors.length > 0 || result.image === null || source === undefined) {
 			const form = {
 				title: field(body, 'titre'),
 				description: field(body, 'description'),
-				errors: result.errors.map((e) => lang.gallery.uploadError(e)),
+				errors: errors.map((e) => lang.gallery.uploadError(e)),
 			};
 			return fromPicker ? this.renderPicker(request, reply, form) : this.renderForm(request, reply, form);
 		}
 
-		// Image gardée telle qu'envoyée (pas de bibliothèque d'images dans le Worker) : elle sert
-		// aussi de vignette et, en WebP, de variante mobile, en attendant la réduction par le
-		// navigateur (lot 6 de TODO.md). Fichier écrit avant la ligne : un échec laisse au pire un
-		// fichier orphelin, effacé par la tâche planifiée.
+		// Vignette et variante mobile calculées par le navigateur (js/image-resize.js) si elles sont
+		// valables ; sinon l'image elle-même (envoi sans JavaScript). Variante mobile en WebP seulement :
+		// c'est la seule que le rendu des messages propose (services/imageVariants.ts). Fichiers écrits
+		// avant la ligne : un échec laisse au pire un fichier orphelin, effacé par la tâche planifiée.
 		const { type } = result.image;
-		const addedAt = await this.deps.galleryFiles.save(this.deps.page.clock(), type, {
-			image: source,
-			thumbnail: source,
-			mobile: type === 'webp' ? source : null,
-		});
+		const thumbnail = acceptedVariant(request.uploads.get(GALLERY_THUMB_FIELD)?.data, type, THUMBNAIL_MAX_SIDE) ?? source;
+		const mobile =
+			type === 'webp' ? (acceptedVariant(request.uploads.get(GALLERY_MOBILE_FIELD)?.data, type, MOBILE_MAX_SIDE) ?? source) : null;
+		const addedAt = await this.deps.galleryFiles.save(this.deps.page.clock(), type, { image: source, thumbnail, mobile });
 		await this.deps.gallery.createImage({
 			title: result.title,
 			description: result.description,
@@ -219,7 +228,7 @@ export class GalleryController {
 			this.deps,
 			'gallery_new.njk',
 			{ pageId: 'gallery', titleParts: [request.board.boardTitle, lang.gallery.pageTitle, lang.gallery.postTitle], activeNav: 'gallery' },
-			{ formAction: 'gallery.php?info=new', ...form },
+			{ formAction: 'gallery.php?info=new', ...form, resize: resizeView(galleryResize()) },
 		);
 	}
 

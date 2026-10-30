@@ -47,6 +47,11 @@ export interface AppRequest<T extends RouteTypes = RouteTypes> {
 	board: BoardConfig;
 	csrfToken: string;
 	log: Logger;
+	/**
+	 * Tâche à finir après la réponse (envoi d'e-mails) : ctx.waitUntil() dans le Worker, qui garde
+	 * l'isolat en vie jusqu'à la fin de la tâche ; ailleurs (tests), la tâche suit simplement son cours.
+	 */
+	waitUntil(task: Promise<unknown>): void;
 }
 
 export interface CookieOptions {

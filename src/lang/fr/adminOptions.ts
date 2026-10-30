@@ -150,7 +150,7 @@ export const adminOptions = {
 		admin_email: { label: "E-mail de l'administrateur", help: "L'adresse électronique de l'administrateur du forum (facultative)." },
 		webmaster_email: {
 			label: 'E-mail du webmaster',
-			help: "Ceci est l'adresse indiquée comme adresse de provenance dans les e-mails envoyés par le forum (facultative tant qu'aucun service d'envoi n'est configuré).",
+			help: "Adresse de contact du forum (facultative). L'expéditeur des e-mails est fixé par la configuration du serveur (MAIL_FROM, domaine vérifié chez le service d'envoi).",
 		},
 		forum_subscriptions: {
 			label: 'Suivi de forum',

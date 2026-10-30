@@ -7,7 +7,14 @@ import { describe, expect, it } from 'vitest';
 import { buildApp, type ForumApp } from '../src/app.ts';
 import { type GalleryImage, GroupId } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
-import { canDeleteGalleryImage, galleryInsertCode, validateGalleryUpload } from '../src/services/gallery.ts';
+import {
+	acceptedVariant,
+	canDeleteGalleryImage,
+	GALLERY_MAX_IMAGES_PER_MEMBER,
+	galleryInsertCode,
+	galleryQuotaReached,
+	validateGalleryUpload,
+} from '../src/services/gallery.ts';
 import { type FakeData, fakeDeps, group, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
 import { inject } from './inject.ts';
 import { MemoryFileStore } from './memoryFileStore.ts';
@@ -35,6 +42,18 @@ const png = Buffer.concat([
 	Buffer.from([0, 0, 2, 0, 0, 0, 1, 0, 8, 2, 0, 0, 0]),
 ]);
 
+/** En-tête WebP étendu (VP8X) aux dimensions voulues, lu par readImageInfo(). */
+const webp = (width: number, height: number): Buffer => {
+	const data = Buffer.alloc(30);
+	data.write('RIFF', 0, 'latin1');
+	data.writeUInt32LE(22, 4);
+	data.write('WEBPVP8X', 8, 'latin1');
+	data.writeUInt32LE(10, 16);
+	data.writeUIntLE(width - 1, 24, 3);
+	data.writeUIntLE(height - 1, 27, 3);
+	return data;
+};
+
 describe('règles de la galerie', () => {
 	it('titre, description, type lu dans le contenu', () => {
 		const ok = validateGalleryUpload({ title: ' Vol ', description: 'Au [b]soleil[/b]', image: png });
@@ -52,6 +71,21 @@ describe('règles de la galerie', () => {
 		expect(large).toMatchObject({ errors: ['tooWide'], image: null });
 		const heavy = Buffer.concat([jpeg(300, 300), Buffer.alloc(1_600_000)]);
 		expect(validateGalleryUpload({ title: 'a', description: 'b', image: heavy })).toMatchObject({ errors: ['tooLarge'], image: null });
+	});
+
+	it('variante du navigateur : même format, côté et poids plafonnés', () => {
+		const thumb = webp(150, 100);
+		expect(acceptedVariant(thumb, 'webp', 150)).toBe(thumb);
+		expect(acceptedVariant(webp(151, 100), 'webp', 150)).toBeNull();
+		expect(acceptedVariant(thumb, 'jpg', 150)).toBeNull();
+		expect(acceptedVariant(Buffer.from('<?php'), 'webp', 150)).toBeNull();
+		expect(acceptedVariant(undefined, 'webp', 150)).toBeNull();
+	});
+
+	it('quota d’images par membre, sauf pour les administrateurs', () => {
+		expect(galleryQuotaReached(viewer(), GALLERY_MAX_IMAGES_PER_MEMBER - 1)).toBe(false);
+		expect(galleryQuotaReached(viewer(), GALLERY_MAX_IMAGES_PER_MEMBER)).toBe(true);
+		expect(galleryQuotaReached(viewer({ group: group({ id: GroupId.Admin }) }), 10_000)).toBe(false);
 	});
 
 	it("suppression : l'auteur, les administrateurs, le groupe des modérateurs", () => {
@@ -173,6 +207,58 @@ describe('POST /gallery.php', () => {
 		expect(res.headers.location).toBe('gallery.php?done=added');
 		expect(fake.galleryFileLog).toEqual([`save ${NOW}.png ${png.length} ${png.length} -`]);
 		expect(fake.galleryImages?.[0]).toMatchObject({ title: 'Vol de nuit', userId: 3, addedAt: NOW, extension: '.png' });
+	});
+
+	it('image réduite par le navigateur : vignette et variante mobile envoyées avec elle', async () => {
+		const fake = data();
+		app = await buildApp(fakeDeps(fake));
+		const res = await upload(
+			app,
+			3,
+			'/gallery.php?info=new',
+			{ titre: 'Vol', description: 'Réduite' },
+			{
+				req_file: ['vol.webp', webp(1024, 768)],
+				req_file_mobile: ['vol.webp', webp(640, 480)],
+				req_file_thumb: ['vol.webp', webp(150, 112)],
+			},
+		);
+		expect(res.headers.location).toBe('gallery.php?done=added');
+		expect(fake.galleryFileLog).toEqual([`save ${NOW}.webp 30 30 30`]);
+		expect(fake.galleryImages?.[0]).toMatchObject({ extension: '.webp' });
+	});
+
+	it('variante invalide : remplacée par l’image elle-même', async () => {
+		const fake = data();
+		app = await buildApp(fakeDeps(fake));
+		const big = Buffer.concat([webp(1024, 768), Buffer.alloc(10)]);
+		await upload(
+			app,
+			3,
+			'/gallery.php?info=new',
+			{ titre: 'Vol', description: 'x' },
+			{ req_file: ['v.webp', big], req_file_thumb: ['v.png', png] },
+		);
+		expect(fake.galleryFileLog).toEqual([`save ${NOW}.webp 40 40 40`]);
+	});
+
+	it('quota atteint : refusé, rien n’est écrit', async () => {
+		const many = Array.from({ length: GALLERY_MAX_IMAGES_PER_MEMBER }, (_, index) => image(100 + index, { userId: 3 }));
+		const fake = data({ galleryImages: many });
+		app = await buildApp(fakeDeps(fake));
+		const res = await upload(app, 3, '/gallery.php?info=new', { titre: 'Vol', description: 'x' }, { req_file: ['v.png', png] });
+		expect(res.statusCode).toBe(200);
+		expect(res.body).toContain('Vous avez atteint la limite de 200 images');
+		expect(fake.galleryFileLog).toBeUndefined();
+	});
+
+	it('formulaire : consigne de réduction pour le navigateur', async () => {
+		app = await buildApp(fakeDeps(data()));
+		const form = await inject(app, { url: '/gallery.php?info=new', headers: { cookie: cookies(3) } });
+		expect(form.body).toContain(
+			'data-resize="contain" data-resize-width="1024" data-resize-height="1024" data-resize-variants="req_file_mobile:640 req_file_thumb:150"',
+		);
+		expect(form.body).toContain('js/image-resize.js');
 	});
 
 	it('réaffiche le formulaire avec les erreurs', async () => {

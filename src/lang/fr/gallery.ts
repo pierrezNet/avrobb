@@ -13,6 +13,7 @@ const UPLOAD_ERRORS: Record<GalleryUploadError, string> = {
 	badType: "Le type du fichier n'est pas autorisé. Les types autorisés sont le JPG, le GIF, le PNG et le WebP.",
 	tooLarge: 'La taille du fichier dépasse le maximum autorisé (1,5 Mio).',
 	tooWide: "L'image dépasse 4 096 pixels de côté : réduisez-la avant de l'envoyer.",
+	quota: 'Vous avez atteint la limite de 200 images dans la galerie. Supprimez-en pour en envoyer de nouvelles.',
 };
 
 export const gallery = {

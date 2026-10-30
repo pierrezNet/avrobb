@@ -1,6 +1,9 @@
 {#- Éléments communs des formulaires. -#}
 
 {#- Jeton CSRF (http/csrf.ts), obligatoire dans tout formulaire POST. -#}
+{#- Attributs lus par js/image-resize.js (services/imageResize.ts) : réduction avant l'envoi. -#}
+{% macro resizeAttributes(resize) %} data-resize="{{ resize.mode }}" data-resize-width="{{ resize.width }}" data-resize-height="{{ resize.height }}"{% if resize.variants %} data-resize-variants="{{ resize.variants }}"{% endif %}{% endmacro %}
+
 {% macro csrf(layout) %}<input type="hidden" name="csrf_token" value="{{ layout.csrfToken }}">{% endmacro %}
 
 {#- Liste d'erreurs de validation, comme le bloc #posterror du PHP. -#}

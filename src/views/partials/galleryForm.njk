@@ -16,7 +16,7 @@
 	<p class="form__help">{{ lang.gallery.descriptionHelp }}</p>
 	<p class="form__field">
 		<label for="req_file">{{ lang.gallery.imageField }} <span class="form__required">{{ lang.gallery.required }}</span></label>
-		<input type="file" id="req_file" name="req_file" accept="image/jpeg,image/gif,image/png" required>
+		<input type="file" id="req_file" name="req_file" accept="image/jpeg,image/gif,image/png,image/webp" required{{ forms.resizeAttributes(form.resize) }}>
 	</p>
 	<p class="form__buttons"><button type="submit" class="button button--primary" name="upload" value="1">{{ lang.gallery.upload }}</button></p>
 </form>

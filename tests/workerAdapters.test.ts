@@ -7,9 +7,10 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { DohHostResolver } from '../src/adapters/hostResolver.ts';
-import { LogMailer } from '../src/adapters/mailer.ts';
+import { LogMailer, ResendMailer, senderAddress } from '../src/adapters/mailer.ts';
 import { loadConfig } from '../src/config.ts';
-import type { LogContext } from '../src/http/context.ts';
+import type { AppRequest, LogContext } from '../src/http/context.ts';
+import { sendInBackground } from '../src/http/mail.ts';
 import { isIpAddress, reverseDnsName } from '../src/services/hosts.ts';
 import { readImageInfo } from '../src/services/images.ts';
 import { boardConfig } from './fixtures.ts';
@@ -95,6 +96,83 @@ describe('DohHostResolver', () => {
 	});
 });
 
+describe('ResendMailer', () => {
+	const message = {
+		to: 'membre@example.test',
+		subject: 'Nouvelle réponse',
+		text: 'Bonjour',
+		replyTo: { email: 'auteur@example.test', name: 'Auteur' },
+	};
+
+	it('appel de l’API : clé, expéditeur nommé, texte brut, réponse à l’auteur', async () => {
+		const requests: { url: string; init?: RequestInit }[] = [];
+		const mailer = new ResendMailer('re_cle', 'forum@example.test', async (url, init) => {
+			requests.push({ url, ...(init !== undefined ? { init } : {}) });
+			return new Response('{"id":"1"}');
+		});
+		await mailer.send(message, boardConfig);
+		expect(requests[0]?.url).toBe('https://api.resend.com/emails');
+		expect(new Headers(requests[0]?.init?.headers).get('authorization')).toBe('Bearer re_cle');
+		expect(JSON.parse(String(requests[0]?.init?.body))).toEqual({
+			from: `"${boardConfig.boardTitle} E-mail automatique" <forum@example.test>`,
+			to: ['membre@example.test'],
+			subject: 'Nouvelle réponse',
+			text: 'Bonjour',
+			reply_to: 'auteur@example.test',
+		});
+	});
+
+	it('destinataire sans adresse : rien n’est envoyé ; refus de l’API : erreur sans détail', async () => {
+		let calls = 0;
+		const mailer = new ResendMailer('re_cle', 'AvroBB <forum@example.test>', async () => {
+			calls += 1;
+			return new Response('{"message":"membre@example.test invalide"}', { status: 422 });
+		});
+		await mailer.send({ ...message, to: '' }, boardConfig);
+		expect(calls).toBe(0);
+		await expect(mailer.send(message, boardConfig)).rejects.toThrow('Resend : statut 422');
+		await expect(mailer.send(message, boardConfig)).rejects.not.toThrow('membre@');
+	});
+
+	it('expéditeur : nom gardé s’il est donné, guillemets retirés du titre', () => {
+		expect(senderAddress('AvroBB <f@example.test>', 'X')).toBe('AvroBB <f@example.test>');
+		expect(senderAddress('f@example.test', 'Le "forum"')).toBe('"Le forum E-mail automatique" <f@example.test>');
+	});
+});
+
+describe('envoi en tâche de fond', () => {
+	it('un échec est noté et n’empêche pas les envois suivants', async () => {
+		const tasks: Promise<unknown>[] = [];
+		const errors: unknown[] = [];
+		const sent: string[] = [];
+		const request = {
+			waitUntil: (task: Promise<unknown>) => tasks.push(task),
+			log: { info: () => undefined, error: (context: LogContext) => errors.push(context.err) },
+		} as unknown as AppRequest;
+		const mailer = {
+			send: async (mail: { to: string }) => {
+				if (mail.to === 'a@example.test') throw new Error('panne');
+				sent.push(mail.to);
+			},
+		};
+		sendInBackground(
+			request,
+			mailer,
+			[
+				{ to: 'a@example.test', subject: 's', text: 't' },
+				{ to: 'b@example.test', subject: 's', text: 't' },
+			],
+			boardConfig,
+		);
+		expect(tasks).toHaveLength(1);
+		await Promise.all(tasks);
+		expect(sent).toEqual(['b@example.test']);
+		expect(errors).toHaveLength(1);
+		sendInBackground(request, mailer, [], boardConfig);
+		expect(tasks).toHaveLength(1);
+	});
+});
+
 describe('LogMailer', () => {
 	it('note le destinataire et le sujet, jamais le texte', async () => {
 		const lines: { context: LogContext; message: string }[] = [];
@@ -115,6 +193,7 @@ describe('loadConfig', () => {
 			devLogin: false,
 			oauth: {},
 			adminAccounts: new Set(),
+			mail: null,
 		});
 		expect(loadConfig({ SESSION_SECRET: secret, COOKIE_SECURE: '0', DEV_LOGIN: '1' })).toMatchObject({
 			cookie: { secure: false },
@@ -136,6 +215,14 @@ describe('loadConfig', () => {
 		});
 		expect(config.oauth).toEqual({ github: { clientId: 'id', clientSecret: 'secret' } });
 		expect(config.adminAccounts).toEqual(new Set(['github:123', 'google:abc']));
+	});
+
+	it('Resend seulement avec une clé et un expéditeur', () => {
+		expect(loadConfig({ SESSION_SECRET: secret, RESEND_API_KEY: 're_x' }).mail).toBeNull();
+		expect(loadConfig({ SESSION_SECRET: secret, RESEND_API_KEY: 're_x', MAIL_FROM: 'forum@example.test' }).mail).toEqual({
+			apiKey: 're_x',
+			from: 'forum@example.test',
+		});
 	});
 
 	it('secret absent ou trop court : erreur explicite', () => {

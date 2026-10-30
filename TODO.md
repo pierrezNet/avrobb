@@ -153,19 +153,20 @@ Vigilance :
 - Un membre banni qui se reconnecte reste banni (bannissement relu à chaque requête, par pseudo, adresse ou IP).
 - Une application OAuth GitHub n'a qu'une URL de retour : une pour le développement (`http://localhost:8787`), une pour la production.
 
-## Lot 6 — Images et e-mails · 2 à 3 jours
+## Lot 6 — Images et e-mails · 2 à 3 jours · terminé le 2026-10-30
 
-- [ ] **Images côté navigateur** : script d'amélioration progressive qui redimensionne (1024 px, plus une variante 640 px) et convertit en WebP par `canvas` avant l'envoi ; recadrage de l'avatar ; repris de ce que fait déjà la vignette de galerie
-- [x] Côté serveur, sans sharp : type lu dans le contenu, **dimensions lues dans l'en-tête** (WebP, PNG, JPEG, GIF) par une fonction pure, refus au-delà des limites ; sans JS, le fichier d'origine est accepté tel quel s'il respecte taille et dimensions (fait au lot 4)
+- [x] **Images côté navigateur** (`public/assets/js/image-resize.js`, amélioration progressive) : orientation EXIF appliquée, réduction par moitiés successives, WebP (JPEG si le navigateur n'encode pas le WebP), GIF laissé tel quel ; galerie à 1 024 px avec variante mobile (640 px) et vignette (150 px) envoyées dans des champs cachés ; avatar recadré aux dimensions permises ; logo et bannière réduits dans leur cadre. Consignes rendues en `data-resize-*` par `services/imageResize.ts` (aucune limite en dur dans le script)
+- [x] Côté serveur, sans sharp : type lu dans le contenu, **dimensions lues dans l'en-tête** (WebP, PNG, JPEG, GIF), refus au-delà des limites ; variantes du navigateur gardées seulement si même format, côté et poids corrects, sinon l'image elle-même ; sans JS, le fichier d'origine est accepté tel quel s'il respecte taille et dimensions
 - [x] Retrait de `sharp` et de `SharpImageProcessor` (fait au lot 4)
-- [ ] Quota d'images par membre (nombre d'images de la galerie), vérifié avant l'écriture
-- [ ] **E-mails** : `Mailer` par API HTTP (Resend, comme donnetonpoint) à la place de `LogMailer`, qui reste tant que la clé n'est pas configurée ; notifications d'abonnement et alertes de message privé
-- [ ] Envoi des e-mails hors du chemin de la réponse (`ctx.waitUntil`) pour ne pas ralentir la publication
+- [x] Quota de 200 images de galerie par membre (administrateurs exemptés), vérifié avant l'écriture
+- [x] **E-mails** : `ResendMailer` (API HTTP, texte brut, réponse à l'auteur), `LogMailer` tant que `RESEND_API_KEY` et `MAIL_FROM` ne sont pas configurés ; destinataire sans adresse ignoré, formulaire de contact retiré pour un membre sans adresse
+- [x] Envoi des e-mails hors du chemin de la réponse (`request.waitUntil`, `http/mail.ts`) : notifications d'abonnement, alertes de message privé, contact, signalement
+
+Reporté :
+- Essai réel de Resend : demande un domaine vérifié (SPF, DKIM) et une clé ; envoi couvert par les tests avec un faux `fetch`.
 
 Vigilance :
-- L'orientation EXIF des photos de téléphone : `createImageBitmap(file, { imageOrientation: 'from-image' })` avant de dessiner.
-- Les navigateurs sans encodeur WebP (anciens Safari) renvoient du PNG avec `toBlob('image/webp')` : vérifier le type obtenu et repasser en JPEG si besoin.
-- E-mail : domaine d'envoi vérifié (SPF, DKIM) chez le fournisseur ; lien de désabonnement dans chaque notification.
+- E-mail : domaine d'envoi vérifié chez Resend ; les notifications portent déjà leur lien de désabonnement (gabarits de `lang/fr/mail.ts`).
 - Option à garder en tête : Cloudflare Images (redimensionnement à la volée, 5 000 transformations gratuites par mois) si le traitement côté navigateur ne suffit pas.
 
 ## Lot 6 bis — URL propres · 1 à 2 jours

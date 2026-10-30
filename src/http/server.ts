@@ -45,6 +45,18 @@ function protocolOf(c: Context): 'http' | 'https' {
 	return new URL(c.req.url).protocol === 'https:' ? 'https' : 'http';
 }
 
+/** ctx.waitUntil() du Worker ; hors Worker, Hono n'a pas de contexte d'exécution (l'accès lève une erreur). */
+function backgroundRunner(c: Context): (task: Promise<unknown>) => void {
+	try {
+		const context = c.executionCtx;
+		return (task) => context.waitUntil(task);
+	} catch {
+		return (task) => {
+			void task;
+		};
+	}
+}
+
 /** Contexte de requête sans corps ; viewer et board sont posés par la session. */
 function baseRequest(c: Context<{ Bindings: ForumBindings }>, options: ServerOptions): AppRequest {
 	const url = new URL(c.req.url);
@@ -66,6 +78,7 @@ function baseRequest(c: Context<{ Bindings: ForumBindings }>, options: ServerOpt
 		board: null as unknown as BoardConfig,
 		csrfToken: '',
 		log: options.logger,
+		waitUntil: backgroundRunner(c),
 	};
 }
 

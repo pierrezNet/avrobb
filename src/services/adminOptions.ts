@@ -249,8 +249,9 @@ export function readOptionsForm(read: (key: string) => string, defaults: Options
 
 	const adminEmail = trimmed('admin_email').toLowerCase();
 	const webmasterEmail = trimmed('webmaster_email').toLowerCase();
-	if (!isValidEmail(adminEmail)) errors.push('invalidAdminEmail');
-	if (!isValidEmail(webmasterEmail)) errors.push('invalidWebmasterEmail');
+	// Facultatives tant que le forum n'envoie pas d'e-mails (lot 6) : une installation neuve les a vides.
+	if (adminEmail !== '' && !isValidEmail(adminEmail)) errors.push('invalidAdminEmail');
+	if (webmasterEmail !== '' && !isValidEmail(webmasterEmail)) errors.push('invalidWebmasterEmail');
 	set('admin_email', adminEmail);
 	set('webmaster_email', webmasterEmail);
 	set('smtp_host', trimmed('smtp_host'));

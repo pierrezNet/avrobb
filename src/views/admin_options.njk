@@ -19,7 +19,7 @@
 {{ adminMenu.menu(view.menu, lang) }}
 <div class="side-layout__content">
 {{ sideMenu.notice(view.notice) }}
-{{ forms.errors(lang.profile.formErrors, lang.profile.formErrorsInfo, view.errors) }}
+{{ forms.errors(lang.adminOptions.formErrors, lang.adminOptions.formErrorsInfo, view.errors) }}
 <form id="admin-options" class="form-box form options-form" method="post" action="{{ url(view.formAction) }}">
 	{{ forms.csrf(layout) }}
 	<input type="hidden" name="form_sent" value="1">

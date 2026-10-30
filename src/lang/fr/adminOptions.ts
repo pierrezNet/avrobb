@@ -5,6 +5,8 @@
 
 export const adminOptions = {
 	title: 'Options',
+	formErrors: 'Erreurs dans les options',
+	formErrorsInfo: 'Les erreurs suivantes doivent être corrigées pour que les options soient enregistrées\u00a0:',
 	sections: {
 		essentials: 'Principal',
 		timeouts: 'Délais',
@@ -145,10 +147,10 @@ export const adminOptions = {
 		avatars_width: { label: 'Largeur max', help: 'La largeur maximale autorisée pour les avatars en pixels (60 recommandés).' },
 		avatars_height: { label: 'Hauteur max', help: 'La hauteur maximale autorisée pour les avatars en pixels (60 recommandés).' },
 		avatars_size: { label: 'Taille max', help: 'La taille maximale autorisée pour les avatars en octets (10240 recommandés).' },
-		admin_email: { label: "E-mail de l'administrateur", help: "L'adresse électronique de l'administrateur du forum." },
+		admin_email: { label: "E-mail de l'administrateur", help: "L'adresse électronique de l'administrateur du forum (facultative)." },
 		webmaster_email: {
 			label: 'E-mail du webmaster',
-			help: "Ceci est l'adresse indiquée comme adresse de provenance dans les e-mails envoyés par le forum.",
+			help: "Ceci est l'adresse indiquée comme adresse de provenance dans les e-mails envoyés par le forum (facultative tant qu'aucun service d'envoi n'est configuré).",
 		},
 		forum_subscriptions: {
 			label: 'Suivi de forum',

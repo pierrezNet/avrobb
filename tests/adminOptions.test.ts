@@ -82,6 +82,9 @@ describe('readOptionsForm', () => {
 	it('erreurs de saisie et requêtes invalides', () => {
 		const invalid = readOptionsForm(read(optionsForm({ board_title: ' ', admin_email: 'x', timeout_online: '1800' })), DEFAULTS);
 		expect(invalid).toEqual({ kind: 'invalid', errors: ['missingTitle', 'timeout', 'invalidAdminEmail'] });
+		// Adresses vides acceptées : rien n'est encore envoyé (lot 6).
+		const empty = readOptionsForm(read(optionsForm({ admin_email: '', webmaster_email: ' ' })), DEFAULTS);
+		expect(empty.kind).toBe('ok');
 		for (const bad of [{ feed_type: '2' }, { default_style: '../x' }, { default_timezone: '1.3' }]) {
 			expect(readOptionsForm(read(optionsForm(bad)), DEFAULTS)).toEqual({ kind: 'badRequest' });
 		}

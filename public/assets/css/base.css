@@ -1668,6 +1668,16 @@ a.site-status__alert {
 	font-weight: 600;
 }
 
+/* Page de connexion : boutons des fournisseurs SSO, sans puce. */
+.sso-login__providers {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	margin: 1rem 0;
+	padding: 0;
+	list-style: none;
+}
+
 /* Intitulé de section hors <fieldset> (titre h2) : même taille qu'une légende. */
 h2.form__legend {
 	margin-top: 0;

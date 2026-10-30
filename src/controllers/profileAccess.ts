@@ -1,5 +1,5 @@
 /**
- * Accès commun aux pages de modification de profile.php (sections, actions, plugiles) : le membre
+ * Accès commun aux pages de modification de profile.php (sections, actions) : le membre
  * existe et le lecteur a le droit de modifier son profil, sinon une page d'erreur est renvoyée.
  */
 
@@ -19,8 +19,6 @@ export interface ProfileQuery {
 	id?: string;
 	section?: string;
 	action?: string;
-	plugin?: string;
-	key?: string;
 	updated?: string;
 }
 

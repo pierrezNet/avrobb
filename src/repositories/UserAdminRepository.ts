@@ -115,11 +115,6 @@ export interface UserBan {
 	creatorId: number;
 }
 
-/** Plugin AP_Uploadile.php : noms des membres propriétaires de fichiers. */
-export interface UploadileAdminStore {
-	findUsernames(ids: readonly number[]): Promise<Map<number, string>>;
-}
-
 export interface UserAdminWriter {
 	/** Nombre de comptes administrateurs, et de comptes d'un groupe de modérateurs, parmi `ids`. */
 	countPrivileged(ids: readonly number[]): Promise<{ admins: number; moderators: number }>;
@@ -158,7 +153,7 @@ async function removeFromModerators(trx: Kysely<Database>, ids: readonly number[
 	}
 }
 
-export class UserAdminRepository implements UserAdminReader, UserAdminWriter, UploadileAdminStore {
+export class UserAdminRepository implements UserAdminReader, UserAdminWriter {
 	constructor(private readonly db: Db) {}
 
 	async countIpStats(userId: number): Promise<number> {
@@ -332,11 +327,5 @@ export class UserAdminRepository implements UserAdminReader, UserAdminWriter, Up
 					})
 					.execute();
 		});
-	}
-
-	async findUsernames(ids: readonly number[]): Promise<Map<number, string>> {
-		if (ids.length === 0) return new Map();
-		const rows = await this.db.selectFrom('users').select(['id', 'username']).where('id', 'in', ids).execute();
-		return new Map(rows.map((row) => [row.id, row.username]));
 	}
 }

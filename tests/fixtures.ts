@@ -26,11 +26,9 @@ import {
 	type Report,
 	type ReputationTarget,
 	type ReputationVote,
-	type SubscribedTopic,
 	type Subscriber,
 	type Topic,
 	type TopicAgeFilter,
-	type TopicLabel,
 	type TopicSummary,
 	type UserProfile,
 	type Viewer,
@@ -40,8 +38,6 @@ import type { Recipient, SenderLimits } from '../src/repositories/ContactReposit
 import type { DraftStore, NewDraft } from '../src/repositories/DraftRepository.ts';
 import type { AdminCategory, AdminForum, ForumAdminStore } from '../src/repositories/ForumAdminRepository.ts';
 import type { HotTopic, NewMember } from '../src/repositories/HomeActivityRepository.ts';
-import type { LabelRow } from '../src/repositories/LabelAdminRepository.ts';
-import type { StoredFile, UploadStore } from '../src/repositories/MemberUploadFiles.ts';
 import type { ModerationStore } from '../src/repositories/ModerationRepository.ts';
 import type { OnlineWriter } from '../src/repositories/OnlineRepository.ts';
 import type { PostEditStore, PostUpdate } from '../src/repositories/PostEditRepository.ts';
@@ -279,13 +275,6 @@ export const boardConfig: BoardConfig = {
 	privateMessageNotification: false,
 	privateMessageMaxReceivers: 3,
 	privateMessagesPerPage: 15,
-	uploads: {
-		extensions: ['jpg', 'png', 'zip'],
-		memberQuota: 1_000_000,
-		moderatorQuota: 5_000_000,
-		memberMaxFileSize: 200_000,
-		moderatorMaxFileSize: 1_000_000,
-	},
 	baseUrl: 'http://forum.test',
 	indentSpaces: 4,
 	reputationEnabled: false,
@@ -312,13 +301,10 @@ export interface FakeData {
 	unreadPrivateMessages?: Map<number, number>;
 	bannedUsernames?: string[];
 	censoredWords?: CensoredWord[];
-	/** Balises PV posées, par sujet. */
-	topicLabels?: Map<number, TopicLabel[]>;
 	indexCategories?: IndexCategory[];
 	forumInfos?: ForumInfo[];
 	/** Sujets par forum, déjà dans l'ordre d'affichage. */
 	forumTopics?: Map<number, TopicSummary[]>;
-	labelDefinitions?: TopicLabel[];
 	members?: MemberSummary[];
 	sentMails?: MailMessage[];
 	/** Sujets dont le compteur de vues a été incrémenté. */
@@ -364,14 +350,10 @@ export interface FakeData {
 	searchLog?: string[];
 	/** Champs de modification des profils, en plus de `profiles` (valeurs par défaut sinon). */
 	profileDetails?: Map<number, Partial<EditableProfile>>;
-	/** Écritures de profile.php et de ses plugiles. */
+	/** Écritures de profile.php. */
 	profileUpdates?: { id: number; changes: ProfileChanges }[];
 	renames?: { id: number; from: string; to: string }[];
-	subscribedTopicList?: SubscribedTopic[];
-	unsubscribed?: { userId: number; topicIds: number[] }[];
-	uploadedBytes?: Map<number, number>;
-	/** Fichiers Uploadile par membre, et avatars enregistrés ou effacés. */
-	memberFiles?: Map<number, (StoredFile & { data?: Buffer })[]>;
+	/** Avatars enregistrés ou effacés. */
 	avatarLog?: string[];
 	/** Renommée : membres (totaux), votes reçus par membre, cibles par message, votes ajoutés. */
 	reputationMembers?: { id: number; username: string; plus: number; minus: number }[];
@@ -405,9 +387,6 @@ export interface FakeData {
 	banLog?: string[];
 	/** admin_maintenance.php : actions consignées, discussions élagables. */
 	maintenanceLog?: string[];
-	/** Plugin AP_Smilies.php. */
-	/** Plugin AP_Balises.php. */
-	labelRows?: LabelRow[];
 	/** Préfixes du sujet : sujets réécrits. */
 	subjectUpdates?: { topicId: number; subject: string }[];
 	/** Signalements listés par admin_reports.php (modifiés en place quand ils sont traités). */
@@ -439,7 +418,6 @@ export function editableProfile(profile: UserProfile, details: Partial<EditableP
 		registrationIp: '192.0.2.7',
 		adminNote: '',
 		lastVisit: NOW - 3600,
-		uploadedBytes: 0,
 		...details,
 	};
 }
@@ -469,35 +447,6 @@ function fakeProfileStore(data: FakeData): ProfileStore {
 			data.profiles?.find((p) => p.id !== excludeId && p.username.toLowerCase() === username.toLowerCase())?.username ?? null,
 		listUsernamesByEmail: async (email, excludeId) =>
 			(data.profiles ?? []).filter((p) => p.id !== excludeId && p.email === email).map((p) => p.username),
-		setUploadedBytes: async (id, bytes) => {
-			data.uploadedBytes = new Map([...(data.uploadedBytes ?? []), [id, bytes]]);
-			merge(id, { uploadedBytes: bytes });
-		},
-		listSubscribedTopics: async () => data.subscribedTopicList ?? [],
-		unsubscribeTopics: async (userId, topicIds) => {
-			data.unsubscribed = [...(data.unsubscribed ?? []), { userId, topicIds: [...topicIds] }];
-		},
-	};
-}
-
-/** Fichiers Uploadile en mémoire. */
-function fakeUploads(data: FakeData): UploadStore {
-	const files = (userId: number) => data.memberFiles?.get(userId);
-	return {
-		list: async (userId) => files(userId)?.map(({ name, size, modified }) => ({ name, size, modified })) ?? null,
-		exists: async (userId, name) => (files(userId) ?? []).some((f) => f.name === name),
-		save: async (userId, name, content) => {
-			const list = [...(files(userId) ?? []), { name, size: content.length, modified: NOW, data: content }];
-			data.memberFiles = new Map([...(data.memberFiles ?? []), [userId, list]]);
-		},
-		remove: async (userId, name) => {
-			const list = files(userId) ?? [];
-			if (!list.some((f) => f.name === name)) return false;
-			data.memberFiles = new Map([...(data.memberFiles ?? []), [userId, list.filter((f) => f.name !== name)]]);
-			return true;
-		},
-		urlFor: (userId, name) => `http://php.test/img/members/${userId}/${encodeURIComponent(name)}`,
-		listOwners: async () => [...(data.memberFiles?.keys() ?? [])].sort((a, b) => a - b),
 	};
 }
 
@@ -686,10 +635,6 @@ function fakeModeration(data: FakeData): ModerationStore {
 			log(`${sticky ? 'stick' : 'unstick'} ${id}`);
 			return inForum(forumId, [id]);
 		},
-		setTopicLabel: async (forumId, id, label, on) => {
-			log(`${on ? 'balise' : 'nobalise'} ${label} ${id}`);
-			return inForum(forumId, [id]);
-		},
 	};
 }
 
@@ -798,20 +743,6 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 					? { data: Buffer.from(`${options.format}${options.maxWidth}x${options.maxHeight}:${input.length}`), width: 1, height: 1 }
 					: null,
 		},
-		labelAdmin: {
-			listLabels: async () => data.labelRows ?? [],
-			findLabel: async (id) => (data.labelRows ?? []).find((label) => label.id === id) ?? null,
-			addLabel: async (values) => {
-				data.labelRows = [...(data.labelRows ?? []), { ...values, id: 9, position: 0 }];
-				return 9;
-			},
-			updateLabel: async (id, values) => {
-				data.labelRows = (data.labelRows ?? []).map((label) => (label.id === id ? { ...label, ...values } : label));
-			},
-			deleteLabel: async (id) => {
-				data.labelRows = (data.labelRows ?? []).filter((label) => label.id !== id);
-			},
-		},
 		maintenance: {
 			firstPostId: async () => 100,
 			emptySearchIndex: async () => {
@@ -892,8 +823,6 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 				data.userSearches = [...(data.userSearches ?? []), criteria];
 				return (data.adminUserRows ?? []).slice(offset, offset + limit);
 			},
-			findUsernames: async (ids) =>
-				new Map(data.users.filter((u) => ids.includes(u.viewer.id)).map((u) => [u.viewer.id, u.viewer.username])),
 			countPrivileged: async (ids) => {
 				const groups = ids.map((id) => data.users.find((u) => u.viewer.id === id)?.viewer.group);
 				return {
@@ -1004,7 +933,6 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 		},
 		privateContacts: contactsAndLists,
 		sendingLists: contactsAndLists,
-		uploads: fakeUploads(data),
 		avatarStore: {
 			save: async (userId, _dir, type) => {
 				data.avatarLog = [...(data.avatarLog ?? []), `save ${userId}.${type}`];
@@ -1206,10 +1134,6 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			removeWord: async (id) => {
 				data.censoredWords = (data.censoredWords ?? []).filter((_, index) => index + 1 !== id);
 			},
-		},
-		topicLabels: {
-			listForTopics: async (ids) => new Map([...(data.topicLabels ?? [])].filter(([id]) => ids.includes(id))),
-			listDefinitions: async () => data.labelDefinitions ?? [],
 		},
 		page: { lang: fr, dateWords: frDateWords, clock: () => NOW },
 		cookie: { name: 'avrobb', secret: COOKIE_SECRET, secure: false },

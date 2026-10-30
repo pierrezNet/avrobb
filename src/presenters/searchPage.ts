@@ -3,7 +3,7 @@
  * messages). Fonctions pures.
  */
 
-import type { BoardConfig, ForumCategory, SearchPost, SearchTopic, TopicLabel, Viewer } from '../domain/models.ts';
+import type { BoardConfig, ForumCategory, SearchPost, SearchTopic, Viewer } from '../domain/models.ts';
 import type { Lang } from '../lang/fr/index.ts';
 import { parseMessage } from '../services/bbcode.ts';
 import type { Censor } from '../services/censor.ts';
@@ -75,8 +75,6 @@ export interface SearchResultsInput {
 	outcome: SearchOutcome;
 	topics: readonly SearchTopic[];
 	posts: readonly SearchPost[];
-	topicLabels: ReadonlyMap<number, readonly TopicLabel[]>;
-	labelDefinitions: readonly TopicLabel[];
 	tracked: TrackedTopics;
 	censor: Censor | null;
 	/** Pseudo du membre d'une recherche rapide show_user_* / show_subscriptions. */
@@ -156,7 +154,7 @@ export function buildSearchResults(input: SearchResultsInput): SearchResultsView
 	const labels = { wrote: lang.common.wrote, imageLink: lang.common.imageLink, spoiler: lang.common.spoiler, video: lang.common.video };
 
 	const topics = input.topics.map((topic) => ({
-		...buildTopicRow(topic, topic.forumId, input.topicLabels.get(topic.id) ?? [], input),
+		...buildTopicRow(topic, topic.forumId, input),
 		forumName: topic.forumName,
 		forumHref: `viewforum.php?id=${topic.forumId}`,
 	}));

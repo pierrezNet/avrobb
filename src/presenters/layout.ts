@@ -6,14 +6,13 @@
  * src/http/layout.ts, et seulement quand ils servent.
  */
 
-import type { BoardConfig, Topic, TopicLabel, Viewer } from '../domain/models.ts';
+import type { BoardConfig, Topic, Viewer } from '../domain/models.ts';
 import type { Lang } from '../lang/fr/index.ts';
 import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
 import { headerImageHref } from '../services/headerImages.ts';
 import { canSearch, canUsePrivateMessages, isAnyModerator, isForumModerator } from '../services/permissions.ts';
 import { plainExcerpt } from '../services/seo.ts';
 import { resolveTheme, type Theme } from '../services/themes.ts';
-import { labelText } from '../services/topicLabels.ts';
 
 /** Onglet du menu principal mis en évidence (PUN_ACTIVE_PAGE). */
 export type NavId =
@@ -35,14 +34,7 @@ export type FooterContext =
 	| { kind: 'default' }
 	| { kind: 'index' }
 	| { kind: 'viewforum'; forum: { id: number; moderators: ReadonlyMap<string, number> }; page: number }
-	| {
-			kind: 'viewtopic';
-			topic: Topic;
-			page: number;
-			/** Balises de PV proposées aux modérateurs (balises.affich) et balises posées sur le sujet. */
-			labelDefinitions?: readonly TopicLabel[];
-			appliedLabels?: readonly TopicLabel[];
-	  };
+	| { kind: 'viewtopic'; topic: Topic; page: number };
 
 export interface PageOptions {
 	/** Suffixe de l'identifiant du conteneur (« pun<pageId> »), comme basename($_SERVER['PHP_SELF']). */
@@ -316,8 +308,7 @@ export interface ModControl {
 }
 
 /**
- * Liens de modération du pied de page (#modcontrols), dont l'ajout et le retrait des balises de
- * PV (balises_modo). Écart assumé : fermer, épingler ou baliser passe par un bouton POST avec
+ * Liens de modération du pied de page (#modcontrols). Écart assumé : fermer ou épingler passe par un bouton POST avec
  * jeton CSRF (le PHP écrivait sur un lien GET, vérifié par le seul Referer).
  */
 function buildModControls(footer: FooterContext, viewer: Viewer, lang: Lang): ModControl[] {
@@ -330,17 +321,6 @@ function buildModControls(footer: FooterContext, viewer: Viewer, lang: Lang): Mo
 
 	const { topic, page } = footer;
 	const fid = topic.forum.id;
-	const applied = new Set((footer.appliedLabels ?? []).map((label) => label.id));
-	const labels = (footer.labelDefinitions ?? [])
-		.filter((label) => label.moderatorVisible)
-		.map((label): ModControl => {
-			const on = applied.has(label.id);
-			return {
-				href: `moderate.php?fid=${fid}&${on ? 'nobalise' : 'balise'}=${label.id}&npost=${topic.id}`,
-				label: on ? t.removeLabel(labelText(label)) : t.addLabel(labelText(label)),
-				post: true,
-			};
-		});
 
 	return [
 		{ href: `moderate.php?fid=${fid}&tid=${topic.id}&p=${page}`, label: t.moderateTopic, post: false },
@@ -351,7 +331,6 @@ function buildModControls(footer: FooterContext, viewer: Viewer, lang: Lang): Mo
 		topic.sticky
 			? { href: `moderate.php?fid=${fid}&unstick=${topic.id}`, label: t.unstickTopic, post: true }
 			: { href: `moderate.php?fid=${fid}&stick=${topic.id}`, label: t.stickTopic, post: true },
-		...labels,
 	];
 }
 

@@ -1,13 +1,12 @@
 /**
- * Modification des profils (profile.php et ses plugiles) : lecture complète d'un membre, mise à
- * jour de ses champs, renommage avec tous ses effets de bord, mot de passe et adresse en attente
- * d'activation, sujets suivis (plugile UPP_Suivile) et espace occupé par ses fichiers (Uploadile).
+ * Modification des profils (profile.php) : lecture complète d'un membre, mise à jour de ses champs,
+ * renommage avec tous ses effets de bord.
  */
 
 import type { Updateable } from 'kysely';
 import type { Db } from '../db/database.ts';
 import type { UsersTable } from '../db/schema.ts';
-import { type EditableProfile, GUEST_USER_ID, type ProfileChanges, type SubscribedTopic } from '../domain/models.ts';
+import { type EditableProfile, GUEST_USER_ID, type ProfileChanges } from '../domain/models.ts';
 import { parseModerators, phpSerialize } from '../services/phpSerialize.ts';
 import { forumReadable } from './forumPermissions.ts';
 import { inTransaction } from './transactions.ts';
@@ -26,10 +25,6 @@ export interface ProfileStore {
 	findSimilarUsername(username: string, skeleton: string, excludeUserId: number): Promise<string | null>;
 	/** Pseudos des autres membres qui utilisent cette adresse. */
 	listUsernamesByEmail(email: string, excludeUserId: number): Promise<string[]>;
-	setUploadedBytes(userId: number, bytes: number): Promise<void>;
-	/** Sujets suivis par un membre, lisibles par le groupe du lecteur (requête de UPP_Suivile). */
-	listSubscribedTopics(userId: number, readerGroupId: number): Promise<SubscribedTopic[]>;
-	unsubscribeTopics(userId: number, topicIds: readonly number[]): Promise<void>;
 }
 
 type UserColumns = Omit<Updateable<UsersTable>, 'id'>;
@@ -58,8 +53,6 @@ function toColumns(changes: ProfileChanges): UserColumns {
 	set('aim', text(changes.aim));
 	set('yahoo', text(changes.yahoo));
 	set('signature', text(changes.signature));
-	// UP_Ma_biographie enregistre la chaîne telle quelle, vide comprise.
-	set('biographie', changes.biography);
 	set('admin_note', text(changes.adminNote));
 	set('num_posts', changes.numPosts);
 	set('disp_topics', changes.topicsPerPage);
@@ -126,7 +119,6 @@ export class ProfileRepository implements ProfileStore {
 			aim: row.aim ?? '',
 			yahoo: row.yahoo ?? '',
 			signature: row.signature ?? '',
-			biography: row.biographie ?? '',
 			numPosts: row.num_posts,
 			lastPost: row.last_post !== null && row.last_post > 0 ? row.last_post : null,
 			registered: row.registered,
@@ -153,7 +145,6 @@ export class ProfileRepository implements ProfileStore {
 			registrationIp: row.registration_ip,
 			adminNote: row.admin_note ?? '',
 			lastVisit: row.last_visit,
-			uploadedBytes: Number(row.upload),
 		};
 	}
 
@@ -231,56 +222,5 @@ export class ProfileRepository implements ProfileStore {
 	async listUsernamesByEmail(email: string, excludeUserId: number): Promise<string[]> {
 		const rows = await this.db.selectFrom('users').select('username').where('email', '=', email).where('id', '!=', excludeUserId).execute();
 		return rows.map((row) => row.username);
-	}
-
-	async setUploadedBytes(userId: number, bytes: number): Promise<void> {
-		await this.db.updateTable('users').set({ upload: bytes }).where('id', '=', userId).execute();
-	}
-
-	async listSubscribedTopics(userId: number, readerGroupId: number): Promise<SubscribedTopic[]> {
-		const rows = await this.db
-			.selectFrom('topics as t')
-			.innerJoin('topic_subscriptions as s', (join) => join.onRef('t.id', '=', 's.topic_id').on('s.user_id', '=', userId))
-			.innerJoin('forums as f', 'f.id', 't.forum_id')
-			.leftJoin('forum_perms as fp', (join) => join.onRef('fp.forum_id', '=', 'f.id').on('fp.group_id', '=', readerGroupId))
-			.select([
-				't.id',
-				't.forum_id',
-				't.poster',
-				't.subject',
-				't.posted',
-				't.last_post',
-				't.last_post_id',
-				't.last_poster',
-				't.num_views',
-				't.num_replies',
-				't.closed',
-				't.sticky',
-				't.moved_to',
-			])
-			.where(forumReadable)
-			// Le PHP n'imposait aucun ordre : le plus récent d'abord, comme une liste de forum.
-			.orderBy('t.last_post', 'desc')
-			.execute();
-
-		return rows.map((row) => ({
-			id: row.id,
-			forumId: row.forum_id,
-			poster: row.poster,
-			subject: row.subject,
-			posted: row.posted,
-			lastPost: row.last_post > 0 ? { postedAt: row.last_post, postId: row.last_post_id ?? 0, poster: row.last_poster ?? '' } : null,
-			numViews: row.num_views,
-			numReplies: row.num_replies,
-			closed: row.closed === 1,
-			sticky: row.sticky === 1,
-			movedTo: row.moved_to !== null && row.moved_to !== 0 ? row.moved_to : null,
-			hasPosted: false,
-		}));
-	}
-
-	async unsubscribeTopics(userId: number, topicIds: readonly number[]): Promise<void> {
-		if (topicIds.length === 0) return;
-		await this.db.deleteFrom('topic_subscriptions').where('user_id', '=', userId).where('topic_id', 'in', topicIds).execute();
 	}
 }

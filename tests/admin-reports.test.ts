@@ -48,7 +48,6 @@ describe('menu de l’administration', () => {
 			'Censure',
 			'Balises',
 			'Messagerie privée',
-			'Fichiers des membres',
 			'Maintenance',
 		]);
 	});

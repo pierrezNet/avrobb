@@ -1,10 +1,10 @@
 /**
  * Contrôleur de moderate.php : consultation d'une IP (?get_host=), liste des sujets d'un forum à
  * modérer, messages d'un sujet à modérer, et leurs actions (déplacer, fusionner, supprimer, ouvrir,
- * fermer, épingler, scinder, baliser).
+ * fermer, épingler, scinder).
  *
  * Écarts assumés : toutes les actions écrivent en POST avec jeton CSRF ; les anciens liens GET du
- * PHP (fermer, épingler, balises PV) mènent à une confirmation ; un modérateur ne peut pas
+ * PHP (fermer, épingler) mènent à une confirmation ; un modérateur ne peut pas
  * supprimer les messages d'un administrateur, en sujet comme en message isolé (le PHP vérifiait
  * seulement le second cas en partie) ; le premier message d'un sujet n'est jamais supprimé ni
  * scindé, même par une requête forgée ; les erreurs s'affichent dans la page.
@@ -19,7 +19,6 @@ import type { BanReader } from '../repositories/BanRepository.ts';
 import type { CensorReader } from '../repositories/CensorRepository.ts';
 import type { ModerationStore } from '../repositories/ModerationRepository.ts';
 import type { PostReader } from '../repositories/PostRepository.ts';
-import type { TopicLabelReader } from '../repositories/TopicLabelRepository.ts';
 import type { TopicReader } from '../repositories/TopicRepository.ts';
 import { buildCensor, type Censor } from '../services/censor.ts';
 import { isIpAddress } from '../services/hosts.ts';
@@ -40,7 +39,6 @@ export interface ModerateControllerDeps extends LayoutDeps {
 	moderation: ModerationStore;
 	topics: TopicReader;
 	posts: PostReader;
-	topicLabels: TopicLabelReader;
 	bans: BanReader;
 	censorship: CensorReader;
 	hostResolver: HostResolver;
@@ -57,9 +55,6 @@ export interface ModerateQuery {
 	close?: string;
 	stick?: string;
 	unstick?: string;
-	balise?: string;
-	nobalise?: string;
-	npost?: string;
 	done?: string;
 }
 
@@ -67,7 +62,7 @@ type ModerateRequest = FastifyRequest<{ Querystring: ModerateQuery; Body?: FormB
 type ModeratePost = FastifyRequest<{ Querystring: ModerateQuery; Body: FormBody }>;
 
 /** Actions sur un seul sujet, désigné dans l'adresse (liens du pied de viewtopic). */
-const SINGLE_ACTIONS = ['open', 'close', 'stick', 'unstick', 'balise', 'nobalise'] as const;
+const SINGLE_ACTIONS = ['open', 'close', 'stick', 'unstick'] as const;
 type SingleAction = (typeof SINGLE_ACTIONS)[number];
 
 /** Formulaire de confirmation ou de choix (moderate_form.njk). */
@@ -144,12 +139,10 @@ export class ModerateController {
 		return renderMessage(request, reply, this.deps, 400, this.deps.page.lang.common.badRequest);
 	}
 
-	private singleAction(query: ModerateQuery): { action: SingleAction; topicId: number; labelId: number } | null {
+	private singleAction(query: ModerateQuery): { action: SingleAction; topicId: number } | null {
 		for (const action of SINGLE_ACTIONS) {
 			const value = query[action];
-			if (value === undefined) continue;
-			const isLabel = action === 'balise' || action === 'nobalise';
-			return { action, topicId: positiveInt(isLabel ? query.npost : value), labelId: isLabel ? positiveInt(value) : 0 };
+			if (value !== undefined) return { action, topicId: positiveInt(value) };
 		}
 		return null;
 	}
@@ -189,19 +182,13 @@ export class ModerateController {
 		const page = requested >= 1 && requested <= numPages ? requested : 1;
 
 		const topics = await this.deps.topics.listForumPage(forum.id, forum.sortBy, (page - 1) * perPage, perPage, null);
-		const [topicLabels, labelDefinitions, censor] = await Promise.all([
-			this.deps.topicLabels.listForTopics(topics.map((topic) => topic.id)),
-			this.deps.topicLabels.listDefinitions(),
-			this.censor(request),
-		]);
+		const censor = await this.censor(request);
 		const notices: Record<string, string> = lang.moderate.done;
 		const view = buildModerateForum({
 			viewer,
 			config,
 			forum,
 			topics,
-			topicLabels,
-			labelDefinitions,
 			tracked: parseTrackedTopics(request.cookies[this.deps.trackCookieName]),
 			censor,
 			page,
@@ -440,10 +427,8 @@ export class ModerateController {
 			close: t.closeTopic,
 			stick: t.stickTopic,
 			unstick: t.unstickTopic,
-			balise: t.addLabel(''),
-			nobalise: t.removeLabel(''),
 		};
-		return labels[action].trim();
+		return labels[action];
 	}
 
 	private confirmSingle(
@@ -473,15 +458,14 @@ export class ModerateController {
 		request: ModeratePost,
 		reply: FastifyReply,
 		forum: ForumInfo,
-		single: { action: SingleAction; topicId: number; labelId: number },
+		single: { action: SingleAction; topicId: number },
 	): Promise<FastifyReply> {
-		const { topicId, labelId, action } = single;
+		const { topicId, action } = single;
 		if (topicId < 1) return this.badRequest(request, reply);
 		const store = this.deps.moderation;
 		let ok = true;
 		if (action === 'open' || action === 'close') await store.setClosed(forum.id, [topicId], action === 'close');
-		else if (action === 'stick' || action === 'unstick') ok = await store.setSticky(forum.id, topicId, action === 'stick');
-		else ok = await store.setTopicLabel(forum.id, topicId, labelId, action === 'balise');
+		else ok = await store.setSticky(forum.id, topicId, action === 'stick');
 		if (!ok) return this.badRequest(request, reply);
 		return reply.redirect(`viewtopic.php?id=${topicId}`, 303);
 	}

@@ -2,7 +2,7 @@
  * Modèle de vue de viewforum.php : liste des sujets d'un forum. Fonction pure.
  */
 
-import type { BoardConfig, ForumInfo, TopicLabel, TopicSummary, Viewer } from '../domain/models.ts';
+import type { BoardConfig, ForumInfo, TopicSummary, Viewer } from '../domain/models.ts';
 import type { Lang } from '../lang/fr/index.ts';
 import type { Censor } from '../services/censor.ts';
 import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
@@ -10,12 +10,11 @@ import { forumNumberFormat } from '../services/numberFormat.ts';
 import { pageCount } from '../services/pagination.ts';
 import { canPostTopic } from '../services/permissions.ts';
 import { type SubjectSegment, subjectSegments } from '../services/subjectTags.ts';
-import { labelCss, labelledSubject, styleSubject } from '../services/topicLabels.ts';
 import type { TrackedTopics } from '../services/trackedTopics.ts';
 import { type Crumb, crumbs, type PaginationLink, paginationLinks } from './navigation.ts';
 import { topicUrl } from './topicPage.ts';
 
-/** Segment de sujet : texte simple, texte stylé (balise PunBalise) ou pastille de balise colorée. */
+/** Segment de sujet : texte simple ou pastille de balise colorée. */
 export type SubjectPartView = SubjectSegment;
 
 export interface TopicRowView {
@@ -61,9 +60,6 @@ export interface ForumPageInput {
 	config: BoardConfig;
 	forum: ForumInfo;
 	topics: readonly TopicSummary[];
-	/** Balises posées, par sujet, et définitions de toutes les balises (mise en couleur). */
-	topicLabels: ReadonlyMap<number, readonly TopicLabel[]>;
-	labelDefinitions: readonly TopicLabel[];
 	tracked: TrackedTopics;
 	censor: Censor | null;
 	page: number;
@@ -95,27 +91,22 @@ export interface TopicRowContext {
 	config: BoardConfig;
 	tracked: TrackedTopics;
 	censor: Censor | null;
-	labelDefinitions: readonly TopicLabel[];
 	dateWords: DateWords;
 	now: number;
 }
 
-/** Ligne d'un sujet : statut, balises PV colorées, nouveaux messages, mini-pagination, compteurs. */
-export function buildTopicRow(topic: TopicSummary, forumId: number, labels: readonly TopicLabel[], context: TopicRowContext): TopicRowView {
+/** Ligne d'un sujet : statut, balises colorées, nouveaux messages, mini-pagination, compteurs. */
+export function buildTopicRow(topic: TopicSummary, forumId: number, context: TopicRowContext): TopicRowView {
 	const { viewer, config, censor } = context;
 	const moved = topic.movedTo !== null;
-	const subject = labelledSubject(censor !== null ? censor(topic.subject) : topic.subject, labels);
+	const subject = censor !== null ? censor(topic.subject) : topic.subject;
 	const topicPages = pageCount(topic.numReplies + 1, viewer.postsPerPage ?? config.defaultPostsPerPage);
 	const isNew = hasNewPosts(topic, forumId, viewer, context.tracked);
 
 	return {
 		id: topic.id,
 		href: topicUrl(topic.movedTo ?? topic.id),
-		subject: subjectSegments(
-			styleSubject(subject, context.labelDefinitions),
-			(part) => (part.style !== null ? labelCss(part.style) : null),
-			config.subjectTags,
-		),
+		subject: subjectSegments(subject, config.subjectTags),
 		subjectText: subject,
 		poster: topic.poster,
 		sticky: topic.sticky,
@@ -144,7 +135,7 @@ export function buildTopicRow(topic: TopicSummary, forumId: number, labels: read
 
 export function buildForumPage(input: ForumPageInput): ForumPageView {
 	const { viewer, config, forum, lang } = input;
-	const topics = input.topics.map((topic) => buildTopicRow(topic, forum.id, input.topicLabels.get(topic.id) ?? [], input));
+	const topics = input.topics.map((topic) => buildTopicRow(topic, forum.id, input));
 
 	const member = !viewer.isGuest;
 

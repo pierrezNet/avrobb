@@ -1,7 +1,6 @@
 /**
  * Modération des sujets et messages (moderate.php) : suppression et scission de messages,
- * déplacement, fusion, suppression, fermeture et épinglage de sujets, balises de PV
- * (balises_modo). Chaque action vérifie que les éléments visés appartiennent bien au forum modéré
+ * déplacement, fusion, suppression, fermeture et épinglage de sujets. Chaque action vérifie que les éléments visés appartiennent bien au forum modéré
  * et reproduit les effets de bord du PHP (compteurs, update_forum(), index de recherche,
  * abonnements, liens de redirection), dans une transaction.
  */
@@ -44,8 +43,6 @@ export interface ModerationStore {
 	deleteTopics(forumId: number, topicIds: readonly number[], allowAdminPosts: boolean): Promise<DeleteTopicsResult>;
 	setClosed(forumId: number, topicIds: readonly number[], closed: boolean): Promise<void>;
 	setSticky(forumId: number, topicId: number, sticky: boolean): Promise<boolean>;
-	/** Pose ou retire une balise de PV sur un sujet du forum ; faux si la balise ou le sujet n'existe pas. */
-	setTopicLabel(forumId: number, topicId: number, labelId: number, on: boolean): Promise<boolean>;
 }
 
 /** Messages écrits par un administrateur (get_admin_ids()). */
@@ -343,19 +340,5 @@ export class ModerationRepository implements ModerationStore {
 			.where('forum_id', '=', forumId)
 			.executeTakeFirst();
 		return row !== undefined;
-	}
-
-	setTopicLabel(forumId: number, topicId: number, labelId: number, on: boolean): Promise<boolean> {
-		return inTransaction(this.db, async (trx) => {
-			const label = await trx.selectFrom('balises').select('id').where('id', '=', labelId).executeTakeFirst();
-			if (label === undefined || !(await this.#topicInForum(topicId, forumId))) return false;
-			// Colonne bal<id> créée par le plugin d'administration ; l'id vient de la table balises.
-			const column = sql.ref(`bal${label.id}`);
-			const npost = String(topicId);
-			const existing = await trx.selectFrom('balises_modo').select('npost').where('npost', '=', npost).executeTakeFirst();
-			if (existing === undefined) await trx.insertInto('balises_modo').values({ npost }).execute();
-			await sql`UPDATE ${sql.table('balises_modo')} SET ${column} = ${on ? 1 : 0} WHERE npost = ${npost}`.execute(trx);
-			return true;
-		});
 	}
 }

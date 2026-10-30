@@ -1,22 +1,20 @@
 /**
- * Modification d'un profil (lot 4) : règles des sections (services/profileForms.ts), avatars,
- * Uploadile, droits, et pages de profile.php de bout en bout avec les doublures.
+ * Modification d'un profil : règles des sections (services/profileForms.ts), avatars, et pages de
+ * profile.php de bout en bout avec les doublures.
  */
 
 import type { FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.ts';
-import { GroupId, type UploadSettings, type UserProfile } from '../src/domain/models.ts';
+import { GroupId, type UserProfile } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
 import { parseMultipartBody } from '../src/http/forms.ts';
 import { renameInList } from '../src/repositories/ProfileRepository.ts';
 import { checkAvatar, readImageInfo } from '../src/services/images.ts';
 import { validWebsiteUrl } from '../src/services/links.ts';
 import { fileSize } from '../src/services/numberFormat.ts';
-import { canUsePrivatePlugiles } from '../src/services/permissions.ts';
 import {
 	forbiddenTitles,
-	readBiography,
 	readDisplay,
 	readEssentials,
 	readMessaging,
@@ -24,7 +22,6 @@ import {
 	readPrivacy,
 	readSignature,
 } from '../src/services/profileForms.ts';
-import { checkUpload, cleanFileName, datedFileName, isListedUpload, uploadLimits, usedPercent } from '../src/services/uploads.ts';
 import { boardConfig, type FakeData, fakeDeps, group, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
 
 const SEED = 'graine-de-test';
@@ -183,21 +180,6 @@ describe('readDisplay, readPrivacy', () => {
 	});
 });
 
-describe('readBiography', () => {
-	const context = {
-		bbcode: true,
-		messageAllCaps: false,
-		isModeratorGroup: false,
-		preparse: { quoteDepth: 3, makeLinks: false, allowLinks: true, indentSpaces: 4, baseUrl: 'http://forum.test' },
-	};
-	it('nettoie le BBCode, refuse les erreurs et les textes trop longs', () => {
-		expect(readBiography(' [B]Pilote[/B]\r\n', context)).toEqual({ biography: '[b]Pilote[/b]', errors: [] });
-		expect(readBiography('[b]x', context).errors).toHaveLength(1);
-		expect(readBiography('é'.repeat(40_000), context).errors).toEqual(['tooLong']);
-		expect(readBiography('', context)).toEqual({ biography: '', errors: [] });
-	});
-});
-
 // Images minimales : en-têtes suffisants pour getimagesize().
 const png = (width: number, height: number): Buffer => {
 	const data = Buffer.alloc(33);
@@ -231,52 +213,14 @@ describe('images (getimagesize())', () => {
 	});
 });
 
-describe('Uploadile (règles)', () => {
-	const settings: UploadSettings = boardConfig.uploads;
-
-	it('espace par groupe et pourcentage utilisé', () => {
-		expect(uploadLimits(GroupId.Admin, settings).unlimited).toBe(true);
-		expect(uploadLimits(GroupId.Moderator, settings)).toMatchObject({ quota: 5_000_000, maxFileSize: 1_000_000 });
-		expect(uploadLimits(GroupId.Member, settings)).toMatchObject({ quota: 1_000_000, maxFileSize: 200_000 });
-		expect(usedPercent(250_001, 1_000_000)).toBe(26);
-		expect(usedPercent(10, 0)).toBe(100);
-	});
-
-	it('nom nettoyé, un seul point, extension permise et non dangereuse, taille et espace', () => {
-		const limits = uploadLimits(GroupId.Member, settings);
-		expect(checkUpload({ name: "Mon vol d'été.jpg", size: 10 }, 0, limits, settings)).toEqual({ fileName: 'Mon-vol-d-ete.jpg' });
-		expect(checkUpload({ name: 'photo.JPG', size: 10 }, 0, limits, settings)).toEqual({ fileName: 'photo.JPG' });
-		expect(checkUpload({ name: 'photo.Jpg', size: 10 }, 0, limits, settings)).toEqual({ error: 'badExtension' });
-		expect(checkUpload({ name: 'shell.php.jpg', size: 10 }, 0, limits, settings)).toEqual({ error: 'multipleDots' });
-		expect(checkUpload({ name: 'shell.php', size: 10 }, 0, limits, { ...settings, extensions: ['php'] })).toEqual({
-			error: 'badExtension',
-		});
-		expect(checkUpload({ name: 'a.jpg', size: 200_001 }, 0, limits, settings)).toEqual({ error: 'tooLarge' });
-		expect(checkUpload({ name: 'a.jpg', size: 100 }, 999_950, limits, settings)).toEqual({ error: 'quotaExceeded' });
-		expect(cleanFileName('<script>#')).toBe('script');
-		expect(datedFileName('a.jpg', Date.UTC(2026, 9, 25, 14, 5) / 1000)).toBe('25102026-1405_a.jpg');
-	});
-
-	it('fichiers listés : ni cachés, ni miniatures, ni extensions refusées', () => {
-		expect(isListedUpload('vol.PNG', settings)).toBe(true);
-		expect(isListedUpload('#cache.png', settings)).toBe(false);
-		expect(isListedUpload('mini_vol.png', settings)).toBe(false);
-		expect(isListedUpload('notes.txt', settings)).toBe(false);
+describe('utilitaires du profil', () => {
+	it('taille lisible', () => {
 		expect(fileSize(10_240)).toBe('10 Kio');
 		expect(fileSize(500)).toBe('500 O');
 	});
 
 	it('renomme un destinataire de MP élément par élément', () => {
 		expect(renameInList('Max, MaxDUO, Tessy', 'Max', 'Maxime')).toBe('Maxime, MaxDUO, Tessy');
-	});
-});
-
-describe('droits des actions du profil', () => {
-	const member = { id: 6, groupId: GroupId.Member, groupIsModerator: false };
-	const mod = viewer({ id: 5, group: group({ id: GroupId.Moderator, isModerator: true, canModEditUsers: true }) });
-	it('plugiles privés : soi-même seulement', () => {
-		expect(canUsePrivatePlugiles(mod, 6)).toBe(false);
-		expect(canUsePrivatePlugiles(viewer({ id: 6 }), 6)).toBe(true);
 	});
 });
 
@@ -317,7 +261,6 @@ function member(overrides: Partial<UserProfile> = {}): UserProfile {
 		aim: '',
 		yahoo: '',
 		signature: '[b]Bons vols[/b]',
-		biography: '',
 		numPosts: 12,
 		lastPost: NOW - 600,
 		registered: NOW - 86_400,
@@ -391,14 +334,13 @@ async function postFile(
 }
 
 describe('profile.php : sections', () => {
-	it('son propre profil ouvre la section Principal, avec le menu et les plugiles', async () => {
+	it('son propre profil ouvre la section Principal, avec le menu', async () => {
 		const fake = data();
 		const server = await start(fake);
 		const res = await get(server, fake, 3, '/profile.php?id=3');
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('<h1 class="page-title">Tessy - Principal</h1>');
 		expect(res.body).toContain('href="profile.php?section=essentials&amp;id=3" aria-current="page"');
-		expect(res.body).toContain('href="profile.php?plugin=UPP_Suivile.php&amp;id=3"');
 		expect(res.body).toContain('name="req_email" value="tessy@example.com"');
 		expect(res.body).not.toContain('admin_note');
 		expect(res.body).not.toContain('section=admin');
@@ -541,93 +483,5 @@ describe('profile.php : avatar', () => {
 		const fake = data();
 		const server = await start(fake, { avatars: false });
 		expect((await get(server, fake, 3, '/profile.php?action=upload_avatar&id=3')).statusCode).toBe(404);
-	});
-});
-
-describe('profile.php : plugiles', () => {
-	it('Ma biographie : modification, aperçu, et consultation pour les autres', async () => {
-		const fake = data();
-		const server = await start(fake);
-		const res = await post(server, fake, 3, '/profile.php?plugin=UP_Ma_biographie.php&id=3', { req_message: 'Pilote [B]FS98[/B]' });
-		expect(res.statusCode).toBe(303);
-		expect(fake.profileUpdates).toEqual([{ id: 3, changes: { biography: 'Pilote [b]FS98[/b]' } }]);
-		const page = await get(server, fake, 3, '/profile.php?plugin=UP_Ma_biographie.php&id=3&updated=saved');
-		expect(page.body).toContain('Pilote <strong>FS98</strong>');
-		expect(page.body).toContain('Profil mis à jour.');
-		expect((await get(server, fake, 3, '/profile.php?plugin=UP_Ma_biographie.php&id=6')).body).toContain('Profil de valdefsx');
-	});
-
-	it('Suivile : liste et désabonnement, réservé au membre et aux administrateurs', async () => {
-		const fake = data({
-			subscribedTopicList: [
-				{
-					id: 10,
-					forumId: 1,
-					poster: 'MaxDUO',
-					subject: 'Vol de nuit',
-					posted: NOW - 9000,
-					lastPost: { postedAt: NOW - 60, postId: 99, poster: 'MaxDUO' },
-					numViews: 3,
-					numReplies: 1,
-					closed: false,
-					sticky: false,
-					movedTo: null,
-					hasPosted: false,
-				},
-			],
-		});
-		const server = await start(fake);
-		const list = await get(server, fake, 3, '/profile.php?plugin=UPP_Suivile.php&id=3');
-		expect(list.body).toContain('Vol de nuit');
-		expect(list.body).toContain('name="topics" value="10"');
-		expect(list.body).toContain('Sélectionner « Vol de nuit »');
-
-		expect((await post(server, fake, 3, '/profile.php?plugin=UPP_Suivile.php&id=3', {})).body).toContain(
-			'Vous devez choisir au moins une discussion',
-		);
-		const done = await post(server, fake, 3, '/profile.php?plugin=UPP_Suivile.php&id=3', { topics: ['10', 'x'] });
-		expect(done.statusCode).toBe(303);
-		expect(fake.unsubscribed).toEqual([{ userId: 3, topicIds: [10] }]);
-
-		// Un modérateur qui peut modifier le profil n'accède pas aux plugiles privés.
-		expect((await get(server, fake, 5, '/profile.php?plugin=UPP_Suivile.php&id=6')).statusCode).toBe(403);
-		expect((await get(server, fake, 2, '/profile.php?plugin=UPP_Suivile.php&id=6')).statusCode).toBe(200);
-	});
-
-	it('Mes uploads : envoi, nom déjà pris, suppression et espace recalculé', async () => {
-		const fake = data({
-			memberFiles: new Map([
-				[
-					3,
-					[
-						{ name: 'vol.jpg', size: 1000, modified: NOW - 100 },
-						{ name: 'mini_vol.jpg', size: 10, modified: NOW - 100 },
-						{ name: '#prive.jpg', size: 5, modified: NOW },
-					],
-				],
-			]),
-			profileDetails: new Map([[3, { uploadedBytes: 1000 }]]),
-		});
-		const server = await start(fake);
-		const page = await get(server, fake, 3, '/profile.php?plugin=UPP_Mes_uploads.php&id=3');
-		expect(page.body).toContain('href="http://php.test/img/members/3/vol.jpg">vol</a> [1000 O] [jpg]');
-		expect(page.body).not.toContain('prive');
-		expect(page.body).toContain('Votre fichier ne doit pas dépasser les 195.31 Kio et doit être de type : jpg, png, zip.');
-
-		const sent = await postFile(server, fake, 3, '/profile.php?plugin=UPP_Mes_uploads.php&id=3', 'fichier', 'vol.jpg', Buffer.alloc(300));
-		expect(sent.statusCode).toBe(303);
-		expect(fake.memberFiles?.get(3)?.map((f) => f.name)).toContain(datedFileName('vol.jpg', NOW));
-		expect(fake.uploadedBytes?.get(3)).toBe(1300);
-
-		const refused = await postFile(server, fake, 3, '/profile.php?plugin=UPP_Mes_uploads.php&id=3', 'fichier', 'a.php', Buffer.alloc(3));
-		expect(refused.body).toContain('cette extension n&#39;est pas acceptée');
-
-		const deleted = await post(server, fake, 3, '/profile.php?plugin=UPP_Mes_uploads.php&id=3', {
-			supprimer: '1',
-			delete: ['vol.jpg', '../../config.php'],
-		});
-		expect(deleted.headers.location).toBe('profile.php?plugin=UPP_Mes_uploads.php&id=3&updated=deleteFailed');
-		expect(fake.memberFiles?.get(3)?.map((f) => f.name)).not.toContain('vol.jpg');
-		expect(fake.uploadedBytes?.get(3)).toBe(300);
 	});
 });

@@ -12,7 +12,6 @@ import type { BanReader } from '../repositories/BanRepository.ts';
 import type { CensorReader } from '../repositories/CensorRepository.ts';
 import type { PostReader } from '../repositories/PostRepository.ts';
 import type { ToolbarReader } from '../repositories/ToolbarRepository.ts';
-import type { TopicLabelReader } from '../repositories/TopicLabelRepository.ts';
 import type { TopicReader, TopicWriter } from '../repositories/TopicRepository.ts';
 import type { AvatarLocator } from '../services/avatars.ts';
 import { buildCensor } from '../services/censor.ts';
@@ -29,7 +28,6 @@ export interface TopicControllerDeps extends LayoutDeps {
 	avatars: AvatarLocator;
 	bans: BanReader;
 	censorship: CensorReader;
-	topicLabels: TopicLabelReader;
 	topicViews: TopicWriter;
 	toolbar: ToolbarReader;
 	cookie: CookieConfig;
@@ -83,11 +81,8 @@ export class TopicController {
 		const page = clampPage(request.query.p, numPages);
 		const offset = (page - 1) * perPage;
 
-		const [posts, labels, labelDefinitions, bannedUsernames, censoredWords, toolbar] = await Promise.all([
+		const [posts, bannedUsernames, censoredWords, toolbar] = await Promise.all([
 			this.deps.posts.listPage(topic.id, offset, perPage),
-			this.deps.topicLabels.listForTopics([topic.id]),
-			// Balises proposées dans le pied de page : seulement pour les modérateurs du forum.
-			isForumModerator(viewer, topic.forum) ? this.deps.topicLabels.listDefinitions() : [],
 			this.deps.bans.listBannedUsernames(),
 			config.censoring ? this.deps.censorship.listWords() : [],
 			this.deps.toolbar.load(),
@@ -109,7 +104,6 @@ export class TopicController {
 			viewer,
 			config,
 			topic,
-			labels: labels.get(topic.id) ?? [],
 			posts,
 			page,
 			numPages,
@@ -133,7 +127,7 @@ export class TopicController {
 				titleParts: [config.boardTitle, topic.forum.name, view.topic.subject],
 				pageNumber: page,
 				activeNav: 'index',
-				footer: { kind: 'viewtopic', topic, page, labelDefinitions, appliedLabels: labels.get(topic.id) ?? [] },
+				footer: { kind: 'viewtopic', topic, page },
 				allowIndex: true,
 				canonicalUrl: topicUrl(topic.id, page),
 				// Référencement : extrait du premier message de la page, et sa première image pour le partage.

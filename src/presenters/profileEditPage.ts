@@ -14,24 +14,14 @@ import { parseSignature } from '../services/bbcode.ts';
 import type { Censor } from '../services/censor.ts';
 import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
 import { forumNumberFormat } from '../services/numberFormat.ts';
-import { canRenameUsers, canUsePrivatePlugiles, isAdmin, isAnyModerator } from '../services/permissions.ts';
+import { canRenameUsers, isAdmin, isAnyModerator } from '../services/permissions.ts';
 import { displayOptions, type ProfileSection } from '../services/profileForms.ts';
 import { THEMES } from '../services/themes.ts';
 import { signatureParserOptions } from './parserOptions.ts';
 import { type BbcodeStatus, signatureBbcodeStatus } from './postPage.ts';
 
-/** Pages du profil : les sections et les plugiles de PV. */
-export type ProfilePage = ProfileSection | 'biography' | 'subscriptions' | 'uploads';
-
-/**
- * Plugiles de PV avec leur fichier PHP d'origine (paramètre plugin=), dans l'ordre du menu PHP
- * (ordre alphabétique des fichiers du dossier plugiles/).
- */
-export const PLUGILES = [
-	{ page: 'uploads', file: 'UPP_Mes_uploads.php', private: true },
-	{ page: 'subscriptions', file: 'UPP_Suivile.php', private: true },
-	{ page: 'biography', file: 'UP_Ma_biographie.php', private: false },
-] as const satisfies readonly { page: ProfilePage; file: string; private: boolean }[];
+/** Pages du profil : ses sections. */
+export type ProfilePage = ProfileSection;
 
 export interface MenuItem {
 	href: string;
@@ -41,8 +31,6 @@ export interface MenuItem {
 
 export interface ProfileMenuView {
 	sections: MenuItem[];
-	/** Plugiles (biographie, uploads, suivi), à la suite des sections (le réglage o_plugile_menu n'est pas repris). */
-	plugiles: MenuItem[];
 }
 
 export function buildProfileMenu(viewer: Viewer, config: BoardConfig, userId: number, active: ProfilePage, lang: Lang): ProfileMenuView {
@@ -60,17 +48,7 @@ export function buildProfileMenu(viewer: Viewer, config: BoardConfig, userId: nu
 		section('display', t.sectionDisplay),
 		section('privacy', t.sectionPrivacy),
 	];
-	const labels: Record<(typeof PLUGILES)[number]['page'], string> = {
-		biography: t.myBiography,
-		uploads: t.uploadsPlugile,
-		subscriptions: t.subscriptionsPlugile,
-	};
-	const plugiles = PLUGILES.filter((plugile) => !plugile.private || canUsePrivatePlugiles(viewer, userId)).map((plugile) => ({
-		href: `profile.php?plugin=${plugile.file}&id=${userId}`,
-		label: labels[plugile.page],
-		active: plugile.page === active,
-	}));
-	return { sections, plugiles };
+	return { sections };
 }
 
 export interface Link {

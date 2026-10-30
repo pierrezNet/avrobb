@@ -1,5 +1,6 @@
 /**
- * Textes des pages d'administration propres à PV (anciens plugins AMP_*.php et AP_*.php du PHP).
+ * Textes des pages d'administration servies par admin_loader.php : balises du sujet et messagerie
+ * privée (anciens plugins AP_*.php du PHP).
  */
 
 export const adminPlugins = {
@@ -24,37 +25,9 @@ export const adminPlugins = {
 		saved: 'Options modifiées.',
 	},
 
-	uploadile: {
-		title: 'Fichiers des membres',
-		intro: 'Réglages des fichiers envoyés par les membres (types permis, tailles, espace alloué) et liste des fichiers.',
-		configuration: 'Configuration',
-		legend: 'Choisissez votre configuration',
-		laws: 'Types de fichiers autorisés',
-		lawsHelp: 'Extensions séparées par une virgule.',
-		maxsizeMember: 'Taille maximale envoyable par les membres (octets)',
-		maxsizeModo: 'Taille maximale envoyable par les modérateurs (octets)',
-		limitMember: 'Espace alloué aux membres (octets)',
-		limitModo: 'Espace alloué aux modérateurs (octets)',
-		yes: 'Oui',
-		no: 'Non',
-		update: 'Mettre à jour',
-		updated: 'Réglages enregistrés.',
-		files: 'Fichiers des membres',
-		member: 'Nom du membre',
-		file: 'Nom du fichier',
-		preview: 'Aperçu',
-		noPreview: "Pas d'aperçu",
-		noFiles: 'Aucun fichier envoyé actuellement.',
-		select: (file: string, member: string) => `Sélectionner ${file} de ${member}`,
-		delete: 'Supprimer',
-		deleted: 'Fichier(s) supprimé(s) avec succès !',
-		deleteError: 'Erreur lors de la suppression du ou des fichiers, réessayez.',
-	},
-
 	labels: {
 		title: 'Balises',
-		intro:
-			"Deux sortes de balises s'affichent en pastilles colorées devant le titre des discussions : les balises du sujet, choisies par l'auteur, et les balises de modération, posées par les modérateurs.",
+		intro: "Les balises du sujet, choisies par l'auteur, s'affichent en pastilles colorées devant le titre des discussions.",
 		subjectTagsHead: 'Balises du sujet',
 		subjectTagsInfo:
 			"Proposées à l'auteur d'une discussion (boutons du formulaire, page « Balises du sujet »). Une balise absente de cette liste est retirée du sujet à l'enregistrement.",
@@ -80,43 +53,9 @@ export const adminPlugins = {
 		subjectTagSaved: 'Balise du sujet enregistrée.',
 		subjectTagRenamed: (count: number) => `Balise du sujet enregistrée et renommée dans ${count} sujet(s).`,
 		subjectTagDeleted: 'Balise du sujet supprimée.',
-		moderationHead: 'Balises de modération',
-		moderationInfo: 'Posées par les modérateurs en pied de discussion (« Réglé », « En cours »…).',
-		existing: 'Balises existantes',
-		empty: 'Aucune balise pour le moment.',
-		add: 'Ajouter une balise de modération',
-		addTitle: 'Ajout de balise',
-		editTitle: 'Édition de balise',
-		legend: 'Nom, couleur, type et décoration de la balise',
-		name: 'Nom de la balise',
-		nameHelp: 'Exemple : Réglé',
-		color: 'Couleur de la balise',
-		decoration: 'Décoration',
-		bold: 'Gras',
-		italic: 'Italique',
-		underline: 'Souligné',
-		position: 'Position',
-		style: 'Type de balise',
-		styles: ['Crochets', 'Étoiles', 'Dièses'],
-		moderatorVisible: 'Afficher cette balise pour les modérateurs',
-		yes: 'Oui',
-		no: 'Non',
 		save: 'Enregistrer',
 		edit: 'Modifier',
 		delete: 'Supprimer',
-		deleteTitle: 'Suppression de balise',
-		deleteInfo: (name: string) => `Veuillez confirmer la suppression de la balise « ${name} ».`,
-		deleteWarning: 'Attention ! Une balise supprimée ne peut pas être restaurée, et elle disparaît de tous les sujets.',
 		goBack: 'Retour',
-		errors: {
-			name: 'Entrez le nom de la balise.',
-			color: 'Entrez la couleur de la balise.',
-			colorInvalid: "La couleur n'est pas valide. Exemple : #000000.",
-			duplicate:
-				'Nom de balise déjà utilisé. Vous devez choisir un nom différent ou changer de type de balise (crochets, étoiles ou dièses).',
-		},
-		added: 'Balise ajoutée.',
-		updated: 'Balise mise à jour.',
-		deleted: 'Balise supprimée.',
 	},
 };

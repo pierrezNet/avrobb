@@ -1,11 +1,10 @@
 /**
  * Contrôleur de profile.php : aiguillage entre la consultation d'un profil (ici), sa modification
- * (sections, ProfileEditController), les actions mot de passe, adresse et avatar
- * (AvatarController) et les plugiles de PV (PlugileController).
+ * (sections, ProfileEditController) et l'avatar (AvatarController).
  *
  * Comme le PHP, un lecteur qui ne peut pas modifier le profil le consulte, quelle que soit la
- * section ou le plugile demandé. Seule la section « Administration » (groupe, modération,
- * bannissement, suppression du membre) reste servie par le PHP jusqu'au lot Administration.
+ * section demandée. La section « Administration » de FluxBB n'existe pas : admin_users.php la
+ * remplace (groupe, bannissement, suppression).
  */
 
 import type { FastifyReply, FastifyRequest } from 'fastify';
@@ -17,14 +16,13 @@ import { buildCensor } from '../services/censor.ts';
 import { canEditProfile } from '../services/permissions.ts';
 import { isProfileSection } from '../services/profileForms.ts';
 import { AvatarController, type AvatarControllerDeps } from './AvatarController.ts';
-import { PlugileController, type PlugileControllerDeps } from './PlugileController.ts';
 import { ProfileEditController, type ProfileEditControllerDeps } from './ProfileEditController.ts';
 import { positiveInt } from './params.ts';
 import type { ProfileQuery } from './profileAccess.ts';
 
 export type { ProfileQuery } from './profileAccess.ts';
 
-export interface ProfileControllerDeps extends LayoutDeps, ProfileEditControllerDeps, AvatarControllerDeps, PlugileControllerDeps {
+export interface ProfileControllerDeps extends LayoutDeps, ProfileEditControllerDeps, AvatarControllerDeps {
 	profiles: ProfileReader;
 }
 
@@ -36,12 +34,10 @@ const AVATAR_UPLOAD = new Set(['upload_avatar', 'upload_avatar2']);
 export class ProfileController {
 	readonly #edit: ProfileEditController;
 	readonly #avatar: AvatarController;
-	readonly #plugiles: PlugileController;
 
 	constructor(private readonly deps: ProfileControllerDeps) {
 		this.#edit = new ProfileEditController(deps);
 		this.#avatar = new AvatarController(deps);
-		this.#plugiles = new PlugileController(deps);
 	}
 
 	show = async (request: ProfileRequest, reply: FastifyReply): Promise<FastifyReply> => {
@@ -61,12 +57,6 @@ export class ProfileController {
 		if (profile === null) return renderMessage(request, reply, this.deps, 404, lang.common.badRequest);
 
 		if (canEditProfile(viewer, profile)) {
-			if (query.plugin !== undefined) {
-				if (query.plugin === 'UP_Ma_biographie.php') return this.#plugiles.biography(request, reply);
-				if (query.plugin === 'UPP_Suivile.php') return this.#plugiles.subscriptions(request, reply);
-				if (query.plugin === 'UPP_Mes_uploads.php') return this.#plugiles.uploads(request, reply);
-				return renderMessage(request, reply, this.deps, 404, lang.common.badRequest);
-			}
 			const section = query.section ?? 'essentials';
 			if (!isProfileSection(section)) return renderMessage(request, reply, this.deps, 404, lang.common.badRequest);
 			return this.#edit.show(request, reply, section);
@@ -106,7 +96,7 @@ export class ProfileController {
 		);
 	};
 
-	/** Formulaires POST : actions, plugiles, puis sections. */
+	/** Formulaires POST : actions, puis sections. */
 	submit = async (request: ProfilePost, reply: FastifyReply): Promise<FastifyReply> => {
 		const { query } = request;
 		const { lang } = this.deps.page;
@@ -119,10 +109,7 @@ export class ProfileController {
 				if (AVATAR_UPLOAD.has(query.action)) return this.#avatar.upload(request, reply);
 				return renderMessage(request, reply, this.deps, 400, lang.common.badRequest);
 		}
-		if (query.plugin === 'UP_Ma_biographie.php') return this.#plugiles.saveBiography(request, reply);
-		if (query.plugin === 'UPP_Suivile.php') return this.#plugiles.unsubscribe(request, reply);
-		if (query.plugin === 'UPP_Mes_uploads.php') return this.#plugiles.updateUploads(request, reply);
-		if (query.plugin === undefined && isProfileSection(query.section)) return this.#edit.submit(request, reply, query.section);
+		if (isProfileSection(query.section)) return this.#edit.submit(request, reply, query.section);
 		return renderMessage(request, reply, this.deps, 400, lang.common.badRequest);
 	};
 

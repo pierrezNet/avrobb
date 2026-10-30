@@ -220,8 +220,3 @@ const moderatesMember = (viewer: Viewer, target: ProfileTarget): boolean =>
 export function canRenameUsers(viewer: Viewer): boolean {
 	return isAdmin(viewer) || (viewer.group.isModerator && viewer.group.canModRenameUsers);
 }
-
-/** Plugiles privés (UPP_*) : « visibles par le membre et les administrateurs ». */
-export function canUsePrivatePlugiles(viewer: Viewer, targetId: number): boolean {
-	return (!viewer.isGuest && viewer.id === targetId) || isAdmin(viewer);
-}

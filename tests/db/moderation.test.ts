@@ -153,16 +153,6 @@ describe('ModerationRepository', () => {
 			expect(await topicRow(trx, 11)).toMatchObject({ closed: 0 });
 			expect(await store.setSticky(2, 10, true)).toBe(true);
 			expect(await topicRow(trx, 10)).toMatchObject({ sticky: 1 });
-
-			expect(await store.setTopicLabel(2, 10, 1, false)).toBe(true);
-			expect(await store.setTopicLabel(2, 10, 99, true)).toBe(false);
-			// Sujet 13 (forum 1) sans ligne balises_modo : elle est créée.
-			expect(await store.setTopicLabel(1, 13, 3, true)).toBe(true);
-			const rows = await trx.selectFrom('balises_modo').selectAll().where('npost', 'in', ['10', '13']).orderBy('npost').execute();
-			expect(rows).toEqual([
-				{ npost: '10', bal1: 0, bal2: 1, bal3: 0 },
-				{ npost: '13', bal1: 0, bal2: 0, bal3: 1 },
-			]);
 		});
 	});
 });
@@ -485,56 +475,6 @@ describe('plugins (config et groupes)', () => {
 			await groups.setPrivateMessageRights(4, false, 50);
 			expect((await groups.listPrivateMessageRights()).find((g) => g.id === 4)).toMatchObject({ allowed: false, limit: 50 });
 		});
-	});
-});
-
-describe('UserAdminRepository (plugin Uploadile)', () => {
-	it('noms des membres', async () => {
-		const { UserAdminRepository } = await import('../../src/repositories/UserAdminRepository.ts');
-		const store = new UserAdminRepository(db);
-		expect(await store.findUsernames([3, 5, 999])).toEqual(
-			new Map([
-				[3, 'Tessy'],
-				[5, 'MaxDUO'],
-			]),
-		);
-	});
-});
-
-describe('LabelAdminRepository (AP_Balises.php)', () => {
-	// ALTER TABLE balises_modo valide implicitement : pas de transaction annulée, la balise est supprimée à la fin.
-	it('ajoute une balise avec sa colonne bal<id>, la modifie puis la supprime', async () => {
-		const { LabelAdminRepository } = await import('../../src/repositories/LabelAdminRepository.ts');
-		const store = new LabelAdminRepository(db);
-		const id = await store.addLabel({
-			name: 'Test',
-			color: '#123456',
-			bold: true,
-			italic: false,
-			underline: false,
-			style: 1,
-			moderatorVisible: true,
-		});
-		try {
-			const columns = await sql<{ Field: string }>`SHOW COLUMNS FROM ${sql.table('balises_modo')}`.execute(db);
-			expect(columns.rows.map((c) => c.Field)).toContain(`bal${id}`);
-			await store.updateLabel(id, {
-				name: 'Test',
-				color: '#654321',
-				bold: false,
-				italic: true,
-				underline: false,
-				style: 2,
-				moderatorVisible: false,
-				position: 4,
-			});
-			expect(await store.findLabel(id)).toMatchObject({ color: '#654321', italic: true, style: 2, position: 4 });
-		} finally {
-			await store.deleteLabel(id);
-		}
-		const after = await sql<{ Field: string }>`SHOW COLUMNS FROM ${sql.table('balises_modo')}`.execute(db);
-		expect(after.rows.map((c) => c.Field)).not.toContain(`bal${id}`);
-		expect(await store.findLabel(id)).toBeNull();
 	});
 });
 

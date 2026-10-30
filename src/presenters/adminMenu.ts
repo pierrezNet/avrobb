@@ -15,7 +15,7 @@ import type { MenuItem } from './profileEditPage.ts';
  * Installer, FluxToolBar, Plugile, Smilies et AP_Premium (promotion temporaire dans un groupe, table
  * premium jamais installée sur PV) ne font pas partie d'AvroBB.
  */
-export const ADMIN_PLUGINS = ['AP_Balises.php', 'AP_Private_messaging.php', 'AP_Uploadile.php'] as const;
+export const ADMIN_PLUGINS = ['AP_Balises.php', 'AP_Private_messaging.php'] as const;
 
 export type AdminPage =
 	| 'index'
@@ -63,7 +63,6 @@ export function buildAdminMenu(viewer: Viewer, config: BoardConfig, active: Admi
 					item('censoring', 'admin_censoring.php', t.censoring),
 					plugin('AP_Balises.php', t.labels),
 					plugin('AP_Private_messaging.php', t.privateMessages),
-					plugin('AP_Uploadile.php', t.memberFiles),
 					item('maintenance', 'admin_maintenance.php', t.maintenance),
 				]
 			: null,

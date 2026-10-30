@@ -26,7 +26,6 @@ function profile(overrides: Partial<UserProfile> = {}): UserProfile {
 		aim: '',
 		yahoo: '',
 		signature: '[b]Bons vols[/b]',
-		biography: 'Pilote depuis [i]FS98[/i] :)',
 		numPosts: 12,
 		lastPost: NOW - 600,
 		registered: NOW - 86_400 * 3,
@@ -82,17 +81,15 @@ describe('GET /profile.php', () => {
 		expect(res.body).not.toContain('val@example.test');
 		expect(res.body).toContain('<dd>12345</dd>');
 		expect(res.body).toContain('<strong>Bons vols</strong>');
-		expect(res.body).toContain('Pilote depuis <em>FS98</em> <span class="smiley"');
 		expect(res.body).toContain('search.php?action=show_user_posts&amp;user_id=6');
 		expect(res.body).not.toContain('show_subscriptions');
 	});
 
-	it('invité : ni e-mail ni MP ; biographie absente signalée', async () => {
-		app = await buildApp(deps({ profiles: [profile({ biography: '', emailSetting: 0 })], config: { privateMessagesEnabled: true } }));
+	it('invité : ni e-mail ni MP', async () => {
+		app = await buildApp(deps({ profiles: [profile({ emailSetting: 0 })], config: { privateMessagesEnabled: true } }));
 		const res = await app.inject('/profile.php?id=6');
 		expect(res.body).not.toContain('mailto:');
 		expect(res.body).not.toContain('pms_send.php');
-		expect(res.body).toContain('Ce membre n&#39;a pas écrit sa biographie');
 	});
 
 	it('modification servie par le forum ; plus de section Administration', async () => {
@@ -107,10 +104,8 @@ describe('GET /profile.php', () => {
 		const admin = await app.inject({ url: '/profile.php?section=admin&id=6', headers: { cookie: cookie(5, 'hash-mod') } });
 		expect(admin.statusCode).toBe(404);
 
-		// Un lecteur qui ne peut pas modifier consulte, quelle que soit la section ou le plugile.
+		// Un lecteur qui ne peut pas modifier consulte, quelle que soit la section.
 		expect((await app.inject('/profile.php?section=personal&id=6')).body).toContain('Profil de valdefsx');
-		expect((await app.inject('/profile.php?plugin=UPP_Suivile.php&id=6')).statusCode).toBe(200);
-		expect((await app.inject('/profile.php?plugin=UP_Ma_biographie.php&id=6')).statusCode).toBe(200);
 		expect((await app.inject('/profile.php?action=inconnue&id=6')).statusCode).toBe(404);
 	});
 

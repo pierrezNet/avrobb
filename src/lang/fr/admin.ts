@@ -22,7 +22,6 @@ export const admin = {
 	reports: 'Signalements',
 	labels: 'Balises',
 	privateMessages: 'Messagerie privée',
-	memberFiles: 'Fichiers des membres',
 	goBack: 'Retour',
 	delete: 'Supprimer',
 	update: 'Mettre à jour',

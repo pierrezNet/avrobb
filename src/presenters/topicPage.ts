@@ -6,7 +6,7 @@
  * en dernier, et seulement pour l'affichage (pas de comparaison sur des chaînes formatées).
  */
 
-import { type BoardConfig, GroupId, type Post, type PostAuthor, type Topic, type TopicLabel, type Viewer } from '../domain/models.ts';
+import { type BoardConfig, GroupId, type Post, type PostAuthor, type Topic, type Viewer } from '../domain/models.ts';
 import type { Lang } from '../lang/fr/index.ts';
 import { type BbcodeOptions, parseMessage, parseSignature } from '../services/bbcode.ts';
 import type { Censor } from '../services/censor.ts';
@@ -25,7 +25,6 @@ import {
 } from '../services/permissions.ts';
 import { type SubjectSegment, subjectSegments } from '../services/subjectTags.ts';
 import type { ToolbarSettings } from '../services/toolbar.ts';
-import { labelledSubject, styleSubject } from '../services/topicLabels.ts';
 import { userTitle } from '../services/userTitle.ts';
 import { type Crumb, crumbs, type PaginationLink, paginationLinks } from './navigation.ts';
 import { bbcodeLabels, messageParserOptions } from './parserOptions.ts';
@@ -83,7 +82,7 @@ export interface PostView {
 }
 
 export interface TopicPageView {
-	/** `subject` : sujet affiché, balises PV et censure comprises. */
+	/** `subject` : sujet affiché, censure comprise. */
 	/** `subjectParts` : balises de tête en pastilles colorées (titre de la page). */
 	topic: { id: number; subject: string; subjectParts: SubjectSegment[]; closed: boolean };
 	crumbs: Crumb[];
@@ -127,8 +126,6 @@ export interface TopicPageInput {
 	viewer: Viewer;
 	config: BoardConfig;
 	topic: Topic;
-	/** Balises PV posées sur le sujet. */
-	labels: readonly TopicLabel[];
 	posts: readonly Post[];
 	page: number;
 	numPages: number;
@@ -151,10 +148,9 @@ export function topicUrl(topicId: number, page = 1): string {
 	return page > 1 ? `viewtopic.php?id=${topicId}&p=${page}` : `viewtopic.php?id=${topicId}`;
 }
 
-/** Sujet affiché : balises PV en préfixe, puis censure (ordre de viewtopic.php). */
-export function displaySubject(subject: string, labels: readonly TopicLabel[], censor: Censor | null): string {
-	const labelled = labelledSubject(subject, labels);
-	return censor !== null ? censor(labelled) : labelled;
+/** Sujet affiché, censure comprise. */
+export function displaySubject(subject: string, censor: Censor | null): string {
+	return censor !== null ? censor(subject) : subject;
 }
 
 function actionLinks(rights: PostActionRights, postId: number, topicId: number, lang: Lang): PostAction[] {
@@ -246,7 +242,7 @@ export function buildTopicPage(input: TopicPageInput): TopicPageView {
 	const time = viewerTimeSettings(viewer);
 	const format = (ts: number | null, dateOnly = false): string => formatTime(ts, time, input.dateWords, input.now, dateOnly);
 	const censored = (text: string): string => (censor !== null ? censor(text) : text);
-	const subject = displaySubject(topic.subject, input.labels, censor);
+	const subject = displaySubject(topic.subject, censor);
 	const titleWords = { banned: lang.common.banned, guest: lang.common.guest, member: lang.common.member };
 	const parser = parserOptions(input);
 
@@ -312,7 +308,7 @@ export function buildTopicPage(input: TopicPageInput): TopicPageView {
 		topic: {
 			id: topic.id,
 			subject,
-			subjectParts: subjectSegments(styleSubject(subject, input.labels), () => null, config.subjectTags),
+			subjectParts: subjectSegments(subject, config.subjectTags),
 			closed: topic.closed,
 		},
 		crumbs: crumbs(

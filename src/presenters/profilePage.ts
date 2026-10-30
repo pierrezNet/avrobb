@@ -1,6 +1,5 @@
 /**
- * Modèle de vue de la consultation d'un profil (branche « view » de profile.php) et de la
- * biographie du plugile UP_Ma_biographie. Fonction pure.
+ * Modèle de vue de la consultation d'un profil (branche « view » de profile.php). Fonction pure.
  */
 
 import type { BoardConfig, UserProfile, Viewer } from '../domain/models.ts';
@@ -32,8 +31,6 @@ export interface ProfileSection {
 export interface ProfilePageView {
 	username: string;
 	sections: ProfileSection[];
-	/** HTML de parseMessage() pour la biographie, ou null si le membre n'en a pas écrit. */
-	biographyHtml: string | null;
 }
 
 export interface ProfilePageInput {
@@ -58,7 +55,7 @@ function parserOptions(input: ProfilePageInput, signature: boolean): BbcodeOptio
 		bbcode: signature ? config.signatureBbcode : config.bbcode,
 		imgTag: signature ? config.signatureImgTag : config.imgTag,
 		showImages: signature ? viewer.showSignatureImages : viewer.showImages,
-		// La biographie est rendue avec hide_smilies = !o_smilies (plugile) ; la signature avec o_smilies_sig.
+		// Signature : o_smilies_sig ; le reste : o_smilies.
 		smilies: (signature ? config.signatureSmilies : config.smilies) && viewer.showSmilies,
 		censor,
 		baseUrl: config.baseUrl,
@@ -141,6 +138,5 @@ export function buildProfilePage(input: ProfilePageInput): ProfilePageView {
 	return {
 		username: profile.username,
 		sections: sections.filter((section) => section.fields.length > 0),
-		biographyHtml: profile.biography !== '' ? parseMessage(profile.biography, parserOptions(input, false)) : null,
 	};
 }

@@ -8,7 +8,6 @@ import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { buildForumPage, forumUrl } from '../presenters/forumPage.ts';
 import type { CensorReader } from '../repositories/CensorRepository.ts';
 import type { ForumReader } from '../repositories/ForumRepository.ts';
-import type { TopicLabelReader } from '../repositories/TopicLabelRepository.ts';
 import type { TopicReader } from '../repositories/TopicRepository.ts';
 import { buildCensor } from '../services/censor.ts';
 import { clampPage, pageCount } from '../services/pagination.ts';
@@ -18,7 +17,6 @@ import { positiveInt } from './params.ts';
 export interface ForumControllerDeps extends LayoutDeps {
 	forums: ForumReader;
 	topics: TopicReader;
-	topicLabels: TopicLabelReader;
 	censorship: CensorReader;
 	trackCookieName: string;
 }
@@ -69,19 +67,13 @@ export class ForumController {
 			config.showDot && !viewer.isGuest ? viewer.id : null,
 			age,
 		);
-		const [topicLabels, labelDefinitions, censoredWords] = await Promise.all([
-			this.deps.topicLabels.listForTopics(topics.map((topic) => topic.id)),
-			this.deps.topicLabels.listDefinitions(),
-			config.censoring ? this.deps.censorship.listWords() : [],
-		]);
+		const censoredWords = config.censoring ? await this.deps.censorship.listWords() : [];
 
 		const view = buildForumPage({
 			viewer,
 			config,
 			forum,
 			topics,
-			topicLabels,
-			labelDefinitions,
 			tracked: parseTrackedTopics(request.cookies[this.deps.trackCookieName]),
 			censor: config.censoring ? buildCensor(censoredWords) : null,
 			page,

@@ -26,7 +26,7 @@ export function field(form: FormBody | undefined, name: string): string {
 	return Array.isArray(value) ? (value.at(-1) ?? '') : (value ?? '');
 }
 
-/** Taille maximale d'un formulaire avec fichier (avatar, Uploadile). */
+/** Taille maximale d'un formulaire avec fichier (avatar, galerie, logo, bannière). */
 export const MAX_UPLOAD_BYTES = 16 * 1_048_576;
 
 /** Fichier reçu dans un formulaire multipart. */

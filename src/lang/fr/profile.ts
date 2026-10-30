@@ -1,12 +1,10 @@
 /**
  * Textes du profil (consultation et modification). Source : lang/French/profile.php, prof_reg.php,
- * pms.php, reputation.php, uploadile.php et les plugiles de PV (UP_Ma_biographie, UPP_Suivile,
- * UPP_Mes_uploads). Les « Redirection… » du PHP disparaissent : Node redirige aussitôt.
+ * pms.php et reputation.php de FluxBB. Les « Redirection… » du PHP disparaissent : on redirige aussitôt.
  */
 
 import type { AvatarError } from '../../services/images.ts';
 import type { LimitedField, ProfileError } from '../../services/profileForms.ts';
-import type { UploadError } from '../../services/uploads.ts';
 import { account } from './account.ts';
 import { preparseErrorText } from './post.ts';
 
@@ -68,14 +66,6 @@ function avatarErrorText(error: AvatarError, formatNumber: (n: number) => string
 	}
 }
 
-const UPLOAD_ERRORS: Record<UploadError, string> = {
-	noFile: 'Aucun fichier sélectionné.',
-	multipleDots: "Erreur : le nom de votre fichier ne doit contenir qu'un seul point (.), celui de son extension, réessayez.",
-	badExtension: "Erreur : cette extension n'est pas acceptée, réessayez.",
-	tooLarge: 'Erreur : Fichier trop volumineux, réessayez.',
-	quotaExceeded: "Erreur : vous dépassez l'espace qui vous est alloué. Supprimez des fichiers et réessayez.",
-};
-
 export const profile = {
 	usersProfile: (username: string) => `Profil de ${username}`,
 	profile: 'Profil',
@@ -108,8 +98,6 @@ export const profile = {
 	showSubscriptions: 'Afficher toutes les discussions suivies',
 	lastPost: 'Dernier message',
 	registered: "Date d'inscription",
-	biography: 'Biographie',
-	noBiography: "Ce membre n'a pas écrit sa biographie",
 
 	// ——— Modification (profile.php, branche « edit ») ———
 	profileMenu: 'Menu profil',
@@ -203,70 +191,4 @@ export const profile = {
 	avatarError: avatarErrorText,
 	confirmDeleteAvatar: "Effacer l'avatar\u00a0?",
 	confirmDeleteAvatarInfo: 'Votre avatar actuel sera définitivement effacé.',
-
-	// Plugile « Ma biographie » (UP_Ma_biographie)
-	myBiography: 'Ma biographie',
-	biographyInfo:
-		"Parce que c'est toujours plus sympa de connaître un peu mieux les personnes avec qui on discute sur un forum, vous pouvez écrire votre biographie pour que les autres membres en sachent plus long sur vous ;)",
-	biographyLegend: 'Écrivez votre biographie',
-	currentBiography: 'Biographie actuelle',
-	biographyTooLong: 'La biographie ne doit pas dépasser 65\u00a0535 octets.',
-	send: 'Envoyer',
-
-	// Plugile « Suivile » (UPP_Suivile)
-	subscriptionsPlugile: 'Suivile',
-	subscriptionsManager: 'Gestion des abonnements',
-	subscriptionsTitle: 'Abonnements',
-	subscriptionsInfo: "Ce plugile est un gestionnaire d'abonnements",
-	noSubscriptions: "Vous n'êtes abonné à aucune discussion.",
-	noTopicsSelected: 'Vous devez choisir au moins une discussion de laquelle se désabonner.',
-	topic: 'Discussion',
-	replies: 'Réponses',
-	views: 'Vues',
-	select: 'Sélectionner',
-	selectTopic: (subject: string) => `Sélectionner « ${subject} »`,
-	unsubscribe: 'Se désabonner',
-	moved: 'Déplacé',
-	sticky: 'À lire',
-	by: (author: string) => `par ${author}`,
-	newPosts: 'Nouveaux messages',
-
-	// Plugile « Mes uploads » (UPP_Mes_uploads)
-	uploadsPlugile: 'Mes uploads',
-	uploadsInformation: 'Information',
-	uploadsInfo:
-		'Vous pouvez uploader facilement des fichiers sur le serveur du site. Voilà qui pourra vous être utile pour partager des informations autrement que par les mots ;)',
-	uploadFileTitle: 'Uploader un fichier',
-	uploadFileLegend: 'Sélectionnez et envoyez votre fichier',
-	chooseFile: 'Sélectionner un fichier',
-	uploadLimits: (maxSize: string, extensions: string) =>
-		`Votre fichier ne doit pas dépasser les ${maxSize} et doit être de type\u00a0: ${extensions}.`,
-	uploadLimitsAdmin: (extensions: string) => `Votre fichier doit être de type\u00a0: ${extensions}.`,
-	noExtensionAllowed: "Aucun type de fichier n'est autorisé pour le moment.",
-	currentUploads: 'Mes uploads actuelles',
-	usedSpace: 'Espace utilisé\u00a0:',
-	usedSpaceOf: (used: string, quota: string) => `${used} sur ${quota}.`,
-	storageFolder: 'Dossier de stockage\u00a0:',
-	fileName: 'Nom du fichier',
-	preview: 'Prévisualisation',
-	noPreview: 'Pas de miniature',
-	deleteFile: (name: string) => `Supprimer ${name}`,
-	delete: 'Supprimer',
-	noUploads: 'Aucun fichier uploadé actuellement.',
-	uploadError: (error: UploadError) => UPLOAD_ERRORS[error],
-	uploadSuccess: 'Fichier uploadé avec succès\u00a0!',
-	deleteSuccess: 'Fichier(s) supprimé(s) avec succès\u00a0!',
-	deleteFailed: 'Erreur lors de la suppression du ou des fichiers, réessayez.',
-	noFilesSelected: "Vous n'avez sélectionné aucun fichier.",
-
-	// Gestionnaire de fichiers (gestionnaire.php)
-	fileManager: 'Gestionnaire de fichiers',
-	fileManagerInfo:
-		'Cliquez sur « Insérer » pour ajouter un fichier au message en cours de rédaction, ou copiez son adresse. Le gestionnaire complet est aussi dans votre profil.',
-	myUploads: 'Mes uploads',
-	fileAddress: (name: string) => `Adresse de ${name}`,
-	insert: 'Insérer',
-	insertInto: (name: string) => `Insérer ${name} dans le message`,
-	inserted: 'Inséré dans le message.',
-	closeWindow: 'Fermer cette fenêtre',
 };

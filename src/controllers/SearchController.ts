@@ -16,7 +16,6 @@ import type { CensorReader } from '../repositories/CensorRepository.ts';
 import type { ForumReader } from '../repositories/ForumRepository.ts';
 import type { ForumScope, SearchReader, SearchWriter } from '../repositories/SearchRepository.ts';
 import type { StopwordsReader } from '../repositories/StopwordsLoader.ts';
-import type { TopicLabelReader } from '../repositories/TopicLabelRepository.ts';
 import { buildCensor } from '../services/censor.ts';
 import { floodWait } from '../services/flood.ts';
 import { clampPage, pageCount } from '../services/pagination.ts';
@@ -44,7 +43,6 @@ export interface SearchControllerDeps extends LayoutDeps {
 	searchWriter: SearchWriter;
 	forums: ForumReader;
 	stopwords: StopwordsReader;
-	topicLabels: TopicLabelReader;
 	censorship: CensorReader;
 	trackCookieName: string;
 }
@@ -260,11 +258,9 @@ export class SearchController {
 		const pageIds = outcome.ids.slice((page - 1) * perPage, page * perPage);
 		const userId = outcome.type.kind === 'action' ? outcome.type.userId : null;
 
-		const [topics, posts, topicLabels, labelDefinitions, censoredWords, username] = await Promise.all([
+		const [topics, posts, censoredWords, username] = await Promise.all([
 			outcome.showAs === 'topics' ? this.deps.search.listTopics(pageIds, outcome.sortBy, outcome.sortDir) : [],
 			outcome.showAs === 'posts' ? this.deps.search.listPosts(pageIds, outcome.sortBy, outcome.sortDir) : [],
-			outcome.showAs === 'topics' ? this.deps.topicLabels.listForTopics(pageIds) : new Map(),
-			outcome.showAs === 'topics' ? this.deps.topicLabels.listDefinitions() : [],
 			config.censoring ? this.deps.censorship.listWords() : [],
 			userId !== null ? this.deps.search.findUsername(userId) : null,
 		]);
@@ -275,8 +271,6 @@ export class SearchController {
 			outcome,
 			topics,
 			posts,
-			topicLabels,
-			labelDefinitions,
 			tracked: parseTrackedTopics(request.cookies[this.deps.trackCookieName]),
 			censor: config.censoring ? buildCensor(censoredWords) : null,
 			username,

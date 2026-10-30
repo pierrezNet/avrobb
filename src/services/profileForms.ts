@@ -374,33 +374,3 @@ export function readPrivacy(input: PrivacyInput, options: PrivacyOptions): FormR
 	}
 	return { changes, errors: [] };
 }
-
-// ——— Ma biographie (plugile UP_Ma_biographie) ———
-
-/** Taille d'une colonne TEXT, limite du plugile. */
-export const MAX_BIOGRAPHY_BYTES = 65_535;
-
-export interface BiographyContext {
-	bbcode: boolean;
-	messageAllCaps: boolean;
-	/** Administrateur ou modérateur (g_id <= PUN_MOD) : le tout-capitales lui est permis. */
-	isModeratorGroup: boolean;
-	preparse: Omit<PreparseOptions, 'isSignature'>;
-}
-
-/**
- * Biographie à enregistrer. Écart assumé : une biographie trop longue ou au BBCode invalide est
- * refusée avec ses erreurs (le plugile les collectait sans les afficher, et enregistrait quand même).
- */
-export function readBiography(raw: string, context: BiographyContext): { biography: string; errors: ('tooLong' | PreparseError)[] } {
-	let biography = punLinebreaks(punTrim(raw));
-	if (Buffer.byteLength(biography, 'utf8') > MAX_BIOGRAPHY_BYTES) return { biography, errors: ['tooLong'] };
-	if (!context.messageAllCaps && isAllUppercase(biography) && !context.isModeratorGroup) biography = ucwords(biography);
-
-	if (context.bbcode && biography.includes('[') && biography.includes(']')) {
-		const result = preparseBbcode(biography, { ...context.preparse, isSignature: false });
-		if (result.errors.length > 0) return { biography, errors: result.errors };
-		biography = result.text;
-	}
-	return { biography, errors: [] };
-}

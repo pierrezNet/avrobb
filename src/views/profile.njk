@@ -24,11 +24,5 @@
 		</dl>
 	</section>
 {% endfor %}
-
-	<section class="profile__section" id="biographie" aria-labelledby="profile-biography">
-		<h2 class="profile__title" id="profile-biography">{{ lang.profile.biography }}</h2>
-		{#- HTML de parseMessage() : échappé par construction (services/bbcode.ts). #}
-		{% if view.biographyHtml %}<div class="bbcode profile__biography">{{ view.biographyHtml | safe }}</div>{% else %}<p>{{ lang.profile.noBiography }}</p>{% endif %}
-	</section>
 </div>
 {% endblock %}

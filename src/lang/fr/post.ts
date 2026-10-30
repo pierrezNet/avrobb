@@ -121,8 +121,6 @@ export const post = {
 	smilies: 'Émoticônes :',
 	on: 'activé',
 	off: 'désactivé',
-	/** Gestionnaire d'envois de PV (mod Uploadile, lang/French/uploadile.php). */
-	fileManager: 'Gestion de mes uploads',
 	galleryPicker: 'Images de la galerie',
 
 	// Modification

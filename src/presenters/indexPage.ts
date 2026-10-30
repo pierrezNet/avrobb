@@ -152,7 +152,7 @@ export function buildIndexPage(input: IndexPageInput): IndexPageView {
 			const image = lastImageUrl(input.hotTopicImages.get(topic.id) ?? '');
 			return {
 				href: topicUrl(topic.id),
-				subject: subjectSegments([{ text: topic.subject, style: null }], () => null, config.subjectTags),
+				subject: subjectSegments(topic.subject, config.subjectTags),
 				subjectText: topic.subject,
 				// Variante mobile (640 px) des images du forum : plus légère pour une vignette.
 				imageUrl: image !== null ? (mobileVariantUrl(image, config.baseUrl) ?? image) : null,

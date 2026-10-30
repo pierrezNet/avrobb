@@ -102,16 +102,6 @@ export function toBoardConfig(values: ReadonlyMap<string, string>): BoardConfig 
 		privateMessageNotification: flag('o_pms_notification'),
 		privateMessageMaxReceivers: int('o_pms_max_receiver', 5),
 		privateMessagesPerPage: Math.max(1, int('o_pms_mess_per_page', 15)),
-		uploads: {
-			extensions: text('o_uploadile_laws')
-				.split(',')
-				.map((ext) => ext.trim().toLowerCase())
-				.filter((ext) => ext !== ''),
-			memberQuota: int('o_uploadile_limit_member', 0),
-			moderatorQuota: int('o_uploadile_limit_modo', 0),
-			memberMaxFileSize: int('o_uploadile_maxsize_member', 0),
-			moderatorMaxFileSize: int('o_uploadile_maxsize_modo', 0),
-		},
 		baseUrl: text('o_base_url').replace(/\/$/, ''),
 		indentSpaces: Number(text('o_indent_num_spaces', '4')) || 0,
 		reputationEnabled: flag('o_reputation_enabled'),

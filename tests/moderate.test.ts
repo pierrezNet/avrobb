@@ -1,7 +1,7 @@
 /**
  * Modération (moderate.php) de bout en bout avec les doublures : droits, liste des sujets, actions
  * groupées avec confirmation, messages d'un sujet, actions d'un seul sujet, consultation d'IP, et
- * pied de viewtopic (boutons POST, balises de PV).
+ * pied de viewtopic (boutons POST).
  */
 
 import type { FastifyInstance } from 'fastify';
@@ -207,30 +207,16 @@ describe('actions sur un seul sujet', () => {
 		expect(fake.moderationLog).toBeUndefined();
 		const res = await post_(server, 5, '/moderate.php?fid=2&stick=10', {});
 		expect(res.headers.location).toBe('viewtopic.php?id=10');
-		await post_(server, 5, '/moderate.php?fid=2&balise=1&npost=10', {});
 		await post_(server, 5, '/moderate.php?fid=2&close=10', {});
-		expect(fake.moderationLog).toEqual(['stick 10', 'balise 1 10', 'close 10']);
+		expect(fake.moderationLog).toEqual(['stick 10', 'close 10']);
 		expect((await post_(server, 5, '/moderate.php?fid=2&unstick=77', {})).statusCode).toBe(400);
 	});
 
-	it('pied de viewtopic : boutons POST et balises de PV pour le modérateur', async () => {
-		const label = {
-			id: 1,
-			name: 'Réglé',
-			style: 'brackets' as const,
-			color: '#00AA00',
-			bold: true,
-			italic: false,
-			underline: false,
-			moderatorVisible: true,
-		};
-		const hidden = { ...label, id: 2, name: 'Secret', moderatorVisible: false };
-		const { server } = await start(data({ labelDefinitions: [label, hidden], topicLabels: new Map([[10, [label]]]) }));
+	it('pied de viewtopic : boutons POST pour le modérateur', async () => {
+		const { server } = await start(data({}));
 		const res = await get(server, 5, '/viewtopic.php?id=10');
 		expect(res.body).toContain('action="moderate.php?fid=2&amp;close=10"');
-		expect(res.body).toContain('action="moderate.php?fid=2&amp;nobalise=1&amp;npost=10"');
-		expect(res.body).toContain('Supprimer [Réglé]');
-		expect(res.body).not.toContain('Secret');
+		expect(res.body).not.toContain('balise=');
 		expect(res.body).toContain('href="moderate.php?fid=2&amp;tid=10&amp;p=1"');
 	});
 });

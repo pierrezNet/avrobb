@@ -29,7 +29,6 @@ import { DeleteController, type DeleteQuery } from './controllers/DeleteControll
 import { DraftController, type DraftQuery } from './controllers/DraftController.ts';
 import { EditController, type EditQuery } from './controllers/EditController.ts';
 import { ExternController, type ExternQuery } from './controllers/ExternController.ts';
-import { FileManagerController, type FileManagerQuery } from './controllers/FileManagerController.ts';
 import { type AdminCategoriesQuery, type AdminForumsQuery, ForumAdminController } from './controllers/ForumAdminController.ts';
 import { ForumController, type ForumQuery } from './controllers/ForumController.ts';
 import { GalleryController, type GalleryQuery } from './controllers/GalleryController.ts';
@@ -73,10 +72,8 @@ import type { GalleryStore } from './repositories/GalleryRepository.ts';
 import type { GroupAdminStore } from './repositories/GroupAdminRepository.ts';
 import type { HeaderImageStore } from './repositories/HeaderImageFiles.ts';
 import type { HomeActivityReader } from './repositories/HomeActivityRepository.ts';
-import type { LabelAdminStore } from './repositories/LabelAdminRepository.ts';
 import type { MaintenanceStore } from './repositories/MaintenanceRepository.ts';
 import type { MemberSuggestReader } from './repositories/MemberSuggestRepository.ts';
-import type { UploadStore } from './repositories/MemberUploadFiles.ts';
 import type { ModerationStore } from './repositories/ModerationRepository.ts';
 import type { PostEditStore } from './repositories/PostEditRepository.ts';
 import type { PostingStore } from './repositories/PostingRepository.ts';
@@ -93,9 +90,8 @@ import type { StopwordsReader } from './repositories/StopwordsLoader.ts';
 import type { SubjectPrefixStore } from './repositories/SubjectPrefixRepository.ts';
 import type { SubscriptionStore } from './repositories/SubscriptionRepository.ts';
 import type { ToolbarReader } from './repositories/ToolbarRepository.ts';
-import type { TopicLabelReader } from './repositories/TopicLabelRepository.ts';
 import type { TopicReader, TopicWriter } from './repositories/TopicRepository.ts';
-import type { UploadileAdminStore, UserAdminReader, UserAdminWriter } from './repositories/UserAdminRepository.ts';
+import type { UserAdminReader, UserAdminWriter } from './repositories/UserAdminRepository.ts';
 import type { AccountLookup, MemberListReader, ProfileReader } from './repositories/UserRepository.ts';
 import type { UsersInfoReader } from './repositories/UsersInfoLoader.ts';
 import type { AvatarLocator, AvatarStore } from './services/avatars.ts';
@@ -154,8 +150,6 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	forumAdmin: ForumAdminStore;
 	/** Reconstruction de l'index et élagage (admin_maintenance.php). */
 	maintenance: MaintenanceStore;
-	/** Plugin AP_Balises.php (mod PunBalise). */
-	labelAdmin: LabelAdminStore;
 	/** Préfixes du sujet (topic_prefixes.php, page propre à Node). */
 	subjectPrefixes: SubjectPrefixStore;
 	/** Complètement des noms de membres (member_suggest.php, propre à Node). */
@@ -163,16 +157,13 @@ export interface AppDeps extends LayoutDeps, SessionDeps {
 	/** Groupes d'utilisateurs (admin_groups.php). */
 	groupAdmin: GroupAdminStore;
 	/** Recherche d'utilisateurs et d'adresses IP (admin_users.php). */
-	userAdmin: UserAdminReader & UserAdminWriter & UploadileAdminStore;
+	userAdmin: UserAdminReader & UserAdminWriter;
 	toolbar: ToolbarReader;
 	avatars: AvatarLocator;
 	avatarStore: AvatarStore;
-	/** Fichiers des membres (Uploadile) dans img/members/ de l'installation PHP. */
-	uploads: UploadStore;
 	/** Conversion des images envoyées en WebP (sharp). */
 	imageProcessor: ImageProcessor;
 	censorship: CensorStore;
-	topicLabels: TopicLabelReader;
 	stats: StatsReader;
 	search: SearchReader;
 	searchWriter: SearchWriter;
@@ -355,14 +346,6 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 	const profiles = new ProfileController(deps);
 	app.get<{ Querystring: ProfileQuery }>('/profile.php', { preHandler: authenticate }, profiles.show);
 	app.post<{ Querystring: ProfileQuery; Body: FormBody }>('/profile.php', { preHandler: [authenticate, verifyCsrf] }, profiles.submit);
-
-	const fileManager = new FileManagerController(deps);
-	app.get<{ Querystring: FileManagerQuery }>('/gestionnaire.php', { preHandler: authenticate }, fileManager.show);
-	app.post<{ Querystring: FileManagerQuery; Body: FormBody }>(
-		'/gestionnaire.php',
-		{ preHandler: [authenticate, verifyCsrf] },
-		fileManager.submit,
-	);
 
 	const moderate = new ModerateController({ ...deps, trackCookieName });
 	app.get<{ Querystring: ModerateQuery }>('/moderate.php', { preHandler: authenticate }, moderate.show);

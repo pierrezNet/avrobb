@@ -31,31 +31,3 @@ export function readGroupPrivateMessageRights(read: Read, groupId: number): { al
 	if (allowed === '' && limit === '') return null;
 	return { allowed: allowed === '1', limit: Math.max(0, integer(limit, 0)) };
 }
-
-/** Réglages d'Uploadile par défaut (valeur absente ou invalide). */
-const UPLOADILE_DEFAULTS = {
-	o_uploadile_laws: 'jpg,jpeg,png,gif,swf,odt,ods,doc,xls,ppt,odp,mp3,pdf',
-	o_uploadile_limit_member: '2097152',
-	o_uploadile_limit_modo: '5242880',
-	o_uploadile_maxsize_member: '1258291',
-	o_uploadile_maxsize_modo: '1258291',
-} as const;
-
-/**
- * AP_Uploadile.php (« Mettre à jour ») : une valeur absente ou non positive reprend la valeur par défaut.
- * La miniaturisation (o_uploadile_thumb*) n'est pas reprise : les images ont une variante mobile WebP.
- */
-export function readUploadileSettings(read: Read): Map<string, string> {
-	const positive = (name: string, key: keyof typeof UPLOADILE_DEFAULTS): string => {
-		const value = integer(read(name), 0);
-		return value > 0 ? String(value) : UPLOADILE_DEFAULTS[key];
-	};
-	const laws = read('laws').replaceAll(' ', '');
-	return new Map([
-		['o_uploadile_laws', laws !== '' ? laws : UPLOADILE_DEFAULTS.o_uploadile_laws],
-		['o_uploadile_limit_member', positive('limit_member', 'o_uploadile_limit_member')],
-		['o_uploadile_limit_modo', positive('limit_modo', 'o_uploadile_limit_modo')],
-		['o_uploadile_maxsize_member', positive('maxsize_member', 'o_uploadile_maxsize_member')],
-		['o_uploadile_maxsize_modo', positive('maxsize_modo', 'o_uploadile_maxsize_modo')],
-	]);
-}

@@ -1,6 +1,5 @@
 /**
- * Gestionnaire de fichiers (gestionnaire.php) et sélecteur d'images de la galerie
- * (gallery.php?info=pick) : bouton « Insérer » qui ajoute un BBCode au message en cours de
+ * Sélecteur d'images de la galerie (gallery.php?info=pick) : bouton « Insérer » qui ajoute un BBCode au message en cours de
  * rédaction dans la fenêtre d'origine (champ req_message), à la position du curseur. Sans fenêtre
  * d'origine ni JavaScript, les boutons restent masqués : le texte se copie.
  */

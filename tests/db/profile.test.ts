@@ -97,17 +97,4 @@ describe('ProfileRepository', () => {
 		expect(await profiles.listUsernamesByEmail('tessy@example.test', 3)).toEqual([]);
 		expect(await profiles.listUsernamesByEmail('tessy@example.test', 5)).toEqual(['Tessy']);
 	});
-
-	it('sujets suivis lisibles par le groupe du lecteur, et désabonnement', async () => {
-		await inRollback(async (trx) => {
-			// Le jeu de données abonne déjà Tessy au sujet 10.
-			await trx.insertInto('topic_subscriptions').values({ user_id: 3, topic_id: 11 }).execute();
-			const profiles = new ProfileRepository(trx);
-			// Forum 3 interdit aux invités : le sujet 11 n'apparaît pas pour ce groupe.
-			expect((await profiles.listSubscribedTopics(3, 3)).map((topic) => topic.id)).toEqual([10]);
-			expect((await profiles.listSubscribedTopics(3, 4)).map((topic) => topic.id).sort()).toEqual([10, 11]);
-			await profiles.unsubscribeTopics(3, [10]);
-			expect((await profiles.listSubscribedTopics(3, 4)).map((topic) => topic.id)).toEqual([11]);
-		});
-	});
 });

@@ -1,7 +1,7 @@
 /**
  * Pages d'administration propres à PV (admin_loader.php?plugin=…), chacune servie par son module
  * (controllers/adminPlugins/). Droits d'admin_loader.php : AP_ pour les administrateurs, AMP_ aussi
- * pour les modérateurs. Les anciens plugins abandonnés (FluxToolBar, Plugile, Premium, Smilies…) sont refusés.
+ * pour les modérateurs. Les anciens plugins abandonnés (FluxToolBar, Plugile, Uploadile, Premium…) sont refusés.
  */
 
 import type { FastifyReply, FastifyRequest } from 'fastify';
@@ -12,7 +12,6 @@ import { isAdmin, isAnyModerator } from '../services/permissions.ts';
 import { LabelsPlugin } from './adminPlugins/LabelsPlugin.ts';
 import { PrivateMessagesPlugin } from './adminPlugins/PrivateMessagesPlugin.ts';
 import type { AdminLoaderControllerDeps, AdminLoaderQuery, Plugin, PluginHandler } from './adminPlugins/pluginPage.ts';
-import { UploadilePlugin } from './adminPlugins/UploadilePlugin.ts';
 
 export type { AdminLoaderControllerDeps, AdminLoaderQuery } from './adminPlugins/pluginPage.ts';
 
@@ -24,7 +23,6 @@ export class AdminLoaderController {
 	constructor(private readonly deps: AdminLoaderControllerDeps) {
 		this.#pages = new Map<Plugin, PluginHandler>([
 			['AP_Private_messaging.php', new PrivateMessagesPlugin(deps)],
-			['AP_Uploadile.php', new UploadilePlugin(deps)],
 			['AP_Balises.php', new LabelsPlugin(deps)],
 		]);
 	}

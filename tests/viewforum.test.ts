@@ -1,52 +1,12 @@
 /**
- * viewforum : mise en forme des balises (balises.php), presenter et page via app.inject().
+ * viewforum : presenter et page via app.inject().
  */
 
 import type { FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.ts';
-import { type ForumInfo, GroupId, type TopicLabel, type TopicSummary } from '../src/domain/models.ts';
-import { labelCss, styleSubject } from '../src/services/topicLabels.ts';
+import { type ForumInfo, GroupId, type TopicSummary } from '../src/domain/models.ts';
 import { fakeDeps, group, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
-
-const solved: TopicLabel = {
-	id: 1,
-	name: 'Réglé',
-	style: 'brackets',
-	color: '#00AA00',
-	bold: true,
-	italic: false,
-	underline: false,
-	moderatorVisible: true,
-};
-const pending: TopicLabel = {
-	id: 2,
-	name: 'En cours',
-	style: 'hashes',
-	color: 'red;background:url(x)',
-	bold: false,
-	italic: true,
-	underline: false,
-	moderatorVisible: true,
-};
-
-describe('styleSubject (balises.php)', () => {
-	it('met en forme la première occurrence de chaque balise, même tapée par le membre', () => {
-		expect(styleSubject('[Réglé] Panne #En cours# moteur [Réglé]', [solved, pending])).toEqual([
-			{ text: '[Réglé]', style: { color: '#00AA00', bold: true, italic: false, underline: false } },
-			{ text: ' Panne ', style: null },
-			{ text: '#En cours#', style: { color: null, bold: false, italic: true, underline: false } },
-			{ text: ' moteur [Réglé]', style: null },
-		]);
-		expect(styleSubject('Sans balise', [solved])).toEqual([{ text: 'Sans balise', style: null }]);
-	});
-
-	it('refuse une couleur qui sortirait de la propriété CSS', () => {
-		expect(labelCss({ color: null, bold: true, italic: true, underline: true })).toBe(
-			'font-weight: bold; font-style: italic; text-decoration: underline',
-		);
-	});
-});
 
 function summary(id: number, overrides: Partial<TopicSummary> = {}): TopicSummary {
 	return {
@@ -89,7 +49,7 @@ const topics = [
 	summary(10, { sticky: true, subject: 'Règles du forum' }),
 	summary(11, { closed: true, hasPosted: true }),
 	summary(12, { movedTo: 40, lastPost: null }),
-	summary(13, { numReplies: 30 }),
+	summary(13, { numReplies: 30, subject: '[MSFS] Sujet 13' }),
 ];
 
 let app: FastifyInstance | undefined;
@@ -103,8 +63,6 @@ describe('GET /viewforum.php', () => {
 			posts: new Map(),
 			forumInfos: [forumInfo, { ...forumInfo, id: 3, redirectUrl: 'https://example.test/' }],
 			forumTopics: new Map([[2, topics]]),
-			topicLabels: new Map([[13, [solved]]]),
-			labelDefinitions: [solved],
 			...overrides,
 		});
 
@@ -118,7 +76,7 @@ describe('GET /viewforum.php', () => {
 		expect(res.body).toContain('<span class="badge">Fermée :</span>');
 		expect(res.body).toContain('<span class="badge">Déplacée :</span> <a href="viewtopic.php?id=40">');
 		expect(res.body).toContain(
-			'<span class="subject-tag" style="background-color: #00AA00; color: #1a1a1a">Réglé</span><span class="subject-tag-gap">&#160;</span>Sujet 13',
+			'<span class="subject-tag" style="background-color: #1d4ed8; color: #ffffff">MSFS</span><span class="subject-tag-gap">&#160;</span>Sujet 13',
 		);
 		expect(res.body).toContain('<dd>1 500</dd>');
 		expect(res.body).toContain('href="post.php?fid=2"');

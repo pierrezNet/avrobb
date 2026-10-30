@@ -23,7 +23,6 @@ import { ForumRepository } from '../../src/repositories/ForumRepository.ts';
 import { GalleryRepository } from '../../src/repositories/GalleryRepository.ts';
 import { GroupAdminRepository } from '../../src/repositories/GroupAdminRepository.ts';
 import { HomeActivityRepository } from '../../src/repositories/HomeActivityRepository.ts';
-import { LabelAdminRepository } from '../../src/repositories/LabelAdminRepository.ts';
 import { MaintenanceRepository } from '../../src/repositories/MaintenanceRepository.ts';
 import { MemberSuggestRepository } from '../../src/repositories/MemberSuggestRepository.ts';
 import { ModerationRepository } from '../../src/repositories/ModerationRepository.ts';
@@ -42,7 +41,6 @@ import { StatsRepository } from '../../src/repositories/StatsRepository.ts';
 import { SubjectPrefixRepository } from '../../src/repositories/SubjectPrefixRepository.ts';
 import { SubscriptionRepository } from '../../src/repositories/SubscriptionRepository.ts';
 import { ToolbarRepository } from '../../src/repositories/ToolbarRepository.ts';
-import { TopicLabelRepository } from '../../src/repositories/TopicLabelRepository.ts';
 import { TopicRepository } from '../../src/repositories/TopicRepository.ts';
 import { UserAdminRepository } from '../../src/repositories/UserAdminRepository.ts';
 import { UserRepository } from '../../src/repositories/UserRepository.ts';
@@ -98,11 +96,10 @@ describe('liste des membres', () => {
 		});
 	});
 
-	it('lit le profil public avec groupe, biographie et messagerie', async () => {
+	it('lit le profil public avec groupe et messagerie', async () => {
 		expect(await members.findProfile(3)).toMatchObject({
 			username: 'Tessy',
 			title: 'Pilote de ligne',
-			biography: 'Pilote de ligne depuis 2003 :)',
 			icq: '',
 			groupId: GroupId.Member,
 			groupIsModerator: false,
@@ -398,17 +395,7 @@ describe('ReportRepository et PrivateMessageRepository', () => {
 	});
 });
 
-describe('balises, bannissements, censure', () => {
-	it('lit les balises posées sur les sujets, par colonne bal<id>, dans l’ordre des positions', async () => {
-		const labels = await new TopicLabelRepository(db).listForTopics([10, 11, 999]);
-		expect([...labels.keys()]).toEqual([10]);
-		expect(labels.get(10)?.map((l) => [l.name, l.style, l.bold])).toEqual([
-			['En cours', 'hashes', false],
-			['Réglé', 'brackets', true],
-		]);
-		expect((await new TopicLabelRepository(db).listForTopics([])).size).toBe(0);
-	});
-
+describe('bannissements, censure', () => {
 	it('liste les pseudos bannis en minuscules, expirés compris', async () => {
 		expect(await new BanRepository(db).listBannedUsernames()).toEqual(new Set(['maxduo']));
 	});
@@ -466,7 +453,6 @@ describe('viewtopic de bout en bout', () => {
 			configStore: new ConfigRepository(db),
 			forumAdmin: new ForumAdminRepository(db),
 			maintenance: new MaintenanceRepository(db),
-			labelAdmin: new LabelAdminRepository(db),
 			imageProcessor: { toWebp: async () => null, avatar: async () => null, fit: async () => null },
 			subjectPrefixes: new SubjectPrefixRepository(db),
 			memberSuggest: new MemberSuggestRepository(db),
@@ -484,7 +470,6 @@ describe('viewtopic de bout en bout', () => {
 			sendingLists: new PrivateContactRepository(db),
 			bans: new BanRepository(db),
 			censorship: new CensorRepository(db),
-			topicLabels: new TopicLabelRepository(db),
 			stats: new StatsRepository(db),
 			search: new SearchRepository(db),
 			feeds: new FeedRepository(db),
@@ -497,14 +482,6 @@ describe('viewtopic de bout en bout', () => {
 			usersInfo: new UsersInfoLoader(new StatsRepository(db), () => NOW),
 			avatars: { urlFor: async () => null },
 			avatarStore: { save: async () => undefined, delete: async () => undefined },
-			uploads: {
-				list: async () => null,
-				exists: async () => false,
-				save: async () => undefined,
-				remove: async () => false,
-				listOwners: async () => [],
-				urlFor: () => '',
-			},
 			page: { lang: fr, dateWords: frDateWords, clock: () => NOW },
 			cookie: { name: 'avrobb', secret: seed, secure: false },
 			online: new OnlineRepository(db),
@@ -518,7 +495,7 @@ describe('viewtopic de bout en bout', () => {
 
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain(
-			'<title>[Réglé] #En cours# Postez un « vintage » (Page 2) / Captures d&#39;écran &amp; Vidéos / Forum de test</title>',
+			'<title>Postez un « vintage » (Page 2) / Captures d&#39;écran &amp; Vidéos / Forum de test</title>',
 		);
 		expect(res.body).toContain('themes/GreenDark.css');
 		expect(res.body).toContain('id="p101"');

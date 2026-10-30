@@ -10,7 +10,6 @@ import {
 	GroupId,
 	type ModeratedTopic,
 	type Post,
-	type TopicLabel,
 	type TopicSummary,
 	type Viewer,
 } from '../domain/models.ts';
@@ -40,8 +39,6 @@ export function buildModerateForum(input: {
 	config: BoardConfig;
 	forum: ForumInfo;
 	topics: readonly TopicSummary[];
-	topicLabels: ReadonlyMap<number, readonly TopicLabel[]>;
-	labelDefinitions: readonly TopicLabel[];
 	tracked: TrackedTopics;
 	censor: Censor | null;
 	page: number;
@@ -63,7 +60,7 @@ export function buildModerateForum(input: {
 		pagination: paginationLinks(input.numPages, input.page, (page) => `moderate.php?fid=${forum.id}${page > 1 ? `&p=${page}` : ''}`),
 		formAction: `moderate.php?fid=${forum.id}`,
 		topics: input.topics.map((topic) => {
-			const row = buildTopicRow(topic, forum.id, input.topicLabels.get(topic.id) ?? [], input);
+			const row = buildTopicRow(topic, forum.id, input);
 			return { ...row, selectLabel: lang.moderate.selectTopic(row.subjectText) };
 		}),
 		notice: input.notice,

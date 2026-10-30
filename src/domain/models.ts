@@ -316,8 +316,6 @@ export interface BoardConfig {
 	privateMessageMaxReceivers: number;
 	/** Conversations par page de la boîte de réception (o_pms_mess_per_page). */
 	privateMessagesPerPage: number;
-	/** Fichiers des membres (plugin Uploadile de PV). */
-	uploads: UploadSettings;
 	/** o_base_url, sans « / » final. */
 	baseUrl: string;
 	/** o_indent_num_spaces : espaces remplaçant une tabulation hors [code]. */
@@ -327,30 +325,6 @@ export interface BoardConfig {
 	reputationTimeout: number;
 	/** Liste des membres en ligne en bas de l'index (o_users_online). */
 	usersOnline: boolean;
-}
-
-/** Réglages d'Uploadile (o_uploadile_*) : extensions permises, espace et taille par fichier, en octets. */
-export interface UploadSettings {
-	/** o_uploadile_laws, en minuscules (le PHP accepte aussi leur forme tout en majuscules). */
-	extensions: readonly string[];
-	memberQuota: number;
-	moderatorQuota: number;
-	memberMaxFileSize: number;
-	moderatorMaxFileSize: number;
-}
-
-/** Balise de sujet de PV (« [Réglé] »…), posée par les modérateurs. */
-export interface TopicLabel {
-	id: number;
-	name: string;
-	/** Forme du préfixe : [nom], *nom* ou #nom# (balises.baltype). */
-	style: 'brackets' | 'stars' | 'hashes';
-	color: string;
-	bold: boolean;
-	italic: boolean;
-	underline: boolean;
-	/** Proposée aux modérateurs dans le pied de viewtopic (balises.affich). */
-	moderatorVisible: boolean;
 }
 
 /** Forum proposé dans la liste « Atteindre » du pied de page. */
@@ -488,8 +462,6 @@ export interface UserProfile {
 	aim: string;
 	yahoo: string;
 	signature: string;
-	/** Biographie (plugile UP_Ma_biographie, propre à PV) ; vide si non rédigée. */
-	biography: string;
 	numPosts: number;
 	lastPost: number | null;
 	registered: number;
@@ -499,7 +471,7 @@ export interface UserProfile {
 	acceptsPrivateMessages: boolean;
 }
 
-/** Profil lu par les formulaires de modification de profile.php (sections, actions, plugiles). */
+/** Profil lu par les formulaires de modification de profile.php (sections, actions). */
 export interface EditableProfile extends UserProfile {
 	/** Préférences de pagination ; null = valeur par défaut du forum. */
 	topicsPerPage: number | null;
@@ -522,8 +494,6 @@ export interface EditableProfile extends UserProfile {
 	registrationIp: string;
 	adminNote: string;
 	lastVisit: number;
-	/** Octets occupés dans img/members/<id>/ (users.upload, plugin Uploadile). */
-	uploadedBytes: number;
 }
 
 /**
@@ -542,7 +512,6 @@ export interface ProfileChanges {
 	aim?: string;
 	yahoo?: string;
 	signature?: string;
-	biography?: string;
 	adminNote?: string;
 	numPosts?: number;
 	topicsPerPage?: number | null;
@@ -562,11 +531,6 @@ export interface ProfileChanges {
 	showAvatars?: boolean;
 	showSignatures?: boolean;
 	reputationEnabled?: boolean;
-}
-
-/** Sujet suivi, dans la liste du plugile Suivile (UPP_Suivile, propre à PV). */
-export interface SubscribedTopic extends TopicSummary {
-	forumId: number;
 }
 
 /** Sujet trouvé par une recherche (affichage « discussions »). */

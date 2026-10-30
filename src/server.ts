@@ -28,10 +28,8 @@ import { GalleryRepository } from './repositories/GalleryRepository.ts';
 import { GroupAdminRepository } from './repositories/GroupAdminRepository.ts';
 import { HeaderImageFiles } from './repositories/HeaderImageFiles.ts';
 import { HomeActivityRepository } from './repositories/HomeActivityRepository.ts';
-import { LabelAdminRepository } from './repositories/LabelAdminRepository.ts';
 import { MaintenanceRepository } from './repositories/MaintenanceRepository.ts';
 import { MemberSuggestRepository } from './repositories/MemberSuggestRepository.ts';
-import { MemberUploadFiles } from './repositories/MemberUploadFiles.ts';
 import { ModerationRepository } from './repositories/ModerationRepository.ts';
 import { OnlineRepository } from './repositories/OnlineRepository.ts';
 import { PostEditRepository } from './repositories/PostEditRepository.ts';
@@ -49,7 +47,6 @@ import { BuiltinStopwords } from './repositories/StopwordsLoader.ts';
 import { SubjectPrefixRepository } from './repositories/SubjectPrefixRepository.ts';
 import { SubscriptionRepository } from './repositories/SubscriptionRepository.ts';
 import { ToolbarRepository } from './repositories/ToolbarRepository.ts';
-import { TopicLabelRepository } from './repositories/TopicLabelRepository.ts';
 import { TopicRepository } from './repositories/TopicRepository.ts';
 import { UserAdminRepository } from './repositories/UserAdminRepository.ts';
 import { UserRepository } from './repositories/UserRepository.ts';
@@ -81,7 +78,6 @@ const app = await buildApp({
 	configCache: configLoader,
 	forumAdmin: new ForumAdminRepository(db),
 	maintenance: new MaintenanceRepository(db),
-	labelAdmin: new LabelAdminRepository(db),
 	imageProcessor: new SharpImageProcessor(),
 	subjectPrefixes: new SubjectPrefixRepository(db),
 	memberSuggest: new MemberSuggestRepository(db),
@@ -121,7 +117,6 @@ const app = await buildApp({
 	banStore: bans,
 	online: new OnlineRepository(db),
 	censorship: new CensorRepository(db),
-	topicLabels: new TopicLabelRepository(db),
 	stats,
 	search,
 	searchWriter: search,
@@ -135,7 +130,6 @@ const app = await buildApp({
 	usersInfo: new UsersInfoLoader(stats, clock),
 	avatars,
 	avatarStore: avatars,
-	uploads: new MemberUploadFiles(config.storageDir, ''),
 	page: { lang: fr, dateWords: frDateWords, clock },
 	cookie: config.cookie,
 	imagesRoot: path.join(config.storageDir, 'img'),

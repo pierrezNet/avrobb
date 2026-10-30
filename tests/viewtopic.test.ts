@@ -138,37 +138,25 @@ describe('gestion des erreurs', () => {
 	});
 });
 
-describe('viewtopic : contenu propre à PV', () => {
-	const label = {
-		id: 1,
-		name: 'Réglé',
-		style: 'brackets' as const,
-		color: '#00AA00',
-		bold: true,
-		italic: false,
-		underline: false,
-		moderatorVisible: true,
-	};
-
-	it('préfixe le sujet de ses balises et applique la censure partout', async () => {
+describe('viewtopic : balises et censure', () => {
+	it('balise du sujet en pastille, censure appliquée partout', async () => {
 		app = await buildApp(
 			fakeDeps(
 				data({
-					topics: [topic({ id: 10, subject: 'Panne de zut' })],
+					topics: [topic({ id: 10, subject: '[MSFS] Panne de zut' })],
 					posts: new Map([
 						[10, [post(100, { message: 'zut alors :)', author: { ...post(1).author!, location: 'Zutville', title: 'zut' } })]],
 					]),
 					config: { censoring: true },
 					censoredWords: [{ searchFor: 'zut', replaceWith: '***' }],
-					topicLabels: new Map([[10, [label]]]),
 				}),
 			),
 		);
 
 		const res = await app.inject('/viewtopic.php?id=10');
-		expect(res.body).toContain('<title>[Réglé] Panne de *** (Page 1) / Forum / Forum de test</title>');
+		expect(res.body).toContain('<title>[MSFS] Panne de *** (Page 1) / Forum / Forum de test</title>');
 		expect(res.body).toContain(
-			'<h1 class="page-title"><span class="subject-tag" style="background-color: #00AA00; color: #1a1a1a">Réglé</span><span class="subject-tag-gap">&#160;</span>Panne de ***</h1>',
+			'<h1 class="page-title"><span class="subject-tag" style="background-color: #1d4ed8; color: #ffffff">MSFS</span><span class="subject-tag-gap">&#160;</span>Panne de ***</h1>',
 		);
 		expect(res.body).toContain('*** alors <span class="smiley" role="img" aria-label="smile">🙂</span>');
 		expect(res.body).toContain('<p class="post__usertitle">***</p>');

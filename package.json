@@ -19,13 +19,14 @@
 		"format": "biome check --write .",
 		"check": "node scripts/build-templates.mjs && biome check . && tsc --noEmit && vitest run",
 		"screenshot": "tsx scripts/screenshot.ts",
-		"test:db": "node scripts/build-templates.mjs && vitest run --config vitest.db.config.ts"
+		"test:db": "node scripts/build-templates.mjs && vitest run --config vitest.db.config.ts",
+		"db:migrate": "wrangler d1 migrations apply avrobb --local",
+		"db:seed:dev": "wrangler d1 execute avrobb --local --file scripts/dev-seed.sql"
 	},
 	"dependencies": {
 		"@hono/node-server": "^2.1.5",
 		"hono": "^4.13.14",
 		"kysely": "^0.29.7",
-		"mysql2": "^3.24.6",
 		"nodemailer": "^7.0.13",
 		"nunjucks": "^3.2.4",
 		"sharp": "^0.34.5"
@@ -37,6 +38,7 @@
 		"@types/nunjucks": "^3.2.6",
 		"tsx": "^4.23.15",
 		"typescript": "^7.0.2",
-		"vitest": "^5.0.5"
+		"vitest": "^5.0.5",
+		"wrangler": "^4.156.0"
 	}
 }

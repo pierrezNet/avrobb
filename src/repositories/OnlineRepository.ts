@@ -60,15 +60,16 @@ export class OnlineRepository implements OnlineWriter {
 	async applyPurge(purge: OnlinePurge): Promise<void> {
 		if (purge.removeGuests.length + purge.endVisits.length + purge.markIdle.length === 0) return;
 
-		await this.db.transaction().execute(async (trx) => {
-			if (purge.removeGuests.length > 0)
-				await trx.deleteFrom('online').where('ident', 'in', purge.removeGuests).where('user_id', '=', 1).execute();
-			for (const visit of purge.endVisits) {
-				await trx.updateTable('users').set({ last_visit: visit.logged }).where('id', '=', visit.userId).execute();
-				await trx.deleteFrom('online').where('user_id', '=', visit.userId).execute();
-			}
-			if (purge.markIdle.length > 0) await trx.updateTable('online').set({ idle: 1 }).where('user_id', 'in', purge.markIdle).execute();
-		});
+		await this.db.batch([
+			...(purge.removeGuests.length > 0
+				? [this.db.deleteFrom('online').where('ident', 'in', purge.removeGuests).where('user_id', '=', 1)]
+				: []),
+			...purge.endVisits.flatMap((visit) => [
+				this.db.updateTable('users').set({ last_visit: visit.logged }).where('id', '=', visit.userId),
+				this.db.deleteFrom('online').where('user_id', '=', visit.userId),
+			]),
+			...(purge.markIdle.length > 0 ? [this.db.updateTable('online').set({ idle: 1 }).where('user_id', 'in', purge.markIdle)] : []),
+		]);
 	}
 
 	async removeMember(userId: number): Promise<void> {

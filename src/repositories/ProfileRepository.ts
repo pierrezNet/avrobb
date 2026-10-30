@@ -4,11 +4,11 @@
  */
 
 import type { Updateable } from 'kysely';
-import type { Db } from '../db/database.ts';
+import type { Compilable, Db } from '../db/database.ts';
 import type { UsersTable } from '../db/schema.ts';
 import { type EditableProfile, GUEST_USER_ID, type ProfileChanges } from '../domain/models.ts';
-import { parseModerators, phpSerialize } from '../services/phpSerialize.ts';
-import { inTransaction } from './transactions.ts';
+import { parseModerators, serializeModerators } from '../services/moderators.ts';
+import { escapeLike, likeEscaped } from './like.ts';
 
 export interface ProfileStore {
 	findEditableProfile(userId: number): Promise<EditableProfile | null>;
@@ -152,52 +152,53 @@ export class ProfileRepository implements ProfileStore {
 		await this.db.updateTable('users').set(columns).where('id', '=', userId).execute();
 	}
 
-	renameUser(userId: number, oldUsername: string, newUsername: string, changes: ProfileChanges): Promise<{ bansUpdated: boolean }> {
-		return inTransaction(this.db, async (trx) => {
-			await trx
+	async renameUser(userId: number, oldUsername: string, newUsername: string, changes: ProfileChanges): Promise<{ bansUpdated: boolean }> {
+		// Lectures d'abord : destinataires des MP et listes de modérateurs à réécrire.
+		const received = await this.db
+			.selectFrom('messages')
+			.select(['id', 'receiver'])
+			.where(likeEscaped('receiver', `%${escapeLike(oldUsername)}%`))
+			.execute();
+		const forums = await this.db.selectFrom('forums').select(['id', 'moderators']).where('moderators', 'is not', null).execute();
+
+		const writes: Compilable[] = [
+			this.db
 				.updateTable('users')
 				.set({ ...toColumns(changes), username: newUsername })
-				.where('id', '=', userId)
-				.execute();
-			const bans = await trx.updateTable('bans').set({ username: newUsername }).where('username', '=', oldUsername).executeTakeFirst();
-			await trx.updateTable('posts').set({ poster: newUsername }).where('poster_id', '=', userId).execute();
-			await trx.updateTable('posts').set({ edited_by: newUsername }).where('edited_by', '=', oldUsername).execute();
-			await trx.updateTable('topics').set({ poster: newUsername }).where('poster', '=', oldUsername).execute();
-			await trx.updateTable('topics').set({ last_poster: newUsername }).where('last_poster', '=', oldUsername).execute();
-			await trx.updateTable('forums').set({ last_poster: newUsername }).where('last_poster', '=', oldUsername).execute();
-			await trx.updateTable('online').set({ ident: newUsername }).where('ident', '=', oldUsername).execute();
-
+				.where('id', '=', userId),
+			this.db.updateTable('bans').set({ username: newUsername }).where('username', '=', oldUsername),
+			this.db.updateTable('posts').set({ poster: newUsername }).where('poster_id', '=', userId),
+			this.db.updateTable('posts').set({ edited_by: newUsername }).where('edited_by', '=', oldUsername),
+			this.db.updateTable('topics').set({ poster: newUsername }).where('poster', '=', oldUsername),
+			this.db.updateTable('topics').set({ last_poster: newUsername }).where('last_poster', '=', oldUsername),
+			this.db.updateTable('forums').set({ last_poster: newUsername }).where('last_poster', '=', oldUsername),
+			this.db.updateTable('online').set({ ident: newUsername }).where('ident', '=', oldUsername),
 			// plugins/apms/profile_add6.php. Écart : les destinataires sont remplacés élément par élément
 			// (le REPLACE() du PHP renommait aussi « MaxDUO » en renommant « Max »).
-			await trx.updateTable('messages').set({ sender: newUsername }).where('sender', '=', oldUsername).execute();
-			await trx.updateTable('messages').set({ last_poster: newUsername }).where('last_poster', '=', oldUsername).execute();
-			const received = await trx
-				.selectFrom('messages')
-				.select(['id', 'receiver'])
-				.where('receiver', 'like', `%${oldUsername.replace(/[\\%_]/g, '\\$&')}%`)
-				.execute();
-			for (const message of received) {
-				const receiver = renameInList(message.receiver, oldUsername, newUsername);
-				if (receiver !== message.receiver) await trx.updateTable('messages').set({ receiver }).where('id', '=', message.id).execute();
-			}
-
-			// Listes de modérateurs des forums (nom → id, triées par nom).
-			const forums = await trx.selectFrom('forums').select(['id', 'moderators']).where('moderators', 'is not', null).execute();
-			for (const forum of forums) {
-				const moderators = parseModerators(forum.moderators);
-				if (![...moderators.values()].includes(userId)) continue;
-				moderators.delete(oldUsername);
-				moderators.set(newUsername, userId);
-				const sorted = new Map([...moderators].sort(([a], [b]) => caseInsensitive(a, b)));
-				await trx
+			this.db.updateTable('messages').set({ sender: newUsername }).where('sender', '=', oldUsername),
+			this.db.updateTable('messages').set({ last_poster: newUsername }).where('last_poster', '=', oldUsername),
+		];
+		for (const message of received) {
+			const receiver = renameInList(message.receiver, oldUsername, newUsername);
+			if (receiver !== message.receiver) writes.push(this.db.updateTable('messages').set({ receiver }).where('id', '=', message.id));
+		}
+		// Listes de modérateurs des forums (nom → id, triées par nom).
+		for (const forum of forums) {
+			const moderators = parseModerators(forum.moderators);
+			if (![...moderators.values()].includes(userId)) continue;
+			moderators.delete(oldUsername);
+			moderators.set(newUsername, userId);
+			const sorted = new Map([...moderators].sort(([a], [b]) => caseInsensitive(a, b)));
+			writes.push(
+				this.db
 					.updateTable('forums')
-					.set({ moderators: phpSerialize(sorted) })
-					.where('id', '=', forum.id)
-					.execute();
-			}
+					.set({ moderators: serializeModerators(sorted) })
+					.where('id', '=', forum.id),
+			);
+		}
 
-			return { bansUpdated: Number(bans.numUpdatedRows) > 0 };
-		});
+		const results = await this.db.batch(writes);
+		return { bansUpdated: Number(results[1]?.numAffectedRows ?? 0) > 0 };
 	}
 
 	async findSimilarUsername(username: string, skeleton: string, excludeUserId: number): Promise<string | null> {

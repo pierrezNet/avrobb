@@ -4,29 +4,11 @@
  * Chaque test s'exécute dans une transaction annulée à la fin.
  */
 
-import type { Kysely } from 'kysely';
 import { afterAll, describe, expect, it } from 'vitest';
-import { createDatabase } from '../../src/db/database.ts';
-import type { Database } from '../../src/db/schema.ts';
 import { ProfileRepository } from '../../src/repositories/ProfileRepository.ts';
-import { testDbConfig } from './testDatabase.ts';
+import { closeTestDatabase, db, inRollback } from './testDb.ts';
 
-const db = createDatabase(testDbConfig());
-afterAll(async () => db.destroy());
-
-class Rollback extends Error {}
-
-async function inRollback(body: (trx: Kysely<Database>) => Promise<void>): Promise<void> {
-	await db
-		.transaction()
-		.execute(async (trx) => {
-			await body(trx);
-			throw new Rollback();
-		})
-		.catch((error: unknown) => {
-			if (!(error instanceof Rollback)) throw error;
-		});
-}
+afterAll(closeTestDatabase);
 
 describe('ProfileRepository', () => {
 	it('lit le profil complet et enregistre les champs vides en NULL', async () => {
@@ -77,7 +59,7 @@ describe('ProfileRepository', () => {
 			const post = await trx.selectFrom('posts').select(['poster', 'edited_by']).where('id', '=', 101).executeTakeFirstOrThrow();
 			expect(post).toEqual({ poster: 'Maxime', edited_by: 'Maxime' });
 			const forum = await trx.selectFrom('forums').select('moderators').where('id', '=', 2).executeTakeFirstOrThrow();
-			expect(forum.moderators).toBe('a:1:{s:6:"Maxime";i:5;}');
+			expect(forum.moderators).toBe('{"Maxime":5}');
 			const online = await trx.selectFrom('online').select('ident').where('user_id', '=', 5).executeTakeFirstOrThrow();
 			expect(online.ident).toBe('Maxime');
 			const message = await trx.selectFrom('messages').select(['sender', 'receiver']).where('shared_id', '=', 9).executeTakeFirstOrThrow();

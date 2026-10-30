@@ -5,6 +5,7 @@
 
 import type { Db } from '../db/database.ts';
 import type { GalleryExtension, GalleryImage } from '../domain/models.ts';
+import { escapeLike, likeEscaped } from './like.ts';
 
 export interface GalleryReader {
 	/** Nombre d'images, de tous ou d'un seul membre (filtre « Mes images »), filtrées par `search`. */
@@ -42,8 +43,8 @@ export class GalleryRepository implements GalleryStore {
 		if (ownerId !== null) query = query.where('g.user_id', '=', ownerId);
 		if (search !== '') {
 			// Texte cherché tel quel : % et _ ne sont pas des jokers pour le membre.
-			const pattern = `%${search.replace(/[\\%_]/g, '\\$&')}%`;
-			query = query.where((eb) => eb.or([eb('g.titre', 'like', pattern), eb('g.description', 'like', pattern)]));
+			const pattern = `%${escapeLike(search)}%`;
+			query = query.where((eb) => eb.or([likeEscaped('g.titre', pattern), likeEscaped('g.description', pattern)]));
 		}
 		return query;
 	}

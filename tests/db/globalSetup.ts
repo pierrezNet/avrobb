@@ -1,33 +1,21 @@
 /**
- * Recrée la base de test avant les tests d'intégration : schéma FluxBB de PV puis jeu de données fixe.
+ * Recrée la base de test avant les tests d'intégration : D1 locale neuve (dossier temporaire),
+ * migrations de migrations/ dans l'ordre, puis jeu de données fixe (seed.sql).
  */
 
-import { readFile } from 'node:fs/promises';
+import { readdir, readFile, rm } from 'node:fs/promises';
 import path from 'node:path';
-import { createConnection } from 'mysql2/promise';
-import { testDbConfig } from './testDatabase.ts';
+import { openTestD1, runSqlScript, seedScript, TEST_D1_DIR } from './testDatabase.ts';
 
 export default async function setup(): Promise<void> {
-	const config = testDbConfig();
-	const connection = await createConnection({
-		host: config.host,
-		port: config.port,
-		user: config.user,
-		password: config.password,
-		charset: 'utf8mb4',
-		multipleStatements: true,
-	});
-
+	await rm(TEST_D1_DIR, { recursive: true, force: true });
+	const { d1, dispose } = await openTestD1();
 	try {
-		const [schema, seed] = await Promise.all(
-			['schema.sql', 'seed.sql'].map((file) => readFile(path.join(import.meta.dirname, file), 'utf8')),
-		);
-		await connection.query(`DROP DATABASE IF EXISTS \`${config.database}\``);
-		await connection.query(`CREATE DATABASE \`${config.database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci`);
-		await connection.query(`USE \`${config.database}\``);
-		await connection.query(schema ?? '');
-		await connection.query(seed ?? '');
+		const dir = path.join(import.meta.dirname, '..', '..', 'migrations');
+		for (const file of (await readdir(dir)).filter((name) => name.endsWith('.sql')).sort())
+			await runSqlScript(d1, await readFile(path.join(dir, file), 'utf8'));
+		await runSqlScript(d1, seedScript());
 	} finally {
-		await connection.end();
+		await dispose();
 	}
 }

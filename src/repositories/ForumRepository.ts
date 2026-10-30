@@ -5,7 +5,7 @@
 
 import type { Db } from '../db/database.ts';
 import type { ForumCategory, ForumInfo, IndexCategory, TopicSort } from '../domain/models.ts';
-import { parseModerators } from '../services/phpSerialize.ts';
+import { parseModerators } from '../services/moderators.ts';
 import { forumReadable } from './forumPermissions.ts';
 
 export interface ForumReader {

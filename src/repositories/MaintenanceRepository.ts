@@ -3,10 +3,9 @@
  */
 
 import { sql } from 'kysely';
-import type { Db } from '../db/database.ts';
+import { type Db, rawQuery } from '../db/database.ts';
 import type { IndexedWords } from '../services/searchIndex.ts';
-import { updateSearchIndex } from './searchIndexSql.ts';
-import { inTransaction } from './transactions.ts';
+import { searchIndexWrites } from './searchIndexSql.ts';
 
 export interface PostToIndex {
 	id: number;
@@ -38,9 +37,12 @@ export class MaintenanceRepository implements MaintenanceStore {
 	}
 
 	async emptySearchIndex(): Promise<void> {
-		await this.db.deleteFrom('search_matches').execute();
-		await this.db.deleteFrom('search_words').execute();
-		await sql`ALTER TABLE ${sql.table('search_words')} AUTO_INCREMENT = 1`.execute(this.db);
+		// Numérotation des mots remise à zéro, comme le TRUNCATE du PHP.
+		await this.db.batch([
+			this.db.deleteFrom('search_matches'),
+			this.db.deleteFrom('search_words'),
+			rawQuery(this.db, sql`DELETE FROM sqlite_sequence WHERE name = 'search_words'`),
+		]);
 	}
 
 	async postsToIndex(startAt: number, limit: number): Promise<PostToIndex[]> {
@@ -56,7 +58,7 @@ export class MaintenanceRepository implements MaintenanceStore {
 	}
 
 	async indexPost(postId: number, words: IndexedWords): Promise<void> {
-		await inTransaction(this.db, (trx) => updateSearchIndex(trx, 'post', postId, words));
+		await this.db.batch(await searchIndexWrites(this.db, 'post', postId, words));
 	}
 
 	async nextPostId(postId: number): Promise<number | null> {

@@ -5,14 +5,12 @@
  * abonnements, liens de redirection), dans une transaction.
  */
 
-import { type Kysely, sql } from 'kysely';
-import type { Db } from '../db/database.ts';
-import type { Database } from '../db/schema.ts';
+import { type Db, lastRow } from '../db/database.ts';
 import { type ForumTarget, GroupId, type ModeratedTopic } from '../domain/models.ts';
-import { updateForum } from './forumCounters.ts';
+import { updateForumWrite } from './forumCounters.ts';
 import { forumReadable } from './forumPermissions.ts';
-import { stripSearchIndex } from './searchIndexSql.ts';
-import { inTransaction } from './transactions.ts';
+import { recountTopicWrite } from './PostEditRepository.ts';
+import { LAST_TOPIC_ID, stripSearchIndexWrites } from './searchIndexSql.ts';
 
 export type DeleteTopicsResult = 'deleted' | 'invalid' | 'adminPosts';
 
@@ -46,7 +44,7 @@ export interface ModerationStore {
 }
 
 /** Messages écrits par un administrateur (get_admin_ids()). */
-async function hasAdminPosts(trx: Kysely<Database>, column: 'id' | 'topic_id', ids: readonly number[]): Promise<boolean> {
+async function hasAdminPosts(trx: Db, column: 'id' | 'topic_id', ids: readonly number[]): Promise<boolean> {
 	const row = await trx
 		.selectFrom('posts as p')
 		.innerJoin('users as u', 'u.id', 'p.poster_id')
@@ -59,27 +57,6 @@ async function hasAdminPosts(trx: Kysely<Database>, column: 'id' | 'topic_id', i
 }
 
 /** Dernier message et nombre de réponses d'un sujet, recalculés d'après ses messages. */
-async function refreshTopic(trx: Kysely<Database>, topicId: number): Promise<void> {
-	const last = await trx
-		.selectFrom('posts')
-		.select(['id', 'poster', 'posted'])
-		.where('topic_id', '=', topicId)
-		.orderBy('id', 'desc')
-		.limit(1)
-		.executeTakeFirst();
-	const { count } = await trx
-		.selectFrom('posts')
-		.select((eb) => eb.fn.count<number>('id').as('count'))
-		.where('topic_id', '=', topicId)
-		.executeTakeFirstOrThrow();
-	if (last === undefined) return;
-	await trx
-		.updateTable('topics')
-		.set({ last_post: last.posted, last_post_id: last.id, last_poster: last.poster, num_replies: Number(count) - 1 })
-		.where('id', '=', topicId)
-		.execute();
-}
-
 export class ModerationRepository implements ModerationStore {
 	constructor(private readonly db: Db) {}
 
@@ -126,14 +103,14 @@ export class ModerationRepository implements ModerationStore {
 	}
 
 	/** Les messages sont-ils tous des réponses de ce sujet ? */
-	async #areReplies(trx: Kysely<Database>, topic: ModeratedTopic, postIds: readonly number[]): Promise<boolean> {
+	async #areReplies(trx: Db, topic: ModeratedTopic, postIds: readonly number[]): Promise<boolean> {
 		if (postIds.length === 0 || postIds.includes(topic.firstPostId)) return false;
 		const rows = await trx.selectFrom('posts').select('id').where('id', 'in', postIds).where('topic_id', '=', topic.id).execute();
 		return rows.length === postIds.length;
 	}
 
 	/** Le forum de destination accepte-t-il de nouveaux sujets pour ce groupe ? */
-	async #isTarget(trx: Kysely<Database>, forumId: number, groupId: number): Promise<boolean> {
+	async #isTarget(trx: Db, forumId: number, groupId: number): Promise<boolean> {
 		const row = await trx
 			.selectFrom('forums as f')
 			.leftJoin('forum_perms as fp', (join) => join.onRef('fp.forum_id', '=', 'f.id').on('fp.group_id', '=', groupId))
@@ -145,171 +122,156 @@ export class ModerationRepository implements ModerationStore {
 		return row !== undefined;
 	}
 
-	deletePosts(topic: ModeratedTopic, postIds: readonly number[], allowAdminPosts: boolean): Promise<boolean> {
-		return inTransaction(this.db, async (trx) => {
-			if (!(await this.#areReplies(trx, topic, postIds))) return false;
-			if (!allowAdminPosts && (await hasAdminPosts(trx, 'id', postIds))) return false;
-			await trx.deleteFrom('posts').where('id', 'in', postIds).execute();
-			await stripSearchIndex(trx, postIds);
-			await refreshTopic(trx, topic.id);
-			await updateForum(trx, topic.forum.id);
-			return true;
-		});
+	async deletePosts(topic: ModeratedTopic, postIds: readonly number[], allowAdminPosts: boolean): Promise<boolean> {
+		if (!(await this.#areReplies(this.db, topic, postIds))) return false;
+		if (!allowAdminPosts && (await hasAdminPosts(this.db, 'id', postIds))) return false;
+		await this.db.batch([
+			this.db.deleteFrom('posts').where('id', 'in', postIds),
+			...(await stripSearchIndexWrites(this.db, postIds)),
+			recountTopicWrite(this.db, topic.id),
+			updateForumWrite(this.db, topic.forum.id),
+		]);
+		return true;
 	}
 
-	splitPosts(
+	/** Scission : nouveau sujet (LAST_TOPIC_ID) créé avec ses messages et ses abonnés dans un seul lot. */
+	async splitPosts(
 		topic: ModeratedTopic,
 		postIds: readonly number[],
 		targetForumId: number,
 		subject: string,
 		groupId: number,
 	): Promise<number | null> {
-		return inTransaction(this.db, async (trx) => {
-			if (!(await this.#areReplies(trx, topic, postIds))) return null;
-			if (!(await this.#isTarget(trx, targetForumId, groupId))) return null;
+		if (!(await this.#areReplies(this.db, topic, postIds))) return null;
+		if (!(await this.#isTarget(this.db, targetForumId, groupId))) return null;
 
-			const first = await trx
-				.selectFrom('posts')
-				.select(['id', 'poster', 'posted'])
-				.where('id', 'in', postIds)
-				.orderBy('id')
-				.limit(1)
-				.executeTakeFirstOrThrow();
-			const created = await trx
-				.insertInto('topics')
-				.values({
-					poster: first.poster,
-					subject,
-					posted: first.posted,
-					first_post_id: first.id,
-					last_post: first.posted,
-					last_post_id: first.id,
-					last_poster: first.poster,
-					sticky: 0,
-					forum_id: targetForumId,
-				})
-				.executeTakeFirstOrThrow();
-			const newTopicId = Number(created.insertId);
-
-			await trx.updateTable('posts').set({ topic_id: newTopicId }).where('id', 'in', postIds).execute();
+		const first = await this.db
+			.selectFrom('posts')
+			.select(['id', 'poster', 'posted'])
+			.where('id', 'in', postIds)
+			.orderBy('id')
+			.limit(1)
+			.executeTakeFirstOrThrow();
+		const results = await this.db.batch([
+			this.db.insertInto('topics').values({
+				poster: first.poster,
+				subject,
+				posted: first.posted,
+				first_post_id: first.id,
+				last_post: first.posted,
+				last_post_id: first.id,
+				last_poster: first.poster,
+				sticky: 0,
+				forum_id: targetForumId,
+			}),
+			this.db.updateTable('posts').set({ topic_id: LAST_TOPIC_ID }).where('id', 'in', postIds),
 			// Les abonnés au sujet d'origine suivent aussi le nouveau.
-			await sql`INSERT INTO ${sql.table('topic_subscriptions')} (user_id, topic_id) SELECT user_id, ${newTopicId} FROM ${sql.table('topic_subscriptions')} WHERE topic_id = ${topic.id}`.execute(
-				trx,
-			);
-			await refreshTopic(trx, topic.id);
-			await refreshTopic(trx, newTopicId);
-			await updateForum(trx, topic.forum.id);
-			if (targetForumId !== topic.forum.id) await updateForum(trx, targetForumId);
-			return newTopicId;
-		});
+			this.db
+				.insertInto('topic_subscriptions')
+				.columns(['user_id', 'topic_id'])
+				.expression((eb) =>
+					eb
+						.selectFrom('topic_subscriptions')
+						.select(['user_id', LAST_TOPIC_ID.as('topic_id')])
+						.where('topic_id', '=', topic.id),
+				),
+			recountTopicWrite(this.db, topic.id),
+			recountTopicWrite(this.db, LAST_TOPIC_ID),
+			updateForumWrite(this.db, topic.forum.id),
+			...(targetForumId !== topic.forum.id ? [updateForumWrite(this.db, targetForumId)] : []),
+			this.db.selectNoFrom(LAST_TOPIC_ID.as('id')),
+		]);
+		return lastRow<{ id: number }>(results).id;
 	}
 
-	moveTopics(
+	async moveTopics(
 		forumId: number,
 		topicIds: readonly number[],
 		targetForumId: number,
 		withRedirect: boolean,
 		groupId: number,
 	): Promise<boolean> {
-		return inTransaction(this.db, async (trx) => {
-			if (topicIds.length === 0 || targetForumId === forumId) return false;
-			const found = await trx.selectFrom('topics').select('id').where('id', 'in', topicIds).where('forum_id', '=', forumId).execute();
-			if (found.length !== topicIds.length) return false;
-			if (!(await this.#isTarget(trx, targetForumId, groupId))) return false;
+		if (topicIds.length === 0 || targetForumId === forumId) return false;
+		const found = await this.db.selectFrom('topics').select('id').where('id', 'in', topicIds).where('forum_id', '=', forumId).execute();
+		if (found.length !== topicIds.length) return false;
+		if (!(await this.#isTarget(this.db, targetForumId, groupId))) return false;
 
+		await this.db.batch([
 			// Liens de redirection devenus inutiles : le sujet revient là d'où il avait été déplacé.
-			await trx.deleteFrom('topics').where('forum_id', '=', targetForumId).where('moved_to', 'in', topicIds).execute();
-			await trx.updateTable('topics').set({ forum_id: targetForumId }).where('id', 'in', topicIds).execute();
-
-			if (withRedirect) {
-				const moved = await trx
-					.selectFrom('topics')
-					.select(['id', 'poster', 'subject', 'posted', 'last_post'])
-					.where('id', 'in', topicIds)
-					.execute();
-				for (const topic of moved)
-					await trx
-						.insertInto('topics')
-						.values({
-							poster: topic.poster,
-							subject: topic.subject,
-							posted: topic.posted,
-							last_post: topic.last_post,
-							moved_to: topic.id,
-							sticky: 0,
-							forum_id: forumId,
-						})
-						.execute();
-			}
-			await updateForum(trx, forumId);
-			await updateForum(trx, targetForumId);
-			return true;
-		});
+			this.db.deleteFrom('topics').where('forum_id', '=', targetForumId).where('moved_to', 'in', topicIds),
+			this.db.updateTable('topics').set({ forum_id: targetForumId }).where('id', 'in', topicIds),
+			...(withRedirect
+				? [
+						this.db
+							.insertInto('topics')
+							.columns(['poster', 'subject', 'posted', 'last_post', 'moved_to', 'sticky', 'forum_id'])
+							.expression((eb) =>
+								eb
+									.selectFrom('topics')
+									.select(['poster', 'subject', 'posted', 'last_post', 'id', eb.val(0).as('sticky'), eb.val(forumId).as('forum_id')])
+									.where('id', 'in', topicIds),
+							),
+					]
+				: []),
+			updateForumWrite(this.db, forumId),
+			updateForumWrite(this.db, targetForumId),
+		]);
+		return true;
 	}
 
-	mergeTopics(forumId: number, topicIds: readonly number[], withRedirect: boolean): Promise<number | null> {
-		return inTransaction(this.db, async (trx) => {
-			if (topicIds.length < 2) return null;
-			const found = await trx
-				.selectFrom('topics')
-				.select('id')
-				.where('id', 'in', topicIds)
-				.where('forum_id', '=', forumId)
-				.orderBy('id')
-				.execute();
-			if (found.length !== topicIds.length) return null;
-			const target = found[0]?.id ?? 0;
-			const others = topicIds.filter((id) => id !== target);
+	async mergeTopics(forumId: number, topicIds: readonly number[], withRedirect: boolean): Promise<number | null> {
+		if (topicIds.length < 2) return null;
+		const found = await this.db
+			.selectFrom('topics')
+			.select('id')
+			.where('id', 'in', topicIds)
+			.where('forum_id', '=', forumId)
+			.orderBy('id')
+			.execute();
+		if (found.length !== topicIds.length) return null;
+		const target = found[0]?.id ?? 0;
+		const others = topicIds.filter((id) => id !== target);
 
+		await this.db.batch([
 			// Les liens de redirection pointent vers le sujet fusionné ; les anciens sujets en deviennent un si demandé.
-			await trx.updateTable('topics').set({ moved_to: target }).where('moved_to', 'in', topicIds).execute();
-			if (withRedirect) await trx.updateTable('topics').set({ moved_to: target }).where('id', 'in', others).execute();
-
-			await trx.updateTable('posts').set({ topic_id: target }).where('topic_id', 'in', topicIds).execute();
-
-			const subscribers = await trx
-				.selectFrom('topic_subscriptions')
-				.select('user_id')
-				.distinct()
-				.where('topic_id', 'in', topicIds)
-				.execute();
-			await trx.deleteFrom('topic_subscriptions').where('topic_id', 'in', topicIds).execute();
-			if (subscribers.length > 0)
-				await trx
-					.insertInto('topic_subscriptions')
-					.values(subscribers.map((row) => ({ user_id: row.user_id, topic_id: target })))
-					.execute();
-
-			if (!withRedirect) await trx.deleteFrom('topics').where('id', 'in', others).execute();
-			await refreshTopic(trx, target);
-			await updateForum(trx, forumId);
-			return target;
-		});
+			this.db.updateTable('topics').set({ moved_to: target }).where('moved_to', 'in', topicIds),
+			...(withRedirect ? [this.db.updateTable('topics').set({ moved_to: target }).where('id', 'in', others)] : []),
+			this.db.updateTable('posts').set({ topic_id: target }).where('topic_id', 'in', topicIds),
+			// Abonnés des sujets fusionnés reportés sur le sujet gardé, sans doublon.
+			this.db
+				.insertInto('topic_subscriptions')
+				.orIgnore()
+				.columns(['user_id', 'topic_id'])
+				.expression((eb) =>
+					eb
+						.selectFrom('topic_subscriptions')
+						.select(['user_id', eb.val(target).as('topic_id')])
+						.distinct()
+						.where('topic_id', 'in', others),
+				),
+			this.db.deleteFrom('topic_subscriptions').where('topic_id', 'in', others),
+			...(withRedirect ? [] : [this.db.deleteFrom('topics').where('id', 'in', others)]),
+			recountTopicWrite(this.db, target),
+			updateForumWrite(this.db, forumId),
+		]);
+		return target;
 	}
 
-	deleteTopics(forumId: number, topicIds: readonly number[], allowAdminPosts: boolean): Promise<DeleteTopicsResult> {
-		return inTransaction(this.db, async (trx) => {
-			if (topicIds.length === 0) return 'invalid';
-			const found = await trx.selectFrom('topics').select('id').where('id', 'in', topicIds).where('forum_id', '=', forumId).execute();
-			if (found.length !== topicIds.length) return 'invalid';
-			if (!allowAdminPosts && (await hasAdminPosts(trx, 'topic_id', topicIds))) return 'adminPosts';
+	async deleteTopics(forumId: number, topicIds: readonly number[], allowAdminPosts: boolean): Promise<DeleteTopicsResult> {
+		if (topicIds.length === 0) return 'invalid';
+		const found = await this.db.selectFrom('topics').select('id').where('id', 'in', topicIds).where('forum_id', '=', forumId).execute();
+		if (found.length !== topicIds.length) return 'invalid';
+		if (!allowAdminPosts && (await hasAdminPosts(this.db, 'topic_id', topicIds))) return 'adminPosts';
 
-			await trx
-				.deleteFrom('topics')
-				.where((eb) => eb.or([eb('id', 'in', topicIds), eb('moved_to', 'in', topicIds)]))
-				.execute();
-			await trx.deleteFrom('topic_subscriptions').where('topic_id', 'in', topicIds).execute();
-			const posts = await trx.selectFrom('posts').select('id').where('topic_id', 'in', topicIds).execute();
-			if (posts.length > 0) {
-				await stripSearchIndex(
-					trx,
-					posts.map((post) => post.id),
-				);
-				await trx.deleteFrom('posts').where('topic_id', 'in', topicIds).execute();
-			}
-			await updateForum(trx, forumId);
-			return 'deleted';
-		});
+		const postIds = (await this.db.selectFrom('posts').select('id').where('topic_id', 'in', topicIds).execute()).map((post) => post.id);
+		await this.db.batch([
+			this.db.deleteFrom('topics').where((eb) => eb.or([eb('id', 'in', topicIds), eb('moved_to', 'in', topicIds)])),
+			this.db.deleteFrom('topic_subscriptions').where('topic_id', 'in', topicIds),
+			...(await stripSearchIndexWrites(this.db, postIds)),
+			...(postIds.length > 0 ? [this.db.deleteFrom('posts').where('topic_id', 'in', topicIds)] : []),
+			updateForumWrite(this.db, forumId),
+		]);
+		return 'deleted';
 	}
 
 	async setClosed(forumId: number, topicIds: readonly number[], closed: boolean): Promise<void> {

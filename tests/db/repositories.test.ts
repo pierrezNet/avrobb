@@ -6,7 +6,6 @@
 
 import { afterAll, describe, expect, it } from 'vitest';
 import { buildApp } from '../../src/app.ts';
-import { createDatabase } from '../../src/db/database.ts';
 import { GroupId } from '../../src/domain/models.ts';
 import templates from '../../src/generated/templates.js';
 import { fr, frDateWords } from '../../src/lang/fr/index.ts';
@@ -45,10 +44,9 @@ import { UserRepository } from '../../src/repositories/UserRepository.ts';
 import { UsersInfoLoader } from '../../src/repositories/UsersInfoLoader.ts';
 import { buildSessionCookie } from '../../src/services/session.ts';
 import { inject } from '../inject.ts';
-import { testDbConfig } from './testDatabase.ts';
+import { closeTestDatabase, db, inRollback } from './testDb.ts';
 
-const db = createDatabase(testDbConfig());
-afterAll(async () => db.destroy());
+afterAll(closeTestDatabase);
 
 const NOW = 1_782_900_000;
 
@@ -376,14 +374,10 @@ describe('ReportRepository et PrivateMessageRepository', () => {
 	it('détecte les signalements non traités', async () => {
 		expect(await new ReportRepository(db).hasPending()).toBe(true);
 
-		const rollback = new Error('rollback');
-		await expect(
-			db.transaction().execute(async (trx) => {
-				await trx.deleteFrom('reports').where('zapped', 'is', null).execute();
-				expect(await new ReportRepository(trx).hasPending()).toBe(false);
-				throw rollback;
-			}),
-		).rejects.toBe(rollback);
+		await inRollback(async (trx) => {
+			await trx.deleteFrom('reports').where('zapped', 'is', null).execute();
+			expect(await new ReportRepository(trx).hasPending()).toBe(false);
+		});
 	});
 
 	it('compte les MP non lus et visibles du membre', async () => {
@@ -448,7 +442,7 @@ describe('viewtopic de bout en bout', () => {
 			contacts: new ContactRepository(db),
 			reportWriter: new ReportRepository(db),
 			reportStore: new ReportRepository(db),
-			adminStats: new AdminStatsRepository(db, 'fo_'),
+			adminStats: new AdminStatsRepository(db),
 			configStore: new ConfigRepository(db),
 			forumAdmin: new ForumAdminRepository(db),
 			maintenance: new MaintenanceRepository(db),

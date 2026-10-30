@@ -10,7 +10,6 @@ import type { Db } from '../db/database.ts';
 import type { SearchPost, SearchTopic } from '../domain/models.ts';
 import type { ShowAs, SortBy, WordHit } from '../services/search.ts';
 import { forumReadable } from './forumPermissions.ts';
-import { inTransaction } from './transactions.ts';
 
 /** Forums auxquels limiter la recherche ; null pour tous les forums lisibles. */
 export type ForumScope = readonly number[] | null;
@@ -267,16 +266,14 @@ export class SearchRepository implements SearchReader, SearchWriter {
 	}
 
 	async saveCachedSearch(searchId: number, ident: string, data: string): Promise<void> {
-		await inTransaction(this.db, async (trx) => {
-			// Le PHP ne purge que si la liste des présents n'est pas vide.
-			const online = await trx.selectFrom('online').select('ident').limit(1).executeTakeFirst();
-			if (online !== undefined)
-				await trx
-					.deleteFrom('search_cache')
-					.where('ident', 'not in', (eb) => eb.selectFrom('online').select('ident'))
-					.execute();
-			await trx.insertInto('search_cache').values({ id: searchId, ident, search_data: data }).execute();
-		});
+		// Le PHP ne purge que si la liste des présents n'est pas vide.
+		const online = await this.db.selectFrom('online').select('ident').limit(1).executeTakeFirst();
+		await this.db.batch([
+			...(online !== undefined
+				? [this.db.deleteFrom('search_cache').where('ident', 'not in', (eb) => eb.selectFrom('online').select('ident'))]
+				: []),
+			this.db.insertInto('search_cache').values({ id: searchId, ident, search_data: data }),
+		]);
 	}
 
 	async findCachedSearch(searchId: number, ident: string): Promise<string | null> {

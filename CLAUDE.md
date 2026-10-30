@@ -15,7 +15,7 @@ Cible : **100 % Cloudflare**. Un Worker (Hono), D1 (SQLite), R2 (fichiers), Stat
 - `FAILLES_PHP.md` (non versionné) : failles du PHP d'origine, liste de contrôle à ne pas reproduire.
 - Projet voisin sur le même modèle (Workers + D1 + Hono) : `../donnetonpoint`.
 
-> **Transition en cours** : l'héritage PV est retiré (lot 1) et la couche HTTP est sur Hono (lot 2), mais tant que le lot 3 de `TODO.md` n'est pas terminé, le code tourne sous **Node (`@hono/node-server`) avec MariaDB** (schéma FluxBB, conteneur `pv_db` sur le port 3307) et un stockage local des fichiers (`STORAGE_DIR`). Ce fichier décrit la **cible**. Commandes actuelles : `npm run dev` (gabarits recompilés et serveur relancé à chaque modification, port `PORT` de `.env`), `npm run check`, `npm run test:db` (base `pv_forum_test` sur MariaDB), `npm run build:templates`, `npm run screenshot`. Un lot terminé met à jour la section « Commandes » s'il en change.
+> **Transition en cours** : lots 1 à 3 terminés (héritage PV retiré, Hono, base D1). Tant que le lot 4 de `TODO.md` n'est pas terminé, le serveur tourne encore **sous Node** (`@hono/node-server`), sur la **base D1 locale de Wrangler** ouverte par `getPlatformProxy`, avec sharp et un stockage local des fichiers (`STORAGE_DIR`). Ce fichier décrit la **cible**. Commandes actuelles : `npm run dev` (port 8787, gabarits recompilés à chaque modification), `npm run db:migrate` (migrations sur la base locale), `npm run db:seed:dev` (administrateur « Emmanuel » et premiers forums), `npm run check`, `npm run test:db` (D1 locale neuve), `npm run screenshot`. Un lot terminé met à jour la section « Commandes » s'il en change.
 
 ## Commandes
 

@@ -1,7 +1,6 @@
 /**
- * Lecture et écriture des valeurs de serialize() de PHP : colonne forums.moderators
- * (array(nom => id)) et table search_cache (tableaux imbriqués, dont une chaîne elle-même
- * sérialisée).
+ * Lecture et écriture des valeurs de serialize() de PHP, format hérité du cache des recherches
+ * (table search_cache : tableaux imbriqués, dont une chaîne elle-même sérialisée).
  *
  * Sous-ensemble reconnu : a (tableau), s (chaîne), i (entier), d (flottant), b (booléen), N (null).
  * Les objets (O:) sont refusés : rien n'est jamais instancié. Les longueurs `s:N:` sont en octets :
@@ -93,25 +92,6 @@ export function phpUnserialize(text: string): PhpValue {
 	const value = reader.value();
 	if (!reader.done) throw new SyntaxError('Données en trop après la valeur sérialisée');
 	return value;
-}
-
-/** forums.moderators : tableau nom → id ; toute autre forme donne une liste vide. */
-export function parseModerators(serialized: string | null): Map<string, number> {
-	const moderators = new Map<string, number>();
-	if (serialized === null || serialized === '') return moderators;
-
-	try {
-		const value = phpUnserialize(serialized);
-		if (!(value instanceof Map)) return moderators;
-		for (const [name, id] of value) {
-			if (typeof id !== 'number') return new Map();
-			moderators.set(String(name), id);
-		}
-	} catch {
-		return new Map();
-	}
-
-	return moderators;
 }
 
 /** Valeur écrite par phpSerialize() : un tableau JavaScript devient une liste PHP (clés 0, 1, …). */

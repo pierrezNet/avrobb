@@ -5,16 +5,13 @@
  * compteur et promotion du membre ou date du dernier message de l'invité).
  */
 
-import type { Kysely } from 'kysely';
-import type { Db } from '../db/database.ts';
-import type { Database } from '../db/schema.ts';
+import { type Compilable, type Db, lastRow } from '../db/database.ts';
 import { GUEST_USER_ID, type PostingTarget, type ReviewPost, type Subscriber } from '../domain/models.ts';
-import { parseModerators } from '../services/phpSerialize.ts';
+import { parseModerators } from '../services/moderators.ts';
 import type { IndexedWords } from '../services/searchIndex.ts';
-import { updateForum } from './forumCounters.ts';
+import { updateForumWrite } from './forumCounters.ts';
 import { forumReadable } from './forumPermissions.ts';
-import { updateSearchIndex } from './searchIndexSql.ts';
-import { inTransaction } from './transactions.ts';
+import { LAST_POST_ID, LAST_TOPIC_ID, searchIndexWrites } from './searchIndexSql.ts';
 
 /** Auteur d'un nouveau message : membre (compteur, promotion) ou invité (repéré par son IP). */
 export type NewPostAuthor =
@@ -126,60 +123,59 @@ export class PostingRepository implements PostingStore {
 		return rows.map((row) => ({ poster: row.poster, message: row.message ?? '', hideSmilies: row.hide_smilies === 1, posted: row.posted }));
 	}
 
+	/** Réponse : un seul lot (message, sujet, abonnement, index, forum, auteur), puis l'identifiant créé. */
 	async createReply(reply: NewReply): Promise<number> {
-		return inTransaction(this.db, async (trx) => {
-			const postId = await insertPost(trx, reply, reply.topicId);
+		const writes: Compilable[] = [insertPost(this.db, reply, reply.topicId)];
+		if (reply.author.kind === 'member' && reply.subscription === 'add')
+			writes.push(this.db.insertInto('topic_subscriptions').orIgnore().values({ user_id: reply.author.id, topic_id: reply.topicId }));
+		else if (reply.author.kind === 'member' && reply.subscription === 'remove')
+			writes.push(this.db.deleteFrom('topic_subscriptions').where('user_id', '=', reply.author.id).where('topic_id', '=', reply.topicId));
 
-			if (reply.author.kind === 'member' && reply.subscription === 'add')
-				await trx.insertInto('topic_subscriptions').values({ user_id: reply.author.id, topic_id: reply.topicId }).execute();
-			else if (reply.author.kind === 'member' && reply.subscription === 'remove')
-				await trx.deleteFrom('topic_subscriptions').where('user_id', '=', reply.author.id).where('topic_id', '=', reply.topicId).execute();
-
-			await trx
+		writes.push(
+			this.db
 				.updateTable('topics')
 				.set((eb) => ({
 					num_replies: eb('num_replies', '+', 1),
 					last_post: reply.now,
-					last_post_id: postId,
+					last_post_id: LAST_POST_ID,
 					last_poster: reply.author.username,
 				}))
-				.where('id', '=', reply.topicId)
-				.execute();
-
-			await updateSearchIndex(trx, 'post', postId, reply.words);
-			await updateForum(trx, reply.forumId);
-			await recordAuthorPost(trx, reply);
-			return postId;
-		});
+				.where('id', '=', reply.topicId),
+			...(await searchIndexWrites(this.db, 'post', LAST_POST_ID, reply.words)),
+			updateForumWrite(this.db, reply.forumId),
+			recordAuthorPost(this.db, reply),
+			this.db.selectNoFrom(LAST_POST_ID.as('post_id')),
+		);
+		const results = await this.db.batch(writes);
+		return lastRow<{ post_id: number }>(results).post_id;
 	}
 
+	/** Nouvelle discussion : sujet et premier message dans le même lot ; le message vise LAST_TOPIC_ID. */
 	async createTopic(topic: NewTopic): Promise<{ topicId: number; postId: number }> {
-		return inTransaction(this.db, async (trx) => {
-			const inserted = await trx
-				.insertInto('topics')
-				.values({
-					poster: topic.author.username,
-					subject: topic.subject,
-					posted: topic.now,
-					last_post: topic.now,
-					last_poster: topic.author.username,
-					sticky: topic.sticky ? 1 : 0,
-					forum_id: topic.forumId,
-				})
-				.executeTakeFirstOrThrow();
-			const topicId = Number(inserted.insertId);
-
-			if (topic.author.kind === 'member' && topic.subscribe)
-				await trx.insertInto('topic_subscriptions').values({ user_id: topic.author.id, topic_id: topicId }).execute();
-
-			const postId = await insertPost(trx, topic, topicId);
-			await trx.updateTable('topics').set({ last_post_id: postId, first_post_id: postId }).where('id', '=', topicId).execute();
-
-			await updateSearchIndex(trx, 'post', postId, topic.words);
-			await updateForum(trx, topic.forumId);
-			await recordAuthorPost(trx, topic);
-			return { topicId, postId };
-		});
+		const writes: Compilable[] = [
+			this.db.insertInto('topics').values({
+				poster: topic.author.username,
+				subject: topic.subject,
+				posted: topic.now,
+				last_post: topic.now,
+				last_poster: topic.author.username,
+				sticky: topic.sticky ? 1 : 0,
+				forum_id: topic.forumId,
+			}),
+		];
+		if (topic.author.kind === 'member' && topic.subscribe)
+			writes.push(this.db.insertInto('topic_subscriptions').values({ user_id: topic.author.id, topic_id: LAST_TOPIC_ID }));
+		writes.push(
+			insertPost(this.db, topic, LAST_TOPIC_ID),
+			this.db.updateTable('topics').set({ last_post_id: LAST_POST_ID, first_post_id: LAST_POST_ID }).where('id', '=', LAST_TOPIC_ID),
+			...(await searchIndexWrites(this.db, 'post', LAST_POST_ID, topic.words)),
+			updateForumWrite(this.db, topic.forumId),
+			recordAuthorPost(this.db, topic),
+			this.db.selectNoFrom([LAST_TOPIC_ID.as('topic_id'), LAST_POST_ID.as('post_id')]),
+		);
+		const results = await this.db.batch(writes);
+		const ids = lastRow<{ topic_id: number; post_id: number }>(results);
+		return { topicId: ids.topic_id, postId: ids.post_id };
 	}
 
 	async listTopicSubscribers(topicId: number, forumId: number, excludeUserId: number): Promise<Subscriber[]> {
@@ -227,7 +223,7 @@ export class PostingRepository implements PostingStore {
 }
 
 /** INSERT du message ; un invité n'a pas de poster_id (1 par défaut) mais peut laisser son e-mail. */
-async function insertPost(trx: Kysely<Database>, post: NewPostBase, topicId: number): Promise<number> {
+function insertPost(db: Db, post: NewPostBase, topicId: number | typeof LAST_TOPIC_ID): Compilable {
 	const common = {
 		poster: post.author.username,
 		poster_ip: post.ip,
@@ -240,24 +236,19 @@ async function insertPost(trx: Kysely<Database>, post: NewPostBase, topicId: num
 		post.author.kind === 'member'
 			? { ...common, poster_id: post.author.id }
 			: { ...common, poster_id: GUEST_USER_ID, poster_email: post.author.email };
-	const result = await trx.insertInto('posts').values(values).executeTakeFirstOrThrow();
-	return Number(result.insertId);
+	return db.insertInto('posts').values(values);
 }
 
 /** Fin de post.php : compteur, dernier message et promotion du membre, ou last_post de l'invité. */
-async function recordAuthorPost(trx: Kysely<Database>, post: NewPostBase): Promise<void> {
+function recordAuthorPost(db: Db, post: NewPostBase): Compilable {
 	const { author } = post;
-	if (author.kind === 'guest') {
-		await trx.updateTable('online').set({ last_post: post.now }).where('ident', '=', post.ip).execute();
-		return;
-	}
-	await trx
+	if (author.kind === 'guest') return db.updateTable('online').set({ last_post: post.now }).where('ident', '=', post.ip);
+	return db
 		.updateTable('users')
 		.set((eb) => ({
 			num_posts: eb('num_posts', '+', 1),
 			last_post: post.now,
 			...(author.promoteTo !== null ? { group_id: author.promoteTo } : {}),
 		}))
-		.where('id', '=', author.id)
-		.execute();
+		.where('id', '=', author.id);
 }

@@ -5,27 +5,11 @@
 
 import type { Kysely } from 'kysely';
 import { afterAll, describe, expect, it } from 'vitest';
-import { createDatabase } from '../../src/db/database.ts';
 import type { Database } from '../../src/db/schema.ts';
 import { PrivateMessageRepository } from '../../src/repositories/PrivateMessageRepository.ts';
-import { testDbConfig } from './testDatabase.ts';
+import { closeTestDatabase, inRollback } from './testDb.ts';
 
-const db = createDatabase(testDbConfig());
-afterAll(async () => db.destroy());
-
-class Rollback extends Error {}
-
-async function inRollback(body: (trx: Kysely<Database>) => Promise<void>): Promise<void> {
-	await db
-		.transaction()
-		.execute(async (trx) => {
-			await body(trx);
-			throw new Rollback();
-		})
-		.catch((error: unknown) => {
-			if (!(error instanceof Rollback)) throw error;
-		});
-}
+afterAll(closeTestDatabase);
 
 const numPms = async (trx: Kysely<Database>, id: number): Promise<number> =>
 	(await trx.selectFrom('users').select('num_pms').where('id', '=', id).executeTakeFirstOrThrow()).num_pms;

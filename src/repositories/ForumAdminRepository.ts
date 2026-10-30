@@ -3,13 +3,10 @@
  * ajout, positions, modification, permissions par groupe et suppression avec tout leur contenu.
  */
 
-import type { Kysely } from 'kysely';
-import type { Db } from '../db/database.ts';
-import type { Database } from '../db/schema.ts';
+import type { Compilable, Db } from '../db/database.ts';
 import { GroupId } from '../domain/models.ts';
 import type { EffectivePermission, GroupForumPermissionRow } from '../services/forumPermissions.ts';
-import { deleteOrphanRedirects, pruneForum } from './pruning.ts';
-import { inTransaction } from './transactions.ts';
+import { orphanRedirectsDelete, pruneForumsWrites } from './pruning.ts';
 
 export interface AdminCategory {
 	id: number;
@@ -68,12 +65,14 @@ export interface ForumAdminStore {
 const flag = (value: boolean): number => (value ? 1 : 0);
 
 /** Forum supprimé avec ses sujets, permissions et abonnements (admin_forums.php?del_forum). */
-async function deleteForumContent(trx: Kysely<Database>, forumId: number): Promise<void> {
-	await pruneForum(trx, forumId, true, null);
-	await deleteOrphanRedirects(trx);
-	await trx.deleteFrom('forums').where('id', '=', forumId).execute();
-	await trx.deleteFrom('forum_perms').where('forum_id', '=', forumId).execute();
-	await trx.deleteFrom('forum_subscriptions').where('forum_id', '=', forumId).execute();
+async function deleteForumWrites(db: Db, forumId: number): Promise<Compilable[]> {
+	return [
+		...(await pruneForumsWrites(db, [forumId])),
+		orphanRedirectsDelete(db),
+		db.deleteFrom('forums').where('id', '=', forumId),
+		db.deleteFrom('forum_perms').where('forum_id', '=', forumId),
+		db.deleteFrom('forum_subscriptions').where('forum_id', '=', forumId),
+	];
 }
 
 export class ForumAdminRepository implements ForumAdminStore {
@@ -94,26 +93,21 @@ export class ForumAdminRepository implements ForumAdminStore {
 	}
 
 	async updateCategories(categories: readonly AdminCategory[]): Promise<void> {
-		await inTransaction(this.db, async (trx) => {
-			for (const category of categories)
-				await trx
-					.updateTable('categories')
-					.set({ cat_name: category.name, disp_position: category.position })
-					.where('id', '=', category.id)
-					.execute();
-		});
+		await this.db.batch(
+			categories.map((category) =>
+				this.db.updateTable('categories').set({ cat_name: category.name, disp_position: category.position }).where('id', '=', category.id),
+			),
+		);
 	}
 
 	async deleteCategory(id: number): Promise<void> {
-		await inTransaction(this.db, async (trx) => {
-			const forums = await trx.selectFrom('forums').select('id').where('cat_id', '=', id).execute();
-			for (const forum of forums) {
-				await pruneForum(trx, forum.id, true, null);
-				await trx.deleteFrom('forums').where('id', '=', forum.id).execute();
-			}
-			await deleteOrphanRedirects(trx);
-			await trx.deleteFrom('categories').where('id', '=', id).execute();
-		});
+		const forumIds = (await this.db.selectFrom('forums').select('id').where('cat_id', '=', id).execute()).map((row) => row.id);
+		await this.db.batch([
+			...(await pruneForumsWrites(this.db, forumIds)),
+			...(forumIds.length > 0 ? [this.db.deleteFrom('forums').where('id', 'in', forumIds)] : []),
+			orphanRedirectsDelete(this.db),
+			this.db.deleteFrom('categories').where('id', '=', id),
+		]);
 	}
 
 	async listForums(): Promise<AdminForumRow[]> {
@@ -139,10 +133,9 @@ export class ForumAdminRepository implements ForumAdminStore {
 	}
 
 	async updateForumPositions(positions: readonly { id: number; position: number }[]): Promise<void> {
-		await inTransaction(this.db, async (trx) => {
-			for (const { id, position } of positions)
-				await trx.updateTable('forums').set({ disp_position: position }).where('id', '=', id).execute();
-		});
+		await this.db.batch(
+			positions.map(({ id, position }) => this.db.updateTable('forums').set({ disp_position: position }).where('id', '=', id)),
+		);
 	}
 
 	async findForum(id: number): Promise<AdminForum | null> {
@@ -217,22 +210,12 @@ export class ForumAdminRepository implements ForumAdminStore {
 			post_replies: flag(permission.postReplies),
 			post_topics: flag(permission.postTopics),
 		};
-		// UPDATE puis INSERT si aucune ligne, comme le PHP (pas de clé unique garantie sur forum_perms).
-		await inTransaction(this.db, async (trx) => {
-			const existing = await trx
-				.selectFrom('forum_perms')
-				.select('group_id')
-				.where('group_id', '=', groupId)
-				.where('forum_id', '=', forumId)
-				.executeTakeFirst();
-			if (existing !== undefined)
-				await trx.updateTable('forum_perms').set(values).where('group_id', '=', groupId).where('forum_id', '=', forumId).execute();
-			else
-				await trx
-					.insertInto('forum_perms')
-					.values({ group_id: groupId, forum_id: forumId, ...values })
-					.execute();
-		});
+		// Clé primaire (group_id, forum_id) : insertion, ou mise à jour si la ligne existe déjà.
+		await this.db
+			.insertInto('forum_perms')
+			.values({ group_id: groupId, forum_id: forumId, ...values })
+			.onConflict((conflict) => conflict.columns(['group_id', 'forum_id']).doUpdateSet(values))
+			.execute();
 	}
 
 	async revertPermissions(forumId: number): Promise<void> {
@@ -240,6 +223,6 @@ export class ForumAdminRepository implements ForumAdminStore {
 	}
 
 	async deleteForum(id: number): Promise<void> {
-		await inTransaction(this.db, (trx) => deleteForumContent(trx, id));
+		await this.db.batch(await deleteForumWrites(this.db, id));
 	}
 }

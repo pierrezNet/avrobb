@@ -4,15 +4,15 @@
  * suppression, bannissement) avec les effets de bord du PHP.
  */
 
-import type { Expression, ExpressionBuilder, Kysely, SqlBool } from 'kysely';
-import type { Db } from '../db/database.ts';
+import type { Expression, ExpressionBuilder, SqlBool } from 'kysely';
+import type { Compilable, Db } from '../db/database.ts';
 import type { Database } from '../db/schema.ts';
-import { GroupId } from '../domain/models.ts';
-import { parseModerators, phpSerialize } from '../services/phpSerialize.ts';
+import { GroupId, GUEST_USER_ID } from '../domain/models.ts';
+import { parseModerators, serializeModerators } from '../services/moderators.ts';
 import type { UserSearchCriteria } from '../services/userSearch.ts';
-import { updateForum } from './forumCounters.ts';
-import { deletePost, deleteTopic } from './PostEditRepository.ts';
-import { inTransaction } from './transactions.ts';
+import { updateForumWrite } from './forumCounters.ts';
+import { recountTopicWrite } from './PostEditRepository.ts';
+import { stripSearchIndexWrites } from './searchIndexSql.ts';
 
 export interface AdminUserRow {
 	id: number;
@@ -130,27 +130,67 @@ export interface UserAdminWriter {
  * Retire des listes de modérateurs des forums les comptes de groupes modérateurs parmi `ids`
  * (boucle sur les forums d'admin_users.php).
  */
-async function removeFromModerators(trx: Kysely<Database>, ids: readonly number[]): Promise<void> {
-	const moderators = await trx
+/** Membres retirés des listes de modérateurs des forums (les lectures ici, les écritures renvoyées). */
+async function removeFromModeratorsWrites(db: Db, ids: readonly number[]): Promise<Compilable[]> {
+	const moderators = await db
 		.selectFrom('users')
 		.innerJoin('groups', 'groups.g_id', 'users.group_id')
 		.select('users.id')
 		.where('users.id', 'in', ids)
 		.where('groups.g_moderator', '=', 1)
 		.execute();
-	if (moderators.length === 0) return;
+	if (moderators.length === 0) return [];
 	const removed = new Set(moderators.map((row) => row.id));
-	const forums = await trx.selectFrom('forums').select(['id', 'moderators']).execute();
-	for (const forum of forums) {
+	const writes: Compilable[] = [];
+	for (const forum of await db.selectFrom('forums').select(['id', 'moderators']).execute()) {
 		const current = parseModerators(forum.moderators);
 		const kept = [...current].filter(([, id]) => !removed.has(id));
-		if (kept.length === current.size) continue;
-		await trx
-			.updateTable('forums')
-			.set({ moderators: kept.length > 0 ? phpSerialize(new Map(kept)) : null })
-			.where('id', '=', forum.id)
-			.execute();
+		if (kept.length !== current.size)
+			writes.push(
+				db
+					.updateTable('forums')
+					.set({ moderators: serializeModerators(new Map(kept)) })
+					.where('id', '=', forum.id),
+			);
 	}
+	return writes;
+}
+
+/**
+ * Messages des membres supprimés avec eux : un sujet qu'ils ont ouvert part en entier (delete_topic()),
+ * leurs autres messages un par un (delete_post()) ; sujets restants et forums sont ensuite recomptés.
+ */
+async function deletePostsOfWrites(db: Db, ids: readonly number[]): Promise<Compilable[]> {
+	const posts = await db
+		.selectFrom('posts as p')
+		.innerJoin('topics as t', 't.id', 'p.topic_id')
+		.select(['p.id', 'p.topic_id', 't.forum_id', 't.first_post_id'])
+		.where('p.poster_id', 'in', ids)
+		.execute();
+	if (posts.length === 0) return [];
+
+	const deletedTopics = [...new Set(posts.filter((post) => post.id === post.first_post_id).map((post) => post.topic_id))];
+	const keptTopics = [...new Set(posts.filter((post) => !deletedTopics.includes(post.topic_id)).map((post) => post.topic_id))];
+	const singlePosts = posts.filter((post) => !deletedTopics.includes(post.topic_id)).map((post) => post.id);
+	const topicPosts =
+		deletedTopics.length > 0
+			? (await db.selectFrom('posts').select('id').where('topic_id', 'in', deletedTopics).execute()).map((row) => row.id)
+			: [];
+	const forums = [...new Set(posts.map((post) => post.forum_id))];
+
+	return [
+		...(await stripSearchIndexWrites(db, [...topicPosts, ...singlePosts])),
+		...(deletedTopics.length > 0
+			? [
+					db.deleteFrom('topics').where((eb) => eb.or([eb('id', 'in', deletedTopics), eb('moved_to', 'in', deletedTopics)])),
+					db.deleteFrom('posts').where('topic_id', 'in', deletedTopics),
+					db.deleteFrom('topic_subscriptions').where('topic_id', 'in', deletedTopics),
+				]
+			: []),
+		...(singlePosts.length > 0 ? [db.deleteFrom('posts').where('id', 'in', singlePosts)] : []),
+		...keptTopics.map((topicId) => recountTopicWrite(db, topicId)),
+		...forums.map((forumId) => updateForumWrite(db, forumId)),
+	];
 }
 
 export class UserAdminRepository implements UserAdminReader, UserAdminWriter {
@@ -252,53 +292,36 @@ export class UserAdminRepository implements UserAdminReader, UserAdminWriter {
 	}
 
 	async moveUsers(ids: readonly number[], groupId: number, toModeratorGroup: boolean): Promise<void> {
-		await inTransaction(this.db, async (trx) => {
-			if (!toModeratorGroup) await removeFromModerators(trx, ids);
-			await trx.updateTable('users').set({ group_id: groupId }).where('id', 'in', ids).execute();
-		});
+		await this.db.batch([
+			...(toModeratorGroup ? [] : await removeFromModeratorsWrites(this.db, ids)),
+			this.db.updateTable('users').set({ group_id: groupId }).where('id', 'in', ids),
+		]);
 	}
 
 	async deleteUsers(ids: readonly number[], withPosts: boolean): Promise<void> {
-		await inTransaction(this.db, async (trx) => {
-			await removeFromModerators(trx, ids);
-			await trx.deleteFrom('topic_subscriptions').where('user_id', 'in', ids).execute();
-			await trx.deleteFrom('forum_subscriptions').where('user_id', 'in', ids).execute();
-			await trx.deleteFrom('online').where('user_id', 'in', ids).execute();
-			if (withPosts) {
-				const posts = await trx
-					.selectFrom('posts as p')
-					.innerJoin('topics as t', 't.id', 'p.topic_id')
-					.innerJoin('forums as f', 'f.id', 't.forum_id')
-					.select(['p.id', 'p.topic_id', 't.forum_id'])
-					.where('p.poster_id', 'in', ids)
-					.execute();
-				for (const post of posts) {
-					// Message d'ouverture : tout le sujet part, comme delete_topic() ; sinon delete_post().
-					const first = await trx
-						.selectFrom('posts')
-						.select('id')
-						.where('topic_id', '=', post.topic_id)
-						.orderBy('posted')
-						.orderBy('id')
-						.limit(1)
-						.executeTakeFirst();
-					if (first === undefined) continue;
-					if (first.id === post.id) await deleteTopic(trx, post.topic_id);
-					else await deletePost(trx, post.id, post.topic_id);
-					await updateForum(trx, post.forum_id);
-				}
-			} else await trx.updateTable('posts').set({ poster_id: 1 }).where('poster_id', 'in', ids).execute();
-			await trx.deleteFrom('users').where('id', 'in', ids).execute();
-		});
+		await this.db.batch([
+			...(await removeFromModeratorsWrites(this.db, ids)),
+			this.db.deleteFrom('topic_subscriptions').where('user_id', 'in', ids),
+			this.db.deleteFrom('forum_subscriptions').where('user_id', 'in', ids),
+			this.db.deleteFrom('online').where('user_id', 'in', ids),
+			...(withPosts
+				? await deletePostsOfWrites(this.db, ids)
+				: [this.db.updateTable('posts').set({ poster_id: GUEST_USER_ID }).where('poster_id', 'in', ids)]),
+			this.db.deleteFrom('users').where('id', 'in', ids),
+		]);
 	}
 
 	async banUsers(ids: readonly number[], ban: UserBan): Promise<void> {
-		await inTransaction(this.db, async (trx) => {
-			const users = await trx.selectFrom('users').select(['id', 'username', 'email', 'registration_ip']).where('id', 'in', ids).execute();
+		{
+			const users = await this.db
+				.selectFrom('users')
+				.select(['id', 'username', 'email', 'registration_ip'])
+				.where('id', 'in', ids)
+				.execute();
 			const ips = new Map(users.map((user) => [user.id, user.registration_ip]));
 			if (ban.withIp) {
 				// Adresse du dernier message de chacun, à défaut celle de l'inscription.
-				const last = await trx
+				const last = await this.db
 					.selectFrom('posts as p')
 					.innerJoin(
 						(eb) =>
@@ -314,18 +337,20 @@ export class UserAdminRepository implements UserAdminReader, UserAdminWriter {
 					.execute();
 				for (const row of last) if (row.poster_ip !== null) ips.set(row.poster_id, row.poster_ip);
 			}
-			for (const user of users)
-				await trx
+			if (users.length > 0)
+				await this.db
 					.insertInto('bans')
-					.values({
-						username: user.username,
-						ip: ban.withIp ? (ips.get(user.id) ?? null) : null,
-						email: user.email,
-						message: ban.message,
-						expire: ban.expire,
-						ban_creator: ban.creatorId,
-					})
+					.values(
+						users.map((user) => ({
+							username: user.username,
+							ip: ban.withIp ? (ips.get(user.id) ?? null) : null,
+							email: user.email,
+							message: ban.message,
+							expire: ban.expire,
+							ban_creator: ban.creatorId,
+						})),
+					)
 					.execute();
-		});
+		}
 	}
 }

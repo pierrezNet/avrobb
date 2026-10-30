@@ -76,20 +76,23 @@ Reporté :
 - Manifeste des ressources (`src/generated/assets.json`) : avec le Worker, au lot 3 (l'adaptateur Node le remplace d'ici là).
 - Paramètres de requête : les types restent déclaratifs, comme sous Fastify (valeurs validées dans les contrôleurs par `positiveInt` et consorts). Des lecteurs validés par route restent souhaitables.
 
-## Lot 3 — D1 : schéma SQLite neuf et migrations · 6 à 8 jours
+## Lot 3 — D1 : schéma SQLite neuf et migrations · 6 à 8 jours · terminé le 2026-10-30
 
-Le plus gros lot. À la fin, l'application tourne dans `wrangler dev` (Worker, D1 local) ; MariaDB et `mysql2` disparaissent.
+Changement de découpage : la base passe sur D1 **sous Node** (base locale de Wrangler, par `getPlatformProxy`), sans changer le reste (serveur, sharp, fichiers sur disque). Le Worker et `wrangler dev` arrivent au lot 4 avec R2, qui supprime la dépendance au disque. MariaDB et `mysql2` disparaissent.
 
-- [ ] `wrangler.jsonc` (Worker, liaisons `DB`, `ASSETS`, `nodejs_compat`), `src/worker.ts` (câblage des dépendances à partir de `env`), `.dev.vars`
-- [ ] Pilote Kysely pour D1 (`src/db/d1Dialect.ts`) et utilitaire `batch()` qui compile des requêtes Kysely et les envoie en un seul `db.batch()`
-- [ ] **Schéma neuf** (`migrations/0001_initial.sql`) pensé pour SQLite et pour AvroBB, sans préfixe `fo_` : `users` (avec `provider`, `provider_id`, `session_version`, sans `password`), `groups`, `categories`, `forums`, `forum_perms`, `forum_moderators` (table de liaison à la place du tableau PHP sérialisé), `topics`, `posts`, `subscriptions`, `online` (membres seulement), `bans`, `reports`, `config`, `censoring`, `messages`, `reputation`, `gallery`, `drafts`, `subject_prefixes` ; clés étrangères et index dès le départ
-- [ ] Recherche FTS5 : table virtuelle `posts_fts` (contenu externe sur `posts`) tenue à jour par déclencheurs ; `SearchRepository` et `services/search.ts` réécrits (échappement des expressions `MATCH`) ; suppression de `search_words`/`search_matches`/`searchIndex`/`StopwordsLoader` ; `search_cache` remplacé par une recherche sans cache (rejouée à chaque page) ou un cache court
-- [ ] **Réécriture des 49 repositories** : dialecte SQLite, `RETURNING` à la place de `insertId`, `ON CONFLICT` à la place de `ON DUPLICATE KEY`, les 34 `inTransaction()` remplacés par des lots atomiques
-- [ ] `ConfigLoader` : table `config` avec cache par isolat (30 s)
-- [ ] Graines : `migrations/` pour la structure, `scripts/seed.sql` pour un forum de démonstration en local (catégories, forums, groupes, réglages par défaut)
-- [ ] `test:db` sur une D1 locale (`getPlatformProxy` de Wrangler, migrations rejouées à chaque lancement)
-- [ ] Tâche planifiée (Cron Trigger) : purge de `online` et des brouillons anciens
-- [ ] Retrait de `mysql2`, `TablePrefixPlugin`, `docker compose`, `vitest.db.config.ts` adapté
+- [x] `wrangler.jsonc` (liaison `DB`, migrations), base locale dans `.wrangler/state` ; `server.ts` l'ouvre par `getPlatformProxy`
+- [x] Pilote Kysely pour D1 (`src/db/d1Dialect.ts`, types minimaux dans `src/db/d1.ts`) et `db.batch()` : requêtes Kysely compilées et envoyées en un seul lot atomique
+- [x] **Schéma neuf** (`migrations/0001_initial.sql`) : noms de FluxBB gardés sans préfixe (repositories lisibles), colonnes et tables mortes retirées, `users.provider`/`provider_id`/`session_version` ajoutés, pseudos en `COLLATE NOCASE`, identifiants `AUTOINCREMENT` ; modérateurs d'un forum en JSON (`services/moderators.ts`) au lieu du format PHP
+- [x] Données de départ (`migrations/0002_default_data.sql`) : groupes, compte « Invité », réglages par défaut d'AvroBB ; `scripts/dev-seed.sql` pour la base locale (administrateur « Emmanuel », catégorie et deux forums)
+- [x] Recherche : l'index de mots de FluxBB est **gardé** (SQL standard, exportable ; FTS5 reste une option)
+- [x] **Repositories** : les 34 transactions remplacées par des lots atomiques. Lectures d'abord, écritures ensuite ; identifiants créés désignés dans le lot par sous-requête (`LAST_POST_ID`, `LAST_TOPIC_ID`…, sûr car un lot est une transaction et l'AUTOINCREMENT croît) ; compteurs (`update_forum()`, sujet recompté) en sous-requêtes ; numéro de conversation de la messagerie calculé dans le lot (remplace le verrou `FOR UPDATE`) ; `ON CONFLICT` et `INSERT OR IGNORE` ; `LIKE … ESCAPE '\'` (SQLite n'a pas d'échappement par défaut)
+- [x] `test:db` sur une D1 locale neuve à chaque lancement ; `inRollback()` remet la base dans son état de départ après chaque test
+- [x] Statistiques de la base sur D1 (lignes par table, taille par la métadonnée `size_after` : `PRAGMA page_count` est refusé)
+- [x] Retrait de `mysql2`, `TablePrefixPlugin`, du schéma MariaDB de test
+
+Reporté :
+- Tâche planifiée (Cron Trigger) de purge de `online` et des brouillons anciens : avec le Worker (lot 4).
+- Données de développement : la base locale part de `dev-seed.sql` ; rien n'est importé de MariaDB (contenu jetable).
 
 Vigilance :
 - **Transactions** : pour chaque `inTransaction()`, écrire ce qui doit rester cohérent (compteurs `num_posts`/`num_replies`/`last_post*`) et vérifier que le lot atomique le garantit **sans lecture intermédiaire**. Les compteurs se mettent à jour de façon relative (`num_replies = num_replies + 1`) ou se recalculent par sous-requête. `forUpdate()` (messagerie) devient une condition dans le `UPDATE … WHERE`.
@@ -100,11 +103,18 @@ Vigilance :
 - Limites D1 : 100 paramètres liés par requête (attention aux `IN (…)` longs, à découper) et 100 Ko par instruction SQL.
 - Pas d'import des données de Pilote-Virtuel : AvroBB démarre vide.
 
-## Lot 4 — R2 pour les fichiers · 1 à 2 jours
+## Lot 4 — Worker et R2 · 3 à 4 jours
 
+Le forum tourne dans `wrangler dev`, puis le serveur Node disparaît.
+
+- [ ] `src/worker.ts` : câblage des dépendances à partir de `env` (`DB`, `FILES`, `ASSETS`, secrets), `nodejs_compat` ; `npm run dev` = `wrangler dev`
+- [ ] Ressources statiques par Workers Static Assets (`public/` servi tel quel sous `/assets/`) et **manifeste des empreintes** calculé au build (`src/generated/assets.json`, à la place d'`adapters/assetUrls.ts`)
+- [ ] Ce qui dépendait de Node : consultation d'IP par DNS sur HTTPS (`fetch`, à la place de `node:dns`), e-mails journalisés en attendant le lot 6 (`nodemailer` retiré), **images sans sharp** : type, dimensions et poids lus dans le contenu et vérifiés, fichier gardé tel quel (la conversion en WebP dans le navigateur arrive au lot 6)
+- [ ] Tâche planifiée (Cron Trigger) : purge de `online` et des brouillons anciens
 - [ ] Liaison `FILES` (bucket `avrobb-files`), interface `FileStore` (`put`, `get`, `delete`) et doublure en mémoire pour les tests
 - [ ] Galerie, avatars, logo et bannière (`GalleryFiles`, `avatars.ts`, `HeaderImageFiles`) passés sur R2 ; clés générées par le serveur (`gallery/<id>-<aléa>.webp`)
 - [ ] Route `GET /files/*` : lecture R2, `Content-Type` fixé par le serveur, `ETag`, `Cache-Control: public, max-age=31536000, immutable` (une clé ne change jamais de contenu), cache en bordure
+- [ ] Images du forum (galerie, avatars) insérées dans les messages en **adresse relative** (`/img/gallery/…`) et non plus préfixées d'`o_base_url` : une adresse absolue casse dès que le domaine change (développement → production). Le rendu (variante mobile, `<picture>`, miniatures de l'accueil) reconnaît aussi les anciennes adresses absolues du forum
 - [ ] Suppression : effacement R2 **après** la suppression en base (un fichier orphelin vaut mieux qu'une ligne qui pointe dans le vide) ; tâche planifiée de nettoyage des orphelins
 
 Vigilance :
@@ -141,6 +151,19 @@ Vigilance :
 - E-mail : domaine d'envoi vérifié (SPF, DKIM) chez le fournisseur ; lien de désabonnement dans chaque notification.
 - Option à garder en tête : Cloudflare Images (redimensionnement à la volée, 5 000 transformations gratuites par mois) si le traitement côté navigateur ne suffit pas.
 
+## Lot 6 bis — URL propres · 1 à 2 jours
+
+Décidé : à faire une fois toutes les pages stabilisées (SSO compris) et avant la mise en ligne, tant qu'aucun lien externe ni moteur de recherche ne connaît les anciennes adresses.
+
+- [ ] Schéma d'adresses en français et sans extension : `/`, `/forum/2`, `/sujet/4`, `/sujet/4/page/2`, `/message/123` (redirige vers le message dans son sujet), `/membre/3`, `/recherche`, `/galerie`, `/messages`…
+- [ ] Une seule source des adresses (`services/routes.ts` : fonctions `topicUrl(id, page)`…) utilisée par les presenters, les vues (`url()`), le plan du site et les e-mails ; plus aucune chaîne `viewtopic.php?…` en dur
+- [ ] Anciennes adresses (`viewtopic.php?id=4`…) : redirection 301 vers les nouvelles, pour les liens déjà présents dans les messages
+- [ ] Mise à jour de `robots.txt`, `sitemap.xml`, des URL canoniques, de la CSP si besoin, et des tests
+
+Vigilance :
+- Les messages contiennent des liens internes en BBCode (`[url]…viewtopic.php?pid=…[/url]`, mentions `profile.php?id=…`) : les redirections 301 les gardent valides, sans réécrire les messages.
+- Les formulaires POST gardent des adresses stables ; ne pas rediriger un POST (307/308 si nécessaire).
+
 ## Lot 7 — Déploiement : Wrangler, GitHub Actions, domaine, cache · 2 jours
 
 - [ ] Ressources Cloudflare : base D1 (région Europe), bucket R2, Worker, secrets (`SESSION_SECRET`, identifiants OAuth, clé Resend)
@@ -170,7 +193,6 @@ Vigilance :
 
 ## À décider
 
-- [ ] **URL propres** (`/sujet/4`, `/forum/2`) : à faire **avant** la mise en ligne si on la veut. Il n'y a aucun lien externe à préserver aujourd'hui ; après l'ouverture, il faudrait des redirections. Recommandation : oui, en fin de lot 3 ou entre les lots 7 et 8 (1 à 2 jours).
 - [ ] **Éditeur WYSIWYG** (SCEditor, mode source BBCode) : repris de la TODO de pv-forum, après la mise en ligne (2 à 3 jours).
 - [ ] Réputation : utile sur un forum personnel ? Gardée pour l'instant.
 - [ ] Biographie du membre (retirée avec Plugile) : la remettre comme champ de la section Personnalité du profil ?
@@ -184,9 +206,10 @@ Vigilance :
 | 1. Retrait de l'héritage PV | 2–3 j             |
 | 2. Couche HTTP Hono         | 3–4 j             |
 | 3. D1                       | 6–8 j             |
-| 4. R2                       | 1–2 j             |
+| 4. Worker et R2             | 3–4 j             |
 | 5. SSO                      | 2–3 j             |
 | 6. Images et e-mails        | 2–3 j             |
+| 6 bis. URL propres          | 1–2 j             |
 | 7. Déploiement              | 2 j               |
 | 8. Mise en ligne            | 1 j + textes      |
-| **Total**                   | **19 à 26 jours** |
+| **Total**                   | **22 à 30 jours** |

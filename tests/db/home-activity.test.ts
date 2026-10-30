@@ -4,30 +4,12 @@
  * actifs. Transactions annulées.
  */
 
-import type { Kysely } from 'kysely';
 import { afterAll, describe, expect, it } from 'vitest';
-import { createDatabase } from '../../src/db/database.ts';
-import type { Database } from '../../src/db/schema.ts';
 import { GroupId } from '../../src/domain/models.ts';
 import { HomeActivityRepository } from '../../src/repositories/HomeActivityRepository.ts';
-import { testDbConfig } from './testDatabase.ts';
+import { closeTestDatabase, db, inRollback } from './testDb.ts';
 
-const db = createDatabase(testDbConfig());
-afterAll(async () => db.destroy());
-
-class Rollback extends Error {}
-
-async function inRollback(body: (trx: Kysely<Database>) => Promise<void>): Promise<void> {
-	await db
-		.transaction()
-		.execute(async (trx) => {
-			await body(trx);
-			throw new Rollback();
-		})
-		.catch((error: unknown) => {
-			if (!(error instanceof Rollback)) throw error;
-		});
-}
+afterAll(closeTestDatabase);
 
 describe('HomeActivityRepository', () => {
 	it('discussions les plus commentées : permissions, messages de la période, image la plus récente', async () => {

@@ -6,7 +6,6 @@
 import type { Db } from '../db/database.ts';
 import { GUEST_USER_ID, type ReputationTarget, type ReputationVote } from '../domain/models.ts';
 import { forumReadable } from './forumPermissions.ts';
-import { inTransaction } from './transactions.ts';
 
 export interface ReputationMember {
 	id: number;
@@ -116,43 +115,39 @@ export class ReputationRepository implements ReputationStore {
 		return row?.last ?? null;
 	}
 
-	addVote(vote: NewVote): Promise<void> {
-		return inTransaction(this.db, async (trx) => {
-			await trx
-				.insertInto('reputation')
-				.values({
-					user_id: vote.userId,
-					from_user_id: vote.fromUserId,
-					time: vote.time,
-					post_id: vote.postId,
-					reason: vote.reason,
-					topics_id: vote.topicId,
-					rep_plus: vote.plus ? 1 : 0,
-					rep_minus: vote.plus ? 0 : 1,
-				})
-				.execute();
-			await trx
+	async addVote(vote: NewVote): Promise<void> {
+		await this.db.batch([
+			this.db.insertInto('reputation').values({
+				user_id: vote.userId,
+				from_user_id: vote.fromUserId,
+				time: vote.time,
+				post_id: vote.postId,
+				reason: vote.reason,
+				topics_id: vote.topicId,
+				rep_plus: vote.plus ? 1 : 0,
+				rep_minus: vote.plus ? 0 : 1,
+			}),
+			this.db
 				.updateTable('users')
 				.set((eb) => (vote.plus ? { rep_plus: eb('rep_plus', '+', 1) } : { rep_minus: eb('rep_minus', '+', 1) }))
-				.where('id', '=', vote.userId)
-				.execute();
-		});
+				.where('id', '=', vote.userId),
+		]);
 	}
 
-	deleteVotes(userId: number, voteIds: readonly number[]): Promise<void> {
-		if (voteIds.length === 0) return Promise.resolve();
-		return inTransaction(this.db, async (trx) => {
-			await trx.deleteFrom('reputation').where('user_id', '=', userId).where('id', 'in', voteIds).execute();
-			const sums = await trx
+	/** Votes supprimés puis totaux du membre recalculés, dans le même lot (sous-requêtes). */
+	async deleteVotes(userId: number, voteIds: readonly number[]): Promise<void> {
+		if (voteIds.length === 0) return;
+		const total = (column: 'rep_plus' | 'rep_minus') =>
+			this.db
 				.selectFrom('reputation')
-				.select((eb) => [eb.fn.sum<number>('rep_plus').as('plus'), eb.fn.sum<number>('rep_minus').as('minus')])
-				.where('user_id', '=', userId)
-				.executeTakeFirst();
-			await trx
+				.select((eb) => eb.fn.coalesce(eb.fn.sum<number>(column), eb.val(0)).as('total'))
+				.where('user_id', '=', userId);
+		await this.db.batch([
+			this.db.deleteFrom('reputation').where('user_id', '=', userId).where('id', 'in', voteIds),
+			this.db
 				.updateTable('users')
-				.set({ rep_plus: Number(sums?.plus ?? 0), rep_minus: Number(sums?.minus ?? 0) })
-				.where('id', '=', userId)
-				.execute();
-		});
+				.set({ rep_plus: total('rep_plus'), rep_minus: total('rep_minus') })
+				.where('id', '=', userId),
+		]);
 	}
 }

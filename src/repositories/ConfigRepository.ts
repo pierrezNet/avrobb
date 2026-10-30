@@ -3,7 +3,6 @@
  */
 
 import type { Db } from '../db/database.ts';
-import { inTransaction } from './transactions.ts';
 
 export interface ConfigSource {
 	loadValues(): Promise<Map<string, string>>;
@@ -28,18 +27,20 @@ export class ConfigRepository implements ConfigStore {
 
 	async updateValues(changes: ReadonlyMap<string, string | null>): Promise<void> {
 		if (changes.size === 0) return;
-		await inTransaction(this.db, async (trx) => {
-			for (const [name, value] of changes) {
-				await trx.updateTable('config').set({ conf_value: value }).where('conf_name', '=', name).execute();
-			}
-		});
+		await this.db.batch(
+			[...changes].map(([name, value]) => this.db.updateTable('config').set({ conf_value: value }).where('conf_name', '=', name)),
+		);
 	}
 
 	async replaceValues(values: ReadonlyMap<string, string>): Promise<void> {
-		await inTransaction(this.db, async (trx) => {
-			for (const [name, value] of values)
-				await trx.insertInto('config').values({ conf_name: name, conf_value: value }).onDuplicateKeyUpdate({ conf_value: value }).execute();
-		});
+		await this.db.batch(
+			[...values].map(([name, value]) =>
+				this.db
+					.insertInto('config')
+					.values({ conf_name: name, conf_value: value })
+					.onConflict((conflict) => conflict.column('conf_name').doUpdateSet({ conf_value: value })),
+			),
+		);
 	}
 
 	async deleteValues(names: readonly string[]): Promise<void> {

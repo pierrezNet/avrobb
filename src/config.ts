@@ -14,14 +14,6 @@ export interface CookieConfig {
 
 export interface AppConfig {
 	port: number;
-	db: {
-		host: string;
-		port: number;
-		user: string;
-		password: string;
-		database: string;
-		tablePrefix: string;
-	};
 	cookie: CookieConfig;
 	/** Connexion sans fournisseur SSO, pour le développement (DEV_LOGIN=1, depuis la machine seulement). */
 	devLogin: boolean;
@@ -50,14 +42,6 @@ function sessionSecret(env: NodeJS.ProcessEnv): string {
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
 	return {
 		port: Number(env.PORT ?? 3000),
-		db: {
-			host: env.DB_HOST ?? '127.0.0.1',
-			port: Number(env.DB_PORT ?? 3306),
-			user: required(env, 'DB_USER'),
-			password: required(env, 'DB_PASSWORD'),
-			database: required(env, 'DB_NAME'),
-			tablePrefix: env.DB_PREFIX ?? '',
-		},
 		cookie: { name: 'avrobb', secret: sessionSecret(env), secure: env.COOKIE_SECURE === '1' },
 		devLogin: env.DEV_LOGIN === '1',
 		// Chemin absolu : le service des fichiers statiques l'exige.

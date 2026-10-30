@@ -1,50 +1,35 @@
 /**
- * Élagage des sujets d'un forum (prune() d'include/common_admin.php) et des liens de redirection
- * orphelins, partagés par la suppression de catégories et de forums et par l'élagage de la maintenance.
+ * Élagage des sujets de forums (prune() d'include/common_admin.php) et des liens de redirection
+ * orphelins, pour la suppression de catégories et de forums. Les lectures sont faites ici, les
+ * écritures renvoyées pour le lot atomique de l'appelant (database.ts, batch()).
  */
 
-import type { Kysely } from 'kysely';
-import type { Database } from '../db/schema.ts';
-import { stripSearchIndex } from './searchIndexSql.ts';
+import type { Compilable, Db } from '../db/database.ts';
+import { stripSearchIndexWrites } from './searchIndexSql.ts';
 
 /**
- * prune() : supprime les sujets du forum (épinglés compris si `pruneSticky`, dernier message avant
- * `before` si donné), leurs abonnements et messages, et retire ces messages de l'index de recherche.
- * Comme le PHP, rien n'est supprimé si les sujets visés n'ont aucun message. Renvoie le nombre de sujets.
+ * prune() pour tous les sujets de ces forums (épinglés compris) : sujets, abonnements, messages et
+ * entrées de l'index de recherche. L'index est nettoyé en une fois, pour que les mots partagés
+ * entre ces forums soient comptés ensemble.
  */
-export async function pruneForum(db: Kysely<Database>, forumId: number, pruneSticky: boolean, before: number | null): Promise<number> {
-	let query = db.selectFrom('topics').select('id').where('forum_id', '=', forumId);
-	if (before !== null) query = query.where('last_post', '<', before);
-	if (!pruneSticky) query = query.where('sticky', '=', 0);
-	const topicIds = (await query.execute()).map((row) => row.id);
-	if (topicIds.length === 0) return 0;
-
+export async function pruneForumsWrites(db: Db, forumIds: readonly number[]): Promise<Compilable[]> {
+	if (forumIds.length === 0) return [];
+	const topicIds = (await db.selectFrom('topics').select('id').where('forum_id', 'in', forumIds).execute()).map((row) => row.id);
+	if (topicIds.length === 0) return [];
 	const postIds = (await db.selectFrom('posts').select('id').where('topic_id', 'in', topicIds).execute()).map((row) => row.id);
-	if (postIds.length === 0) return 0;
 
-	await db.deleteFrom('topics').where('id', 'in', topicIds).execute();
-	await db.deleteFrom('topic_subscriptions').where('topic_id', 'in', topicIds).execute();
-	await db.deleteFrom('posts').where('id', 'in', postIds).execute();
-	await stripSearchIndex(db, postIds);
-	return topicIds.length;
+	return [
+		db.deleteFrom('topics').where('id', 'in', topicIds),
+		db.deleteFrom('topic_subscriptions').where('topic_id', 'in', topicIds),
+		...(postIds.length > 0 ? [db.deleteFrom('posts').where('id', 'in', postIds)] : []),
+		...(await stripSearchIndexWrites(db, postIds)),
+	];
 }
 
-/** Liens de redirection dont le sujet cible n'existe plus. */
-export async function deleteOrphanRedirects(db: Kysely<Database>): Promise<void> {
-	const orphans = await db
-		.selectFrom('topics as t1')
-		.leftJoin('topics as t2', 't1.moved_to', 't2.id')
-		.select('t1.id')
-		.where('t2.id', 'is', null)
-		.where('t1.moved_to', 'is not', null)
-		.execute();
-	if (orphans.length > 0)
-		await db
-			.deleteFrom('topics')
-			.where(
-				'id',
-				'in',
-				orphans.map((row) => row.id),
-			)
-			.execute();
+/** Liens de redirection dont le sujet cible n'existe plus, évalués au moment où le lot s'exécute. */
+export function orphanRedirectsDelete(db: Db): Compilable {
+	return db
+		.deleteFrom('topics')
+		.where('moved_to', 'is not', null)
+		.where('moved_to', 'not in', (eb) => eb.selectFrom('topics as target').select('target.id'));
 }

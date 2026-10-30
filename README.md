@@ -10,9 +10,9 @@ schéma FluxBB. Cible : **Cloudflare** (Workers, D1, R2). Le plan de portage est
 
 ## État actuel
 
-Lots 1 et 2 terminés (retrait de l'héritage PV, passage à Hono et aux gabarits précompilés).
-L'application tourne encore sous **Node** (`@hono/node-server`) avec **MariaDB** au schéma FluxBB ;
-D1 et le Worker arrivent au lot 3. Les comptes SSO
+Lots 1 à 3 terminés (retrait de l'héritage PV, Hono et gabarits précompilés, base D1).
+L'application tourne encore sous **Node** (`@hono/node-server`), sur la base **D1 locale** de
+Wrangler ; le Worker et R2 arrivent au lot 4. Les comptes SSO
 arrivent au lot 5 : d'ici là, la **connexion de développement** (`DEV_LOGIN=1`) permet de se
 connecter sous le nom d'un membre existant, depuis la machine seulement.
 
@@ -21,16 +21,17 @@ connecter sous le nom d'un membre existant, depuis la machine seulement.
 ```bash
 cp .env.example .env    # SESSION_SECRET : openssl rand -hex 32
 npm install
-npm run dev             # http://localhost:3000 (PORT de .env) ; gabarits recompilés à chaque modification
+npm run db:migrate      # crée la base D1 locale (.wrangler/state) : schéma et réglages par défaut
+npm run db:seed:dev     # administrateur « Emmanuel » (connexion de développement), catégorie et forums
+npm run dev             # http://localhost:8787 ; gabarits recompilés à chaque modification
 npm run check           # lint (Biome) + typecheck + tests rapides
-npm run test:db         # tests sur une vraie base (pv_forum_test, recréée à chaque fois)
+npm run test:db         # tests sur une D1 locale neuve (migrations + tests/db/seed.sql)
 npm run screenshot -- 'http://localhost:3000/index.php' --widths 320,1280 [--cookie avrobb_session=…]
 ```
 
-Base de développement : le conteneur MariaDB `pv_db` (port 3307) de la pile Docker héritée de
-pv-forum. Variables des tests sur base : `TEST_DB_HOST`, `TEST_DB_PORT`, `TEST_DB_USER`,
-`TEST_DB_PASSWORD` (par défaut `root`/`root`), `TEST_DB_NAME` (doit finir par `_test`). Les captures
-demandent un Chrome sans tête (`CHROME_BIN`, ou celui de Playwright s'il est installé).
+Base : D1 (SQLite), schéma dans `migrations/`. Les écritures en plusieurs requêtes passent par
+des lots atomiques (`db.batch()`, voir `src/db/database.ts`) : D1 n'a pas de transaction interactive.
+Les captures demandent un Chrome sans tête (`CHROME_BIN`, ou celui de Playwright s'il est installé).
 
 Fichiers envoyés (galerie, avatars, logo, bannière) : dossier `STORAGE_DIR` (`storage/` par défaut),
 servi sous `/img/` ; R2 le remplacera au lot 4. Le logo et la bannière d'AvroBB (`public/img/`) y
@@ -47,8 +48,7 @@ sont copiés au premier démarrage ; `scripts/brand.py` les régénère.
 | HTTP         | `src/http/`                        | Hono, contexte de requête, session, CSRF, formulaires, mise en page         |
 | Vue          | `src/views/`                       | Nunjucks, précompilé dans `src/generated/` ; échappement automatique        |
 
-Le préfixe des tables (`fo_`) est ajouté par `TablePrefixPlugin` : les requêtes utilisent les noms
-nus (jusqu'au schéma SQLite neuf du lot 3).
+Les tables gardent les noms de FluxBB 1.5, sans préfixe.
 
 Front-end : `public/css/base.css` (mobile d'abord) et un fichier de variables par thème dans
 `public/css/themes/` ; le contraste AA de chaque thème est vérifié par `tests/themes.test.ts`.

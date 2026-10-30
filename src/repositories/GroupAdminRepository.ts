@@ -3,10 +3,10 @@
  * groupe de base, modification, nombre de membres et suppression.
  */
 
-import type { Db } from '../db/database.ts';
+import { sql } from 'kysely';
+import { type Db, lastRow } from '../db/database.ts';
 import { GroupId } from '../domain/models.ts';
 import { type AdminGroup, GROUP_FLAG_COLUMNS, GROUP_FLOOD_COLUMNS, type GroupColumn, type GroupSettings } from '../services/adminGroups.ts';
-import { inTransaction } from './transactions.ts';
 
 export interface GroupAdminStore {
 	listGroups(): Promise<AdminGroup[]>;
@@ -50,22 +50,23 @@ export class GroupAdminRepository implements GroupAdminStore {
 		return (await query.executeTakeFirst()) !== undefined;
 	}
 
-	addGroup(settings: GroupSettings, baseGroupId: number): Promise<number> {
-		return inTransaction(this.db, async (trx) => {
-			const result = await trx.insertInto('groups').values(row(settings)).executeTakeFirstOrThrow();
-			const id = Number(result.insertId);
-			const perms = await trx
-				.selectFrom('forum_perms')
-				.select(['forum_id', 'read_forum', 'post_replies', 'post_topics'])
-				.where('group_id', '=', baseGroupId)
-				.execute();
-			if (perms.length > 0)
-				await trx
-					.insertInto('forum_perms')
-					.values(perms.map((perm) => ({ ...perm, group_id: id })))
-					.execute();
-			return id;
-		});
+	/** Nouveau groupe, avec les permissions par forum du groupe de base, dans un seul lot. */
+	async addGroup(settings: GroupSettings, baseGroupId: number): Promise<number> {
+		const lastGroupId = sql<number>`(SELECT MAX(g_id) FROM groups)`;
+		const results = await this.db.batch([
+			this.db.insertInto('groups').values(row(settings)),
+			this.db
+				.insertInto('forum_perms')
+				.columns(['group_id', 'forum_id', 'read_forum', 'post_replies', 'post_topics'])
+				.expression((eb) =>
+					eb
+						.selectFrom('forum_perms')
+						.select([lastGroupId.as('group_id'), 'forum_id', 'read_forum', 'post_replies', 'post_topics'])
+						.where('group_id', '=', baseGroupId),
+				),
+			this.db.selectNoFrom(lastGroupId.as('id')),
+		]);
+		return lastRow<{ id: number }>(results).id;
 	}
 
 	async updateGroup(id: number, settings: GroupSettings): Promise<void> {
@@ -82,12 +83,12 @@ export class GroupAdminRepository implements GroupAdminStore {
 	}
 
 	async deleteGroup(id: number, moveTo: number | null): Promise<void> {
-		await inTransaction(this.db, async (trx) => {
-			if (moveTo !== null) await trx.updateTable('users').set({ group_id: moveTo }).where('group_id', '=', id).execute();
-			await trx.deleteFrom('groups').where('g_id', '=', id).execute();
-			await trx.deleteFrom('forum_perms').where('group_id', '=', id).execute();
-			await trx.updateTable('groups').set({ g_promote_next_group: 0 }).where('g_promote_next_group', '=', id).execute();
-		});
+		await this.db.batch([
+			...(moveTo !== null ? [this.db.updateTable('users').set({ group_id: moveTo }).where('group_id', '=', id)] : []),
+			this.db.deleteFrom('groups').where('g_id', '=', id),
+			this.db.deleteFrom('forum_perms').where('group_id', '=', id),
+			this.db.updateTable('groups').set({ g_promote_next_group: 0 }).where('g_promote_next_group', '=', id),
+		]);
 	}
 
 	async listPrivateMessageRights(): Promise<{ id: number; title: string; allowed: boolean; limit: number }[]> {

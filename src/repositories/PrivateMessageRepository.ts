@@ -7,7 +7,8 @@
  * conversations détenues : +1 à la création, -1 quand le membre la supprime.
  */
 
-import type { Db } from '../db/database.ts';
+import { type RawBuilder, sql } from 'kysely';
+import type { Compilable, Db } from '../db/database.ts';
 import {
 	GUEST_USER_ID,
 	type PostAuthor,
@@ -17,7 +18,6 @@ import {
 	type PrivateRecipient,
 } from '../domain/models.ts';
 import { markParticipantDeleted, parseParticipants } from '../services/privateMessages.ts';
-import { inTransaction } from './transactions.ts';
 
 export interface PrivateMessageReader {
 	/** MP non lus du membre (plugins/apms/header_add2.php). */
@@ -78,6 +78,10 @@ const RECIPIENT_COLUMNS = [
 	'g.g_pm',
 	'g.g_pm_limit',
 ] as const;
+
+/** Dernier exemplaire inséré dans le lot en cours, et son numéro de conversation. */
+const LAST_MESSAGE_ID = sql<number>`(SELECT MAX(id) FROM messages)`;
+const LAST_MESSAGE_SHARED_ID = sql<number>`(SELECT shared_id FROM messages WHERE id = (SELECT MAX(id) FROM messages))`;
 
 export class PrivateMessageRepository implements PrivateMessageStore {
 	constructor(private readonly db: Db) {}
@@ -145,35 +149,38 @@ export class PrivateMessageRepository implements PrivateMessageStore {
 			.execute();
 	}
 
-	leaveConversations(owner: { id: number; username: string }, sharedIds: readonly number[]): Promise<number> {
-		if (sharedIds.length === 0) return Promise.resolve(0);
-		return inTransaction(this.db, async (trx) => {
-			const heads = await trx
-				.selectFrom('messages')
-				.select('shared_id')
-				.where('owner', '=', owner.id)
-				.where('show_message', '=', 1)
-				.where('shared_id', 'in', sharedIds)
-				.execute();
-			const left = heads.map((head) => head.shared_id);
-			if (left.length === 0) return 0;
+	async leaveConversations(owner: { id: number; username: string }, sharedIds: readonly number[]): Promise<number> {
+		if (sharedIds.length === 0) return 0;
+		const heads = await this.db
+			.selectFrom('messages')
+			.select('shared_id')
+			.where('owner', '=', owner.id)
+			.where('show_message', '=', 1)
+			.where('shared_id', 'in', sharedIds)
+			.execute();
+		const left = heads.map((head) => head.shared_id);
+		if (left.length === 0) return 0;
 
-			await trx.deleteFrom('messages').where('owner', '=', owner.id).where('shared_id', 'in', left).execute();
-			await trx
+		// Les autres participants voient « pseudo (supprimé) » dans la liste des destinataires.
+		const others = await this.db
+			.selectFrom('messages')
+			.select(['id', 'receiver'])
+			.where('shared_id', 'in', left)
+			.where('owner', '!=', owner.id)
+			.execute();
+		await this.db.batch([
+			this.db.deleteFrom('messages').where('owner', '=', owner.id).where('shared_id', 'in', left),
+			this.db
 				.updateTable('users')
 				.set((eb) => ({ num_pms: eb('num_pms', '-', left.length) }))
 				.where('id', '=', owner.id)
-				.where('num_pms', '>=', left.length)
-				.execute();
-
-			// Les autres participants voient « pseudo (supprimé) » dans la liste des destinataires.
-			const others = await trx.selectFrom('messages').select(['id', 'receiver']).where('shared_id', 'in', left).execute();
-			for (const row of others) {
+				.where('num_pms', '>=', left.length),
+			...others.flatMap((row) => {
 				const receiver = markParticipantDeleted(row.receiver, owner.username);
-				if (receiver !== row.receiver) await trx.updateTable('messages').set({ receiver }).where('id', '=', row.id).execute();
-			}
-			return left.length;
-		});
+				return receiver !== row.receiver ? [this.db.updateTable('messages').set({ receiver }).where('id', '=', row.id)] : [];
+			}),
+		]);
+		return left.length;
 	}
 
 	async findConversation(sharedId: number, ownerId: number): Promise<PrivateConversation | null> {
@@ -305,72 +312,73 @@ export class PrivateMessageRepository implements PrivateMessageStore {
 		return rows.map(toRecipient);
 	}
 
-	createConversation(message: OutgoingMessage): Promise<{ sharedId: number; copies: SentCopies }> {
-		return inTransaction(this.db, async (trx) => {
-			// shared_id suivant (pms_send.php : le plus grand last_shared_id + 1), sous verrou.
-			const last = await trx
-				.selectFrom('messages')
-				.select((eb) => [eb.fn.max('last_shared_id').as('last_shared'), eb.fn.max('shared_id').as('last_id')])
-				.forUpdate()
-				.executeTakeFirst();
-			const sharedId = Math.max(Number(last?.last_shared ?? 0), Number(last?.last_id ?? 0)) + 1;
-			const copies = new Map<number, number>();
-
-			for (const recipient of message.recipients) {
-				const result = await trx
-					.insertInto('messages')
-					.values({
-						...rowValues(message, sharedId, recipient.id),
-						last_shared_id: sharedId,
-						show_message: 1,
-						showed: recipient.id === message.sender.id ? 1 : 0,
-					})
-					.executeTakeFirstOrThrow();
-				const id = Number(result.insertId);
-				copies.set(recipient.id, id);
-				await trx
-					.updateTable('messages')
-					.set({ last_post_id: id, last_post: message.now, last_poster: message.sender.username })
-					.where('id', '=', id)
-					.execute();
-				await trx
+	/**
+	 * Nouvelle conversation : un exemplaire par participant, dans un seul lot. Le numéro de conversation
+	 * (pms_send.php : le plus grand last_shared_id ou shared_id + 1) est calculé dans le lot même, ce
+	 * qui remplace le verrou du PHP ; les exemplaires suivants reprennent celui de la ligne précédente.
+	 */
+	async createConversation(message: OutgoingMessage): Promise<{ sharedId: number; copies: SentCopies }> {
+		const nextShared = sql<number>`(SELECT MAX(COALESCE(MAX(last_shared_id), 0), COALESCE(MAX(shared_id), 0)) + 1 FROM messages)`;
+		const writes: Compilable[] = message.recipients.flatMap((recipient, index) => {
+			const sharedId = index === 0 ? nextShared : LAST_MESSAGE_SHARED_ID;
+			return [
+				this.db.insertInto('messages').values({
+					...rowValues(message, sharedId, recipient.id),
+					last_shared_id: sharedId,
+					show_message: 1,
+					showed: recipient.id === message.sender.id ? 1 : 0,
+					last_post: message.now,
+					last_poster: message.sender.username,
+				}),
+				this.db.updateTable('messages').set({ last_post_id: sql`id` }).where('id', '=', LAST_MESSAGE_ID),
+				this.db
 					.updateTable('users')
 					.set((eb) => ({ num_pms: eb('num_pms', '+', 1) }))
-					.where('id', '=', recipient.id)
-					.execute();
-			}
-			await trx.updateTable('users').set({ last_post: message.now }).where('id', '=', message.sender.id).execute();
-			return { sharedId, copies };
+					.where('id', '=', recipient.id),
+			];
 		});
+		const results = await this.db.batch([
+			...writes,
+			this.db.updateTable('users').set({ last_post: message.now }).where('id', '=', message.sender.id),
+			this.db.selectFrom('messages').select(['id', 'owner', 'shared_id']).where('shared_id', '=', LAST_MESSAGE_SHARED_ID),
+		]);
+		const rows = (results.at(-1)?.rows ?? []) as { id: number; owner: number; shared_id: number }[];
+		return { sharedId: rows[0]?.shared_id ?? 0, copies: new Map(rows.map((row) => [row.owner, row.id])) };
 	}
 
-	reply(sharedId: number, message: OutgoingMessage): Promise<SentCopies> {
-		return inTransaction(this.db, async (trx) => {
-			const copies = new Map<number, number>();
-			for (const recipient of message.recipients) {
-				const result = await trx
-					.insertInto('messages')
-					.values({ ...rowValues(message, sharedId, recipient.id), show_message: 0, showed: recipient.id === message.sender.id ? 1 : 0 })
-					.executeTakeFirstOrThrow();
-				const id = Number(result.insertId);
-				copies.set(recipient.id, id);
-				await trx
-					.updateTable('messages')
-					.set({
-						last_post_id: id,
-						last_post: message.now,
-						last_poster: message.sender.username,
-						// Nouveau message : non lu pour les autres participants.
-						...(recipient.id !== message.sender.id ? { showed: 0 } : {}),
-					})
-					.where('shared_id', '=', sharedId)
-					.where('show_message', '=', 1)
-					.where('owner', '=', recipient.id)
-					.execute();
-			}
-			await trx.updateTable('users').set({ last_post: message.now }).where('id', '=', message.sender.id).execute();
-			return copies;
-		});
+	/** Réponse : un exemplaire par participant ; la tête de chacun pointe sur son nouvel exemplaire. */
+	async reply(sharedId: number, message: OutgoingMessage): Promise<SentCopies> {
+		const writes: Compilable[] = message.recipients.flatMap((recipient) => [
+			this.db
+				.insertInto('messages')
+				.values({ ...rowValues(message, sharedId, recipient.id), show_message: 0, showed: recipient.id === message.sender.id ? 1 : 0 }),
+			this.db
+				.updateTable('messages')
+				.set({
+					last_post_id: LAST_MESSAGE_ID,
+					last_post: message.now,
+					last_poster: message.sender.username,
+					// Nouveau message : non lu pour les autres participants.
+					...(recipient.id !== message.sender.id ? { showed: 0 } : {}),
+				})
+				.where('shared_id', '=', sharedId)
+				.where('show_message', '=', 1)
+				.where('owner', '=', recipient.id),
+		]);
+		const results = await this.db.batch([
+			...writes,
+			this.db.updateTable('users').set({ last_post: message.now }).where('id', '=', message.sender.id),
+			this.db
+				.selectFrom('messages')
+				.select((eb) => ['owner', eb.fn.max('id').as('id')])
+				.where('shared_id', '=', sharedId)
+				.where('show_message', '=', 0)
+				.where('sender_id', '=', message.sender.id)
+				.where('posted', '=', message.now)
+				.groupBy('owner'),
+		]);
+		const rows = (results.at(-1)?.rows ?? []) as { owner: number; id: number }[];
+		return new Map(rows.map((row) => [row.owner, row.id]));
 	}
 
 	async editMessage(message: PrivateMessage, text: string): Promise<void> {
@@ -387,39 +395,41 @@ export class PrivateMessageRepository implements PrivateMessageStore {
 		await this.db.deleteFrom('messages').where('id', '=', messageId).where('owner', '=', ownerId).where('show_message', '=', 0).execute();
 	}
 
-	deleteForEverybody(message: PrivateMessage): Promise<void> {
-		return inTransaction(this.db, async (trx) => {
-			if (!message.isHead) {
-				await trx
-					.deleteFrom('messages')
-					.where('shared_id', '=', message.sharedId)
-					.where('sender_id', '=', message.senderId)
-					.where('posted', '=', message.posted)
-					.where('show_message', '=', 0)
-					.execute();
-				return;
-			}
-			const holders = await trx
-				.selectFrom('messages')
-				.select('owner')
+	async deleteForEverybody(message: PrivateMessage): Promise<void> {
+		if (!message.isHead) {
+			await this.db
+				.deleteFrom('messages')
 				.where('shared_id', '=', message.sharedId)
-				.where('show_message', '=', 1)
+				.where('sender_id', '=', message.senderId)
+				.where('posted', '=', message.posted)
+				.where('show_message', '=', 0)
 				.execute();
-			await trx.deleteFrom('messages').where('shared_id', '=', message.sharedId).execute();
-			const owners = [...new Set(holders.map((row) => row.owner))];
-			if (owners.length > 0)
-				await trx
-					.updateTable('users')
-					.set((eb) => ({ num_pms: eb('num_pms', '-', 1) }))
-					.where('id', 'in', owners)
-					.where('num_pms', '>', 0)
-					.execute();
-		});
+			return;
+		}
+		const holders = await this.db
+			.selectFrom('messages')
+			.select('owner')
+			.where('shared_id', '=', message.sharedId)
+			.where('show_message', '=', 1)
+			.execute();
+		const owners = [...new Set(holders.map((row) => row.owner))];
+		await this.db.batch([
+			this.db.deleteFrom('messages').where('shared_id', '=', message.sharedId),
+			...(owners.length > 0
+				? [
+						this.db
+							.updateTable('users')
+							.set((eb) => ({ num_pms: eb('num_pms', '-', 1) }))
+							.where('id', 'in', owners)
+							.where('num_pms', '>', 0),
+					]
+				: []),
+		]);
 	}
 }
 
 /** Colonnes communes à tous les exemplaires d'un envoi. */
-function rowValues(message: OutgoingMessage, sharedId: number, ownerId: number) {
+function rowValues(message: OutgoingMessage, sharedId: number | RawBuilder<number>, ownerId: number) {
 	return {
 		shared_id: sharedId,
 		owner: ownerId,

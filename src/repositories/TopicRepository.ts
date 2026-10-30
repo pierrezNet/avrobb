@@ -6,7 +6,7 @@ import { type SelectQueryBuilder, sql } from 'kysely';
 import type { Db } from '../db/database.ts';
 import type { Database, TopicsTable } from '../db/schema.ts';
 import { GUEST_USER_ID, type RecentTopic, type Topic, type TopicAgeFilter, type TopicSort, type TopicSummary } from '../domain/models.ts';
-import { parseModerators } from '../services/phpSerialize.ts';
+import { parseModerators } from '../services/moderators.ts';
 import { forumReadable } from './forumPermissions.ts';
 
 export interface PostLocation {

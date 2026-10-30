@@ -1,32 +1,9 @@
 /**
- * Tables FluxBB 1.5 utilisées par l'application (noms sans préfixe, voir TablePrefixPlugin).
- * Seules les colonnes lues sont déclarées ; le schéma reste celui de la base existante.
+ * Tables de la base (migrations/), aux noms hérités de FluxBB 1.5. Seules les colonnes utilisées
+ * par les repositories sont déclarées.
  */
 
 import type { Generated } from 'kysely';
-
-/** Balises de sujet de PV (mod PunBalise : « [Réglé] », « [En cours] »…). */
-export interface BalisesTable {
-	id: Generated<number>;
-	nom: string;
-	couleur: string;
-	gras: number;
-	ital: number;
-	souli: number;
-	position: number;
-	/** 0 = [nom], 1 = *nom*, 2 = #nom#. */
-	baltype: number;
-	/** 1 : balise proposée aux modérateurs dans le pied de viewtopic (mod PunBalise 2.6). */
-	affich: number;
-}
-
-/**
- * Balises posées sur les sujets : une ligne par sujet (npost = id du SUJET, en texte) et une colonne
- * bal<id> (0/1) par balise. Colonnes dynamiques : lues avec selectAll() puis par leur nom.
- */
-export interface BalisesModoTable {
-	npost: string;
-}
 
 /**
  * Brouillons de PV (draft_list.php) : sujet renseigné et topic_id 0 pour une nouvelle discussion,
@@ -174,25 +151,6 @@ export interface MessagesTable {
 	show_message: number;
 }
 
-/** Carnet d'adresses de la messagerie (mod APMS). */
-export interface ContactsTable {
-	id: Generated<number>;
-	user_id: number;
-	contact_id: number;
-	contact_name: string;
-	/** 1 = le contact peut écrire au membre, 0 = bloqué. */
-	allow_msg: number;
-}
-
-/** Listes de diffusion de la messagerie (mod APMS) : pseudos et identifiants sérialisés (serialize()). */
-export interface SendingListsTable {
-	id: Generated<number>;
-	user_id: number;
-	name: string;
-	receivers: string;
-	array_id: string;
-}
-
 export interface OnlineTable {
 	user_id: number;
 	ident: string;
@@ -242,14 +200,6 @@ export interface ReputationTable {
 	rep_minus: Generated<number>;
 }
 
-/** Smileys du PHP (plugin AP_Smilies.php) ; Node affiche des émojis (services/smilies.ts). */
-export interface SmiliesTable {
-	id: Generated<number>;
-	image: string;
-	text: string;
-	disp_position: Generated<number>;
-}
-
 export interface SearchCacheTable {
 	id: number;
 	ident: string;
@@ -265,24 +215,6 @@ export interface SearchMatchesTable {
 export interface SearchWordsTable {
 	id: Generated<number>;
 	word: string;
-}
-
-/** Barre d'outils BBCode (mod FluxToolBar) : réglages et boutons. */
-export interface ToolbarConfTable {
-	conf_name: string;
-	conf_value: string | null;
-}
-
-export interface ToolbarTagsTable {
-	id: Generated<number>;
-	name: string;
-	code: string;
-	enable_form: number;
-	enable_quick: number;
-	image: string;
-	/** 0 : balise simple, 1 : argument demandé, 2 : deux valeurs demandées, 3 : contenu demandé. */
-	func: string | null;
-	position: number;
 }
 
 export interface TopicSubscriptionsTable {
@@ -315,8 +247,12 @@ export interface UsersTable {
 	id: Generated<number>;
 	group_id: number;
 	username: string;
-	password: string;
 	email: string;
+	/** Compte SSO : fournisseur (« github »…) et identifiant chez lui ; null pour un compte créé à la main. */
+	provider: string | null;
+	provider_id: string | null;
+	/** Incrémenté pour déconnecter le membre de partout. */
+	session_version: Generated<number>;
 	title: string | null;
 	realname: string | null;
 	url: string | null;
@@ -326,7 +262,6 @@ export interface UsersTable {
 	aim: string | null;
 	yahoo: string | null;
 	location: string | null;
-	biographie: string | null;
 	last_post: number | null;
 	signature: string | null;
 	disp_topics: number | null;
@@ -347,8 +282,6 @@ export interface UsersTable {
 	language: string;
 	last_visit: number;
 	admin_note: string | null;
-	activate_string: string | null;
-	activate_key: string | null;
 	last_email_sent: number | null;
 	last_report_sent: Generated<number | null>;
 	last_search: Generated<number | null>;
@@ -361,19 +294,14 @@ export interface UsersTable {
 	rep_plus: Generated<number>;
 	rep_minus: Generated<number>;
 	reputation_enable: Generated<number>;
-	/** Octets occupés par les fichiers du membre dans img/members/<id>/ (Uploadile, propre à PV). */
-	upload: Generated<number>;
 }
 
 export interface Database {
-	balises: BalisesTable;
-	balises_modo: BalisesModoTable;
 	bans: BansTable;
 	brouillons: BrouillonsTable;
 	categories: CategoriesTable;
 	censoring: CensoringTable;
 	config: ConfigTable;
-	contacts: ContactsTable;
 	forums: ForumsTable;
 	forum_perms: ForumPermsTable;
 	forum_subscriptions: ForumSubscriptionsTable;
@@ -387,24 +315,17 @@ export interface Database {
 	search_cache: SearchCacheTable;
 	search_matches: SearchMatchesTable;
 	search_words: SearchWordsTable;
-	smilies: SmiliesTable;
-	sending_lists: SendingListsTable;
-	toolbar_conf: ToolbarConfTable;
-	toolbar_tags: ToolbarTagsTable;
 	topic_subscriptions: TopicSubscriptionsTable;
 	topics: TopicsTable;
 	users: UsersTable;
 }
 
 export const TABLE_NAMES: readonly (keyof Database)[] = [
-	'balises',
-	'balises_modo',
 	'bans',
 	'brouillons',
 	'categories',
 	'censoring',
 	'config',
-	'contacts',
 	'forums',
 	'forum_perms',
 	'forum_subscriptions',
@@ -418,10 +339,6 @@ export const TABLE_NAMES: readonly (keyof Database)[] = [
 	'search_cache',
 	'search_matches',
 	'search_words',
-	'smilies',
-	'sending_lists',
-	'toolbar_conf',
-	'toolbar_tags',
 	'topic_subscriptions',
 	'topics',
 	'users',

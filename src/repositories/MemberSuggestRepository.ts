@@ -4,6 +4,7 @@
  */
 
 import type { Db } from '../db/database.ts';
+import { escapeLike, likeEscaped } from './like.ts';
 
 export interface MemberSuggestion {
 	id: number;
@@ -16,7 +17,7 @@ export interface MemberSuggestReader {
 }
 
 /** Échappe les jokers de LIKE (\, %, _) : le texte saisi est cherché tel quel. */
-const likePrefix = (text: string): string => `${text.replace(/[\\%_]/g, '\\$&')}%`;
+const likePrefix = (text: string): string => `${escapeLike(text)}%`;
 
 export class MemberSuggestRepository implements MemberSuggestReader {
 	constructor(private readonly db: Db) {}
@@ -27,7 +28,7 @@ export class MemberSuggestRepository implements MemberSuggestReader {
 			.select(['id', 'username'])
 			.where('id', '>', 1)
 			.where('group_id', '!=', 0)
-			.where('username', 'like', likePrefix(prefix))
+			.where(likeEscaped('username', likePrefix(prefix)))
 			.orderBy('username')
 			.limit(limit)
 			.execute();

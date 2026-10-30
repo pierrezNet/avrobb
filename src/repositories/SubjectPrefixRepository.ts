@@ -5,8 +5,8 @@
 
 import type { Db } from '../db/database.ts';
 import type { IndexedWords } from '../services/searchIndex.ts';
-import { updateSearchIndex } from './searchIndexSql.ts';
-import { inTransaction } from './transactions.ts';
+import { escapeLike, likeEscaped } from './like.ts';
+import { searchIndexWrites } from './searchIndexSql.ts';
 
 export interface SubjectPrefixStore {
 	/** Texte du premier message (pour réindexer le sujet avec lui). */
@@ -27,25 +27,25 @@ export class SubjectPrefixRepository implements SubjectPrefixStore {
 	}
 
 	async updateSubject(topicId: number, firstPostId: number, subject: string, words: IndexedWords): Promise<void> {
-		await inTransaction(this.db, async (trx) => {
+		await this.db.batch([
 			// Le sujet et ses liens laissés par un déplacement (moved_to) changent ensemble.
-			await trx
+			this.db
 				.updateTable('topics')
 				.set({ subject })
-				.where((eb) => eb.or([eb('id', '=', topicId), eb('moved_to', '=', topicId)]))
-				.execute();
-			await updateSearchIndex(trx, 'edit', firstPostId, words);
-		});
+				.where((eb) => eb.or([eb('id', '=', topicId), eb('moved_to', '=', topicId)])),
+			...(await searchIndexWrites(this.db, 'edit', firstPostId, words)),
+		]);
 	}
 
 	async findSubjectsContaining(text: string): Promise<{ id: number; subject: string }[]> {
-		const pattern = `%${text.replace(/[\\%_]/g, '\\$&')}%`;
-		return this.db.selectFrom('topics').select(['id', 'subject']).where('subject', 'like', pattern).execute();
+		return this.db
+			.selectFrom('topics')
+			.select(['id', 'subject'])
+			.where(likeEscaped('subject', `%${escapeLike(text)}%`))
+			.execute();
 	}
 
 	async updateSubjects(updates: readonly { id: number; subject: string }[]): Promise<void> {
-		await inTransaction(this.db, async (trx) => {
-			for (const { id, subject } of updates) await trx.updateTable('topics').set({ subject }).where('id', '=', id).execute();
-		});
+		await this.db.batch(updates.map(({ id, subject }) => this.db.updateTable('topics').set({ subject }).where('id', '=', id)));
 	}
 }

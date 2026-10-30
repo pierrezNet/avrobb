@@ -6,36 +6,19 @@
 
 import type { Kysely } from 'kysely';
 import { afterAll, describe, expect, it } from 'vitest';
-import { createDatabase } from '../../src/db/database.ts';
 import type { Database } from '../../src/db/schema.ts';
 import { ContactRepository } from '../../src/repositories/ContactRepository.ts';
 import { DraftRepository } from '../../src/repositories/DraftRepository.ts';
-import { updateForum } from '../../src/repositories/forumCounters.ts';
+import { updateForumWrite } from '../../src/repositories/forumCounters.ts';
 import { PostEditRepository } from '../../src/repositories/PostEditRepository.ts';
 import { PostingRepository } from '../../src/repositories/PostingRepository.ts';
 import { ReportRepository } from '../../src/repositories/ReportRepository.ts';
 import { SearchRepository } from '../../src/repositories/SearchRepository.ts';
 import { SubscriptionRepository } from '../../src/repositories/SubscriptionRepository.ts';
-import { stripSearchIndex, updateSearchIndex } from '../../src/repositories/searchIndexSql.ts';
-import { testDbConfig } from './testDatabase.ts';
+import { searchIndexWrites, stripSearchIndexWrites } from '../../src/repositories/searchIndexSql.ts';
+import { closeTestDatabase, db, inRollback } from './testDb.ts';
 
-const db = createDatabase(testDbConfig());
-afterAll(async () => db.destroy());
-
-class Rollback extends Error {}
-
-/** Exécute `body` dans une transaction toujours annulée. */
-async function inRollback(body: (trx: Kysely<Database>) => Promise<void>): Promise<void> {
-	await db
-		.transaction()
-		.execute(async (trx) => {
-			await body(trx);
-			throw new Rollback();
-		})
-		.catch((error: unknown) => {
-			if (!(error instanceof Rollback)) throw error;
-		});
-}
+afterAll(closeTestDatabase);
 
 async function indexOf(trx: Kysely<Database>, postId: number): Promise<string[]> {
 	const rows = await trx
@@ -55,7 +38,7 @@ const words = async (trx: Kysely<Database>): Promise<string[]> =>
 describe('index de recherche', () => {
 	it('indexe un nouveau message en réutilisant les mots connus', async () => {
 		await inRollback(async (trx) => {
-			await updateSearchIndex(trx, 'post', 200, { post: ['avion', 'cockpit'], subject: ['avion'] });
+			await trx.batch(await searchIndexWrites(trx, 'post', 200, { post: ['avion', 'cockpit'], subject: ['avion'] }));
 			expect(await indexOf(trx, 200)).toEqual(['avion', 'avion (sujet)', 'cockpit']);
 			expect(await words(trx)).toEqual(['avion', 'cockpit', 'interne', 'vintage']);
 		});
@@ -63,7 +46,7 @@ describe('index de recherche', () => {
 
 	it('ne réécrit que les différences à la modification', async () => {
 		await inRollback(async (trx) => {
-			await updateSearchIndex(trx, 'edit', 101, { post: ['avion', 'hélice'], subject: [] });
+			await trx.batch(await searchIndexWrites(trx, 'edit', 101, { post: ['avion', 'hélice'], subject: [] }));
 			expect(await indexOf(trx, 101)).toEqual(['avion', 'hélice']);
 			// « vintage » reste connu : il sert encore au sujet du message 100.
 			expect(await words(trx)).toContain('vintage');
@@ -72,7 +55,7 @@ describe('index de recherche', () => {
 
 	it('retire des messages et les mots qui ne servaient qu’à eux', async () => {
 		await inRollback(async (trx) => {
-			await stripSearchIndex(trx, [110]);
+			await trx.batch(await stripSearchIndexWrites(trx, [110]));
 			expect(await indexOf(trx, 110)).toEqual([]);
 			expect(await words(trx)).toEqual(['avion', 'vintage']);
 		});
@@ -82,7 +65,7 @@ describe('index de recherche', () => {
 describe('update_forum()', () => {
 	it('recompte sujets et messages, dernier message hors sujets déplacés', async () => {
 		await inRollback(async (trx) => {
-			await updateForum(trx, 1);
+			await trx.batch([updateForumWrite(trx, 1)]);
 			const forum = await trx
 				.selectFrom('forums')
 				.select(['num_topics', 'num_posts', 'last_post', 'last_post_id', 'last_poster'])
@@ -95,7 +78,7 @@ describe('update_forum()', () => {
 
 	it('vide le dernier message d’un forum sans sujet', async () => {
 		await inRollback(async (trx) => {
-			await updateForum(trx, 4);
+			await trx.batch([updateForumWrite(trx, 4)]);
 			const forum = await trx
 				.selectFrom('forums')
 				.select(['num_topics', 'num_posts', 'last_post'])

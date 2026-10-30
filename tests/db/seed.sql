@@ -1,7 +1,11 @@
 -- Jeu de données fixe des tests d'intégration (tests/db/*.test.ts). Horodatages autour de 1 782 900 000.
--- Mots de passe : SHA-1 de « motdepasse » pour tous les membres.
+-- Il remplace les données par défaut de migrations/0002_default_data.sql.
 
-INSERT INTO fo_config (conf_name, conf_value) VALUES
+DELETE FROM config;
+DELETE FROM users;
+DELETE FROM groups;
+
+INSERT INTO config (conf_name, conf_value) VALUES
 	('o_board_title', 'Forum de test'),
 	('o_default_style', 'Air'),
 	('o_disp_posts_default', '2'),
@@ -17,87 +21,77 @@ INSERT INTO fo_config (conf_name, conf_value) VALUES
 	('p_message_bbcode', '1'),
 	('p_message_img_tag', '1');
 
-INSERT INTO fo_groups (g_id, g_title, g_user_title, g_moderator, g_read_board, g_view_users, g_search, g_pm, g_pm_limit) VALUES
+INSERT INTO groups (g_id, g_title, g_user_title, g_moderator, g_read_board, g_view_users, g_search, g_pm, g_pm_limit) VALUES
 	(1, 'Administrateurs', 'Administrateur', 0, 1, 1, 1, 1, 0),
 	(2, 'Modérateurs', 'Modérateur', 1, 1, 1, 1, 1, 0),
 	(3, 'Invités', NULL, 0, 1, 1, 1, 0, 0),
 	(4, 'Membres', NULL, 0, 1, 1, 1, 1, 20);
 
-INSERT INTO fo_users (id, group_id, username, password, email, title, location, style, num_posts, registered, last_visit, disp_posts, use_pm, num_pms) VALUES
-	(1, 3, 'Invité', 'Invité', '', NULL, NULL, 'Air', 0, 0, 0, NULL, 0, 0),
-	(2, 1, 'admin', 'b9b7c1e5e7fb7a6e2b0c1a9ce4a5c9d2d6e0b6a1', 'admin@example.test', NULL, NULL, 'Air', 1, 1782000000, 1782890000, NULL, 1, 0),
-	(3, 4, 'Tessy', 'b9b7c1e5e7fb7a6e2b0c1a9ce4a5c9d2d6e0b6a1', 'tessy@example.test', 'Pilote de ligne', 'Hyères', 'GreenDark', 2, 1782100000, 1782895000, 1, 1, 5),
-	(5, 2, 'MaxDUO', 'b9b7c1e5e7fb7a6e2b0c1a9ce4a5c9d2d6e0b6a1', 'max@example.test', NULL, NULL, 'Inconnu', 1, 1782200000, 1782896000, NULL, 1, 0);
+INSERT INTO users (id, group_id, username, email, title, location, style, num_posts, registered, last_visit, disp_posts, use_pm, num_pms) VALUES
+	(1, 3, 'Invité', '', NULL, NULL, 'Air', 0, 0, 0, NULL, 0, 0),
+	(2, 1, 'admin', 'admin@example.test', NULL, NULL, 'Air', 1, 1782000000, 1782890000, NULL, 1, 0),
+	(3, 4, 'Tessy', 'tessy@example.test', 'Pilote de ligne', 'Hyères', 'GreenDark', 2, 1782100000, 1782895000, 1, 1, 5),
+	(5, 2, 'MaxDUO', 'max@example.test', NULL, NULL, 'Inconnu', 1, 1782200000, 1782896000, NULL, 1, 0);
 
-INSERT INTO fo_categories (id, cat_name, disp_position) VALUES
+INSERT INTO categories (id, cat_name, disp_position) VALUES
 	(1, 'Simulateurs', 2),
 	(2, 'Ateliers & Médias', 1);
 
 -- Forum 3 : interdit en lecture aux invités. Forum 4 : redirection.
-INSERT INTO fo_forums (id, forum_name, forum_desc, cat_id, disp_position, moderators, redirect_url, num_topics, num_posts, last_post, last_post_id, last_poster) VALUES
+INSERT INTO forums (id, forum_name, forum_desc, cat_id, disp_position, moderators, redirect_url, num_topics, num_posts, last_post, last_post_id, last_poster) VALUES
 	(1, 'Technique', NULL, 1, 1, NULL, NULL, 0, 0, NULL, NULL, NULL),
-	(2, 'Captures d''écran & Vidéos', '<em>Vos plus beaux vols</em>', 2, 1, 'a:1:{s:6:"MaxDUO";i:5;}', NULL, 1, 3, 1782800200, 102, 'admin'),
+	(2, 'Captures d''écran & Vidéos', '<em>Vos plus beaux vols</em>', 2, 1, '{"MaxDUO":5}', NULL, 1, 3, 1782800200, 102, 'admin'),
 	(3, 'Équipe', NULL, 1, 2, NULL, NULL, 1, 1, 1782800000, 110, 'admin'),
 	(4, 'Site officiel', NULL, 1, 3, NULL, 'https://example.test', 0, 0, NULL, NULL, NULL);
 
-INSERT INTO fo_forum_perms (group_id, forum_id, read_forum, post_replies, post_topics) VALUES
+INSERT INTO forum_perms (group_id, forum_id, read_forum, post_replies, post_topics) VALUES
 	(3, 3, 0, 0, 0),
 	(4, 2, 1, 0, 1);
 
-INSERT INTO fo_topics (id, poster, subject, posted, first_post_id, last_post, last_post_id, last_poster, num_replies, num_views, closed, sticky, moved_to, forum_id) VALUES
+INSERT INTO topics (id, poster, subject, posted, first_post_id, last_post, last_post_id, last_poster, num_replies, num_views, closed, sticky, moved_to, forum_id) VALUES
 	(10, 'Tessy', 'Postez un « vintage »', 1782800000, 100, 1782800200, 102, 'admin', 2, 42, 0, 0, NULL, 2),
 	(11, 'admin', 'Réservé à l''équipe', 1782800000, 110, 1782800000, 110, 'admin', 0, 1, 0, 0, NULL, 3),
 	(12, 'Tessy', 'Postez un « vintage »', 1782800000, 100, 1782800200, 102, 'admin', 2, 0, 0, 0, 10, 1),
 	(13, 'admin', 'Règles du forum', 1782700000, 0, 1782700000, 0, 'admin', 0, 0, 1, 1, NULL, 1);
 
-INSERT INTO fo_forum_subscriptions (user_id, forum_id) VALUES (3, 2);
+INSERT INTO forum_subscriptions (user_id, forum_id) VALUES (3, 2);
 
-INSERT INTO fo_posts (id, poster, poster_id, poster_ip, message, posted, edited, edited_by, topic_id) VALUES
+INSERT INTO posts (id, poster, poster_id, poster_ip, message, posted, edited, edited_by, topic_id) VALUES
 	(100, 'Tessy', 3, '192.0.2.1', 'Premier message [b]gras[/b]', 1782800000, NULL, NULL, 10),
 	(101, 'MaxDUO', 5, '192.0.2.5', 'Deuxième message', 1782800100, 1782800150, 'MaxDUO', 10),
 	(102, 'admin', 2, '192.0.2.2', 'Troisième message', 1782800200, NULL, NULL, 10),
 	(110, 'admin', 2, '192.0.2.2', 'Message interne', 1782800000, NULL, NULL, 11);
 
-INSERT INTO fo_online (user_id, ident, logged, idle) VALUES
+INSERT INTO online (user_id, ident, logged, idle) VALUES
 	(3, 'Tessy', 1782899000, 0),
 	(5, 'MaxDUO', 1782899000, 1),
 	(1, '192.0.2.9', 1782899000, 0);
 
-INSERT INTO fo_reports (post_id, topic_id, forum_id, reported_by, created, message, zapped, zapped_by) VALUES
+INSERT INTO reports (post_id, topic_id, forum_id, reported_by, created, message, zapped, zapped_by) VALUES
 	(101, 10, 2, 3, 1782800300, 'Hors sujet', 1782800400, 2),
 	(102, 10, 2, 3, 1782800500, 'Doublon', NULL, NULL);
 
-INSERT INTO fo_messages (shared_id, owner, subject, showed, show_message) VALUES
+INSERT INTO messages (shared_id, owner, subject, showed, show_message) VALUES
 	(1, 3, 'Bonjour', 0, 1),
 	(2, 3, 'Relance', 0, 1),
 	(3, 3, 'Lu', 1, 1),
 	(4, 3, 'Supprimé', 0, 0),
 	(1, 2, 'Bonjour', 0, 1);
 
--- Balises PV : « [Réglé] » et « #En cours# » posées sur le sujet 10, aucune sur le 11.
-ALTER TABLE fo_balises_modo ADD COLUMN bal3 tinyint(1) NOT NULL DEFAULT 0;
-INSERT INTO fo_balises (id, nom, couleur, gras, ital, souli, position, baltype, affich) VALUES
-	(1, 'Réglé', '#00AA00', 1, 0, 0, 2, 0, 1),
-	(2, 'En cours', '#FF9900', 0, 1, 0, 1, 2, 1),
-	(3, 'Archivé', '#999999', 0, 0, 0, 3, 1, 1);
-INSERT INTO fo_balises_modo (npost, bal1, bal2, bal3) VALUES ('10', 1, 1, 0), ('11', 0, 0, 0);
-
-INSERT INTO fo_bans (username, ip, email, message, expire, ban_creator) VALUES
+INSERT INTO bans (username, ip, email, message, expire, ban_creator) VALUES
 	('MaxDUO', NULL, NULL, NULL, 1700000000, 2),
 	(NULL, '192.0.2.66', NULL, NULL, NULL, 2);
 
-INSERT INTO fo_censoring (search_for, replace_with) VALUES ('zut', '***'), ('flûte*', '[censuré]');
-
-UPDATE fo_users SET biographie = 'Pilote de ligne depuis 2003 :)' WHERE id = 3;
+INSERT INTO censoring (search_for, replace_with) VALUES ('zut', '***'), ('flûte*', '[censuré]');
 
 -- Index de recherche : « vintage » dans le sujet (post 100) et le message 101, « avion » dans 101 et 110.
-INSERT INTO fo_search_words (id, word) VALUES (1, 'vintage'), (2, 'avion'), (3, 'interne');
-INSERT INTO fo_search_matches (post_id, word_id, subject_match) VALUES
+INSERT INTO search_words (id, word) VALUES (1, 'vintage'), (2, 'avion'), (3, 'interne');
+INSERT INTO search_matches (post_id, word_id, subject_match) VALUES
 	(100, 1, 1), (101, 1, 0), (101, 2, 0), (110, 2, 0), (110, 3, 0);
-INSERT INTO fo_topic_subscriptions (user_id, topic_id) VALUES (3, 10);
-INSERT INTO fo_search_cache (id, ident, search_data) VALUES (77, 'Tessy', 'a:1:{s:3:"foo";i:1;}');
+INSERT INTO topic_subscriptions (user_id, topic_id) VALUES (3, 10);
+INSERT INTO search_cache (id, ident, search_data) VALUES (77, 'Tessy', 'a:1:{s:3:"foo";i:1;}');
 
-INSERT INTO fo_gallery (id, titre, user_id, description, date_ajout, ext) VALUES
+INSERT INTO gallery (id, titre, user_id, description, date_ajout, ext) VALUES
 	(1, 'Coucher de soleil', 3, 'Au-dessus de [b]Hyères[/b]', 1705145502, '.jpg'),
 	(2, 'DR400', 5, '', 1705159954, '.gif'),
 	(3, 'Fichier suspect', 5, '', 1705100000, '.php');

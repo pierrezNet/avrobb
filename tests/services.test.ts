@@ -1,28 +1,25 @@
-import { DummyDriver, Kysely, MysqlAdapter, MysqlIntrospector, MysqlQueryCompiler } from 'kysely';
 import { describe, expect, it } from 'vitest';
-import { type Database, TABLE_NAMES } from '../src/db/schema.ts';
-import { TablePrefixPlugin } from '../src/db/TablePrefixPlugin.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { frDateWords } from '../src/lang/fr/index.ts';
 import { formatTime, viewerTimeSettings } from '../src/services/dateFormat.ts';
+import { parseModerators, serializeModerators } from '../src/services/moderators.ts';
 import { clampPage, paginate } from '../src/services/pagination.ts';
 import { canReply, postActions } from '../src/services/permissions.ts';
-import { parseModerators } from '../src/services/phpSerialize.ts';
 import { buildSessionCookie, isDevLoginAllowed, readSessionCookie, SESSION_SECONDS, shouldRenewSession } from '../src/services/session.ts';
 import { group, guest, NOW, topic, viewer } from './fixtures.ts';
 
 describe('parseModerators', () => {
-	it('lit le tableau sérialisé par PHP, longueurs en octets', () => {
-		const mods = parseModerators('a:2:{s:5:"Hélo";i:7;s:5:"admin";i:2;}');
+	it('lit l’objet JSON { pseudo : id } et ignore le reste', () => {
+		const mods = parseModerators('{"Hélo":7,"admin":2}');
 		expect([...mods]).toEqual([
 			['Hélo', 7],
 			['admin', 2],
 		]);
-	});
-
-	it('renvoie une liste vide pour une valeur absente ou invalide', () => {
 		expect(parseModerators(null).size).toBe(0);
-		expect(parseModerators('O:8:"stdClass":0:{}').size).toBe(0);
+		expect(parseModerators('a:1:{s:5:"admin";i:2;}').size).toBe(0);
+		expect(parseModerators('{"x":"2","y":-1}').size).toBe(0);
+		expect(serializeModerators(new Map([['admin', 2]]))).toBe('{"admin":2}');
+		expect(serializeModerators(new Map())).toBeNull();
 	});
 });
 
@@ -127,28 +124,5 @@ describe('viewerTimeSettings', () => {
 		const settings = viewerTimeSettings({ timezone: 0, dst: false });
 		expect(formatTime(now - 3 * 86400, settings, frDateWords, now)).toBe('21/10/2026 12:00');
 		expect(formatTime(now - 3 * 86400, settings, frDateWords, now, true)).toBe('21/10/2026');
-	});
-});
-
-describe('TablePrefixPlugin', () => {
-	it('préfixe les tables mais pas les alias', () => {
-		const db = new Kysely<Database>({
-			dialect: {
-				createAdapter: () => new MysqlAdapter(),
-				createDriver: () => new DummyDriver(),
-				createIntrospector: (k) => new MysqlIntrospector(k),
-				createQueryCompiler: () => new MysqlQueryCompiler(),
-			},
-			plugins: [new TablePrefixPlugin('fo_', TABLE_NAMES)],
-		});
-
-		const query = db
-			.selectFrom('topics as t')
-			.innerJoin('forums', 'forums.id', 't.forum_id')
-			.select(['t.id', 'forums.forum_name'])
-			.compile();
-		expect(query.sql).toBe(
-			'select `t`.`id`, `fo_forums`.`forum_name` from `fo_topics` as `t` inner join `fo_forums` on `fo_forums`.`id` = `t`.`forum_id`',
-		);
 	});
 });

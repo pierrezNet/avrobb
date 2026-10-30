@@ -1,11 +1,12 @@
 /**
- * Point d'entrée Node : câble les vraies dépendances (base MariaDB, stockage local des fichiers,
- * gabarits précompilés) et sert l'application Hono avec @hono/node-server. Remplacé par un Worker
- * Cloudflare au lot 3.
+ * Point d'entrée Node : câble les vraies dépendances (base D1 locale par getPlatformProxy de
+ * Wrangler, stockage local des fichiers, gabarits précompilés) et sert l'application Hono avec
+ * @hono/node-server. Remplacé par un Worker Cloudflare au lot 4.
  */
 
 import path from 'node:path';
 import { serve } from '@hono/node-server';
+import { getPlatformProxy } from 'wrangler';
 import { createAssetUrl } from './adapters/assetUrls.ts';
 import { DirectoryFiles } from './adapters/directoryFiles.ts';
 import { DnsHostResolver } from './adapters/hostResolver.ts';
@@ -13,6 +14,7 @@ import { SharpImageProcessor } from './adapters/imageProcessor.ts';
 import { NodeMailer } from './adapters/mailer.ts';
 import { buildApp } from './app.ts';
 import { loadConfig } from './config.ts';
+import type { D1Database } from './db/d1.ts';
 import { createDatabase } from './db/database.ts';
 import templates from './generated/templates.js';
 import { consoleLogger } from './http/log.ts';
@@ -57,7 +59,9 @@ import { UsersInfoLoader } from './repositories/UsersInfoLoader.ts';
 import { FileAvatarLocator } from './services/avatars.ts';
 
 const config = loadConfig();
-const db = createDatabase(config.db);
+// Base D1 locale de Wrangler (.wrangler/state), la même que celle de `wrangler dev` au lot 4.
+const platform = await getPlatformProxy<{ DB: D1Database }>({ persist: true, envFiles: [] });
+const db = createDatabase(platform.env.DB);
 const clock = (): number => Math.floor(Date.now() / 1000);
 
 const stats = new StatsRepository(db);
@@ -107,7 +111,7 @@ const app = await buildApp({
 	contacts: new ContactRepository(db),
 	reportWriter: reports,
 	reportStore: reports,
-	adminStats: new AdminStatsRepository(db, config.db.tablePrefix),
+	adminStats: new AdminStatsRepository(db),
 	forums: new ForumRepository(db),
 	reports,
 	privateMessages,
@@ -144,10 +148,10 @@ const server = serve({ fetch: app.fetch, port: config.port, hostname: '127.0.0.1
 	console.error(`AvroBB : http://localhost:${info.port}`);
 });
 
-// Arrêt (Ctrl+C, redémarrage de tsx watch) : on ferme le pool de la base avant de quitter.
+// Arrêt (Ctrl+C, redémarrage de tsx watch) : on arrête la base locale (Miniflare) avant de quitter.
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
 	process.once(signal, () => {
 		server.close();
-		void db.destroy().finally(() => process.exit(0));
+		void platform.dispose().finally(() => process.exit(0));
 	});
 }

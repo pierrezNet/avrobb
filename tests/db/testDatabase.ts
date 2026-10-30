@@ -1,20 +1,33 @@
 /**
- * Paramètres de la base de test, lus dans l'environnement (valeurs par défaut : conteneur pv_db
- * de PiloteVirtuel). Jamais la base de développement : le nom doit se terminer par « _test ».
+ * Outils de la base de test : une D1 locale (Miniflare, par getPlatformProxy de Wrangler) dans un
+ * dossier temporaire, créée par globalSetup.ts avec les migrations et tests/db/seed.sql. La base
+ * partagée par les fichiers de test est dans testDb.ts.
  */
 
-import type { AppConfig } from '../../src/config.ts';
+import { readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { getPlatformProxy } from 'wrangler';
+import type { D1Database } from '../../src/db/d1.ts';
+import { splitSqlStatements } from '../../src/db/sqlScript.ts';
 
-export function testDbConfig(env: NodeJS.ProcessEnv = process.env): AppConfig['db'] {
-	const database = env.TEST_DB_NAME ?? 'pv_forum_test';
-	if (!database.endsWith('_test')) throw new Error(`TEST_DB_NAME doit se terminer par _test (reçu : ${database})`);
+/** Dossier de la base locale de test, partagé par globalSetup et les fichiers de test. */
+export const TEST_D1_DIR = path.join(tmpdir(), 'avrobb-test-d1');
+const ROOT = path.join(import.meta.dirname, '..', '..');
 
-	return {
-		host: env.TEST_DB_HOST ?? '127.0.0.1',
-		port: Number(env.TEST_DB_PORT ?? 3307),
-		user: env.TEST_DB_USER ?? 'root',
-		password: env.TEST_DB_PASSWORD ?? 'root',
-		database,
-		tablePrefix: 'fo_',
-	};
+export async function openTestD1(): Promise<{ d1: D1Database; dispose: () => Promise<void> }> {
+	const proxy = await getPlatformProxy<{ DB: D1Database }>({
+		configPath: path.join(ROOT, 'wrangler.jsonc'),
+		persist: { path: TEST_D1_DIR },
+		envFiles: [],
+	});
+	return { d1: proxy.env.DB, dispose: () => proxy.dispose() };
 }
+
+/** Exécute un script SQL en un seul lot. */
+export async function runSqlScript(d1: D1Database, script: string): Promise<void> {
+	const statements = splitSqlStatements(script);
+	if (statements.length > 0) await d1.batch(statements.map((statement) => d1.prepare(statement)));
+}
+
+export const seedScript = (): string => readFileSync(path.join(import.meta.dirname, 'seed.sql'), 'utf8');

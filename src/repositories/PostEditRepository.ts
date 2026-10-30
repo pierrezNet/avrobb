@@ -4,16 +4,14 @@
  * des sujets déplacés, index de recherche, delete_post(), delete_topic(), update_forum()).
  */
 
-import { type Kysely, sql } from 'kysely';
-import type { Db } from '../db/database.ts';
-import type { Database } from '../db/schema.ts';
+import type { RawBuilder } from 'kysely';
+import type { Compilable, Db } from '../db/database.ts';
 import { type EditablePost, GroupId } from '../domain/models.ts';
-import { parseModerators } from '../services/phpSerialize.ts';
+import { parseModerators } from '../services/moderators.ts';
 import type { IndexedWords } from '../services/searchIndex.ts';
-import { updateForum } from './forumCounters.ts';
+import { updateForumWrite } from './forumCounters.ts';
 import { forumReadable } from './forumPermissions.ts';
-import { stripSearchIndex, updateSearchIndex } from './searchIndexSql.ts';
-import { inTransaction } from './transactions.ts';
+import { searchIndexWrites, stripSearchIndexWrites } from './searchIndexSql.ts';
 
 export interface PostUpdate {
 	postId: number;
@@ -83,98 +81,80 @@ export class PostEditRepository implements PostEditStore {
 	}
 
 	async updatePost(update: PostUpdate): Promise<void> {
-		await inTransaction(this.db, async (trx) => {
-			if (update.topic !== null)
-				// Le sujet et ses liens laissés par un déplacement (moved_to) changent ensemble.
-				await trx
-					.updateTable('topics')
-					.set({ subject: update.topic.subject, sticky: update.topic.sticky ? 1 : 0 })
-					.where((eb) => eb.or([eb('id', '=', update.topicId), eb('moved_to', '=', update.topicId)]))
-					.execute();
-
-			await updateSearchIndex(trx, 'edit', update.postId, update.words);
-
-			await trx
+		await this.db.batch([
+			...(update.topic !== null
+				? [
+						// Le sujet et ses liens laissés par un déplacement (moved_to) changent ensemble.
+						this.db
+							.updateTable('topics')
+							.set({ subject: update.topic.subject, sticky: update.topic.sticky ? 1 : 0 })
+							.where((eb) => eb.or([eb('id', '=', update.topicId), eb('moved_to', '=', update.topicId)])),
+					]
+				: []),
+			...(await searchIndexWrites(this.db, 'edit', update.postId, update.words)),
+			this.db
 				.updateTable('posts')
 				.set({
 					message: update.message,
 					hide_smilies: update.hideSmilies ? 1 : 0,
 					...(update.edited !== null ? { edited: update.edited.at, edited_by: update.edited.by } : {}),
 				})
-				.where('id', '=', update.postId)
-				.execute();
-		});
+				.where('id', '=', update.postId),
+		]);
 	}
 
 	async deletePost(post: EditablePost): Promise<number | null> {
-		return inTransaction(this.db, async (trx) => {
-			await deletePost(trx, post.id, post.topic.id);
-			await updateForum(trx, post.forum.id);
-			const previous = await trx
-				.selectFrom('posts')
-				.select('id')
-				.where('topic_id', '=', post.topic.id)
-				.where('id', '<', post.id)
-				.orderBy('id', 'desc')
-				.limit(1)
-				.executeTakeFirst();
-			return previous?.id ?? null;
-		});
+		const previous = await this.db
+			.selectFrom('posts')
+			.select('id')
+			.where('topic_id', '=', post.topic.id)
+			.where('id', '<', post.id)
+			.orderBy('id', 'desc')
+			.limit(1)
+			.executeTakeFirst();
+		await this.db.batch([...(await deletePostWrites(this.db, post.id, post.topic.id)), updateForumWrite(this.db, post.forum.id)]);
+		return previous?.id ?? null;
 	}
 
 	async deleteTopic(post: EditablePost): Promise<void> {
-		await inTransaction(this.db, async (trx) => {
-			await deleteTopic(trx, post.topic.id);
-			await updateForum(trx, post.forum.id);
-		});
+		await this.db.batch([...(await deleteTopicWrites(this.db, post.topic.id)), updateForumWrite(this.db, post.forum.id)]);
 	}
 }
 
-/** delete_post() : le sujet reprend comme dernier message l'avant-dernier si c'était le dernier. */
-export async function deletePost(trx: Kysely<Database>, postId: number, topicId: number): Promise<void> {
-	const [last, secondLast] = await trx
-		.selectFrom('posts')
-		.select(['id', 'poster', 'posted'])
-		.where('topic_id', '=', topicId)
-		.orderBy('id', 'desc')
-		.limit(2)
-		.execute();
+/**
+ * Nombre de réponses et dernier message d'un sujet, recalculés d'après ses messages au moment où le
+ * lot s'exécute (delete_post() reprenait l'avant-dernier message si le dernier était supprimé ; le
+ * recalcul donne le même résultat et reste juste si plusieurs messages partent dans le même lot).
+ */
+export function recountTopicWrite(db: Db, topicId: number | RawBuilder<number>): Compilable {
+	const latest = () => db.selectFrom('posts').where('topic_id', '=', topicId).orderBy('id', 'desc').limit(1);
+	return db
+		.updateTable('topics')
+		.set((eb) => ({
+			// Le message d'ouverture n'est pas une réponse.
+			num_replies: eb
+				.selectFrom('posts')
+				.select((sub) => sub(sub.fn.countAll<number>(), '-', 1).as('n'))
+				.where('topic_id', '=', topicId),
+			last_post: latest().select('posted'),
+			last_post_id: latest().select('id'),
+			last_poster: latest().select('poster'),
+		}))
+		.where('id', '=', topicId);
+}
 
-	await trx.deleteFrom('posts').where('id', '=', postId).execute();
-	await stripSearchIndex(trx, [postId]);
-
-	const { count } = await trx
-		.selectFrom('posts')
-		.select((eb) => eb.fn.count<number>('id').as('count'))
-		.where('topic_id', '=', topicId)
-		.executeTakeFirstOrThrow();
-	const numReplies = Number(count) - 1;
-
-	const topics = trx.updateTable('topics').where('id', '=', topicId);
-	if (last?.id !== postId) await topics.set({ num_replies: numReplies }).execute();
-	else if (secondLast !== undefined)
-		await topics
-			.set({ last_post: secondLast.posted, last_post_id: secondLast.id, last_poster: secondLast.poster, num_replies: numReplies })
-			.execute();
-	// Plus aucune réponse : le dernier message redevient celui qui ouvre le sujet.
-	else await topics.set({ last_post: sql`posted`, last_post_id: sql`id`, last_poster: sql`poster`, num_replies: numReplies }).execute();
+/** delete_post() : le message, son index, puis le sujet recompté. */
+export async function deletePostWrites(db: Db, postId: number, topicId: number): Promise<Compilable[]> {
+	return [db.deleteFrom('posts').where('id', '=', postId), ...(await stripSearchIndexWrites(db, [postId])), recountTopicWrite(db, topicId)];
 }
 
 /** delete_topic() : sujet, liens de déplacement, messages, index et abonnements. */
-export async function deleteTopic(trx: Kysely<Database>, topicId: number): Promise<void> {
-	await trx
-		.deleteFrom('topics')
-		.where((eb) => eb.or([eb('id', '=', topicId), eb('moved_to', '=', topicId)]))
-		.execute();
-
-	const posts = await trx.selectFrom('posts').select('id').where('topic_id', '=', topicId).execute();
-	if (posts.length > 0) {
-		await stripSearchIndex(
-			trx,
-			posts.map((post) => post.id),
-		);
-		await trx.deleteFrom('posts').where('topic_id', '=', topicId).execute();
-	}
-
-	await trx.deleteFrom('topic_subscriptions').where('topic_id', '=', topicId).execute();
+export async function deleteTopicWrites(db: Db, topicId: number): Promise<Compilable[]> {
+	const postIds = (await db.selectFrom('posts').select('id').where('topic_id', '=', topicId).execute()).map((post) => post.id);
+	return [
+		db.deleteFrom('topics').where((eb) => eb.or([eb('id', '=', topicId), eb('moved_to', '=', topicId)])),
+		...(await stripSearchIndexWrites(db, postIds)),
+		...(postIds.length > 0 ? [db.deleteFrom('posts').where('topic_id', '=', topicId)] : []),
+		db.deleteFrom('topic_subscriptions').where('topic_id', '=', topicId),
+	];
 }

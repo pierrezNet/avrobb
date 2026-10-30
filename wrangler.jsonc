@@ -1,0 +1,17 @@
+// Configuration Cloudflare d'AvroBB. Lot 3 : seule la base D1 sert, sous Node, par
+// getPlatformProxy() (base locale dans .wrangler/state). Le Worker lui-même arrive au lot 4.
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "avrobb",
+	"compatibility_date": "2026-10-01",
+	"compatibility_flags": ["nodejs_compat"],
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "avrobb",
+			// Identifiant de la base distante, à renseigner au lot 7 (wrangler d1 create avrobb).
+			"database_id": "00000000-0000-0000-0000-000000000000",
+			"migrations_dir": "migrations"
+		}
+	]
+}

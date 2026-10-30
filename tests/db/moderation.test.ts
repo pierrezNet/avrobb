@@ -9,28 +9,12 @@
 
 import type { Kysely } from 'kysely';
 import { afterAll, describe, expect, it } from 'vitest';
-import { createDatabase } from '../../src/db/database.ts';
 import type { Database } from '../../src/db/schema.ts';
 import type { ModeratedTopic } from '../../src/domain/models.ts';
 import { ModerationRepository } from '../../src/repositories/ModerationRepository.ts';
-import { testDbConfig } from './testDatabase.ts';
+import { closeTestDatabase, db, inRollback } from './testDb.ts';
 
-const db = createDatabase(testDbConfig());
-afterAll(async () => db.destroy());
-
-class Rollback extends Error {}
-
-async function inRollback(body: (trx: Kysely<Database>) => Promise<void>): Promise<void> {
-	await db
-		.transaction()
-		.execute(async (trx) => {
-			await body(trx);
-			throw new Rollback();
-		})
-		.catch((error: unknown) => {
-			if (!(error instanceof Rollback)) throw error;
-		});
-}
+afterAll(closeTestDatabase);
 
 const topic10: ModeratedTopic = {
 	id: 10,
@@ -180,10 +164,11 @@ describe('ReportRepository (traitement)', () => {
 describe('AdminStatsRepository', () => {
 	it('compte les visiteurs actifs et mesure les tables du forum', async () => {
 		const { AdminStatsRepository } = await import('../../src/repositories/AdminStatsRepository.ts');
-		const stats = new AdminStatsRepository(db, 'fo_');
+		const stats = new AdminStatsRepository(db);
 		expect(await stats.countActiveOnline()).toBeGreaterThanOrEqual(0);
 		const info = await stats.databaseInfo();
-		expect(info.version).toMatch(/^\d+\.\d+/);
+		expect(info.version).toContain('D1');
+		expect(info.rows).toBeGreaterThan(20);
 		expect(info.bytes).toBeGreaterThan(0);
 	});
 });

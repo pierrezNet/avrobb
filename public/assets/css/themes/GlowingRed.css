@@ -1,23 +1,26 @@
-/* Thème GlowingRed de Pilote-Virtuel (style/GlowingRed.css), réduit à ses couleurs. */
+/*
+ * Thème GlowingRed, accordé à la bannière et au logo d'AvroBB : brun-bordeaux et rouge brique de la
+ * bannière, crème des lettres du logo, or de ses crochets pour la focalisation et les citations.
+ */
 
 :root {
 	color-scheme: light;
-	--color-bg: #fcefee;
-	--color-surface: #feebeb;
-	--color-surface-alt: #fce9e9;
-	--color-text: #4d1c1c;
-	--color-muted: #6e3a3a;
-	--color-link: #a82828;
-	--color-link-hover: #600202;
-	--color-accent: #b32424;
-	--color-accent-text: #ffffff;
-	--color-header-bg: #600202;
-	--color-header-text: #ffffff;
-	--color-active: #990000;
-	--color-border: #f1b5b5;
-	--color-code-bg: #fce7e6;
-	--color-quote-bg: #fff5cc;
-	--color-button-bg: #f3dada;
-	--color-button-text: #600202;
-	--color-focus: #d12b2b;
+	--color-bg: #f2e5da;
+	--color-surface: #fdf8f3;
+	--color-surface-alt: #f7ece2;
+	--color-text: #3b1917;
+	--color-muted: #6b4a42;
+	--color-link: #8c2a20;
+	--color-link-hover: #5a1611;
+	--color-accent: #7a2421;
+	--color-accent-text: #fff7f0;
+	--color-header-bg: #3b1917;
+	--color-header-text: #fff7f0;
+	--color-active: #a3362b;
+	--color-border: #e2c8b6;
+	--color-code-bg: #f6ebe1;
+	--color-quote-bg: #fbf0d6;
+	--color-button-bg: #f0dccb;
+	--color-button-text: #5a1611;
+	--color-focus: #a8681a;
 }

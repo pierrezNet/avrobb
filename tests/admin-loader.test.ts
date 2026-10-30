@@ -131,7 +131,7 @@ describe('page Balises : balises du sujet', () => {
 		await send(server, '&action=tag_add', { name: 'DCS', group: 'project', color: '#FF0000' });
 		expect(saved(fake).map((t) => t.name)).toContain('DCS');
 		const renamed = await send(server, '&action=tag_edit&tag=MSFS', { name: 'MSFS 2024', group: 'project', color: '#1d4ed8' });
-		expect(renamed.headers.location).toBe('admin_loader.php?plugin=AP_Balises.php&done=tag_renamed_1');
+		expect(renamed.headers.location).toBe('/admin_loader.php?plugin=AP_Balises.php&done=tag_renamed_1');
 		expect(fake.subjectUpdates).toEqual([{ topicId: 10, subject: '[MSFS 2024][Résolu] Vol de nuit' }]);
 		fake.config = { ...fake.config, subjectTags: saved(fake) as never };
 		await send(server, '&action=tag_down&tag=MSFS%202024', {});

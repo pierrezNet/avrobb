@@ -117,7 +117,7 @@ describe('GET /index.php', () => {
 			'href="https://github.com/x/avrobb" rel="external noopener">Dépôt <span class="project-links__host">github.com</span>',
 		);
 		expect(res.body.match(/class="project-links"/g)).toHaveLength(1);
-		expect(res.body).toContain('<a href="profile.php?id=5">MaxDUO</a>');
+		expect(res.body).toContain('<a href="/membre/5">MaxDUO</a>');
 		expect(res.body).toContain('<span class="forum-row__redirect">Lien vers :</span> <a href="https://example.test">Forum 2</a>');
 		expect(res.body).toContain('<dd>12.3 k</dd>');
 		expect(res.body).toContain('- - -');
@@ -134,11 +134,11 @@ describe('GET /index.php', () => {
 		// Projets : MSFS 3, X-Plane 2 (C sans balise ignoré).
 		expect(res.body).toMatch(/MSFS<\/span>\s*<span class="project-shares__bar"[^>]*><span style="width: 60%/);
 		expect(res.body).toContain('X-Plane : 2 discussions');
-		expect(res.body).toContain('<a href="profile.php?id=8">Nouveau</a>');
+		expect(res.body).toContain('<a href="/membre/8">Nouveau</a>');
 		expect(res.body).not.toContain('Nouveaux messages');
 		expect(res.body).not.toContain('misc.php?action=markread');
 		// L'index est porté : ses liens restent locaux.
-		expect(res.body).toContain('href="index.php"');
+		expect(res.body).toContain('href="/"');
 	});
 
 	it('est aussi servi à la racine', async () => {
@@ -158,7 +158,7 @@ describe('GET /index.php', () => {
 		);
 
 		const fresh = await inject(app, { url: '/index.php', headers: { cookie: cookie(3) } });
-		expect(fresh.body).toContain('href="search.php?action=show_new&amp;fid=1">Nouveaux messages</a>');
+		expect(fresh.body).toContain('href="/recherche?action=show_new&amp;fid=1">Nouveaux messages</a>');
 		expect(fresh.body).toContain('misc.php?action=markread');
 
 		const read = await inject(app, { url: '/index.php', headers: { cookie: `${cookie(3)}; avrobb_track=t7=${NOW}` } });

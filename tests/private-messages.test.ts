@@ -189,7 +189,7 @@ describe('pms_send.php et pms_inbox.php', () => {
 
 		const inbox = await get(server, 5, '/pms_inbox.php');
 		expect(inbox.body).toContain('<strong>Vol de groupe</strong>');
-		expect(inbox.body).toContain('href="profile.php?id=3">Tessy</a>');
+		expect(inbox.body).toContain('href="/membre/3">Tessy</a>');
 	});
 
 	it('réaffiche le formulaire avec les erreurs, et prévisualise', async () => {
@@ -229,7 +229,7 @@ describe('pms_send.php et pms_inbox.php', () => {
 		const shared = String(head?.sharedId);
 
 		expect((await post(server, 5, '/pms_inbox.php', { action: 'markread', selected: shared })).headers.location).toBe(
-			'pms_inbox.php?done=read',
+			'/pms_inbox.php?done=read',
 		);
 		expect(head?.showed).toBe(true);
 		expect((await post(server, 5, '/pms_inbox.php', { action: 'markread' })).body).toContain('Vous devez sélectionner des messages');

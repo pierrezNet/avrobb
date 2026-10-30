@@ -13,12 +13,12 @@ import { inject } from './inject.ts';
 
 describe('safeRedirect', () => {
 	it('ne garde que les pages du forum, sur ce site', () => {
-		expect(safeRedirect('http://forum.test/viewtopic.php?pid=12', 'forum.test')).toBe('viewtopic.php?pid=12#p12');
-		expect(safeRedirect('viewforum.php?id=2', 'forum.test')).toBe('viewforum.php?id=2');
-		expect(safeRedirect('https://evil.test/index.php', 'forum.test')).toBe('index.php');
-		expect(safeRedirect('//evil.test/index.php', 'forum.test')).toBe('index.php');
-		expect(safeRedirect('javascript:alert(1)', 'forum.test')).toBe('index.php');
-		expect(safeRedirect('/login.php', 'forum.test')).toBe('index.php');
+		expect(safeRedirect('http://forum.test/viewtopic.php?pid=12', 'forum.test')).toBe('/message/12#p12');
+		expect(safeRedirect('viewforum.php?id=2', 'forum.test')).toBe('/forum/2');
+		expect(safeRedirect('https://evil.test/index.php', 'forum.test')).toBe('/');
+		expect(safeRedirect('//evil.test/index.php', 'forum.test')).toBe('/');
+		expect(safeRedirect('javascript:alert(1)', 'forum.test')).toBe('/');
+		expect(safeRedirect('/login.php', 'forum.test')).toBe('/');
 	});
 });
 
@@ -61,7 +61,7 @@ describe('connexion de développement', () => {
 			guestCookie,
 		);
 		expect(res.statusCode).toBe(303);
-		expect(res.headers.location).toBe('viewforum.php?id=2');
+		expect(res.headers.location).toBe('/forum/2');
 		expect(readSessionCookie(sessionFrom(res.headers), COOKIE_SECRET, NOW)?.userId).toBe(3);
 		expect(online.log).toContain('remove ident 127.0.0.1');
 	});
@@ -89,7 +89,7 @@ describe('connexion de développement', () => {
 		app = await buildApp(fakeDeps({ users: [{ viewer: guest }], topics: [], posts: new Map(), config: { maintenance: true } }));
 		const res = await inject(app, { url: '/login.php', headers: { host: HOST, referer: 'http://forum.test/viewforum.php?id=2' } });
 		expect(res.statusCode).toBe(200);
-		expect(res.body).toContain('name="redirect_url" value="viewforum.php?id=2"');
+		expect(res.body).toContain('name="redirect_url" value="/forum/2"');
 		expect(res.body).not.toContain('type="password"');
 	});
 });
@@ -101,18 +101,18 @@ describe('session et déconnexion', () => {
 		const online = fakeOnline();
 		app = await buildApp({ ...fakeDeps({ users, topics: [], posts: new Map() }), online });
 
-		expect((await inject(app, { url: '/login.php', headers: { cookie } })).headers.location).toBe('index.php');
+		expect((await inject(app, { url: '/login.php', headers: { cookie } })).headers.location).toBe('/');
 
 		// L'ancien lien GET ne déconnecte plus : aucune écriture en GET.
 		const get = await inject(app, { url: '/login.php?action=out', headers: { cookie } });
-		expect(get.headers.location).toBe('index.php');
+		expect(get.headers.location).toBe('/');
 		expect(online.log).not.toContain('remove 3');
 
 		expect((await postForm(app, '/login.php?action=out', 'csrf_token=faux', cookie)).statusCode).toBe(403);
 		expect(online.log).not.toContain('remove 3');
 
 		const out = await postForm(app, '/login.php?action=out', `csrf_token=${csrfToken(CSRF_SECRET, COOKIE_SECRET, 3)}`, cookie);
-		expect(out.headers.location).toBe('index.php');
+		expect(out.headers.location).toBe('/');
 		expect(online.log.slice(-2)).toEqual(['remove 3', `last_visit 3 ${NOW - 900}`]);
 		expect(sessionFrom(out.headers)).toBe('');
 	});

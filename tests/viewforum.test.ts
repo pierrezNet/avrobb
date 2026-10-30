@@ -71,12 +71,12 @@ describe('GET /viewforum.php', () => {
 		expect(res.body).toContain('<ul class="project-links project-links--page" aria-label="Liens du projet">');
 		expect(res.body).toContain('href="https://github.com/x/captures" rel="external noopener">Dépôt');
 		expect(res.body).toContain('<span class="badge">Fermée :</span>');
-		expect(res.body).toContain('<span class="badge">Déplacée :</span> <a href="viewtopic.php?id=40">');
+		expect(res.body).toContain('<span class="badge">Déplacée :</span> <a href="/sujet/40-');
 		expect(res.body).toContain(
 			'<span class="subject-tag" style="background-color: #1d4ed8; color: #ffffff">MSFS</span><span class="subject-tag-gap">&#160;</span>Sujet 13',
 		);
 		expect(res.body).toContain('<dd>1 500</dd>');
-		expect(res.body).toContain('href="post.php?fid=2"');
+		expect(res.body).toContain('href="/post.php?fid=2"');
 		expect(res.body).not.toContain('misc.php?action=subscribe');
 		expect(res.body).not.toContain('moderate.php?fid=2');
 		// Le point n'est affiché qu'aux membres, et seulement si o_show_dot est activé.
@@ -87,10 +87,10 @@ describe('GET /viewforum.php', () => {
 		app = await buildApp(deps({ config: { showDot: true } }));
 		const res = await inject(app, { url: '/viewforum.php?id=2', headers: { cookie: sessionCookie(3) } });
 
-		expect(res.body).toContain('viewtopic.php?id=13&amp;action=new');
-		expect(res.body).not.toContain('viewtopic.php?id=12&amp;action=new');
+		expect(res.body).toContain('/sujet/13?action=new');
+		expect(res.body).not.toContain('/sujet/12?action=new');
 		// 31 messages à 1 par page : 1 2 … 31
-		expect(res.body).toContain('<a href="viewtopic.php?id=13&amp;p=31">31</a>');
+		expect(res.body).toMatch(/<a href="\/sujet\/13-[a-z0-9-]+\/page\/31">31<\/a>/);
 		expect(res.body).toContain('misc.php?action=subscribe&amp;fid=2');
 		expect(res.body).toContain('misc.php?action=markforumread&amp;fid=2');
 		expect(res.body).toContain('topic-row__dot');
@@ -121,19 +121,19 @@ describe('GET /viewforum.php', () => {
 		app = await buildApp(deps({ forumTopics: new Map([[2, aged]]), config: { coldTopicDays: 90 } }));
 		const recent = await inject(app, '/viewforum.php?id=2');
 		// L'épinglée reste dans la liste, quel que soit son âge.
-		expect(recent.body).toContain('viewtopic.php?id=20"');
-		expect(recent.body).toContain('viewtopic.php?id=21"');
-		expect(recent.body).not.toContain('viewtopic.php?id=22"');
-		expect(recent.body).toContain('href="viewforum.php?id=2&amp;old=1">Anciennes discussions (2)</a>');
+		expect(recent.body).toContain('href="/sujet/20-');
+		expect(recent.body).toContain('href="/sujet/21-');
+		expect(recent.body).not.toContain('href="/sujet/22-');
+		expect(recent.body).toContain('href="/forum/2-captures-videos?old=1">Anciennes discussions (2)</a>');
 
 		const old = await inject(app, '/viewforum.php?id=2&old=1');
 		expect(old.body).toContain('— Anciennes discussions</h1>');
 		expect(old.body).toContain('plus de 90 jours');
-		expect(old.body).toContain('viewtopic.php?id=22"');
-		expect(old.body).toContain('viewtopic.php?id=23"');
-		expect(old.body).not.toContain('viewtopic.php?id=20"');
-		expect(old.body).toContain('href="viewforum.php?id=2">Discussions récentes (2)</a>');
-		expect(old.body).toContain('<link rel="canonical" href="http://forum.test/viewforum.php?id=2&amp;old=1">');
+		expect(old.body).toContain('href="/sujet/22-');
+		expect(old.body).toContain('href="/sujet/23-');
+		expect(old.body).not.toContain('href="/sujet/20-');
+		expect(old.body).toContain('href="/forum/2-captures-videos">Discussions récentes (2)</a>');
+		expect(old.body).toContain('<link rel="canonical" href="http://forum.test/forum/2-captures-videos?old=1">');
 	});
 
 	it('sans seuil ou sans ancienne discussion : pas de bouton', async () => {

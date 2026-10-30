@@ -8,6 +8,7 @@ import type { Lang } from '../lang/fr/index.ts';
 import { parseMessage } from '../services/bbcode.ts';
 import type { Censor } from '../services/censor.ts';
 import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
+import { forumPath, publicPath } from '../services/routes.ts';
 import { SMILIES } from '../services/smilies.ts';
 import { type TagColors, tagColors } from '../services/subjectTags.ts';
 import { type ToolbarSettings, toolbarButtons } from '../services/toolbar.ts';
@@ -132,10 +133,11 @@ export function toolbarView(
 	const imageChooser = member
 		? {
 				...lang.toolbar.imageChooser,
-				// Popin (iframe) ; la fenêtre séparée ne sert que sans <dialog>.
-				galleryUrl: 'gallery.php?info=pick&embed=1',
-				uploadUrl: 'gallery.php?info=pick&embed=1#gallery-upload',
-				windowUrl: 'gallery.php?info=pick',
+				// Popin (iframe) ; la fenêtre séparée ne sert que sans <dialog>. Adresses absolues : lues
+				// par js/toolbar.js, elles doivent être justes depuis n'importe quelle page.
+				galleryUrl: publicPath('gallery.php?info=pick&embed=1'),
+				uploadUrl: publicPath('gallery.php?info=pick&embed=1#gallery-upload'),
+				windowUrl: publicPath('gallery.php?info=pick'),
 			}
 		: null;
 	return {
@@ -179,7 +181,7 @@ export function buildPostPage(input: PostPageInput): PostPageView {
 
 	const path = [
 		{ label: lang.common.index, href: 'index.php' },
-		{ label: target.forum.name, href: `viewforum.php?id=${target.forum.id}` },
+		{ label: target.forum.name, href: forumPath(target.forum.id, target.forum.name) },
 		...(topic !== null ? [{ label: censor !== null ? censor(topic.subject) : topic.subject, href: `viewtopic.php?id=${topic.id}` }] : []),
 		{ label: heading, href: isNewTopic ? `post.php?fid=${target.forum.id}` : `post.php?tid=${topic.id}` },
 	];
@@ -241,7 +243,7 @@ export function buildEditPage(input: EditPageInput): PostPageView {
 	return {
 		crumbs: crumbs(
 			{ label: lang.common.index, href: 'index.php' },
-			{ label: post.forum.name, href: `viewforum.php?id=${post.forum.id}` },
+			{ label: post.forum.name, href: forumPath(post.forum.id, post.forum.name) },
 			{ label: subject, href: `viewtopic.php?id=${post.topic.id}` },
 			{ label: t.editPost, href: `edit.php?id=${post.id}` },
 		),

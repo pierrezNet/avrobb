@@ -9,6 +9,7 @@ import { type DateWords, formatTime, viewerTimeSettings } from '../services/date
 import { forumNumberFormat } from '../services/numberFormat.ts';
 import { pageCount } from '../services/pagination.ts';
 import { canPostTopic } from '../services/permissions.ts';
+import { forumPath } from '../services/routes.ts';
 import { type SubjectSegment, subjectSegments } from '../services/subjectTags.ts';
 import type { TrackedTopics } from '../services/trackedTopics.ts';
 import { type Crumb, crumbs, type PaginationLink, paginationLinks } from './navigation.ts';
@@ -73,8 +74,9 @@ export interface ForumPageInput {
 }
 
 /** URL d'une page du forum (la page 1 n'a pas de paramètre p) ; `old` : anciennes discussions. */
-export function forumUrl(forumId: number, page = 1, old = false): string {
-	return `viewforum.php?id=${forumId}${old ? '&old=1' : ''}${page > 1 ? `&p=${page}` : ''}`;
+/** Adresse d'un forum (services/routes.ts) ; le nom donne le slug. */
+export function forumUrl(forumId: number, page = 1, old = false, name: string | null = null): string {
+	return `${forumPath(forumId, name, page)}${old ? '?old=1' : ''}`;
 }
 
 /** Nouveaux messages dans un sujet (viewforum.php) : après la dernière visite et les lectures suivies. */
@@ -106,7 +108,7 @@ export function buildTopicRow(topic: TopicSummary, forumId: number, context: Top
 
 	return {
 		id: topic.id,
-		href: topicUrl(topic.movedTo ?? topic.id),
+		href: topicUrl(topic.movedTo ?? topic.id, 1, subject),
 		subject: subjectSegments(subject, config.subjectTags),
 		subjectText: subject,
 		poster: topic.poster,
@@ -117,7 +119,7 @@ export function buildTopicRow(topic: TopicSummary, forumId: number, context: Top
 		hasPosted: config.showDot && !viewer.isGuest && topic.hasPosted,
 		pages:
 			topicPages > 1
-				? paginationLinks(topicPages, 1, (page) => topicUrl(topic.id, page)).map((link) =>
+				? paginationLinks(topicPages, 1, (page) => topicUrl(topic.id, page, subject)).map((link) =>
 						link.kind === 'page' ? { ...link, current: false } : link,
 					)
 				: [],
@@ -142,8 +144,8 @@ export function buildForumPage(input: ForumPageInput): ForumPageView {
 
 	return {
 		forum: { id: forum.id, name: forum.name, links: projectLinkViews(forum.links, lang) },
-		crumbs: crumbs({ label: lang.common.index, href: 'index.php' }, { label: forum.name, href: forumUrl(forum.id) }),
-		pagination: paginationLinks(input.numPages, input.page, (page) => forumUrl(forum.id, page, input.age?.old ?? false)),
+		crumbs: crumbs({ label: lang.common.index, href: 'index.php' }, { label: forum.name, href: forumUrl(forum.id, 1, false, forum.name) }),
+		pagination: paginationLinks(input.numPages, input.page, (page) => forumUrl(forum.id, page, input.age?.old ?? false, forum.name)),
 		postTopicUrl: canPostTopic(viewer, forum) ? `post.php?fid=${forum.id}` : null,
 		topics,
 		subscription:
@@ -162,7 +164,7 @@ export function buildForumPage(input: ForumPageInput): ForumPageView {
 						old: input.age.old,
 						info: input.age.old ? lang.forum.oldTopicsInfo(input.age.days) : null,
 						toggle: {
-							href: forumUrl(forum.id, 1, !input.age.old),
+							href: forumUrl(forum.id, 1, !input.age.old, forum.name),
 							label: input.age.old ? lang.forum.recentTopics(input.age.otherCount) : lang.forum.oldTopics(input.age.otherCount),
 						},
 					},

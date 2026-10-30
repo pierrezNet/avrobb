@@ -54,20 +54,20 @@ describe('viewtopic : suivi et vues', () => {
 	it('action=new : premier message après la dernière lecture, sinon après la dernière visite', async () => {
 		app = await buildApp(fakeDeps(data()));
 		const fromVisit = await inject(app, { url: '/viewtopic.php?id=10&action=new', headers: { cookie: cookie() } });
-		expect(fromVisit.headers.location).toBe('viewtopic.php?pid=101#p101');
+		expect(fromVisit.headers.location).toBe('/message/101#p101');
 
 		const fromTracking = await inject(app, {
 			url: '/viewtopic.php?id=10&action=new',
 			headers: { cookie: cookie(`; avrobb_track=t10=${NOW - 2000};`) },
 		});
-		expect(fromTracking.headers.location).toBe('viewtopic.php?pid=102#p102');
+		expect(fromTracking.headers.location).toBe('/message/102#p102');
 
 		const nothingNew = await inject(app, {
 			url: '/viewtopic.php?id=10&action=new',
 			headers: { cookie: cookie(`; avrobb_track=t10=${NOW};`) },
 		});
-		expect(nothingNew.headers.location).toBe('viewtopic.php?id=10&action=last');
-		expect((await inject(app, '/viewtopic.php?id=10&action=new')).headers.location).toBe('viewtopic.php?id=10&action=last');
+		expect(nothingNew.headers.location).toBe('/sujet/10?action=last');
+		expect((await inject(app, '/viewtopic.php?id=10&action=new')).headers.location).toBe('/sujet/10?action=last');
 	});
 });
 
@@ -85,7 +85,7 @@ describe('misc.php', () => {
 		const online = fakeOnline();
 		app = await buildApp({ ...deps(), online });
 		const res = await inject(app, { url: '/misc.php?action=markread', headers: { cookie: cookie() } });
-		expect(res.body).toContain('<form class="message-box" method="post" action="misc.php?action=markread">');
+		expect(res.body).toContain('<form class="message-box" method="post" action="/misc.php?action=markread">');
 		expect(online.log).toEqual([]);
 		expect((await inject(app, '/misc.php?action=markread')).statusCode).toBe(403);
 	});
@@ -105,12 +105,12 @@ describe('misc.php', () => {
 			});
 
 		const all = await send('/misc.php?action=markread');
-		expect(all?.headers.location).toBe('index.php');
+		expect(all?.headers.location).toBe('/');
 		expect(online.log).toContain(`last_visit 3 ${NOW - 700}`);
 		expect(setCookie(all?.headers['set-cookie'], 'avrobb_track')).toMatch(/^avrobb_track=;/);
 
 		const forum = await send('/misc.php?action=markforumread&fid=2');
-		expect(forum?.headers.location).toBe('viewforum.php?id=2');
+		expect(forum?.headers.location).toBe('/forum/2');
 		expect(setCookie(forum?.headers['set-cookie'], 'avrobb_track')).toContain(`f2%3D${NOW}`);
 	});
 

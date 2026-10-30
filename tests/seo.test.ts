@@ -37,8 +37,8 @@ describe('référencement : fonctions pures', () => {
 			{ path: 'viewtopic.php?id=4&p=2', lastPost: 1_782_800_000 },
 			{ path: 'faq.php', lastPost: 0 },
 		]);
-		expect(xml).toContain('<loc>https://forum.test/viewtopic.php?id=4&amp;p=2</loc><lastmod>2026-06-30</lastmod>');
-		expect(xml).toContain('<url><loc>https://forum.test/faq.php</loc></url>');
+		expect(xml).toContain('<loc>https://forum.test/sujet/4/page/2</loc><lastmod>2026-06-30</lastmod>');
+		expect(xml).toContain('<url><loc>https://forum.test/faq</loc></url>');
 	});
 });
 
@@ -57,15 +57,15 @@ describe('référencement : pages', () => {
 		expect(robots.body).toContain('Sitemap: http://forum.test/sitemap.xml');
 		const sitemap = await inject(app, '/sitemap.xml');
 		expect(sitemap.headers['content-type']).toContain('application/xml');
-		expect(sitemap.body).toContain('<loc>http://forum.test/viewtopic.php?id=10</loc>');
-		expect(sitemap.body).toContain('<loc>http://forum.test/terms.php</loc>');
+		expect(sitemap.body).toContain('<loc>http://forum.test/sujet/10-sujet-de-test</loc>');
+		expect(sitemap.body).toContain('<loc>http://forum.test/conditions</loc>');
 		expect((await inject(app, '/favicon.ico')).statusCode).toBe(301);
 	});
 
 	it('discussion : description, canonique absolue, aperçu de partage avec sa première image', async () => {
 		app = await buildApp(deps());
 		const page = await inject(app, '/viewtopic.php?id=10');
-		expect(page.body).toContain('<link rel="canonical" href="http://forum.test/viewtopic.php?id=10">');
+		expect(page.body).toContain('<link rel="canonical" href="http://forum.test/sujet/10-sujet-de-test">');
 		expect(page.body).toContain('<meta name="description" content="Bonjour à tous">');
 		expect(page.body).toContain('<meta property="og:type" content="article">');
 		expect(page.body).toContain('<meta property="og:image" content="https://img.test/a.png">');

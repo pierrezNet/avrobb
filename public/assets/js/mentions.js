@@ -104,7 +104,7 @@
 			timer = setTimeout(async () => {
 				const id = ++requestId;
 				try {
-					const response = await fetch(`member_suggest.php?q=${encodeURIComponent(text)}`, { headers: { Accept: 'application/json' } });
+					const response = await fetch(`/member_suggest.php?q=${encodeURIComponent(text)}`, { headers: { Accept: 'application/json' } });
 					if (!response.ok || id !== requestId) return;
 					const data = await response.json();
 					show(Array.isArray(data.members) ? data.members : []);

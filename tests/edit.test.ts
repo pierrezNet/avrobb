@@ -109,7 +109,7 @@ describe('edit.php', () => {
 			stick_topic: '1',
 		});
 		expect(res.statusCode).toBe(302);
-		expect(res.headers.location).toBe('viewtopic.php?pid=100#p100');
+		expect(res.headers.location).toBe('/message/100#p100');
 		expect(fake.postUpdates).toEqual([
 			{
 				postId: 100,
@@ -158,7 +158,7 @@ describe('delete.php', () => {
 		expect(page.statusCode).toBe(200);
 		expect(page.body).toContain('Vous êtes sur le point de supprimer définitivement ce message');
 		const res = await submit(app, '/delete.php?id=101', { delete: '1' });
-		expect(res.headers.location).toBe('viewtopic.php?pid=100#p100');
+		expect(res.headers.location).toBe('/message/100#p100');
 		expect(fake.deletedPosts).toEqual([101]);
 	});
 
@@ -169,7 +169,7 @@ describe('delete.php', () => {
 			'toute la discussion sera définitivement supprimée',
 		);
 		const res = await submit(app, '/delete.php?id=100', { delete: '1' });
-		expect(res.headers.location).toBe('viewforum.php?id=1');
+		expect(res.headers.location).toBe('/forum/1');
 		expect(fake.deletedTopics).toEqual([10]);
 	});
 

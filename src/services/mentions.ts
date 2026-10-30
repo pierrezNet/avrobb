@@ -1,6 +1,7 @@
 /**
  * Mentions de membres dans un message (« @Nom » inséré par public/js/mentions.js sous la forme
- * [url=<forum>/profile.php?id=N]@Nom[/url]) : membres à prévenir par message privé.
+ * [url=/membre/N]@Nom[/url], ou [url=<forum>/profile.php?id=N]@Nom[/url] dans les messages plus
+ * anciens) : membres à prévenir par message privé.
  */
 
 import type { PrivateRecipient } from '../domain/models.ts';
@@ -14,7 +15,7 @@ const escapeRegExp = (text: string): string => text.replace(/[.*+?^${}()|[\]\\/]
 /** Identifiants des membres mentionnés (sans doublon, dans l'ordre), hors l'auteur, au plus MAX_MENTIONS. */
 export function extractMentionIds(message: string, baseUrl: string, authorId: number): number[] {
 	const base = baseUrl !== '' ? `(?:${escapeRegExp(baseUrl)})?/?` : '/?';
-	const pattern = new RegExp(`\\[url=${base}profile\\.php\\?id=(\\d{1,10})\\]@[^[\\]]{1,25}\\[/url\\]`, 'g');
+	const pattern = new RegExp(`\\[url=${base}(?:profile\\.php\\?id=|membre/)(\\d{1,10})\\]@[^[\\]]{1,25}\\[/url\\]`, 'g');
 	const ids: number[] = [];
 	for (const match of message.matchAll(pattern)) {
 		const id = Number(match[1]);

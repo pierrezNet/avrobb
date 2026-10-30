@@ -77,7 +77,7 @@ describe('admin_bans.php', () => {
 		expect((await get(server, 6, '/admin_bans.php?add_ban=5')).body).toContain('est un modérateur');
 
 		const userOnly = await post(server, 6, '/admin_bans.php', { add_edit_ban: '1', mode: 'add', ban_user: 'Tessy' });
-		expect(userOnly.headers.location).toBe('admin_bans.php?done=added');
+		expect(userOnly.headers.location).toBe('/admin_bans.php?done=added');
 		const withIp = await post(server, 6, '/admin_bans.php', {
 			add_edit_ban: '1',
 			mode: 'add',
@@ -85,9 +85,9 @@ describe('admin_bans.php', () => {
 			ban_ip: '10.1',
 			ban_last_ip: '192.0.2.5',
 		});
-		expect(withIp.headers.location).toBe('admin_bans.php?done=added');
+		expect(withIp.headers.location).toBe('/admin_bans.php?done=added');
 		const ipOnly = await post(server, 6, '/admin_bans.php', { add_edit_ban: '1', mode: 'add', ban_ip: '198.51.100.7' });
-		expect(ipOnly.headers.location).toBe('admin_bans.php?done=added');
+		expect(ipOnly.headers.location).toBe('/admin_bans.php?done=added');
 		expect(fake.banLog).toEqual([
 			'add {"username":"Tessy","ip":null,"email":null,"message":null,"expire":null} by 6',
 			'add {"username":"Tessy","ip":"10.1 192.0.2.5","email":null,"message":null,"expire":null} by 6',
@@ -102,7 +102,7 @@ describe('admin_bans.php', () => {
 		expect((await get(server, 2, '/admin_bans.php?edit_ban=4')).body).toContain('name="ban_message" value="Au revoir"');
 		await post(server, 2, '/admin_bans.php', { add_edit_ban: '1', mode: 'edit', ban_id: '4', ban_user: 'Troll', ban_message: 'Non' });
 		const results = await get(server, 2, '/admin_bans.php?find_ban=&form%5Busername%5D=Tr*');
-		expect(results.body).toContain('href="admin_bans.php?del_ban=4"');
+		expect(results.body).toContain('href="/admin_bans.php?del_ban=4"');
 		expect((await get(server, 2, '/admin_bans.php?del_ban=4')).body).toContain('name="del_ban_comply"');
 		await post(server, 2, '/admin_bans.php?del_ban=4', { del_ban_comply: '1' });
 		expect(fake.banLog).toEqual(['update 4 {"username":"Troll","ip":null,"email":null,"message":"Non","expire":null}', 'remove 4']);

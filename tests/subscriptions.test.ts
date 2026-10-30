@@ -48,7 +48,7 @@ async function confirm(server: ForumApp, url: string) {
 		page,
 		res: await inject(server, {
 			method: 'POST',
-			url: `/${action}`,
+			url: action,
 			headers: { cookie: `${tessy}; ${csrf}`, 'content-type': 'application/x-www-form-urlencoded' },
 			payload: `csrf_token=${token}`,
 		}),
@@ -59,11 +59,11 @@ describe('abonnements', () => {
 	it('viewtopic propose un bouton POST selon l’abonnement', async () => {
 		app = await buildApp(fakeDeps(data()));
 		const res = await inject(app, { url: '/viewtopic.php?id=10', headers: { cookie: tessy } });
-		expect(res.body).toContain('action="misc.php?action=subscribe&amp;tid=10"');
+		expect(res.body).toContain('action="/misc.php?action=subscribe&amp;tid=10"');
 		app = await buildApp(fakeDeps(data({ subscribedTopics: [10] })));
 		const subscribed = await inject(app, { url: '/viewtopic.php?id=10', headers: { cookie: tessy } });
 		expect(subscribed.body).toContain('Vous suivez cette discussion');
-		expect(subscribed.body).toContain('action="misc.php?action=unsubscribe&amp;tid=10"');
+		expect(subscribed.body).toContain('action="/misc.php?action=unsubscribe&amp;tid=10"');
 		expect((await inject(app, '/viewtopic.php?id=10')).body).not.toContain('action=subscribe');
 	});
 
@@ -74,14 +74,14 @@ describe('abonnements', () => {
 		expect(page.body).toContain('Vous serez prévenu(e) par e-mail des nouvelles réponses');
 		expect(fake.subscribedTopics).toEqual([10]);
 		expect(res.statusCode).toBe(303);
-		expect(res.headers.location).toBe('viewtopic.php?id=10');
+		expect(res.headers.location).toBe('/sujet/10');
 	});
 
 	it('désabonnement d’un forum (lien des e-mails)', async () => {
 		const fake = data({ subscribedForums: [2] });
 		app = await buildApp(fakeDeps(fake));
 		const { res } = await confirm(app, '/misc.php?action=unsubscribe&fid=2');
-		expect(res.headers.location).toBe('viewforum.php?id=2');
+		expect(res.headers.location).toBe('/forum/2');
 		expect(fake.subscribedForums).toEqual([]);
 	});
 

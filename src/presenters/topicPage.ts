@@ -23,6 +23,7 @@ import {
 	type PostActionRights,
 	postActions,
 } from '../services/permissions.ts';
+import { forumPath, topicPath } from '../services/routes.ts';
 import { type SubjectSegment, subjectSegments } from '../services/subjectTags.ts';
 import type { ToolbarSettings } from '../services/toolbar.ts';
 import { userTitle } from '../services/userTitle.ts';
@@ -144,8 +145,9 @@ export interface TopicPageInput {
 }
 
 /** URL d'une page du sujet (la page 1 n'a pas de paramètre p, comme dans FluxBB). */
-export function topicUrl(topicId: number, page = 1): string {
-	return page > 1 ? `viewtopic.php?id=${topicId}&p=${page}` : `viewtopic.php?id=${topicId}`;
+/** Adresse d'une discussion (services/routes.ts) ; le sujet donne le slug. */
+export function topicUrl(topicId: number, page = 1, subject: string | null = null): string {
+	return topicPath(topicId, subject, page);
 }
 
 /** Sujet affiché, censure comprise. */
@@ -314,10 +316,10 @@ export function buildTopicPage(input: TopicPageInput): TopicPageView {
 		},
 		crumbs: crumbs(
 			{ label: lang.common.index, href: 'index.php' },
-			{ label: topic.forum.name, href: `viewforum.php?id=${topic.forum.id}` },
-			{ label: subject, href: topicUrl(topic.id) },
+			{ label: topic.forum.name, href: forumPath(topic.forum.id, topic.forum.name) },
+			{ label: subject, href: topicUrl(topic.id, 1, subject) },
 		),
-		pagination: paginationLinks(input.numPages, input.page, (page) => topicUrl(topic.id, page)),
+		pagination: paginationLinks(input.numPages, input.page, (page) => topicUrl(topic.id, page, subject)),
 		// Bouton « Répondre » seulement sans formulaire de réponse en bas de page (AvroBB).
 		replyUrl: reply === null && canReply(viewer, topic) ? `post.php?tid=${topic.id}` : null,
 		prefixesUrl: canEditSubjectPrefixes(viewer, topic) ? `topic_prefixes.php?id=${topic.id}` : null,

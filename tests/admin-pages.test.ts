@@ -84,7 +84,7 @@ describe('admin_pages.php', () => {
 		app = await buildApp(fakeDeps(fake));
 		expect((await inject(app, { url: '/admin_pages.php', headers: { cookie: cookies(5) } })).statusCode).toBe(403);
 		const list = await inject(app, { url: '/admin_pages.php', headers: { cookie: cookies(2) } });
-		expect(list.body).toContain('href="admin_pages.php?page=privacy"');
+		expect(list.body).toContain('href="/admin_pages.php?page=privacy"');
 		expect(list.body).toContain('Texte par défaut');
 		const form = await inject(app, { url: '/admin_pages.php?page=terms', headers: { cookie: cookies(2) } });
 		expect(form.body).toContain('value="Termes et règles"');
@@ -107,13 +107,13 @@ describe('admin_pages.php', () => {
 			intro: 'Bienvenue',
 			body: '## Règle <1>\nSoyez sympa.\n[Aide](faq.php)',
 		});
-		expect(saved.headers.location).toBe('admin_pages.php?page=terms&done=saved');
+		expect(saved.headers.location).toBe('/admin_pages.php?page=terms&done=saved');
 		expect(fake.configLog).toEqual(['replace o_page_terms']);
 		const stored = JSON.parse(fake.configValues?.get('o_page_terms') ?? '{}');
 		expect(stored).toMatchObject({ title: 'Charte', intro: 'Bienvenue', updatedAt: NOW });
 
 		const reset = await send(app, 2, { page: 'terms', reset: '1' });
-		expect(reset.headers.location).toBe('admin_pages.php?page=terms&done=reset');
+		expect(reset.headers.location).toBe('/admin_pages.php?page=terms&done=reset');
 		expect(fake.configValues?.has('o_page_terms')).toBe(false);
 	});
 
@@ -130,7 +130,7 @@ describe('admin_pages.php', () => {
 		const page = await inject(app, '/terms.php');
 		expect(page.body).toContain('<h1 class="page-title">Charte</h1>');
 		expect(page.body).toContain('<h3 class="forum-row__name">Règle &lt;1&gt;</h3>');
-		expect(page.body).toContain('<a href="faq.php">Aide</a>');
+		expect(page.body).toContain('<a href="/faq">Aide</a>');
 		expect(page.body).toContain('Dernière mise à jour : ');
 		expect(page.body).not.toContain('Respect et courtoisie');
 	});

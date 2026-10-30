@@ -106,7 +106,7 @@ describe('message privé au membre mentionné', () => {
 		expect(rows.map((row) => row.ownerId)).toEqual([5]);
 		expect(rows[0]?.subject).toBe('Tessy vous a mentionné');
 		expect(rows[0]?.message).toMatch(
-			/^\[b\]Tessy\[\/b\] vous a mentionné dans la discussion \[url=http:\/\/forum\.test\/viewtopic\.php\?pid=\d+#p\d+\]Vol de nuit\[\/url\]\.$/,
+			/^\[b\]Tessy\[\/b\] vous a mentionné dans la discussion \[url=\/message\/\d+#p\d+\]Vol de nuit\[\/url\]\.$/,
 		);
 	});
 

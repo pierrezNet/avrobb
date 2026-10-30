@@ -191,7 +191,7 @@ describe('GET /search.php', () => {
 		if (app === undefined) throw new Error('application non démarrée');
 		const first = await inject(app, { url, headers });
 		if (first.statusCode !== 302) return first;
-		return inject(app, { url: `/${first.headers.location}`, headers });
+		return inject(app, { url: String(first.headers.location), headers });
 	};
 
 	it('affiche le formulaire avec les forums à cocher', async () => {
@@ -209,7 +209,7 @@ describe('GET /search.php', () => {
 		expect(res.body).toContain('Message <strong>1</strong> <span class="smiley"');
 		expect(res.body).toContain('Messages contenant « vintage »');
 		expect(res.body).toContain(
-			'search.php?action=search&amp;keywords=vintage&amp;author=&amp;forums=&amp;search_in=0&amp;sort_by=0&amp;sort_dir=ASC&amp;show_as=posts',
+			'/recherche?action=search&amp;keywords=vintage&amp;author=&amp;forums=&amp;search_in=0&amp;sort_by=0&amp;sort_dir=ASC&amp;show_as=posts',
 		);
 		expect(res.body.match(/class="post__number"/g)).toHaveLength(3);
 	});
@@ -226,7 +226,7 @@ describe('GET /search.php', () => {
 		const res = await inject(app, '/search.php?action=show_user_topics&user_id=6');
 		expect(res.body).toContain('Discussions de valdefsx');
 		expect(res.body.match(/<h3 class="forum-row__name/g)).toHaveLength(30);
-		const searchId = /href="search\.php\?search_id=(\d+)&amp;p=2"/.exec(res.body)?.[1];
+		const searchId = /href="\/recherche\?search_id=(\d+)&amp;p=2"/.exec(res.body)?.[1];
 		expect(searchId).toBeDefined();
 		// La page 2 relit les résultats mémorisés (même propriétaire : l'invité, par son IP).
 		const page2 = await inject(app, `/search.php?search_id=${searchId}&p=2`);

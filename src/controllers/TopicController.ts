@@ -125,7 +125,7 @@ export class TopicController {
 				activeNav: 'index',
 				footer: { kind: 'viewtopic', topic, page },
 				allowIndex: true,
-				canonicalUrl: topicUrl(topic.id, page),
+				canonicalUrl: topicUrl(topic.id, page, view.topic.subject),
 				// Référencement : extrait du premier message de la page, et sa première image pour le partage.
 				description: plainExcerpt(censor !== null ? censor(firstMessage) : firstMessage),
 				image: firstImageUrl(posts.map((post) => post.message)),

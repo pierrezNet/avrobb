@@ -72,8 +72,8 @@ const send = (server: ForumApp, userId: number, fields: Record<string, string>) 
 describe('topic_prefixes.php', () => {
 	it('lien sur viewtopic pour l’auteur et les modérateurs seulement', async () => {
 		const { server } = await start();
-		expect((await get(server, 3, '/viewtopic.php?id=10')).body).toContain('href="topic_prefixes.php?id=10"');
-		expect((await get(server, 5, '/viewtopic.php?id=10')).body).toContain('href="topic_prefixes.php?id=10"');
+		expect((await get(server, 3, '/viewtopic.php?id=10')).body).toContain('href="/topic_prefixes.php?id=10"');
+		expect((await get(server, 5, '/viewtopic.php?id=10')).body).toContain('href="/topic_prefixes.php?id=10"');
 		expect((await get(server, 7, '/viewtopic.php?id=10')).body).not.toContain('topic_prefixes.php');
 		expect((await get(server, 7, '/topic_prefixes.php?id=10')).statusCode).toBe(403);
 	});
@@ -84,7 +84,7 @@ describe('topic_prefixes.php', () => {
 		expect(form.body).toContain('name="prefix[MSFS]" value="1" checked');
 		expect(form.body).toContain('name="prefix[Résolu]" value="1">');
 		const res = await send(server, 3, { 'prefix[MSFS]': '1', 'prefix[Résolu]': '1' });
-		expect(res.headers.location).toBe('viewtopic.php?id=10');
+		expect(res.headers.location).toBe('/sujet/10');
 		expect(fake.subjectUpdates).toEqual([{ topicId: 10, subject: '[MSFS][Résolu] Vol de nuit' }]);
 	});
 

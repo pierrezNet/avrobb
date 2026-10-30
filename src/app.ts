@@ -52,7 +52,7 @@ import { ensureCsrfToken, isValidCsrf } from './http/csrf.ts';
 import { type FormBody, FormError } from './http/forms.ts';
 import { type LayoutDeps, renderBlock, renderMessage, renderMinimalMessage } from './http/layout.ts';
 import { silentLogger } from './http/log.ts';
-import { createRouter, type ForumApp, serveStoredFiles, useSecurityHeaders } from './http/server.ts';
+import { createRouter, type ForumApp, type Router, serveStoredFiles, useSecurityHeaders } from './http/server.ts';
 import { checkAccess, purgeOnline, type SessionDeps, startSession, trackCookieName as trackCookieOf } from './http/session.ts';
 import { createViews, type PrecompiledTemplates } from './http/views.ts';
 import type { AccountStore } from './repositories/AccountRepository.ts';
@@ -95,6 +95,7 @@ import type { UsersInfoReader } from './repositories/UsersInfoLoader.ts';
 import type { MailTemplateReader } from './services/mail.ts';
 import type { OAuthProviderId } from './services/oauth.ts';
 import { type BannedWriteQuery, canWriteWhileBanned, readOnlyViewer } from './services/permissions.ts';
+import { CLEAN_STATIC_PATHS, idFromSegment, publicPath } from './services/routes.ts';
 
 export type { ForumApp } from './http/server.ts';
 
@@ -182,9 +183,9 @@ export interface AppDeps extends Omit<LayoutDeps, 'views'>, SessionDeps {
 export async function buildApp(input: AppDeps): Promise<ForumApp> {
 	const logger = input.logger ?? silentLogger;
 
-	// url('profile.php?id=2') dans les vues : point de passage unique des liens internes, pour
-	// pouvoir passer à des URL propres sans retoucher chaque gabarit.
-	const url = (target: string): string => target;
+	// url('profile.php?id=2') dans les vues : point de passage unique des liens internes, traduits
+	// en adresses publiques (« /membre/2 ») par services/routes.ts.
+	const url = publicPath;
 	const asset = input.assetUrl;
 	const deps = { ...input, views: createViews(input.templates, { url, asset }) };
 
@@ -193,7 +194,9 @@ export async function buildApp(input: AppDeps): Promise<ForumApp> {
 	// Les ressources de public/assets/ sont servies par Workers Static Assets, sans passer par ici.
 	// Fichiers envoyés : une semaine (avatars et en-tête changent d'adresse quand ils changent).
 	if (deps.files !== undefined) serveStoredFiles(app, '/img/', deps.files, 'public, max-age=604800');
-	const router = createRouter(app, { logger, onError: (error, request, reply) => handleError(error, request, reply, deps) });
+	const router = withCleanPaths(
+		createRouter(app, { logger, onError: (error, request, reply) => handleError(error, request, reply, deps) }),
+	);
 
 	// Équivalent de common.php : réglages, visiteur et présence, maintenance, bannissements. Déclaré
 	// par route (et non globalement) pour que les fichiers statiques ne coûtent aucune requête SQL.
@@ -417,7 +420,46 @@ export async function buildApp(input: AppDeps): Promise<ForumApp> {
 	const topics = new TopicController({ ...deps, topicViews: deps.topicWriter, trackCookieName });
 	router.get<{ Querystring: TopicQuery }>('/viewtopic.php', [authenticate], topics.show);
 
+	// Adresses propres à numéro (services/routes.ts) : le numéro et la page deviennent `id`/`pid` et
+	// `p`, comme dans les anciennes adresses ; le slug n'est pas vérifié (seul le numéro compte).
+	const byId =
+		(name: 'id' | 'pid') =>
+		(params: Readonly<Record<string, string>>): Record<string, string> | null => {
+			const id = idFromSegment(params.ref);
+			if (id === null) return null;
+			if (params.page === undefined) return { [name]: String(id) };
+			return /^\d{1,6}$/.test(params.page) ? { [name]: String(id), p: params.page } : null;
+		};
+	router.get<{ Querystring: ForumQuery }>('/forum/:ref', [authenticate], forums.show, byId('id'));
+	router.get<{ Querystring: ForumQuery }>('/forum/:ref/page/:page', [authenticate], forums.show, byId('id'));
+	router.get<{ Querystring: TopicQuery }>('/sujet/:ref', [authenticate], topics.show, byId('id'));
+	router.get<{ Querystring: TopicQuery }>('/sujet/:ref/page/:page', [authenticate], topics.show, byId('id'));
+	router.get<{ Querystring: TopicQuery }>('/message/:ref', [authenticate], topics.show, byId('pid'));
+	router.get<{ Querystring: ProfileQuery }>('/membre/:ref', [authenticate], profiles.show, byId('id'));
+
 	return app;
+}
+
+/**
+ * Routeur qui enregistre aussi l'adresse propre d'une page sans paramètre (« /aide » pour
+ * help.php, services/routes.ts). L'ancienne adresse reste servie, sans redirection : plus aucun
+ * lien ne la produit, et l'URL canonique désigne la nouvelle.
+ */
+function withCleanPaths(router: Router): Router {
+	const clean = new Map(CLEAN_STATIC_PATHS.map(([path, legacy]) => [`/${legacy}`, path]));
+	return {
+		get: (path, preHandlers, handler, params) => {
+			router.get(path, preHandlers, handler, params);
+			const alias = clean.get(path);
+			if (alias !== undefined) router.get(alias, preHandlers, handler, params);
+		},
+		post: (path, preHandlers, handler, params) => {
+			router.post(path, preHandlers, handler, params);
+			const alias = clean.get(path);
+			if (alias !== undefined) router.post(alias, preHandlers, handler, params);
+		},
+		notFound: (preHandlers, handler) => router.notFound(preHandlers, handler),
+	};
 }
 
 /**

@@ -82,7 +82,7 @@ export class AuthController {
 		if (credentials === undefined) return renderMessage(request, reply, this.deps, 404, this.deps.page.lang.common.badRequest);
 		const limited = await this.#rateLimited(request, reply);
 		if (limited !== null) return limited;
-		if (!request.viewer.isGuest) return reply.redirect('/index.php');
+		if (!request.viewer.isGuest) return reply.redirect('/');
 
 		const now = this.deps.page.clock();
 		const pkce = await createPkce();
@@ -139,7 +139,7 @@ export class AuthController {
 		setSessionCookie(reply, this.deps, { userId: account.id, version: account.sessionVersion }, now);
 		const { timeoutVisit } = request.board;
 		setForumCookie(reply, this.deps.cookie, trackCookieName(this.deps.cookie), '', now + timeoutVisit, now, timeoutVisit);
-		return reply.redirect(`/${attempt.returnTo}`);
+		return reply.redirect(attempt.returnTo);
 	};
 
 	/** Nouveau compte : pseudo du fournisseur rendu unique ; administrateur s'il figure dans ADMIN_ACCOUNTS. */

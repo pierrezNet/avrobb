@@ -2,7 +2,7 @@
 {% macro article(post, subject, lang) %}
 <article id="p{{ post.id }}" class="post{% if post.isFirstPost %} post--first{% endif %}" aria-labelledby="p{{ post.id }}-title">
 	<h2 class="post__meta" id="p{{ post.id }}-title">
-		<a class="post__date" href="{{ post.permalink }}">{{ post.postedAt }}</a>
+		<a class="post__date" href="{{ url(post.permalink) }}">{{ post.postedAt }}</a>
 		<span class="post__number">#{{ post.number }}</span>
 	</h2>
 

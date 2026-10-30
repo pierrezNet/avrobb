@@ -78,7 +78,7 @@ describe('admin_reports.php', () => {
 		const res = await inject(app, { url: '/admin_reports.php', headers: { cookie: cookies(5) } });
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('Hors sujet<br>&lt;b&gt;vraiment&lt;/b&gt;');
-		expect(res.body).toContain('href="viewtopic.php?pid=101#p101">Message n°101</a>');
+		expect(res.body).toContain('href="/message/101#p101">Message n°101</a>');
 		expect(res.body).toContain('name="zap_id" value="2"');
 		expect(res.body).not.toContain('name="zap_id" value="1"');
 		expect(res.body).toContain('Utilisateur supprimé');
@@ -96,7 +96,7 @@ describe('admin_reports.php', () => {
 			headers: { cookie: cookies(5), 'content-type': 'application/x-www-form-urlencoded' },
 			payload: body.toString(),
 		});
-		expect(res.headers.location).toBe('admin_reports.php?done=zapped');
+		expect(res.headers.location).toBe('/admin_reports.php?done=zapped');
 		expect(fake.reportList?.find((r) => r.id === 2)?.zapped).toEqual({ at: NOW, by: { id: 5, username: 'modo' } });
 	});
 });

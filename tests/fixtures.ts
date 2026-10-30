@@ -1107,8 +1107,9 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			},
 		},
 		sitemap: {
-			listForums: async () => (data.forumInfos ?? []).map((forum) => ({ id: forum.id, lastPost: 1_782_800_000 })),
-			listTopics: async (limit) => data.topics.slice(0, limit).map((topic) => ({ id: topic.id, lastPost: 1_782_800_000 })),
+			listForums: async () => (data.forumInfos ?? []).map((forum) => ({ id: forum.id, title: forum.name, lastPost: 1_782_800_000 })),
+			listTopics: async (limit) =>
+				data.topics.slice(0, limit).map((topic) => ({ id: topic.id, title: topic.subject, lastPost: 1_782_800_000 })),
 		},
 		homeActivity: {
 			listHotTopics: async (_groupId, _since, limit) => (data.hotTopics ?? []).slice(0, limit),

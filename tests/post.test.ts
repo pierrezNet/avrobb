@@ -220,7 +220,7 @@ describe('GET /post.php', () => {
 		const res = await inject(app, { url: '/post.php?tid=10', headers: { cookie: memberCookie } });
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('<title>Répondre / Forum de test</title>');
-		expect(res.body).toContain('action="post.php?action=post&amp;tid=10"');
+		expect(res.body).toContain('action="/post.php?action=post&amp;tid=10"');
 		expect(res.body).toContain('Postez un « vintage »');
 		expect(res.body).toContain('Résumé de la discussion');
 		expect(res.body).toContain('name="subscribe"');
@@ -309,7 +309,7 @@ describe('POST /post.php', () => {
 		app = await buildApp(fakeDeps(fake));
 		const res = await submit(app, '/post.php?tid=10', { req_message: 'Superbe avion www.pilote-virtuel.com', subscribe: '1' });
 		expect(res.statusCode).toBe(302);
-		expect(res.headers.location).toBe('viewtopic.php?pid=901#p901');
+		expect(res.headers.location).toBe('/message/901#p901');
 		expect(fake.savedReplies).toEqual([
 			expect.objectContaining({
 				topicId: 10,
@@ -346,7 +346,7 @@ describe('POST /post.php', () => {
 		expect(fake.savedTopics).toBeUndefined();
 		const res = await submit(app, '/post.php?fid=2', { ...fields, no_tag_ok: '1' }, '');
 		expect(res.statusCode).toBe(302);
-		expect(res.headers.location).toBe('viewtopic.php?pid=901#p901');
+		expect(res.headers.location).toBe('/message/901#p901');
 		expect(fake.savedTopics).toEqual([
 			expect.objectContaining({
 				forumId: 2,

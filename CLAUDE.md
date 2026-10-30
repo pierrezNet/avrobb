@@ -15,7 +15,7 @@ Cible : **100 % Cloudflare**. Un Worker (Hono), D1 (SQLite), R2 (fichiers), Stat
 - `FAILLES_PHP.md` (non versionné) : failles du PHP d'origine, liste de contrôle à ne pas reproduire.
 - Projet voisin sur le même modèle (Workers + D1 + Hono) : `../donnetonpoint`.
 
-> **Transition en cours** : lots 1 à 6 terminés (héritage PV retiré, Hono, base D1, Worker et R2, SSO, images et e-mails). Le forum tourne sous `wrangler dev`. Ce fichier décrit la **cible** : les URL propres (lot 6 bis), les cookies `__Host-`, la commande `npm run deploy` et le déploiement par GitHub Actions (lot 7) restent à faire.
+> **Transition en cours** : lots 1 à 6 bis terminés (héritage PV retiré, Hono, base D1, Worker et R2, SSO, images et e-mails, URL propres). Le forum tourne sous `wrangler dev`. Ce fichier décrit la **cible** : les cookies `__Host-`, la commande `npm run deploy` et le déploiement par GitHub Actions (lot 7) restent à faire.
 
 ## Commandes
 
@@ -81,7 +81,7 @@ Principes :
 - **Mise en page** : un contrôleur rend sa page avec `renderPage(…, 'page.njk', options, view)` ; `options` (`PageOptions`) décrit le titre, l'onglet actif et le pied.
 - **Configuration du forum** : table `config` en D1, lue par `ConfigLoader` avec un cache par isolat de courte durée (30 s) ; une modification dans l'administration est donc visible partout en moins d'une minute.
 - **Textes** : tous dans `src/lang/fr/` (un fichier par page), aucune chaîne en dur dans les vues ou les presenters. Gabarits d'e-mails compris.
-- **URL** : on garde pour l'instant celles héritées de FluxBB (`viewtopic.php?id=…`), générées par `url()` dans les vues ; le passage à des URL propres est à décider avant la mise en ligne (voir `TODO.md`).
+- **URL** : adresses propres (`/sujet/4-premier-sujet`, `/forum/2-avrobb`, `/membre/3`, `/aide`…), définies **uniquement** dans `services/routes.ts`. Le code manipule des cibles logiques héritées de FluxBB (`viewtopic.php?id=4`) que `publicPath()` traduit : `url()` dans les vues, `reply.redirect()`, BBCode, e-mails, flux, plan du site. Pour un lien avec slug, `topicPath()`/`forumPath()` avec le titre **censuré**. Les pages d'action (rédaction, administration, messagerie, profil en modification) gardent leur `.php`. Tout lien est absolu (« / ») : une adresse relative casse depuis `/sujet/…`.
 
 ## Comptes et session
 

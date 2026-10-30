@@ -20,9 +20,9 @@ const deps = (config = {}, readBoard = true) =>
 
 describe('pages d’information', () => {
 	it.each([
-		['/terms.php', 'Termes et règles', 'Droits d’auteur'],
-		['/privacy.php', 'Politique de confidentialité', 'Vos droits'],
-		['/faq.php', 'Aide', 'Mentionner un membre'],
+		['/conditions', 'Termes et règles', 'Droits d’auteur'],
+		['/confidentialite', 'Politique de confidentialité', 'Vos droits'],
+		['/faq', 'Aide', 'Mentionner un membre'],
 	])('%s : rubriques, contact, sans formulaire', async (url, title, section) => {
 		app = await buildApp(deps());
 		const res = await inject(app, url);
@@ -31,15 +31,15 @@ describe('pages d’information', () => {
 		expect(res.body).toContain(`<h3 class="forum-row__name">${section}</h3>`);
 		expect(res.body).toContain('href="mailto:');
 		expect(res.body).not.toContain('<textarea');
-		expect(res.body).toContain(`<a href="${url.slice(1)}" aria-current="page">`);
+		expect(res.body).toContain(`<a href="${url}" aria-current="page">`);
 	});
 
 	it('pied de page : les trois pages, plus de liste « Atteindre »', async () => {
 		app = await buildApp(deps());
 		const res = await inject(app, '/index.php');
-		expect(res.body).toContain('<a href="terms.php">Termes et règles</a>');
-		expect(res.body).toContain('<a href="privacy.php">Politique de confidentialité</a>');
-		expect(res.body).toContain('<a href="faq.php">Aide</a>');
+		expect(res.body).toContain('<a href="/conditions">Termes et règles</a>');
+		expect(res.body).toContain('<a href="/confidentialite">Politique de confidentialité</a>');
+		expect(res.body).toContain('<a href="/faq">Aide</a>');
 		expect(res.body).not.toContain('qjump');
 	});
 
@@ -70,6 +70,6 @@ describe('stats.php', () => {
 		expect(res.body).toContain('<h1 class="page-title">Statistiques</h1>');
 		expect(res.body).toContain('Nombre total de messages');
 		expect(res.body).toContain('Membres en ligne');
-		expect(res.body).toContain('<a href="stats.php" aria-current="page">Statistiques</a>');
+		expect(res.body).toContain('<a href="/statistiques" aria-current="page">Statistiques</a>');
 	});
 });

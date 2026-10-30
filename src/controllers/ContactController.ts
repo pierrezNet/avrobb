@@ -22,6 +22,7 @@ import type { MailTemplateReader } from '../services/mail.ts';
 import { fillTemplate } from '../services/mail.ts';
 import { isAnyModerator } from '../services/permissions.ts';
 import { safeRedirect } from '../services/redirects.ts';
+import { absoluteUrl, postPath } from '../services/routes.ts';
 import { positiveInt } from './params.ts';
 
 export interface ContactControllerDeps extends LayoutDeps {
@@ -130,7 +131,7 @@ export class ContactController {
 						subject: fillTemplate(template.subject, { forum_id: String(target.forumId), topic_subject: target.subject }),
 						text: fillTemplate(template.body, {
 							username: viewer.username,
-							post_url: `${config.baseUrl}/viewtopic.php?pid=${target.postId}#p${target.postId}`,
+							post_url: absoluteUrl(config.baseUrl, postPath(target.postId)),
 							reason,
 							board_mailer: config.boardTitle,
 						}),

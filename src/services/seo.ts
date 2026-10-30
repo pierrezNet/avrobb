@@ -45,14 +45,24 @@ const DISALLOWED = [
 	'/delete.php',
 	'/moderate.php',
 	'/misc.php',
-	'/search.php',
-	'/login.php',
+	'/recherche',
+	'/connexion',
+	'/auth/',
+	'/profile.php',
 	'/pms_',
 	'/draft_',
 	'/member_suggest.php',
 	'/topic_prefixes.php',
 	'/reputation.php',
 	'/extern.php',
+	// Anciennes adresses des pages publiques, toujours servies : seules les adresses propres comptent.
+	'/index.php',
+	'/viewforum.php',
+	'/viewtopic.php',
+	'/userlist.php',
+	'/search.php',
+	'/gallery.php',
+	'/login.php',
 ];
 
 export function robotsTxt(baseUrl: string): string {

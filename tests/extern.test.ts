@@ -88,7 +88,7 @@ describe('GET /extern.php', () => {
 		const res = await inject(app, '/extern.php?action=feed&type=rss&fid=2');
 		expect(res.headers['content-type']).toBe('application/xml; charset=utf-8');
 		expect(res.body).toContain('<title><![CDATA[Forum de test / Captures]]></title>');
-		expect(res.body).toContain('<link>http://forum.test/viewtopic.php?id=10&amp;action=new</link>');
+		expect(res.body).toContain('<link>http://forum.test/sujet/10-sujet-10?action=new</link>');
 		expect(res.body).toContain('<description><![CDATA[<p><strong>Dernier</strong></p>]]></description>');
 		expect(res.body).not.toContain('admin@example.test');
 	});
@@ -103,7 +103,7 @@ describe('GET /extern.php', () => {
 
 		const html = await inject(app, '/extern.php');
 		expect(html.body).toBe(
-			'<li><a href="http://forum.test/viewtopic.php?id=10&amp;action=new" title="Sujet &lt;10&gt;">Sujet &lt;10&gt;</a></li>\n',
+			'<li><a href="http://forum.test/sujet/10-sujet-10?action=new" title="Sujet &lt;10&gt;">Sujet &lt;10&gt;</a></li>\n',
 		);
 		expect((await inject(app, '/extern.php?action=feed&tid=99')).body).toBe('Erreur. Le lien que vous avez suivi est incorrect ou périmé.');
 	});

@@ -24,6 +24,7 @@ import type { MailMessage, MailTemplateReader } from '../services/mail.ts';
 import { fillTemplate } from '../services/mail.ts';
 import { isAnyModerator } from '../services/permissions.ts';
 import { canEditPrivateMessage, parseUsernames, validateSend } from '../services/privateMessages.ts';
+import { absoluteUrl } from '../services/routes.ts';
 import { privateMessagesDenied } from './PrivateMessageController.ts';
 import { positiveInt } from './params.ts';
 
@@ -230,7 +231,7 @@ export class PrivateMessageSendController {
 				board_title: config.boardTitle,
 				sender: viewer.username,
 				message: bbcodeToEmail(message, config.baseUrl, config.indentSpaces),
-				pm_url: `${config.baseUrl}/pms_view.php?tid=${sharedId}&mid=${copies.get(recipient.id) ?? 0}&box=inbox`,
+				pm_url: absoluteUrl(config.baseUrl, `pms_view.php?tid=${sharedId}&mid=${copies.get(recipient.id) ?? 0}&box=inbox`),
 				board_mailer: config.boardTitle,
 			};
 			mails.push({ to: recipient.email, subject: fillTemplate(template.subject, values), text: fillTemplate(template.body, values) });

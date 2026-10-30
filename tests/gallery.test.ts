@@ -127,7 +127,7 @@ describe('GET /gallery.php', () => {
 		expect(res.body).toContain('value="image 1"');
 		expect(res.body).toContain('Image 10');
 		expect(res.body).not.toContain('Image 2&lt;');
-		expect(res.body).toContain('href="gallery.php?mine=1&amp;q=image%201"');
+		expect(res.body).toContain('href="/galerie?mine=1&amp;q=image+1"');
 		expect(res.body).toContain('<meta name="robots" content="noindex');
 		const none = await get(app, 6, '/gallery.php?mine=1&q=zzz');
 		expect(none.body).toContain('Aucune image ne correspond à cette recherche.');
@@ -140,9 +140,9 @@ describe('GET /gallery.php', () => {
 		expect(res.statusCode).toBe(200);
 		expect(res.body.match(/class="gallery__item"/g)).toHaveLength(20);
 		expect(res.body).toContain('&lt;b&gt;Image 1&lt;/b&gt;');
-		expect(res.body).toContain('src="img/gallery/mini_1705145503.jpg"');
+		expect(res.body).toContain('src="/img/gallery/mini_1705145503.jpg"');
 		expect(res.body).toContain('<em>Belle</em> vue');
-		expect(res.body).toContain('href="gallery.php?p=2"');
+		expect(res.body).toContain('href="/galerie?p=2"');
 		expect(res.body).not.toContain('info=new');
 		expect(res.body).not.toContain('option=del');
 	});
@@ -151,15 +151,15 @@ describe('GET /gallery.php', () => {
 		app = await buildApp(fakeDeps(data()));
 		const res = await get(app, 3, '/gallery.php?mine=1');
 		expect(res.body.match(/class="gallery__item"/g)).toHaveLength(1);
-		expect(res.body).toContain('href="gallery.php?mine=1" aria-current="page"');
-		expect(res.body).toContain('href="gallery.php?info=modo&amp;option=del&amp;id=1"');
+		expect(res.body).toContain('href="/galerie?mine=1" aria-current="page"');
+		expect(res.body).toContain('href="/galerie?info=modo&amp;option=del&amp;id=1"');
 	});
 
 	it('modérateur : liens d’envoi, de modération et de suppression', async () => {
 		app = await buildApp(fakeDeps(data()));
 		const res = await get(app, 5, '/gallery.php?info=modo');
-		expect(res.body).toContain('href="gallery.php?info=new"');
-		expect(res.body).toContain('href="gallery.php?info=modo"');
+		expect(res.body).toContain('href="/galerie?info=new"');
+		expect(res.body).toContain('href="/galerie?info=modo"');
 		expect(res.body.match(/option=del/g)).toHaveLength(20);
 	});
 
@@ -204,7 +204,7 @@ describe('POST /gallery.php', () => {
 			},
 		);
 		expect(res.statusCode).toBe(303);
-		expect(res.headers.location).toBe('gallery.php?done=added');
+		expect(res.headers.location).toBe('/galerie?done=added');
 		expect(fake.galleryFileLog).toEqual([`save ${NOW}.png ${png.length} ${png.length} -`]);
 		expect(fake.galleryImages?.[0]).toMatchObject({ title: 'Vol de nuit', userId: 3, addedAt: NOW, extension: '.png' });
 	});
@@ -223,7 +223,7 @@ describe('POST /gallery.php', () => {
 				req_file_thumb: ['vol.webp', webp(150, 112)],
 			},
 		);
-		expect(res.headers.location).toBe('gallery.php?done=added');
+		expect(res.headers.location).toBe('/galerie?done=added');
 		expect(fake.galleryFileLog).toEqual([`save ${NOW}.webp 30 30 30`]);
 		expect(fake.galleryImages?.[0]).toMatchObject({ extension: '.webp' });
 	});
@@ -283,7 +283,7 @@ describe('POST /gallery.php', () => {
 				req_file: ['c.png', png],
 			},
 		);
-		expect(res.headers.location).toBe('gallery.php?info=pick&done=added');
+		expect(res.headers.location).toBe('/galerie?info=pick&done=added');
 		expect(fake.galleryFileLog).toEqual([`save ${NOW}.png ${png.length} ${png.length} -`]);
 
 		const picker = await get(app, 3, '/gallery.php?info=pick&done=added');
@@ -303,12 +303,12 @@ describe('POST /gallery.php', () => {
 			{ titre: 'Cockpit', description: 'Vue' },
 			{ req_file: ['c.png', png] },
 		);
-		expect(res.headers.location).toBe('gallery.php?info=pick&done=added&embed=1');
+		expect(res.headers.location).toBe('/galerie?info=pick&done=added&embed=1');
 
 		const picker = await get(app, 3, '/gallery.php?info=pick&done=added&embed=1');
 		expect(picker.body).not.toContain('site-header');
 		expect(picker.body).toContain('<input type="hidden" name="embed" value="1">');
-		expect(picker.body).toContain('action="gallery.php?info=new&amp;from=pick&amp;embed=1"');
+		expect(picker.body).toContain('action="/galerie?info=new&amp;from=pick&amp;embed=1"');
 		expect(picker.body).toMatch(/name="pick" value="\[b\]Cockpit\[\/b\][^"]*"[^>]*checked/);
 		expect(picker.body).not.toContain('data-insert=');
 	});
@@ -335,7 +335,7 @@ describe('POST /gallery.php', () => {
 		app = await buildApp(fakeDeps(fake));
 		expect((await get(app, 3, '/gallery.php?info=modo&option=del&id=2')).statusCode).toBe(403);
 		const confirm = await get(app, 3, '/gallery.php?info=modo&option=del&id=1');
-		expect(confirm.body).toContain('action="gallery.php?info=modo&amp;option=del&amp;id=1"');
+		expect(confirm.body).toContain('action="/galerie?info=modo&amp;option=del&amp;id=1"');
 
 		const body = new URLSearchParams({ csrf_token: csrfToken(CSRF_SECRET, SEED, 3) });
 		const res = await inject(app, {
@@ -344,7 +344,7 @@ describe('POST /gallery.php', () => {
 			headers: { cookie: cookies(3), 'content-type': 'application/x-www-form-urlencoded' },
 			payload: body.toString(),
 		});
-		expect(res.headers.location).toBe('gallery.php?done=deleted');
+		expect(res.headers.location).toBe('/galerie?done=deleted');
 		expect(fake.galleryImages?.some((i) => i.id === 1)).toBe(false);
 		expect(fake.galleryFileLog).toEqual(['delete 1705145503.jpg']);
 	});

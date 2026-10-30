@@ -6,6 +6,7 @@
 import type { Report, Viewer } from '../domain/models.ts';
 import type { Lang } from '../lang/fr/index.ts';
 import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
+import { forumPath } from '../services/routes.ts';
 
 export interface ReportView {
 	id: number;
@@ -37,7 +38,9 @@ function reportView(report: Report, input: { viewer: Viewer; lang: Lang; dateWor
 				? { href: `profile.php?id=${report.reporter.id}`, label: report.reporter.username }
 				: { href: null, label: t.deletedUser },
 		location: [
-			report.forum !== null ? { href: `viewforum.php?id=${report.forum.id}`, label: report.forum.name } : { href: null, label: t.deleted },
+			report.forum !== null
+				? { href: forumPath(report.forum.id, report.forum.name), label: report.forum.name }
+				: { href: null, label: t.deleted },
 			report.topic !== null
 				? { href: `viewtopic.php?id=${report.topic.id}`, label: report.topic.subject }
 				: { href: null, label: t.deleted },

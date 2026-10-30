@@ -12,6 +12,7 @@ import { type DateWords, formatTime, viewerTimeSettings } from '../services/date
 import { lastImageUrl, projectShares } from '../services/homeActivity.ts';
 import { mobileVariantUrl } from '../services/imageVariants.ts';
 import { niceNumber } from '../services/numberFormat.ts';
+import { forumPath } from '../services/routes.ts';
 import { readableOn, type SubjectSegment, subjectSegments } from '../services/subjectTags.ts';
 import { forumHasNewPosts, type TrackedTopics } from '../services/trackedTopics.ts';
 import { type ProjectLinkView, projectLinkViews } from './projectLinks.ts';
@@ -107,7 +108,7 @@ export function buildIndexPage(input: IndexPageInput): IndexPageView {
 			return {
 				id: forum.id,
 				name: forum.name,
-				href: forum.redirectUrl ?? `viewforum.php?id=${forum.id}`,
+				href: forum.redirectUrl ?? forumPath(forum.id, forum.name),
 				isRedirect,
 				descriptionHtml: forum.descriptionHtml,
 				links: projectLinkViews(forum.links, lang),
@@ -154,7 +155,7 @@ export function buildIndexPage(input: IndexPageInput): IndexPageView {
 		hotTopics: input.hotTopics.map((topic) => {
 			const image = lastImageUrl(input.hotTopicImages.get(topic.id) ?? '');
 			return {
-				href: topicUrl(topic.id),
+				href: topicUrl(topic.id, 1, topic.subject),
 				subject: subjectSegments(topic.subject, config.subjectTags),
 				subjectText: topic.subject,
 				// Variante mobile (640 px) des images du forum : plus légère pour une vignette.

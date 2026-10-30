@@ -10,6 +10,7 @@ import type { Censor } from '../services/censor.ts';
 import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
 import { forumNumberFormat } from '../services/numberFormat.ts';
 import { isAnyModerator } from '../services/permissions.ts';
+import { forumPath, topicPath } from '../services/routes.ts';
 import type { SearchOutcome, SearchType, ShowAs, SortBy } from '../services/search.ts';
 import type { TrackedTopics } from '../services/trackedTopics.ts';
 import { buildTopicRow, type TopicRowView } from './forumPage.ts';
@@ -156,7 +157,7 @@ export function buildSearchResults(input: SearchResultsInput): SearchResultsView
 	const topics = input.topics.map((topic) => ({
 		...buildTopicRow(topic, topic.forumId, input),
 		forumName: topic.forumName,
-		forumHref: `viewforum.php?id=${topic.forumId}`,
+		forumHref: forumPath(topic.forumId, topic.forumName),
 	}));
 
 	const posts = input.posts.map(
@@ -164,8 +165,8 @@ export function buildSearchResults(input: SearchResultsInput): SearchResultsView
 			id: post.id,
 			number: input.firstPosition + index,
 			permalink: `viewtopic.php?pid=${post.id}#p${post.id}`,
-			topicHref: `viewtopic.php?id=${post.topicId}`,
-			forumHref: `viewforum.php?id=${post.forumId}`,
+			topicHref: topicPath(post.topicId, censored(post.subject)),
+			forumHref: forumPath(post.forumId, post.forumName),
 			forumName: post.forumName,
 			subject: censored(post.subject),
 			isFirstPost: post.id === post.firstPostId,

@@ -68,7 +68,7 @@ describe('admin_options.php', () => {
 	it("n'écrit que les clés modifiées et invalide le cache", async () => {
 		const { server, fake } = await start();
 		const res = await save(server, 2, optionsForm({ board_title: 'PV', quickpost: '1', announcement: '1' }));
-		expect(res.headers.location).toBe('admin_options.php?done=updated');
+		expect(res.headers.location).toBe('/admin_options.php?done=updated');
 		expect(fake.configUpdates).toEqual([new Map([['o_board_title', 'PV']])]);
 		expect(fake.configInvalidations).toBe(1);
 		const page = await inject(server, { url: '/admin_options.php?done=updated', headers: { cookie: cookies(2) } });
@@ -93,9 +93,9 @@ describe('admin_permissions.php', () => {
 		const page = await inject(server, { url: '/admin_permissions.php', headers: { cookie: cookies(2) } });
 		expect(page.body).toContain('name="form[message_bbcode]" value="1" checked');
 		expect(page.body).toContain('name="form[sig_length]" value="400"');
-		expect(page.body).toContain('action="admin_permissions.php"');
+		expect(page.body).toContain('action="/admin_permissions.php"');
 		const res = await save(server, 2, { message_bbcode: '1', sig_length: '-5' }, '/admin_permissions.php');
-		expect(res.headers.location).toBe('admin_permissions.php?done=updated');
+		expect(res.headers.location).toBe('/admin_permissions.php?done=updated');
 		expect(fake.configUpdates).toEqual([new Map([['p_sig_length', '0']])]);
 		expect(fake.configInvalidations).toBe(1);
 	});

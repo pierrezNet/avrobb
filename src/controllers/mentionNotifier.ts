@@ -10,6 +10,7 @@ import type { PageContext } from '../http/layout.ts';
 import type { PrivateMessageStore } from '../repositories/PrivateMessageRepository.ts';
 import type { TopicReader } from '../repositories/TopicRepository.ts';
 import { extractMentionIds, mentionRecipients } from '../services/mentions.ts';
+import { postPath } from '../services/routes.ts';
 
 export interface MentionNotifierDeps {
 	privateMessageStore: Pick<PrivateMessageStore, 'findRecipientsById' | 'createConversation'>;
@@ -37,7 +38,7 @@ export async function notifyMentions(deps: MentionNotifierDeps, input: MentionIn
 	const t = deps.page.lang.post;
 	try {
 		const recipients = mentionRecipients(await deps.privateMessageStore.findRecipientsById(ids));
-		const link = `[url=${config.baseUrl}/viewtopic.php?pid=${input.postId}#p${input.postId}]${input.subject}[/url]`;
+		const link = `[url=${postPath(input.postId)}]${input.subject}[/url]`;
 		for (const recipient of recipients) {
 			// Discussion illisible pour son groupe (forum réservé) : pas de message, rien ne doit fuiter.
 			if ((await deps.topics.findReadable(input.topicId, recipient.groupId)) === null) continue;

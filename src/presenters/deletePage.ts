@@ -8,6 +8,7 @@ import type { Lang } from '../lang/fr/index.ts';
 import { parseMessage } from '../services/bbcode.ts';
 import type { Censor } from '../services/censor.ts';
 import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
+import { forumPath } from '../services/routes.ts';
 import { type Crumb, crumbs } from './navigation.ts';
 import { messageParserOptions } from './parserOptions.ts';
 
@@ -37,7 +38,7 @@ export function buildDeletePage(input: DeletePageInput): DeletePageView {
 	return {
 		crumbs: crumbs(
 			{ label: lang.common.index, href: 'index.php' },
-			{ label: post.forum.name, href: `viewforum.php?id=${post.forum.id}` },
+			{ label: post.forum.name, href: forumPath(post.forum.id, post.forum.name) },
 			{ label: subject, href: `viewtopic.php?pid=${post.id}#p${post.id}` },
 			{ label: lang.delete.deletePost, href: `delete.php?id=${post.id}` },
 		),

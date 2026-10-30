@@ -10,8 +10,8 @@ schéma FluxBB. Cible : **Cloudflare** (Workers, D1, R2). Le plan de portage est
 
 ## État actuel
 
-Lots 1 à 6 terminés (retrait de l'héritage PV, Hono et gabarits précompilés, base D1, Worker et
-R2, connexion SSO, images et e-mails). L'application est un **Worker Cloudflare** (`src/worker.ts`), lancé en local par
+Lots 1 à 6 bis terminés (retrait de l'héritage PV, Hono et gabarits précompilés, base D1, Worker et
+R2, connexion SSO, images et e-mails, URL propres). L'application est un **Worker Cloudflare** (`src/worker.ts`), lancé en local par
 `wrangler dev` avec D1 et R2 locaux (`.wrangler/state`). Comptes par **GitHub** (Google en option) :
 créer une application OAuth (URL de retour `http://localhost:8787/auth/github/callback`) et
 renseigner `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` et `ADMIN_ACCOUNTS` dans `.dev.vars`. La
@@ -28,7 +28,7 @@ npm run db:seed:dev     # administrateur « Emmanuel » (connexion de développe
 npm run dev             # wrangler dev, http://localhost:8787 ; gabarits et manifeste recalculés à chaque modification
 npm run check           # lint (Biome) + typecheck + tests rapides
 npm run test:db         # tests sur D1 et R2 locaux neufs (migrations + tests/db/seed.sql)
-npm run screenshot -- 'http://localhost:8787/index.php' --widths 320,1280 [--cookie avrobb_session=…]
+npm run screenshot -- 'http://localhost:8787/' --widths 320,1280 [--cookie avrobb_session=…]
 ```
 
 Base : D1 (SQLite), schéma dans `migrations/`. Les écritures en plusieurs requêtes passent par
@@ -300,6 +300,9 @@ Front-end : `public/assets/css/base.css` (mobile d'abord) et un fichier de varia
 - Fichiers envoyés (R2) servis sous `/img/` : images seulement (type fixé à l'écriture d'après le
   contenu), clés fabriquées par le serveur, ETag ; une image effacée disparaît du cache en bordure
   en une heure au plus. Résolution inverse des IP (modération) par DNS sur HTTPS (Cloudflare).
+- Adresses propres (`/sujet/4-premier-sujet`, `/forum/2-avrobb`, `/membre/3`, `/aide`…) définies dans
+  `src/services/routes.ts` ; les pages d'action gardent leur `.php`. Les anciennes adresses des pages
+  publiques restent servies, sans redirection, et sont exclues par `robots.txt`.
 - extern.php : pas d'authentification HTTP Basic ni de cache des flux (`o_feed_ttl`).
 - Connexion : pas de mot de passe ni d'inscription, comptes créés à la première connexion GitHub ou
   Google (OAuth avec state et PKCE, compte identifié par le fournisseur et non par l'e-mail, pseudo

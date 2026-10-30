@@ -47,7 +47,7 @@ describe('admin_censoring.php', () => {
 		await post(server, { add_word: '1', new_search_for: ' flûte ', new_replace_with: 'f***' });
 		await post(server, { 'update[1]': '1', 'search_for[1]': 'zut*', 'replace_with[1]': '!!!' });
 		const removed = await post(server, { 'remove[2]': '1' });
-		expect(removed.headers.location).toBe('admin_censoring.php?done=removed');
+		expect(removed.headers.location).toBe('/admin_censoring.php?done=removed');
 		expect(fake.censoredWords).toEqual([{ searchFor: 'zut*', replaceWith: '!!!' }]);
 	});
 });

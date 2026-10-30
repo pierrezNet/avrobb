@@ -6,6 +6,7 @@
 import type { Lang } from '../lang/fr/index.ts';
 import type { ReportTarget } from '../repositories/ReportRepository.ts';
 import type { Censor } from '../services/censor.ts';
+import { forumPath } from '../services/routes.ts';
 import { type Crumb, crumbs } from './navigation.ts';
 
 export interface EmailPageView {
@@ -55,7 +56,7 @@ export function buildReportPage(input: {
 	return {
 		crumbs: crumbs(
 			{ label: lang.common.index, href: 'index.php' },
-			{ label: target.forumName, href: `viewforum.php?id=${target.forumId}` },
+			{ label: target.forumName, href: forumPath(target.forumId, target.forumName) },
 			{ label: subject, href: `viewtopic.php?pid=${target.postId}#p${target.postId}` },
 			{ label: lang.misc.reportPost, href: `misc.php?report=${target.postId}` },
 		),

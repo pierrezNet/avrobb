@@ -44,7 +44,7 @@ export class LoginController {
 
 		const { lang } = this.deps.page;
 		const referer = request.headers.referer;
-		const redirectUrl = referer !== undefined ? safeRedirect(referer, request.headers.host) : 'index.php';
+		const redirectUrl = referer !== undefined ? safeRedirect(referer, request.headers.host) : '/';
 		const providers = (['github', 'google'] as const)
 			.filter((provider) => this.deps.oauthProviders[provider] !== undefined)
 			.map((provider) => ({

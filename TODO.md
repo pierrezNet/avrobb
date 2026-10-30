@@ -169,18 +169,13 @@ Vigilance :
 - E-mail : domaine d'envoi vérifié chez Resend ; les notifications portent déjà leur lien de désabonnement (gabarits de `lang/fr/mail.ts`).
 - Option à garder en tête : Cloudflare Images (redimensionnement à la volée, 5 000 transformations gratuites par mois) si le traitement côté navigateur ne suffit pas.
 
-## Lot 6 bis — URL propres · 1 à 2 jours
+## Lot 6 bis — URL propres · 1 à 2 jours · terminé le 2026-10-30
 
-Décidé : à faire une fois toutes les pages stabilisées (SSO compris) et avant la mise en ligne, tant qu'aucun lien externe ni moteur de recherche ne connaît les anciennes adresses.
-
-- [ ] Schéma d'adresses en français et sans extension : `/`, `/forum/2`, `/sujet/4`, `/sujet/4/page/2`, `/message/123` (redirige vers le message dans son sujet), `/membre/3`, `/recherche`, `/galerie`, `/messages`…
-- [ ] Une seule source des adresses (`services/routes.ts` : fonctions `topicUrl(id, page)`…) utilisée par les presenters, les vues (`url()`), le plan du site et les e-mails ; plus aucune chaîne `viewtopic.php?…` en dur
-- [ ] Anciennes adresses (`viewtopic.php?id=4`…) : redirection 301 vers les nouvelles, pour les liens déjà présents dans les messages
-- [ ] Mise à jour de `robots.txt`, `sitemap.xml`, des URL canoniques, de la CSP si besoin, et des tests
-
-Vigilance :
-- Les messages contiennent des liens internes en BBCode (`[url]…viewtopic.php?pid=…[/url]`, mentions `profile.php?id=…`) : les redirections 301 les gardent valides, sans réécrire les messages.
-- Les formulaires POST gardent des adresses stables ; ne pas rediriger un POST (307/308 si nécessaire).
+- [x] Schéma d'adresses en français, sans extension, avec slug lisible : `/`, `/forum/2-avrobb`, `/forum/2-avrobb/page/2`, `/sujet/4-premier-sujet`, `/sujet/4-premier-sujet/page/2`, `/message/123` (renvoie au message dans sa discussion), `/membre/3`, `/membres`, `/recherche`, `/galerie`, `/aide`, `/conditions`, `/confidentialite`, `/faq`, `/statistiques`, `/connexion`. Seul le numéro compte : un slug faux ou absent sert la même page, l'URL canonique donne la bonne
+- [x] Une seule source des adresses (`services/routes.ts`) : `publicPath()` traduit les cibles logiques (`viewtopic.php?id=4`) pour `url()` dans les vues, `reply.redirect()`, le BBCode (`[topic]`, `[post]`, liens vers le forum, mentions `[url=/membre/3]`), les e-mails, les flux RSS, le plan du site et les URL canoniques ; slugs tirés du titre **censuré**
+- [x] Pages d'action (rédaction, édition, modération, administration, messagerie, profil en modification) : adresse `.php` gardée, rendue absolue ; tous les liens et scripts en adresses absolues (« / »)
+- [x] Anciennes adresses : **pas de redirection** (décidé : rien n'est encore publié). Elles restent servies sous les mêmes routes, mais plus aucun lien ne les produit, `robots.txt` les exclut et l'URL canonique désigne l'adresse propre
+- [x] `robots.txt`, `sitemap.xml` (avec slugs), URL canoniques, tests (dont l'exploration des liens internes)
 
 ## Lot 7 — Déploiement : Wrangler, GitHub Actions, domaine, cache · 2 jours
 
@@ -210,6 +205,15 @@ Vigilance :
 ---
 
 ## À décider
+
+- [ ] **Forum bilingue par traduction automatique** (idée du 2026-10-30) : un membre écrit en anglais, les lecteurs francophones lisent en français, et inversement. Faisable sur Cloudflare :
+  - Workers AI : modèle de traduction (`@cf/meta/m2m100-1.2b`) ou un LLM pour un meilleur rendu, dans le forfait Workers Paid (10 000 neurones par jour gratuits) ;
+  - traduire **une fois à l'écriture** (`waitUntil`), garder la traduction en base (table `post_translations` : message, langue, texte, empreinte du source pour invalider à l'édition), jamais à chaque affichage ;
+  - langue détectée à l'écriture, BBCode protégé (traduire le texte entre les balises, pas les balises ni les citations de code) ;
+  - affichage dans la langue du lecteur (`Accept-Language` ou préférence du profil) avec « Voir l'original » ; URL distinctes par langue (`/en/topic/4-…`) et `hreflang` pour le référencement ;
+  - interface : `src/lang/en/` à écrire (tous les textes sont déjà centralisés dans `src/lang/fr/`) ;
+  - mention « traduit automatiquement » sur chaque message traduit.
+    Estimation : 4 à 6 jours après la mise en ligne.
 
 - [ ] **Éditeur WYSIWYG** (SCEditor, mode source BBCode) : repris de la TODO de pv-forum, après la mise en ligne (2 à 3 jours).
 - [ ] Réputation : utile sur un forum personnel ? Gardée pour l'instant.

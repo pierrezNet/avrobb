@@ -9,6 +9,7 @@ import type { Lang } from '../lang/fr/index.ts';
 import { parseMessage } from '../services/bbcode.ts';
 import type { Censor } from '../services/censor.ts';
 import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
+import { forumPath } from '../services/routes.ts';
 import type { ToolbarSettings } from '../services/toolbar.ts';
 import { type Crumb, crumbs } from './navigation.ts';
 import { messageParserOptions } from './parserOptions.ts';
@@ -62,7 +63,7 @@ export function buildDraftList(input: DraftListInput): DraftListView {
 			href: `draft_list.php?id=${draft.id}`,
 			subject: draft.subject,
 			forumName: draft.forum.name,
-			forumHref: `viewforum.php?id=${draft.forum.id}`,
+			forumHref: forumPath(draft.forum.id, draft.forum.name),
 			postedAt: format(draft.posted),
 			selected: draft.id === opened?.id,
 		})),

@@ -108,7 +108,7 @@ describe('GET /reputation.php', () => {
 		expect(res.body).toContain('Renommée du membre MaxDUO');
 		expect(res.body).toContain('[+3 / -1]');
 		expect(res.body).toContain('Super <strong>capture</strong>');
-		expect(res.body).toContain('href="reputation.php?uid=3">Tessy</a>');
+		expect(res.body).toContain('href="/reputation.php?uid=3">Tessy</a>');
 		expect(res.body).toContain('Enlevée ou effacée');
 		expect(res.body).toContain('Profil effacé');
 		expect(res.body).not.toContain('delete_rep_id');
@@ -135,7 +135,7 @@ describe('POST /reputation.php', () => {
 		app = await buildApp(fakeDeps(fake));
 		const res = await post(app, 3, '/reputation.php', { form_sent: '1', pid: '101', method: '1', req_message: 'Bravo !' });
 		expect(res.statusCode).toBe(303);
-		expect(res.headers.location).toBe('viewtopic.php?pid=101#p101');
+		expect(res.headers.location).toBe('/message/101#p101');
 		expect(fake.addedVotes).toEqual([{ userId: 5, fromUserId: 3, postId: 101, topicId: 10, reason: 'Bravo !', plus: true, time: NOW }]);
 
 		const again = await post(app, 3, '/reputation.php', { form_sent: '1', pid: '101', method: '1', req_message: 'Encore' });
@@ -159,7 +159,7 @@ describe('POST /reputation.php', () => {
 		const page = await inject(app, { url: '/reputation.php?uid=5', headers: { cookie: cookies(2) } });
 		expect(page.body).toContain('name="delete_rep_id" value="41"');
 		const res = await post(app, 2, '/reputation.php?uid=5', { delete_rep: '1', delete_rep_id: ['41', '40'] });
-		expect(res.headers.location).toBe('reputation.php?uid=5&done=deleted');
+		expect(res.headers.location).toBe('/reputation.php?uid=5&done=deleted');
 		expect(fake.deletedVotes).toEqual([{ userId: 5, ids: [41, 40] }]);
 	});
 });

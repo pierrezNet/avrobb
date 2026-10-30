@@ -61,7 +61,7 @@ describe('GET /viewtopic.php', () => {
 
 		const res = await inject(app, '/viewtopic.php?pid=227');
 		expect(res.statusCode).toBe(302);
-		expect(res.headers.location).toBe('viewtopic.php?id=20&p=2#p227');
+		expect(res.headers.location).toBe('/sujet/20/page/2#p227');
 	});
 
 	it('pagine, avec les liens des pages portées en local', async () => {
@@ -72,21 +72,21 @@ describe('GET /viewtopic.php', () => {
 		expect(res.body).toContain('id="p225"');
 		expect(res.body).not.toContain('id="p224"');
 		expect(res.body).toContain('<strong aria-current="page">2</strong>');
-		expect(res.body).toContain('href="viewforum.php?id=1"');
-		expect(res.body).toContain('href="profile.php?id=3"');
-		expect(res.body).toContain('action="post.php?action=post&amp;tid=20"');
-		expect(res.body).toContain('href="viewtopic.php?id=20"');
+		expect(res.body).toContain('href="/forum/1-');
+		expect(res.body).toContain('href="/membre/3"');
+		expect(res.body).toContain('action="/post.php?action=post&amp;tid=20"');
+		expect(res.body).toContain('href="/sujet/20-');
 	});
 
 	it('pas de bouton « Répondre » quand le formulaire de réponse est en bas de page', async () => {
 		app = await buildApp(fakeDeps(data()));
 		const withForm = await inject(app, { url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(3) } });
 		expect(withForm.body).toContain('id="quickpostform"');
-		expect(withForm.body).not.toContain('href="post.php?tid=10"');
+		expect(withForm.body).not.toContain('href="/post.php?tid=10"');
 		app = await buildApp(fakeDeps(data({ config: { posting: { ...boardConfig.posting, quickpost: false } } })));
 		const withoutForm = await inject(app, { url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(3) } });
 		expect(withoutForm.body).not.toContain('id="quickpostform"');
-		expect(withoutForm.body).toContain('href="post.php?tid=10"');
+		expect(withoutForm.body).toContain('href="/post.php?tid=10"');
 	});
 });
 
@@ -192,7 +192,7 @@ describe('réponse rapide (o_quickpost)', () => {
 		app = await buildApp(fakeDeps(data({ subscribedTopics: [10] })));
 		const res = await inject(app, { url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(3) } });
 		expect(res.body).toContain('id="quickpostform"');
-		expect(res.body).toContain('action="post.php?action=post&amp;tid=10"');
+		expect(res.body).toContain('action="/post.php?action=post&amp;tid=10"');
 		expect(res.body).toMatch(/name="csrf_token" value="[0-9a-f]{64}"/);
 		expect(res.body).toContain('<input type="hidden" name="subscribe" value="1">');
 		expect(res.body).not.toContain('name="req_username"');

@@ -74,7 +74,7 @@ describe('départ vers le fournisseur', () => {
 		expect((await inject(app, { url: '/auth/google', headers: { host: HOST } })).statusCode).toBe(404);
 		expect((await inject(app, { url: '/auth/google/callback?code=x&state=y', headers: { host: HOST } })).statusCode).toBe(404);
 		const logged = await inject(app, { url: '/auth/github', headers: { host: HOST, cookie: sessionCookie(3) } });
-		expect(logged.headers.location).toBe('/index.php');
+		expect(logged.headers.location).toBe('/');
 	});
 });
 
@@ -85,7 +85,7 @@ describe('retour du fournisseur', () => {
 		const { state, cookie } = await start(app);
 		const res = await callback(app, `code=code-admin&state=${state}`, cookie);
 		expect(res.statusCode).toBe(302);
-		expect(res.headers.location).toBe('/viewtopic.php?id=4');
+		expect(res.headers.location).toBe('/sujet/4');
 		expect(fake.oauthCalls).toEqual(['github code-admin 43 http://forum.test/auth/github/callback']);
 		expect(fake.accountLog).toEqual([`create 4 epierrez groupe ${GroupId.Admin} e@example.test`]);
 		expect(readSessionCookie(cookieValue(res, 'avrobb_session'), COOKIE_SECRET, NOW)).toMatchObject({ userId: 4, version: 0 });
@@ -145,9 +145,9 @@ describe('page de connexion', () => {
 	it('bouton GitHub avec la page de retour ; pas de Google non configuré', async () => {
 		const app = await buildApp(fakeDeps(data()));
 		const page = await inject(app, { url: '/login.php', headers: { host: HOST, referer: 'http://forum.test/viewforum.php?id=2' } });
-		expect(page.body).toContain('href="auth/github?return=viewforum.php%3Fid%3D2">Se connecter avec GitHub</a>');
+		expect(page.body).toContain('href="/auth/github?return=%2Fforum%2F2">Se connecter avec GitHub</a>');
 		expect(page.body).not.toContain('Google');
-		expect(page.body).toContain('href="privacy.php"');
+		expect(page.body).toContain('href="/confidentialite"');
 	});
 });
 
@@ -165,7 +165,7 @@ describe('me déconnecter de partout', () => {
 			headers: { host: HOST, cookie, 'content-type': 'application/x-www-form-urlencoded' },
 			payload: `csrf_token=${csrfToken(csrf, COOKIE_SECRET, 3)}`,
 		});
-		expect(res.headers.location).toBe('index.php');
+		expect(res.headers.location).toBe('/');
 		expect(fake.accountLog).toEqual(['endAllSessions 3']);
 		const after = await inject(app, { url: '/index.php', headers: { host: HOST, cookie } });
 		expect(after.body).not.toContain('Connecté(e) sous l&#39;identité');

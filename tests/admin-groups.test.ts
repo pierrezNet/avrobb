@@ -93,7 +93,7 @@ describe('admin_groups.php', () => {
 	it('liste : groupes prédéfinis non supprimables, groupe par défaut sans modérateurs', async () => {
 		const { server } = await start();
 		const page = await get(server, '/admin_groups.php');
-		expect(page.body).toContain('href="admin_groups.php?del_group=5"');
+		expect(page.body).toContain('href="/admin_groups.php?del_group=5"');
 		expect(page.body).not.toContain('del_group=4');
 		const defaults = /name="default_group"[\s\S]*?<\/select>/.exec(page.body)?.[0] ?? '';
 		expect(defaults).toContain('<option value="5">Pilotes</option>');
@@ -108,7 +108,7 @@ describe('admin_groups.php', () => {
 		const taken = await post(server, '/admin_groups.php', { add_edit_group: '1', mode: 'add', base_group: '4', req_title: 'Pilotes' });
 		expect(taken.statusCode).toBe(400);
 		const done = await post(server, '/admin_groups.php', { add_edit_group: '1', mode: 'add', base_group: '4', req_title: 'Instructeurs' });
-		expect(done.headers.location).toBe('admin_groups.php?done=added');
+		expect(done.headers.location).toBe('/admin_groups.php?done=added');
 		expect(fake.groupAdminLog).toEqual(['add Instructeurs from 4']);
 	});
 

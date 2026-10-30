@@ -8,6 +8,7 @@
  */
 
 import type { BoardConfig, Viewer } from '../domain/models.ts';
+import { publicPath } from '../services/routes.ts';
 import type { UploadedFile } from './forms.ts';
 
 /** Paramètres de type d'une route : sa chaîne de requête et son corps, comme les routes Fastify. */
@@ -121,10 +122,10 @@ export class AppReply {
 		return this;
 	}
 
-	/** Redirection vers `url`, telle quelle (une adresse relative reste relative). */
+	/** Redirection vers `url` : une cible logique (« viewtopic.php?pid=4 ») devient son adresse publique. */
 	redirect(url: string, status = 302): this {
 		this.statusCode = status;
-		this.headers.set('location', url);
+		this.headers.set('location', publicPath(url));
 		return this;
 	}
 

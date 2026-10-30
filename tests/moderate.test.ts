@@ -122,7 +122,7 @@ describe('sujets du forum', () => {
 	it('ferme une sélection et redirige avec un avis', async () => {
 		const { server, fake } = await start();
 		const res = await post_(server, 5, '/moderate.php?fid=2', { close: '1', topics: ['10', '11'] });
-		expect(res.headers.location).toBe('moderate.php?fid=2&done=closed');
+		expect(res.headers.location).toBe('/moderate.php?fid=2&done=closed');
 		expect(fake.moderationLog).toEqual(['close 10,11']);
 		expect((await get(server, 5, '/moderate.php?fid=2&done=closed')).body).toContain('Discussions fermées.');
 		expect((await post_(server, 5, '/moderate.php?fid=2', { open: '1' })).body).toContain('Vous devez choisir au moins une discussion');
@@ -140,7 +140,7 @@ describe('sujets du forum', () => {
 			move_to_forum: '1',
 			with_redirect: '1',
 		});
-		expect(done.headers.location).toBe('viewforum.php?id=1');
+		expect(done.headers.location).toBe('/forum/1');
 		expect(fake.moderationLog).toEqual(['move 10,12 -> 1 +redirect']);
 	});
 
@@ -171,7 +171,7 @@ describe('messages d’un sujet', () => {
 		const refused = await post_(server, 5, '/moderate.php?fid=2&tid=10', { delete_posts_comply: '1', posts: '101,102' });
 		expect(refused.body).toContain('seul un administrateur peut les supprimer');
 		const ok = await post_(server, 2, '/moderate.php?fid=2&tid=10', { delete_posts_comply: '1', posts: '101,102' });
-		expect(ok.headers.location).toBe('viewtopic.php?id=10');
+		expect(ok.headers.location).toBe('/sujet/10');
 		expect(fake.moderationLog).toEqual(['deletePosts 10 101,102']);
 	});
 
@@ -193,7 +193,7 @@ describe('messages d’un sujet', () => {
 			new_subject: 'Hors sujet',
 			move_to_forum: '1',
 		});
-		expect(done.headers.location).toBe('viewtopic.php?id=999');
+		expect(done.headers.location).toBe('/sujet/999');
 		expect(fake.moderationLog).toEqual(['split 10 101 -> 1 Hors sujet']);
 	});
 });
@@ -202,10 +202,10 @@ describe('actions sur un seul sujet', () => {
 	it('un ancien lien GET demande confirmation, le POST applique', async () => {
 		const { server, fake } = await start();
 		const confirm = await get(server, 5, '/moderate.php?fid=2&stick=10');
-		expect(confirm.body).toContain('action="moderate.php?fid=2&amp;stick=10"');
+		expect(confirm.body).toContain('action="/moderate.php?fid=2&amp;stick=10"');
 		expect(fake.moderationLog).toBeUndefined();
 		const res = await post_(server, 5, '/moderate.php?fid=2&stick=10', {});
-		expect(res.headers.location).toBe('viewtopic.php?id=10');
+		expect(res.headers.location).toBe('/sujet/10');
 		await post_(server, 5, '/moderate.php?fid=2&close=10', {});
 		expect(fake.moderationLog).toEqual(['stick 10', 'close 10']);
 		expect((await post_(server, 5, '/moderate.php?fid=2&unstick=77', {})).statusCode).toBe(400);
@@ -214,8 +214,8 @@ describe('actions sur un seul sujet', () => {
 	it('pied de viewtopic : boutons POST pour le modérateur', async () => {
 		const { server } = await start(data({}));
 		const res = await get(server, 5, '/viewtopic.php?id=10');
-		expect(res.body).toContain('action="moderate.php?fid=2&amp;close=10"');
+		expect(res.body).toContain('action="/moderate.php?fid=2&amp;close=10"');
 		expect(res.body).not.toContain('balise=');
-		expect(res.body).toContain('href="moderate.php?fid=2&amp;tid=10&amp;p=1"');
+		expect(res.body).toContain('href="/moderate.php?fid=2&amp;tid=10&amp;p=1"');
 	});
 });

@@ -68,7 +68,7 @@ describe('admin_categories.php', () => {
 		expect(page.body).toContain('name="cat[2][name]" value="Ateliers"');
 		expect((await post(server, 2, '/admin_categories.php', { add_cat: '1', new_cat_name: ' ' })).statusCode).toBe(400);
 		const added = await post(server, 2, '/admin_categories.php', { add_cat: '1', new_cat_name: 'Hangar' });
-		expect(added.headers.location).toBe('admin_categories.php?done=added');
+		expect(added.headers.location).toBe('/admin_categories.php?done=added');
 		expect(fake.forumAdminLog).toEqual(['addCategory Hangar']);
 	});
 
@@ -100,10 +100,10 @@ describe('admin_forums.php', () => {
 	it('suppression : confirmation en GET, effet en POST seulement', async () => {
 		const { server, fake } = await start();
 		const confirm = await get(server, 2, '/admin_forums.php?del_forum=7');
-		expect(confirm.body).toContain('action="admin_forums.php?del_forum=7"');
+		expect(confirm.body).toContain('action="/admin_forums.php?del_forum=7"');
 		expect(fake.forumAdminLog).toBeUndefined();
 		const done = await post(server, 2, '/admin_forums.php?del_forum=7', { del_forum_comply: '1' });
-		expect(done.headers.location).toBe('admin_forums.php?done=deleted');
+		expect(done.headers.location).toBe('/admin_forums.php?done=deleted');
 		expect(fake.forumAdminLog).toEqual(['deleteForum 7']);
 	});
 
@@ -133,7 +133,7 @@ describe('admin_forums.php', () => {
 			'post_replies_new[4]': '1',
 			'post_topics_new[4]': '1',
 		});
-		expect(res.headers.location).toBe('admin_forums.php?done=saved');
+		expect(res.headers.location).toBe('/admin_forums.php?done=saved');
 		expect(fake.forumAdminLog).toEqual([
 			'updateForum 7 {"name":"Technique","description":null,"redirectUrl":null,"siteUrl":"https://avrobb.example/","repoUrl":null,"sortBy":2,"categoryId":1}',
 			'perm 7 3 {"readForum":true,"postReplies":true,"postTopics":false}',
@@ -150,6 +150,6 @@ describe('admin_forums.php', () => {
 		expect(badLink.body).toContain('Les liens du projet doivent être des adresses web complètes');
 		expect(fake.forumAdminLog).toHaveLength(3);
 		const reverted = await post(server, 2, '/admin_forums.php?edit_forum=7', { revert_perms: '1' });
-		expect(reverted.headers.location).toBe('admin_forums.php?edit_forum=7&done=reverted');
+		expect(reverted.headers.location).toBe('/admin_forums.php?edit_forum=7&done=reverted');
 	});
 });

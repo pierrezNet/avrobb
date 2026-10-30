@@ -82,14 +82,26 @@ function baseRequest(c: Context<{ Bindings: ForumBindings }>, options: ServerOpt
 	};
 }
 
+/**
+ * Paramètres d'une adresse propre (« /sujet/:ref/page/:page ») → paramètres de requête attendus par
+ * le contrôleur (`id`, `p`) ; null si l'adresse ne correspond à rien (page introuvable).
+ */
+export type PathParams = (params: Readonly<Record<string, string>>) => Record<string, string> | null;
+
 /** Exécute une route : lecture du formulaire, étapes préalables, contrôleur ; toute erreur va à onError. */
 async function run(
 	c: Context<{ Bindings: ForumBindings }>,
 	options: ServerOptions,
 	preHandlers: readonly PreHandler[],
 	handler: Handler,
+	pathParams?: PathParams,
 ): Promise<Response> {
 	const request = baseRequest(c, options);
+	if (pathParams !== undefined) {
+		const mapped = pathParams(c.req.param() as Record<string, string>);
+		if (mapped === null) return c.notFound();
+		request.query = { ...(request.query as Record<string, unknown>), ...mapped };
+	}
 	const reply = new AppReply(options.logger);
 	try {
 		const { form, files } = await readForm(c.req.raw);
@@ -106,8 +118,8 @@ async function run(
 }
 
 export interface Router {
-	get<T extends RouteTypes = RouteTypes>(path: string, preHandlers: readonly PreHandler[], handler: Handler<T>): void;
-	post<T extends RouteTypes = RouteTypes>(path: string, preHandlers: readonly PreHandler[], handler: Handler<T>): void;
+	get<T extends RouteTypes = RouteTypes>(path: string, preHandlers: readonly PreHandler[], handler: Handler<T>, params?: PathParams): void;
+	post<T extends RouteTypes = RouteTypes>(path: string, preHandlers: readonly PreHandler[], handler: Handler<T>, params?: PathParams): void;
 	/** Page introuvable : mêmes étapes préalables qu'une route (la page d'erreur a besoin de la session). */
 	notFound(preHandlers: readonly PreHandler[], handler: Handler): void;
 }
@@ -116,11 +128,11 @@ export function createRouter(app: ForumApp, options: ServerOptions): Router {
 	// Les types de route ne servent qu'au contrôleur : ici, toutes les requêtes ont la même forme.
 	const erase = <T extends RouteTypes>(handler: Handler<T>): Handler => handler as unknown as Handler;
 	return {
-		get: (path, preHandlers, handler) => {
-			app.get(path, (c) => run(c, options, preHandlers, erase(handler)));
+		get: (path, preHandlers, handler, params) => {
+			app.get(path, (c) => run(c, options, preHandlers, erase(handler), params));
 		},
-		post: (path, preHandlers, handler) => {
-			app.post(path, (c) => run(c, options, preHandlers, erase(handler)));
+		post: (path, preHandlers, handler, params) => {
+			app.post(path, (c) => run(c, options, preHandlers, erase(handler), params));
 		},
 		notFound: (preHandlers, handler) => {
 			app.notFound((c) => run(c, options, preHandlers, handler));

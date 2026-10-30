@@ -67,7 +67,7 @@ describe('pages de rédaction', () => {
 			expect(res.body).toContain('data-toolbar-images="/assets/img/toolbar/"');
 			expect(res.body).toContain('/assets/js/toolbar.js?v=');
 			// Bouton image d'un membre : URL, galerie ou nouvelle image.
-			expect(res.body).toContain('&quot;galleryUrl&quot;:&quot;gallery.php?info=pick&amp;embed=1&quot;');
+			expect(res.body).toContain('&quot;galleryUrl&quot;:&quot;/galerie?info=pick&amp;embed=1&quot;');
 		}
 	});
 

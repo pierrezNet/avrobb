@@ -9,6 +9,7 @@
 
 import type { Subscriber } from '../domain/models.ts';
 import { fillTemplate, type MailMessage, type MailTemplate } from './mail.ts';
+import { absoluteUrl, postPath, topicPath } from './routes.ts';
 
 export interface NotificationTemplates {
 	short: MailTemplate;
@@ -41,8 +42,8 @@ export function replyValues(
 		topic_subject: reply.topicSubject,
 		replier: reply.replier,
 		message: reply.message,
-		post_url: `${links.baseUrl}/viewtopic.php?pid=${reply.postId}#p${reply.postId}`,
-		unsubscribe_url: `${links.baseUrl}/misc.php?action=unsubscribe&tid=${reply.topicId}`,
+		post_url: absoluteUrl(links.baseUrl, postPath(reply.postId)),
+		unsubscribe_url: absoluteUrl(links.baseUrl, `misc.php?action=unsubscribe&tid=${reply.topicId}`),
 		board_mailer: links.boardTitle,
 	};
 }
@@ -57,8 +58,8 @@ export function topicValues(
 		topic_subject: topic.subject,
 		poster: topic.poster,
 		message: topic.message,
-		topic_url: `${links.baseUrl}/viewtopic.php?id=${topic.topicId}`,
-		unsubscribe_url: `${links.baseUrl}/misc.php?action=unsubscribe&fid=${topic.forumId}`,
+		topic_url: absoluteUrl(links.baseUrl, topicPath(topic.topicId, topic.subject)),
+		unsubscribe_url: absoluteUrl(links.baseUrl, `misc.php?action=unsubscribe&fid=${topic.forumId}`),
 		board_mailer: links.boardTitle,
 	};
 }
@@ -76,7 +77,7 @@ export function bannedEmailAlert(
 		text: fillTemplate(template.body, {
 			username: post.username,
 			email: post.email,
-			post_url: `${links.baseUrl}/viewtopic.php?pid=${post.postId}#p${post.postId}`,
+			post_url: absoluteUrl(links.baseUrl, postPath(post.postId)),
 			board_mailer: links.boardTitle,
 		}),
 	};

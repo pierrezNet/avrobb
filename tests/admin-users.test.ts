@@ -111,8 +111,8 @@ describe('admin_users.php', () => {
 	it("statistiques d'IP d'un membre et membres d'une IP", async () => {
 		const { server } = await start();
 		const stats = await get(server, 5, '/admin_users.php?ip_stats=3');
-		expect(stats.body).toContain('href="moderate.php?get_host=192.0.2.5"');
-		expect(stats.body).toContain('href="admin_users.php?show_users=192.0.2.5"');
+		expect(stats.body).toContain('href="/moderate.php?get_host=192.0.2.5"');
+		expect(stats.body).toContain('href="/admin_users.php?show_users=192.0.2.5"');
 		const posters = await get(server, 5, '/admin_users.php?show_users=192.0.2.5');
 		expect(posters.body).toContain('Messages&#160;: 1 200');
 		expect(posters.body).toContain('à surveiller');
@@ -173,7 +173,7 @@ describe('actions groupées', () => {
 		expect((await post(server, 2, { move_users_comply: '1', users: '3', new_group: '3' })).statusCode).toBe(400);
 		expect((await post(server, 2, { delete_users: '1', 'users[2]': '1' })).body).toContain('Les administrateurs ne peuvent être supprimés');
 		const deleted = await post(server, 2, { delete_users_comply: '1', users: '3', delete_posts: '1' });
-		expect(deleted.headers.location).toBe('admin_users.php?done=deleted');
+		expect(deleted.headers.location).toBe('/admin_users.php?done=deleted');
 		expect(fake.userActionLog).toEqual(['move 3 -> 4', 'move 3 -> 1', 'delete 3 +posts']);
 	});
 
@@ -182,7 +182,7 @@ describe('actions groupées', () => {
 		expect((await post(server, 6, { ban_users: '1', 'users[5]': '1' })).body).toContain('Les modérateurs ne peuvent être bannis');
 		expect((await post(server, 6, { ban_users_comply: '1', users: '3', ban_expire: '2000-01-01' })).statusCode).toBe(400);
 		const done = await post(server, 6, { ban_users_comply: '1', users: '3', ban_message: ' Spam ', ban_expire: '', ban_the_ip: '1' });
-		expect(done.headers.location).toBe('admin_users.php?done=banned');
+		expect(done.headers.location).toBe('/admin_users.php?done=banned');
 		expect(fake.userActionLog).toEqual(['ban 3 {"message":"Spam","expire":null,"withIp":true,"creatorId":6}']);
 	});
 });

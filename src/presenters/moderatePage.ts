@@ -17,6 +17,7 @@ import type { Lang } from '../lang/fr/index.ts';
 import { parseMessage } from '../services/bbcode.ts';
 import type { Censor } from '../services/censor.ts';
 import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
+import { forumPath } from '../services/routes.ts';
 import type { TrackedTopics } from '../services/trackedTopics.ts';
 import { userTitle } from '../services/userTitle.ts';
 import { buildTopicRow, type TopicRowView } from './forumPage.ts';
@@ -54,7 +55,7 @@ export function buildModerateForum(input: {
 		forum: { id: forum.id, name: forum.name },
 		crumbs: crumbs(
 			{ label: lang.common.index, href: 'index.php' },
-			{ label: forum.name, href: `viewforum.php?id=${forum.id}` },
+			{ label: forum.name, href: forumPath(forum.id, forum.name) },
 			{ label: lang.moderate.moderate, href: `moderate.php?fid=${forum.id}` },
 		),
 		pagination: paginationLinks(input.numPages, input.page, (page) => `moderate.php?fid=${forum.id}${page > 1 ? `&p=${page}` : ''}`),
@@ -120,8 +121,8 @@ export function buildModerateTopic(input: {
 		topic: { id: topic.id, subject },
 		crumbs: crumbs(
 			{ label: lang.common.index, href: 'index.php' },
-			{ label: topic.forum.name, href: `viewforum.php?id=${topic.forum.id}` },
-			{ label: subject, href: topicUrl(topic.id) },
+			{ label: topic.forum.name, href: forumPath(topic.forum.id, topic.forum.name) },
+			{ label: subject, href: topicUrl(topic.id, 1, subject) },
 			{ label: lang.moderate.moderate, href: base },
 		),
 		pagination: paginationLinks(input.numPages, input.page, (page) => `${base}${page > 1 ? `&p=${page}` : ''}`),

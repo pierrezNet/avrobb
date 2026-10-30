@@ -48,6 +48,7 @@ const DEVIATIONS = new Set([
 	'spoiler',
 	'vidéo youtube',
 	'lien interne',
+	'url relative',
 	'citation non fermée',
 	'injection attribut acronym',
 	'marqueur interne',
@@ -104,8 +105,20 @@ describe('écarts volontaires', () => {
 	it('liens internes corrigés (le PHP de PV produit « id=.$matches[1] »)', () => {
 		expect(reference['lien interne']).toContain('.$matches[1]');
 		expect(render(byName('lien interne'))).toBe(
-			'<p><a href="http://forum.test/viewtopic.php?id=4" rel="nofollow">http://forum.test/viewtopic.php?id=4</a> <a href="http://forum.test/viewtopic.php?pid=12#p12" rel="nofollow">message</a></p>',
+			'<p><a href="http://forum.test/sujet/4" rel="nofollow">http://forum.test/sujet/4</a> <a href="http://forum.test/message/12#p12" rel="nofollow">message</a></p>',
 		);
+	});
+
+	it('liens vers le forum : adresses propres (AvroBB), libellé inchangé', () => {
+		expect(reference['url relative']).toContain('viewtopic.php?id=4');
+		expect(render(byName('url relative'))).toBe('<p><a href="http://forum.test/sujet/4" rel="nofollow">sujet</a></p>');
+		expect(parseMessage('[url]http://forum.test/viewtopic.php?pid=7&p=2[/url]', options)).toContain(
+			'href="http://forum.test/message/7?p=2#p7"',
+		);
+		expect(parseMessage('[url]http://ailleurs.test/viewtopic.php?id=4[/url]', options)).toContain(
+			'href="http://ailleurs.test/viewtopic.php?id=4"',
+		);
+		expect(parseMessage('[url=http://forum.test/post.php?tid=4]r[/url]', options)).toContain('href="http://forum.test/post.php?tid=4"');
 	});
 });
 

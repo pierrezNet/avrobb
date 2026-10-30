@@ -9,6 +9,8 @@ import { forumReadable } from './forumPermissions.ts';
 
 export interface SitemapEntry {
 	id: number;
+	/** Nom du forum ou sujet de la discussion (slug de l'adresse). */
+	title: string;
 	lastPost: number;
 }
 
@@ -29,18 +31,22 @@ export class SitemapRepository implements SitemapReader {
 	}
 
 	async listForums(): Promise<SitemapEntry[]> {
-		const rows = await this.#readableForums().where('f.redirect_url', 'is', null).select(['f.id', 'f.last_post']).orderBy('f.id').execute();
-		return rows.map((row) => ({ id: row.id, lastPost: row.last_post ?? 0 }));
+		const rows = await this.#readableForums()
+			.where('f.redirect_url', 'is', null)
+			.select(['f.id', 'f.forum_name', 'f.last_post'])
+			.orderBy('f.id')
+			.execute();
+		return rows.map((row) => ({ id: row.id, title: row.forum_name, lastPost: row.last_post ?? 0 }));
 	}
 
 	async listTopics(limit: number): Promise<SitemapEntry[]> {
 		const rows = await this.#readableForums()
 			.innerJoin('topics as t', 't.forum_id', 'f.id')
 			.where('t.moved_to', 'is', null)
-			.select(['t.id', 't.last_post'])
+			.select(['t.id', 't.subject', 't.last_post'])
 			.orderBy('t.last_post', 'desc')
 			.limit(limit)
 			.execute();
-		return rows.map((row) => ({ id: row.id, lastPost: row.last_post }));
+		return rows.map((row) => ({ id: row.id, title: row.subject, lastPost: row.last_post }));
 	}
 }

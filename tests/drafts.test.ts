@@ -78,7 +78,7 @@ describe('post.php et brouillons', () => {
 			brouillon: '1',
 		});
 		expect(res.statusCode).toBe(302);
-		expect(res.headers.location).toBe('draft_list.php?id=701');
+		expect(res.headers.location).toBe('/draft_list.php?id=701');
 		expect(fake.createdDrafts).toEqual([
 			{ poster: 'Tessy', posterId: 3, subject: 'Récit', message: 'Texte [i]à finir[/i]', posted: NOW, topicId: null, forumId: 2 },
 		]);
@@ -90,7 +90,7 @@ describe('post.php et brouillons', () => {
 		app = await buildApp(fakeDeps(fake));
 		const page = await inject(app, { url: '/post.php?id=6&brouillon=1', headers: { cookie: tessy } });
 		expect(page.statusCode).toBe(200);
-		expect(page.body).toContain('action="post.php?action=post&amp;tid=10"');
+		expect(page.body).toContain('action="/post.php?action=post&amp;tid=10"');
 		expect(page.body).toContain('<strong>Brouillon</strong> du récit');
 		expect(page.body).toContain('name="brouillon_id" value="6"');
 
@@ -117,10 +117,10 @@ describe('« Poster » depuis la liste des brouillons', () => {
 		const fake = data();
 		app = await buildApp(fakeDeps(fake));
 		const list = await inject(app, { url: '/draft_list.php?id=6', headers: { cookie: tessy } });
-		expect(list.body).toContain('<form class="inline-form" method="post" action="post.php?id=6&amp;brouillon=1">');
+		expect(list.body).toContain('<form class="inline-form" method="post" action="/post.php?id=6&amp;brouillon=1">');
 		const res = await submit(app, '/draft_list.php?id=6', '/post.php?id=6&brouillon=1', {});
 		expect(res.statusCode).toBe(302);
-		expect(res.headers.location).toBe('viewtopic.php?pid=901#p901');
+		expect(res.headers.location).toBe('/message/901#p901');
 		expect(fake.savedReplies?.[0]).toMatchObject({ topicId: 10, message: '[b]Brouillon[/b] du récit' });
 		expect(fake.drafts?.map((d) => d.id)).toEqual([5, 7]);
 	});
@@ -152,8 +152,8 @@ describe('draft_list.php', () => {
 		expect(res.body).toContain('Mon vol de nuit');
 		expect(res.body).not.toContain('Pas à moi');
 		expect(res.body).toContain('<strong>Brouillon</strong> du récit');
-		expect(res.body).toContain('action="post.php?id=5&amp;brouillon=1"');
-		expect(res.body).toContain('href="draft_edit.php?id=5"');
+		expect(res.body).toContain('action="/post.php?id=5&amp;brouillon=1"');
+		expect(res.body).toContain('href="/draft_edit.php?id=5"');
 		expect((await inject(app, { url: '/draft_list.php?id=7', headers: { cookie: tessy } })).statusCode).toBe(403);
 	});
 
@@ -161,7 +161,7 @@ describe('draft_list.php', () => {
 		app = await buildApp(fakeDeps(data()));
 		const res = await inject(app, '/draft_list.php');
 		expect(res.statusCode).toBe(302);
-		expect(res.headers.location).toBe('login.php');
+		expect(res.headers.location).toBe('/connexion');
 	});
 
 	it('supprime après confirmation, seulement ses propres brouillons', async () => {
@@ -174,7 +174,7 @@ describe('draft_list.php', () => {
 			id: '5',
 			delete_comply: '1',
 		});
-		expect(res.headers.location).toBe('draft_list.php');
+		expect(res.headers.location).toBe('/draft_list.php');
 		await submit(app, '/draft_list.php', '/draft_list.php', { action: 'delete', id: '7', delete_comply: '1' });
 		expect(fake.drafts?.map((d) => d.id)).toEqual([6, 7]);
 	});
@@ -191,7 +191,7 @@ describe('draft_edit.php', () => {
 			req_subject: 'Vol de nuit',
 			req_message: 'Texte [B]revu[/B]',
 		});
-		expect(res.headers.location).toBe('draft_list.php?id=5');
+		expect(res.headers.location).toBe('/draft_list.php?id=5');
 		expect(fake.drafts?.find((d) => d.id === 5)).toMatchObject({ subject: 'Vol de nuit', message: 'Texte [b]revu[/b]' });
 	});
 

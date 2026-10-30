@@ -1,25 +1,30 @@
 /**
- * Adresse de retour après connexion (login.php). Le PHP reprenait redirect_url du formulaire sans
- * contrôle (redirection ouverte) : seules les pages .php du forum sont acceptées ici.
+ * Adresse de retour après connexion ou envoi d'un formulaire. Le PHP reprenait redirect_url du
+ * formulaire sans contrôle (redirection ouverte) : seules les pages de ce site sont acceptées ici,
+ * jamais la connexion elle-même.
  */
 
+import { publicPath } from './routes.ts';
+
+/** Chemin d'une page du forum : lettres, chiffres, tirets, points et barres, sans « .. » ni « // ». */
+const SAFE_PATH = /^\/(?:[\w-]+(?:\.php)?(?:\/[\w-]+)*)?$/;
+/** Pages où l'on ne revient pas : la connexion et son aller-retour chez le fournisseur. */
+const EXCLUDED = /^\/(?:connexion|login\.php|register\.php|auth)(?:\/|$)/;
+
 /**
- * Chemin relatif sûr (« viewtopic.php?pid=12#p12 ») tiré d'une adresse absolue ou relative, s'il
- * désigne une page .php de ce site ; sinon index.php.
+ * Adresse publique sûre (« /message/12#p12 ») tirée d'une adresse absolue ou relative, si elle
+ * désigne une page de ce site ; sinon l'accueil (« / »).
  */
 export function safeRedirect(target: string, host: string | undefined): string {
 	try {
 		const url = new URL(target, `http://${host ?? 'localhost'}/`);
-		if (host !== undefined && url.host !== host) return 'index.php';
-
-		const page = /^\/(?:[\w-]+\/)*([\w-]+\.php)$/.exec(url.pathname)?.[1];
-		if (page === undefined || page === 'login.php' || page === 'register.php') return 'index.php';
-
-		// viewtopic.php?pid=N : on ajoute l'ancre du message, comme login.php.
-		const pid = page === 'viewtopic.php' ? url.searchParams.get('pid') : null;
-		const hash = url.hash !== '' ? url.hash : pid !== null && /^\d+$/.test(pid) ? `#p${pid}` : '';
-		return `${page}${url.search}${hash}`;
+		if (host !== undefined && url.host !== host) return '/';
+		if (!SAFE_PATH.test(url.pathname) || EXCLUDED.test(url.pathname)) return '/';
+		// Ancienne adresse (« viewtopic.php?pid=12 ») : traduite en adresse publique, ancre comprise.
+		return url.pathname.endsWith('.php')
+			? publicPath(`${url.pathname.slice(1)}${url.search}${url.hash}`)
+			: `${url.pathname}${url.search}${url.hash}`;
 	} catch {
-		return 'index.php';
+		return '/';
 	}
 }

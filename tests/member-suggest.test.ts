@@ -43,7 +43,7 @@ describe('member_suggest.php', () => {
 		const server = await start();
 		const member = await inject(server, { url: '/viewtopic.php?id=10', headers: { cookie: cookie(3) } });
 		expect(member.body).toContain('js/mentions.js');
-		expect(member.body).toMatch(/data-profile-base="[^"]*\/profile\.php\?id="/);
+		expect(member.body).toContain('data-profile-base="/membre/"');
 		expect(member.body).toContain('data-mentions');
 		expect((await inject(server, '/viewtopic.php?id=10')).body).not.toContain('mentions.js');
 	});

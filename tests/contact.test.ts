@@ -86,7 +86,7 @@ describe('misc.php?email=', () => {
 			{ referer: 'http://forum.test/viewtopic.php?pid=100' },
 		);
 		expect(res.statusCode).toBe(303);
-		expect(res.headers.location).toBe('viewtopic.php?pid=100#p100');
+		expect(res.headers.location).toBe('/message/100#p100');
 		expect(fake.sentMails).toEqual([
 			expect.objectContaining({
 				to: 'max@example.test',
@@ -140,7 +140,7 @@ describe('misc.php?report=', () => {
 		const page = await inject(app, { url: '/misc.php?report=100', headers: { cookie: tessy } });
 		expect(page.body).toContain('Sujet signalé');
 		const res = await submit(app, '/misc.php?report=100', { req_reason: 'Hors sujet' });
-		expect(res.headers.location).toBe('viewforum.php?id=2');
+		expect(res.headers.location).toBe('/forum/2');
 		expect(fake.createdReports).toEqual([
 			{
 				target: { postId: 100, topicId: 10, subject: 'Sujet signalé', forumId: 2, forumName: 'Captures' },

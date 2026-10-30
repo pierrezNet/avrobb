@@ -27,6 +27,7 @@
 import type { Censor } from './censor.ts';
 import { MOBILE_BREAKPOINT, mobileVariantUrl } from './imageVariants.ts';
 import { linkBareUrls } from './preparse.ts';
+import { publicPath } from './routes.ts';
 import { doSmilies } from './smilies.ts';
 
 export interface BbcodeLabels {
@@ -126,6 +127,9 @@ function urlTag(rawUrl: string, rawLink: string, baseUrl: string): string {
 	else if (url.startsWith('/')) fullUrl = baseUrl + fullUrl;
 	// Sans schéma « abcdef:// », on préfixe http:// : « javascript:… » devient donc inoffensif.
 	else if (!/^[a-z0-9]{3,6}:\/\//.test(url)) fullUrl = `http://${fullUrl}`;
+	// Lien vers une page du forum à son ancienne adresse (« …/viewtopic.php?id=4 ») : adresse publique.
+	if (baseUrl !== '' && fullUrl.startsWith(`${baseUrl}/`) && /^[\w-]+\.php(?:[?#]|$)/.test(fullUrl.slice(baseUrl.length + 1)))
+		fullUrl = baseUrl + publicPath(decodeHtml(fullUrl.slice(baseUrl.length + 1))).replaceAll('&', '&amp;');
 
 	let link = rawLink;
 	if (link === '' || link === url) {
@@ -201,7 +205,7 @@ const SIMPLE_TAGS: readonly [RegExp, string][] = [
 	[/\[email=([^[]+?)\](.*?)\[\/email\]/gs, '<a href="mailto:$1">$2</a>'],
 ];
 
-/** Liens internes [topic], [post], [forum], [user] : relatifs, préfixés de o_base_url comme dans FluxBB. */
+/** Liens internes [topic], [post], [forum], [user] : adresses publiques (services/routes.ts), préfixées de o_base_url. */
 const INTERNAL_LINKS: readonly [tag: string, url: (id: string) => string][] = [
 	['topic', (id) => `viewtopic.php?id=${id}`],
 	['post', (id) => `viewtopic.php?pid=${id}#p${id}`],
@@ -275,7 +279,7 @@ function doBbcode(input: string, isSignature: boolean, options: BbcodeOptions): 
 	text = text.replace(/\[url=([^[]+?)\](.*?)\[\/url\]/gs, (_w, url: string, label: string) => urlTag(url, label, options.baseUrl));
 
 	for (const [tag, url] of INTERNAL_LINKS) {
-		const href = (id: string): string => (options.baseUrl !== '' ? `${options.baseUrl}/${url(id)}` : url(id));
+		const href = (id: string): string => `${options.baseUrl}${publicPath(url(id))}`;
 		text = text.replace(new RegExp(`\\[${tag}\\]([1-9]\\d*)\\[/${tag}\\]`, 'g'), (_w, id: string) => urlTag(href(id), '', options.baseUrl));
 		text = text.replace(new RegExp(`\\[${tag}=([1-9]\\d*)\\](.*?)\\[/${tag}\\]`, 'gs'), (_w, id: string, label: string) =>
 			urlTag(href(id), label, options.baseUrl),

@@ -8,6 +8,7 @@ import type { FeedPostRow, FeedTopicRow } from '../repositories/FeedRepository.t
 import { type BbcodeOptions, parseMessage } from '../services/bbcode.ts';
 import type { Censor } from '../services/censor.ts';
 import type { Feed, FeedItem } from '../services/feeds.ts';
+import { postPath, topicPath } from '../services/routes.ts';
 
 export interface FeedInput {
 	viewer: Viewer;
@@ -57,13 +58,13 @@ export function buildTopicFeed(
 
 	return {
 		title: `${config.boardTitle}${lang.common.titleSeparator}${subject}`,
-		link: `${base}/viewtopic.php?id=${topic.id}`,
+		link: `${base}${topicPath(topic.id, subject)}`,
 		description: lang.common.rssDescriptionTopic(subject),
 		type: 'posts',
 		items: posts.map((post) => ({
 			id: post.id,
 			title: post.id === topic.firstPostId ? subject : `${lang.common.rssReply}${subject}`,
-			link: `${base}/viewtopic.php?pid=${post.id}#p${post.id}`,
+			link: `${base}${postPath(post.id)}`,
 			description: render(post, input),
 			author: author(post.poster, post, input),
 			pubDate: post.posted,
@@ -78,13 +79,13 @@ export function buildTopicsFeed(rows: readonly FeedTopicRow[], forumName: string
 
 	return {
 		title: `${config.boardTitle}${forumName !== null ? `${lang.common.titleSeparator}${forumName}` : ''}`,
-		link: `${base}/index.php`,
+		link: `${base}/`,
 		description: lang.common.rssDescription(config.boardTitle),
 		type: 'topics',
 		items: rows.map((row) => ({
 			id: row.topicId,
 			title: censor !== null ? censor(row.subject) : row.subject,
-			link: `${base}/viewtopic.php?id=${row.topicId}${orderPosted ? '' : '&action=new'}`,
+			link: `${base}${topicPath(row.topicId, censor !== null ? censor(row.subject) : row.subject)}${orderPosted ? '' : '?action=new'}`,
 			description: render(row, input),
 			author: author(orderPosted ? row.topicPoster : row.lastPoster, row, input),
 			pubDate: orderPosted ? row.topicPosted : row.lastPost,

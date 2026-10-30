@@ -11,6 +11,7 @@ import type { Lang } from '../lang/fr/index.ts';
 import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
 import { headerImageHref } from '../services/headerImages.ts';
 import { canSearch, canUsePrivateMessages, isAnyModerator, isForumModerator } from '../services/permissions.ts';
+import { absoluteUrl } from '../services/routes.ts';
 import { plainExcerpt } from '../services/seo.ts';
 import { resolveTheme, type Theme } from '../services/themes.ts';
 
@@ -352,7 +353,7 @@ export function buildLayout(input: LayoutInput): LayoutView {
 	const { viewer, config, lang, options } = input;
 	const footer = options.footer ?? { kind: 'default' };
 	// Adresse canonique absolue (o_base_url) : les moteurs la préfèrent à une adresse relative.
-	const canonical = options.canonicalUrl ? `${config.baseUrl}/${options.canonicalUrl}` : null;
+	const canonical = options.canonicalUrl ? absoluteUrl(config.baseUrl, options.canonicalUrl) : null;
 
 	return {
 		lang,
@@ -380,7 +381,7 @@ export function buildLayout(input: LayoutInput): LayoutView {
 		footerLinks: buildFooterLinks(lang, options.pageId),
 		csrfToken: input.csrfToken,
 		header: { logoHref: headerImageHref('logo', config.headerVersion), bannerHref: headerImageHref('banner', config.headerVersion) },
-		memberSuggest: !viewer.isGuest && viewer.group.canViewUsers ? { profileBase: `${config.baseUrl}/profile.php?id=` } : null,
+		memberSuggest: !viewer.isGuest && viewer.group.canViewUsers ? { profileBase: '/membre/' } : null,
 		// Bandeau pour les membres seulement : un invité banni par son adresse IP n'écrit déjà presque
 		// rien (ses envois restent refusés), le message ne ferait que l'intriguer.
 		ban:

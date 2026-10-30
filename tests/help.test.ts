@@ -18,7 +18,7 @@ describe('GET /help.php', () => {
 		expect(res.body).toContain('<title>Aide / Forum de test</title>');
 		expect(res.body).toContain('<code>[b]Texte en gras[/b]</code>');
 		expect(res.body).toContain('<dd class="bbcode"><p><strong>Texte en gras</strong></p></dd>');
-		expect(res.body).toContain('<a href="http://forum.test/help.php" rel="nofollow">Cette page d&#039;aide</a>');
+		expect(res.body).toContain('<a href="http://forum.test/aide" rel="nofollow">Cette page d&#039;aide</a>');
 		expect(res.body).toContain('<ol class="alpha">');
 		expect(res.body).toContain('<details class="spoiler">');
 		expect(res.body).toContain('<code>:)</code> et <code>=)</code>');

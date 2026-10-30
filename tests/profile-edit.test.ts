@@ -345,7 +345,7 @@ describe('profile.php : sections', () => {
 		const res = await get(server, 3, '/profile.php?id=3');
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('<h1 class="page-title">Tessy - Principal</h1>');
-		expect(res.body).toContain('href="profile.php?section=essentials&amp;id=3" aria-current="page"');
+		expect(res.body).toContain('href="/profile.php?section=essentials&amp;id=3" aria-current="page"');
 		expect(res.body).toContain('name="req_email" value="tessy@example.com"');
 		expect(res.body).not.toContain('admin_note');
 		expect(res.body).not.toContain('section=admin');
@@ -374,7 +374,7 @@ describe('profile.php : sections', () => {
 			'form[url]': 'www.tess.fr',
 		});
 		expect(ok.statusCode).toBe(303);
-		expect(ok.headers.location).toBe('profile.php?section=personal&id=3&updated=1');
+		expect(ok.headers.location).toBe('/profile.php?section=personal&id=3&updated=1');
 		expect(fake.profileUpdates).toEqual([
 			{ id: 3, changes: { realname: 'Tess', location: 'Lyon', url: 'https://www.tess.fr', title: 'Pilote' } },
 		]);
@@ -482,7 +482,7 @@ describe('profile.php : avatar', () => {
 		const fake = data();
 		const server = await start(fake, { avatars: true });
 		const confirm = await get(server, 3, '/profile.php?action=delete_avatar&id=3');
-		expect(confirm.body).toContain('action="profile.php?action=delete_avatar&amp;id=3"');
+		expect(confirm.body).toContain('action="/profile.php?action=delete_avatar&amp;id=3"');
 		expect(fake.avatarLog).toBeUndefined();
 		expect((await post(server, 3, '/profile.php?action=delete_avatar&id=3', {})).statusCode).toBe(303);
 		expect(fake.avatarLog).toEqual(['delete 3']);
@@ -531,8 +531,8 @@ describe('profile.php : compte SSO', () => {
 		const fake = data();
 		const server = await start(fake);
 		const own = await get(server, 3, '/profile.php?section=essentials&id=3');
-		expect(own.body).toContain('action="login.php?action=out_all"');
-		expect(own.body).toContain('href="profile.php?action=delete_account&amp;id=3"');
+		expect(own.body).toContain('action="/connexion?action=out_all"');
+		expect(own.body).toContain('href="/profile.php?action=delete_account&amp;id=3"');
 		expect((await get(server, 5, '/profile.php?section=essentials&id=3')).body).not.toContain('out_all');
 		const adminOwn = await get(server, 2, '/profile.php?section=essentials&id=2');
 		expect(adminOwn.body).toContain('out_all');

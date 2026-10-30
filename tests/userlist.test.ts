@@ -48,7 +48,7 @@ describe('GET /userlist.php', () => {
 		expect(res.body).toContain('Pilote &lt;ligne&gt;');
 		expect(res.body).toContain('<td data-label="Titre de l&#39;utilisateur">En vacances</td>');
 		expect(res.body.match(/<tr>/g)?.length).toBe(1 + 50);
-		expect(res.body).toContain('href="userlist.php?username=&amp;show_group=-1&amp;sort_by=username&amp;sort_dir=ASC&amp;p=2"');
+		expect(res.body).toContain('href="/membres?username=&amp;show_group=-1&amp;sort_by=username&amp;sort_dir=ASC&amp;p=2"');
 	});
 
 	it('filtre par pseudo avec joker et par groupe, et ignore les tris inconnus', async () => {

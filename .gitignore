@@ -3,10 +3,8 @@ dist/
 .env
 screenshots/
 storage/
-
-# Synthèse personnelle des améliorations par rapport au PHP (tenue à jour, non versionnée)
-AMELIORATIONS.md
-FAILLES_PHP.md
 src/generated/
 .wrangler/
 .dev.vars
+# Réglages de Claude Code propres au poste (permissions, chemins locaux)
+.claude/settings.json

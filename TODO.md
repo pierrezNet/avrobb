@@ -199,7 +199,7 @@ Vigilance :
 
 - [ ] Pages d'information relues et complétées : responsable du traitement, hébergeur (Cloudflare), mentions légales, politique de confidentialité (SSO, cookies, journaux)
 - [ ] `robots.txt`, `sitemap.xml`, URL canoniques sur le domaine final
-- [ ] Revue de sécurité (`/security-review`) et passage de `FAILLES_PHP.md` comme liste de contrôle
+- [ ] Revue de sécurité (`/security-review`)
 - [ ] Contrôle à la main, sur mobile et bureau, avec et sans JS : lecture anonyme (servie par le cache), connexion GitHub, publication, édition, galerie, messagerie, modération, administration
 - [ ] Mesures : CPU par page, lignes D1 lues par page, poids des pages
 - [ ] Catégories et forums de départ créés, premier message publié

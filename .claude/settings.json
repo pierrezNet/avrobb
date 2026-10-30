@@ -1,7 +1,0 @@
-{
-	"permissions": {
-		"defaultMode": "bypassPermissions",
-		"allow": ["Bash", "Read", "Edit", "Write", "WebFetch", "WebSearch"],
-		"additionalDirectories": ["/var/www/html/PiloteVirtuel", "/media/emmanuel-pierrez/OpenData/html/PiloteVirtuel"]
-	}
-}

@@ -8,7 +8,7 @@ Hors de la chaîne Node : à relancer seulement pour changer l'identité visuell
 puis copier logo.png et banner.jpg dans public/assets/img/ (avrobb-logo.png, avrobb-banner.jpg),
 avrobb-logo.svg dans public/assets/img/, et les icônes dans public/assets/icons/.
 Pré-requis : rsvg-convert, Noto Sans Bold et DejaVu Sans Mono ; image source de la bannière :
-https://www.pierrez.net/images/bg.jpg (BANNER_SOURCE).
+https://www.pierrez.net/images/bg.jpg, téléchargée en local et désignée par BANNER_SOURCE.
 """
 
 import math
@@ -23,7 +23,9 @@ from fontTools.ttLib import TTFont
 from PIL import Image, ImageFilter, ImageEnhance
 
 OUT = Path(sys.argv[1])
-SRC_BG = Path(os.environ.get('BANNER_SOURCE', '/media/emmanuel-pierrez/OpenData/html/pierreznet/images/bg.jpg'))
+if 'BANNER_SOURCE' not in os.environ:
+	sys.exit('BANNER_SOURCE : chemin de l\'image source de la bannière (voir l\'en-tête du script)')
+SRC_BG = Path(os.environ['BANNER_SOURCE'])
 OUT.mkdir(parents=True, exist_ok=True)
 
 WHITE = '#fff7f0'

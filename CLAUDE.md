@@ -12,7 +12,6 @@ Cible : **100 % Cloudflare**. Un Worker (Hono), D1 (SQLite), R2 (fichiers), Stat
 
 - Plan et avancement : **`TODO.md`** (lots ordonnés, chacun livrable et testé).
 - `AMELIORATIONS.md` (non versionné) : améliorations par rapport au forum PHP d'origine, à tenir à jour.
-- `FAILLES_PHP.md` (non versionné) : failles du PHP d'origine, liste de contrôle à ne pas reproduire.
 - Projet voisin sur le même modèle (Workers + D1 + Hono) : `../donnetonpoint`.
 
 > **État** : lots 1 à 7 terminés côté code (héritage PV retiré, Hono, D1, Worker et R2, SSO, images et e-mails, URL propres, cache en bordure, CI et déploiement). Reste la mise en production (README, « Déploiement ») et le lot 8.

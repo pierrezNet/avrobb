@@ -16,11 +16,12 @@ import { LogMailer, type Mailer, ResendMailer } from './adapters/mailer.ts';
 import { FetchOAuthClient } from './adapters/oauth.ts';
 import { buildApp, type ForumApp } from './app.ts';
 import { loadConfig } from './config.ts';
+import { AppFeedbackController, type AppFeedbackResult } from './controllers/AppFeedbackController.ts';
 import type { RateLimiter } from './controllers/AuthController.ts';
-import { PhraseoFeedbackController, type PhraseoFeedbackResult } from './controllers/PhraseoFeedbackController.ts';
 import { ScheduledTasks } from './controllers/ScheduledTasks.ts';
 import type { D1Database } from './db/d1.ts';
 import { createDatabase, type Db } from './db/database.ts';
+import type { FeedbackSourceId } from './domain/models.ts';
 import assetManifest from './generated/assets.js';
 import templates from './generated/templates.js';
 import { type EdgeCache, withEdgeCache } from './http/edgeCache.ts';
@@ -237,27 +238,42 @@ function forumApp(env: Env): Promise<ForumApp> {
 	return app;
 }
 
+/** Crée le sujet d'un retour reçu du relais d'une application source (AppFeedbackController). */
+function submitAppFeedback(env: Env, source: FeedbackSourceId, input: unknown): Promise<AppFeedbackResult> {
+	const config = loadConfig(env as unknown as Readonly<Record<string, unknown>>);
+	const { db, configLoader } = isolateServices(env);
+	const controller = new AppFeedbackController(source, {
+		config: configLoader,
+		posting: new PostingRepository(db),
+		stopwords: new BuiltinStopwords(),
+		mailer: createMailer(config),
+		mailTemplates: { load: async (name) => mail[name] },
+		texts: fr.appFeedback,
+		clock,
+		logger: consoleLogger,
+	});
+	return controller.submit(input);
+}
+
 /**
  * Retours de l'application Phraséo, appelés par le relais de Phraséo (même compte Cloudflare) via une
  * liaison de service : `"entrypoint": "PhraseoFeedback"` côté relais. Cette classe n'a pas d'adresse
  * publique : seul un Worker lié peut l'appeler, sans secret à partager.
  */
 export class PhraseoFeedback extends WorkerEntrypoint<Env> {
-	async submit(input: unknown): Promise<PhraseoFeedbackResult> {
-		const env = this.env;
-		const config = loadConfig(env as unknown as Readonly<Record<string, unknown>>);
-		const { db, configLoader } = isolateServices(env);
-		const controller = new PhraseoFeedbackController({
-			config: configLoader,
-			posting: new PostingRepository(db),
-			stopwords: new BuiltinStopwords(),
-			mailer: createMailer(config),
-			mailTemplates: { load: async (name) => mail[name] },
-			texts: fr.phraseoFeedback,
-			clock,
-			logger: consoleLogger,
-		});
-		return controller.submit(input);
+	async submit(input: unknown): Promise<AppFeedbackResult> {
+		return submitAppFeedback(this.env, 'phraseo', input);
+	}
+}
+
+/**
+ * Retours de l'application Donne Ton Point (donnetonpoint.fr), appelés par sa Pages Function via une
+ * liaison de service : `"entrypoint": "DonneTonPointFeedback"` côté appelant. Même contrat que
+ * PhraseoFeedback, sans adresse publique.
+ */
+export class DonneTonPointFeedback extends WorkerEntrypoint<Env> {
+	async submit(input: unknown): Promise<AppFeedbackResult> {
+		return submitAppFeedback(this.env, 'donneTonPoint', input);
 	}
 }
 

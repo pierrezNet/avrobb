@@ -131,9 +131,10 @@ Lui répondre :
 
 ${signature}`,
 	},
-	phraseo_feedback: {
-		subject: 'Retour Phraséo : <type>',
-		body: `Nouveau retour de <pseudo> envoyé depuis l'application Phraséo (<type>), rangé dans le forum privé « à trier ».
+	/** Retour d'une application source (Phraséo, Donne Ton Point) : <app> est son nom. */
+	app_feedback: {
+		subject: 'Retour <app> : <type>',
+		body: `Nouveau retour de <pseudo> envoyé depuis l'application <app> (<type>), rangé dans le forum privé « à trier ».
 
 Contact laissé par l'auteur (non publié) : <contact>
 

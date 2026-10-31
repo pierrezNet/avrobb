@@ -41,8 +41,8 @@
 </p>
 {% endif %}
 
-{% if view.acceptAction %}
-<p class="forum-actions">{{ actions.postButton(layout, view.acceptAction, lang.topic.acceptPhraseoFeedback) }}</p>
+{% if view.accept %}
+<p class="forum-actions">{{ actions.postButton(layout, view.accept.action, view.accept.label) }}</p>
 {% endif %}
 
 {% if view.quickPost %}

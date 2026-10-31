@@ -17,6 +17,7 @@ import { adminPages } from './adminPages.ts';
 import { adminPermissions } from './adminPermissions.ts';
 import { adminPlugins } from './adminPlugins.ts';
 import { adminUsers } from './adminUsers.ts';
+import { appFeedback } from './appFeedback.ts';
 import { common } from './common.ts';
 import { deletePage } from './delete.ts';
 import { drafts } from './drafts.ts';
@@ -27,7 +28,6 @@ import { indexPage } from './indexPage.ts';
 import { login } from './login.ts';
 import { misc } from './misc.ts';
 import { moderate } from './moderate.ts';
-import { phraseoFeedback } from './phraseoFeedback.ts';
 import { pms } from './pms.ts';
 import { post } from './post.ts';
 import { profile } from './profile.ts';
@@ -71,7 +71,7 @@ export const fr = {
 	adminOptions,
 	adminPlugins,
 	adminPermissions,
-	phraseoFeedback,
+	appFeedback,
 };
 
 export const frDateWords: DateWords = {

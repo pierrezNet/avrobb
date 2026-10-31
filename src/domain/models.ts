@@ -178,6 +178,16 @@ export type FeedType = 'none' | 'rss';
 
 /** Réglages du forum (table config) utiles à l'affichage. */
 /** Pages d'information d'AvroBB (pied de page). */
+/** Applications dont les retours (formulaire sans compte) arrivent par liaison de service (worker.ts). */
+export type FeedbackSourceId = 'phraseo' | 'donneTonPoint';
+
+/** Où arrivent les retours d'une application : forum privé, compte système, forum public des retours acceptés. */
+export interface FeedbackDestination {
+	forumId: number;
+	userId: number;
+	targetForumId: number | null;
+}
+
 export type StaticPageId = 'terms' | 'privacy' | 'faq';
 
 /** Rubrique d'une page d'information : titre, paragraphes, liens éventuels. */
@@ -243,12 +253,13 @@ export interface BoardConfig {
 	/** Signalements envoyés aussi par e-mail à la liste d'administration (o_report_method 1 ou 2). */
 	reportsByEmail: boolean;
 	/**
-	 * Retours de l'application Phraséo (migration 0005) : forum privé qui les reçoit et compte système
-	 * qui signe les sujets (o_phraseo_feedback_forum, o_phraseo_feedback_user). Null : non configuré.
-	 * targetForumId (o_phraseo_feedback_target, migration 0006) : forum public où un administrateur
-	 * publie un retour accepté ; null : bouton « Accepter » masqué.
+	 * Retours des applications sources (sans compte), par application : forum privé « à trier » qui
+	 * les reçoit et compte système qui signe les sujets ; null : non configuré. targetForumId : forum
+	 * public où un administrateur publie un retour accepté ; null : bouton « Accepter » masqué.
+	 * Phraséo : o_phraseo_feedback_forum, _user (migration 0005) et _target (0006) ; Donne Ton Point :
+	 * o_dtp_feedback_* (0008).
 	 */
-	phraseoFeedback: { forumId: number; userId: number; targetForumId: number | null } | null;
+	appFeedback: Readonly<Record<FeedbackSourceId, FeedbackDestination | null>>;
 	maintenance: boolean;
 	/** Message du mode maintenance (o_maintenance_message), HTML saisi par l'administrateur. */
 	maintenanceMessage: string;

@@ -6,14 +6,14 @@
  * en dernier, et seulement pour l'affichage (pas de comparaison sur des chaînes formatées).
  */
 
-import { type BoardConfig, GroupId, type Post, type PostAuthor, type Topic, type Viewer } from '../domain/models.ts';
+import { type BoardConfig, type FeedbackSourceId, GroupId, type Post, type PostAuthor, type Topic, type Viewer } from '../domain/models.ts';
 import type { Lang } from '../lang/fr/index.ts';
 import { type BbcodeOptions, parseMessage, parseSignature } from '../services/bbcode.ts';
 import type { Censor } from '../services/censor.ts';
 import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
 import { safeExternalUrl } from '../services/links.ts';
 import {
-	canAcceptPhraseoFeedback,
+	acceptableAppFeedback,
 	canEditSubjectPrefixes,
 	canQuickPost,
 	canReply,
@@ -98,8 +98,8 @@ export interface TopicPageView {
 	quickPost: QuickPostView | null;
 	/** Abonnement au sujet (membres, o_topic_subscriptions) : bouton POST vers misc.php. */
 	subscription: { subscribed: boolean; action: string } | null;
-	/** Retour Phraséo à trier : bouton POST « Accepter » (publication dans le forum public), ou null. */
-	acceptAction: string | null;
+	/** Retour d'une application source à trier : bouton POST « Accepter » (publication dans le forum public), ou null. */
+	accept: { action: string; label: string } | null;
 }
 
 export interface QuickPostView {
@@ -243,6 +243,13 @@ function reputation(post: Post, author: PostAuthor, input: TopicPageInput): Repu
 	};
 }
 
+/** Bouton « Accepter » d'un retour d'application (feedback_accept.php), si ce membre peut l'accepter. */
+function acceptView(source: FeedbackSourceId | null, topicId: number, lang: Lang): TopicPageView['accept'] {
+	return source !== null
+		? { action: `feedback_accept.php?app=${source}&id=${topicId}`, label: lang.topic.acceptAppFeedback[source] }
+		: null;
+}
+
 export function buildTopicPage(input: TopicPageInput): TopicPageView {
 	const { viewer, config, topic, lang, censor } = input;
 	const time = viewerTimeSettings(viewer);
@@ -335,6 +342,6 @@ export function buildTopicPage(input: TopicPageInput): TopicPageView {
 						action: `misc.php?action=${topic.isSubscribed ? 'unsubscribe' : 'subscribe'}&tid=${topic.id}`,
 					}
 				: null,
-		acceptAction: canAcceptPhraseoFeedback(viewer, topic.forum.id, config) ? `phraseo_accept.php?id=${topic.id}` : null,
+		accept: acceptView(acceptableAppFeedback(viewer, topic.forum.id, config), topic.id, lang),
 	};
 }

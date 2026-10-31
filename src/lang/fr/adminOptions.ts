@@ -134,11 +134,15 @@ export const adminOptions = {
 		},
 		mailing_list: {
 			label: 'Liste de diffusion',
-			help: "Une liste d'abonnés séparés par une virgule. Les personnes dans cette liste sont les destinataires des signalements et des retours de l'application Phraséo.",
+			help: "Une liste d'abonnés séparés par une virgule. Les personnes dans cette liste sont les destinataires des signalements et des retours des applications Phraséo et Donne Ton Point.",
 		},
 		phraseo_feedback_target: {
 			label: 'Forum des retours Phraséo acceptés',
 			help: 'Numéro du forum public où le bouton « Accepter » publie un retour du forum privé « Retours Phraséo (à trier) ». 0 : bouton masqué.',
+		},
+		dtp_feedback_target: {
+			label: 'Forum des retours Donne Ton Point acceptés',
+			help: 'Numéro du forum public où le bouton « Accepter » publie un retour du forum privé « Retours Donne Ton Point (à trier) ». 0 : bouton masqué.',
 		},
 		avatars: {
 			label: 'Utiliser des avatars',

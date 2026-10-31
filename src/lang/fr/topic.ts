@@ -7,8 +7,11 @@ export const topic = {
 	isSubscribed: 'Vous suivez cette discussion',
 	unsubscribe: 'Ne plus suivre',
 	subscribe: 'Suivre cette discussion',
-	/** Retour de l'application Phraséo, dans le forum privé « à trier » (administrateurs). */
-	acceptPhraseoFeedback: 'Accepter : publier dans le forum de la phraséologie',
+	/** Retour d'une application source, dans son forum privé « à trier » (administrateurs). */
+	acceptAppFeedback: {
+		phraseo: 'Accepter : publier dans le forum de la phraséologie',
+		donneTonPoint: 'Accepter : publier dans le forum Donne ton point',
+	},
 	postReply: 'Répondre',
 	topicClosed: 'Discussion fermée',
 	from: 'Lieu\u00a0:',

@@ -19,6 +19,7 @@ import { AdminPagesController, type AdminPagesQuery } from './controllers/AdminP
 import { AdminPermissionsController, type AdminPermissionsQuery } from './controllers/AdminPermissionsController.ts';
 import { AdminReportsController, type AdminReportsQuery } from './controllers/AdminReportsController.ts';
 import { AdminUsersController, type AdminUsersQuery } from './controllers/AdminUsersController.ts';
+import { AppFeedbackAcceptController, type AppFeedbackAcceptQuery } from './controllers/AppFeedbackAcceptController.ts';
 import { AuthController, type AuthQuery, type RateLimiter } from './controllers/AuthController.ts';
 import { ContactController, type ContactQuery } from './controllers/ContactController.ts';
 import { DeleteController, type DeleteQuery } from './controllers/DeleteController.ts';
@@ -34,7 +35,6 @@ import { LoginController, type LoginQuery } from './controllers/LoginController.
 import { MemberSuggestController, type MemberSuggestQuery } from './controllers/MemberSuggestController.ts';
 import { MiscController, type MiscQuery } from './controllers/MiscController.ts';
 import { type HostResolver, ModerateController, type ModerateQuery } from './controllers/ModerateController.ts';
-import { PhraseoAcceptController, type PhraseoAcceptQuery } from './controllers/PhraseoAcceptController.ts';
 import { PostController, type PostQuery } from './controllers/PostController.ts';
 import { PrivateMessageController, type PrivateMessageQuery } from './controllers/PrivateMessageController.ts';
 import { PrivateMessageSendController, type PrivateMessageSendQuery } from './controllers/PrivateMessageSendController.ts';
@@ -329,9 +329,13 @@ export async function buildApp(input: AppDeps): Promise<ForumApp> {
 	router.get<{ Querystring: ProfileQuery }>('/profile.php', [authenticate], profiles.show);
 	router.post<{ Querystring: ProfileQuery; Body: FormBody }>('/profile.php', [authenticate, verifyCsrf, writeLimit], profiles.submit);
 
-	// Retours Phraséo : bouton « Accepter » de la page du sujet (administrateurs, forum privé « à trier »)
-	const phraseoAccept = new PhraseoAcceptController(deps);
-	router.post<{ Querystring: PhraseoAcceptQuery; Body: FormBody }>('/phraseo_accept.php', [authenticate, verifyCsrf], phraseoAccept.accept);
+	// Retours des applications sources : bouton « Accepter » de la page du sujet (administrateurs, forum privé « à trier »)
+	const feedbackAccept = new AppFeedbackAcceptController(deps);
+	router.post<{ Querystring: AppFeedbackAcceptQuery; Body: FormBody }>(
+		'/feedback_accept.php',
+		[authenticate, verifyCsrf],
+		feedbackAccept.accept,
+	);
 
 	const moderate = new ModerateController({ ...deps, trackCookieName });
 	router.get<{ Querystring: ModerateQuery }>('/moderate.php', [authenticate], moderate.show);

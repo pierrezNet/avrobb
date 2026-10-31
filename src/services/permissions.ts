@@ -6,12 +6,14 @@
 import {
 	type BoardConfig,
 	type EditablePost,
+	type FeedbackSourceId,
 	type ForumInfo,
 	GroupId,
 	type PostingTarget,
 	type Topic,
 	type Viewer,
 } from '../domain/models.ts';
+import { FEEDBACK_SOURCE_IDS } from './appFeedback.ts';
 
 /**
  * Visiteur banni (AvroBB) : il lit le forum comme avant, mais son groupe perd tout droit d'écriture
@@ -57,12 +59,23 @@ export function isAdmin(viewer: Viewer): boolean {
 }
 
 /**
- * Bouton « Accepter » d'un retour Phraséo : administrateur, sujet du forum privé « à trier », forum
- * public de destination configuré. Le forum privé n'est lisible que des administrateurs.
+ * Bouton « Accepter » d'un retour d'une application source (Phraséo, Donne Ton Point) :
+ * administrateur, sujet du forum privé « à trier » de cette application, forum public de destination
+ * configuré. Le forum privé n'est lisible que des administrateurs.
  */
-export function canAcceptPhraseoFeedback(viewer: Viewer, forumId: number, config: Pick<BoardConfig, 'phraseoFeedback'>): boolean {
-	const feedback = config.phraseoFeedback;
+export function canAcceptAppFeedback(
+	viewer: Viewer,
+	source: FeedbackSourceId,
+	forumId: number,
+	config: Pick<BoardConfig, 'appFeedback'>,
+): boolean {
+	const feedback = config.appFeedback[source];
 	return isAdmin(viewer) && feedback !== null && feedback.targetForumId !== null && forumId === feedback.forumId;
+}
+
+/** Application dont un sujet de ce forum peut être accepté par ce membre, sinon null. */
+export function acceptableAppFeedback(viewer: Viewer, forumId: number, config: Pick<BoardConfig, 'appFeedback'>): FeedbackSourceId | null {
+	return FEEDBACK_SOURCE_IDS.find((source) => canAcceptAppFeedback(viewer, source, forumId, config)) ?? null;
 }
 
 /** Administrateur, ou modérateur de groupe désigné sur ce forum ($is_admmod de viewforum/viewtopic). */

@@ -74,6 +74,7 @@ N'ajoute pas de dépendance sans raison claire. Chaque octet compte dans le bund
 Principes :
 - **Injection de dépendances** : chaque contrôleur reçoit ses dépendances sous forme d'interfaces `XxxReader` / `XxxWriter` (voir `AppDeps` dans `src/app.ts`). `src/worker.ts` câble les vraies à partir des liaisons (`env.DB`, `env.FILES`…) ; les tests passent des doublures en mémoire (`tests/fixtures.ts`).
 - **Pas d'accès à `env` hors du point d'entrée** : les secrets et liaisons sont lus une fois dans `worker.ts`, validés par `config.ts`, puis injectés.
+- **Retours d'applications** (Phraséo, Donne Ton Point) : reçus par liaison de service (`PhraseoFeedback`, `DonneTonPointFeedback` dans `worker.ts`, contrat `submit(input)` à ne pas changer). Une nouvelle application = un profil dans `services/appFeedback.ts` (`FEEDBACK_SOURCES`), ses textes dans `lang/fr/appFeedback.ts`, son libellé « Accepter » dans `lang/fr/topic.ts`, une migration (compte système, forum privé, réglages `<préfixe>_forum`/`_user`/`_target`) et un point d'entrée ; le contrôleur et l'acceptation sont communs.
 - **Découpage par fonctionnalité** : un contrôleur, un presenter et une vue par page ; les repositories sont organisés par table ou agrégat.
 - Les **règles de droits** vivent dans `services/permissions.ts` (ou un fichier par domaine) et ne sont jamais recopiées dans une vue ou un contrôleur.
 - **Dates** : timestamps Unix (secondes) jusqu'au presenter, formatage en dernier, horloge injectée (`PageContext.clock`). Formats fixes `d/m/Y` et `H:i`, fuseau du membre.

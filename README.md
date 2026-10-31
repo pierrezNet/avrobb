@@ -128,12 +128,17 @@ Front-end : `public/assets/css/base.css` (mobile d'abord) et un fichier de varia
   pas supprimer un sujet ou un message où un administrateur a écrit ; les erreurs s'affichent dans
   la page ; « Laisser un lien de redirection » proposé coché pour un sujet seul, comme le PHP.
   Consultation d'IP : résolution inverse limitée à 2 secondes.
-- Retours de l'application Phraséo (absent de FluxBB) : le relais de Phraséo crée un sujet dans le
-  forum privé « Retours Phraséo (à trier) » par liaison de service (`PhraseoFeedback`, aucune adresse
-  publique), signé d'un compte système sans connexion possible ; le contact de l'auteur part par
-  e-mail à la liste de diffusion, jamais dans le sujet. Un administrateur publie un retour par le
-  bouton « Accepter » (`phraseo_accept.php`, POST avec jeton CSRF) : rappel d'en-tête remplacé, sujet
-  déplacé vers le forum de l'option « Forum des retours Phraséo acceptés » (n° 4 par défaut).
+- Retours des applications Phraséo et Donne Ton Point (absent de FluxBB) : le relais de chaque
+  application crée un sujet dans son forum privé « à trier » par liaison de service (points d'entrée
+  `PhraseoFeedback` et `DonneTonPointFeedback`, aucune adresse publique), signé d'un compte système
+  sans connexion possible ; le contact de l'auteur part par e-mail à la liste de diffusion, jamais
+  dans le sujet. Un profil par application (`services/appFeedback.ts` : types, champs propres,
+  réglages) alimente un contrôleur commun. Phraséo : forum « Retours Phraséo (à trier) », réglages
+  `o_phraseo_feedback_*` (migrations 0005 à 0007). Donne Ton Point : forum « Retours Donne Ton Point
+  (à trier) » après le forum n° 3, réglages `o_dtp_feedback_*` (migration 0008). Un administrateur
+  publie un retour par le bouton « Accepter » (`feedback_accept.php?app=…&id=…`, POST avec jeton
+  CSRF) : rappel d'en-tête remplacé, sujet déplacé vers le forum de l'option « Forum des retours
+  Phraséo acceptés » (n° 4 par défaut) ou « Forum des retours Donne Ton Point acceptés » (n° 3).
 - Signalements (`admin_reports.php`) : bouton « Marquer comme traité » en POST avec jeton CSRF ;
   les 10 derniers signalements traités sont conservés, comme le PHP.
 - Accueil de l'administration : pas de vérification de mise à jour (`action=check_upgrade`, le

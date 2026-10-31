@@ -25,7 +25,7 @@ export type MailTemplateName =
 	| 'new_report'
 	| 'new_pm'
 	| 'new_pm_full'
-	| 'phraseo_feedback';
+	| 'app_feedback';
 
 export interface MailTemplateReader {
 	load(name: MailTemplateName): Promise<MailTemplate>;

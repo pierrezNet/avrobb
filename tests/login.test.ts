@@ -83,6 +83,8 @@ describe('connexion de développement', () => {
 		expect(disabled.statusCode).toBe(403);
 		const page = await inject(app, { url: '/login.php', headers: { host: HOST } });
 		expect(page.body).not.toContain('name="req_username"');
+		// Sans JavaScript, les pages de GitHub et Google ne s'affichent pas : le visiteur est prévenu.
+		expect(page.body).toContain('<noscript><p class="form__help">JavaScript semble désactivé.');
 	});
 
 	it('formulaire accessible en maintenance, avec adresse de retour tirée du Referer', async () => {

@@ -11,6 +11,9 @@ export const login = {
 	providers: { github: 'GitHub', google: 'Google' } as Record<'github' | 'google', string>,
 	signInWith: (provider: string) => `Se connecter avec ${provider}`,
 	noProvider: 'Aucun fournisseur de connexion n’est configuré pour le moment.',
+	// Le forum fonctionne sans JavaScript, mais les pages de connexion de GitHub et Google le demandent.
+	noScript:
+		'JavaScript semble désactivé. AvroBB se lit sans, mais la connexion passe par le site de votre compte, qui en a besoin : activez-le le temps de vous connecter.',
 	privacyInfo: 'Ce que nous recevons de ce compte est décrit dans la',
 	privacyLink: 'politique de confidentialité',
 	ssoCancelled: 'Connexion annulée.',

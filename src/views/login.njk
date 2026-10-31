@@ -8,6 +8,7 @@
 <section class="form-box sso-login" aria-labelledby="sso-title">
 	<h2 class="visually-hidden" id="sso-title">{{ lang.login.login }}</h2>
 	<p>{{ lang.login.intro }}</p>
+	<noscript><p class="form__help">{{ lang.login.noScript }}</p></noscript>
 	{% if view.providers.length %}
 	<ul class="sso-login__providers">
 		{% for provider in view.providers %}<li><a class="button button--primary sso-login__button sso-login__button--{{ provider.id }}" href="{{ url(provider.href) }}">{{ provider.label }}</a></li>{% endfor %}

@@ -197,7 +197,7 @@ Vigilance :
 - Une migration D1 appliquée avant le déploiement doit rester compatible avec la version précédente du code (ajouter, puis retirer dans un déploiement suivant).
 - Purge du cache : la durée courte évite d'avoir à purger ; ne pas monter au-delà de quelques minutes sans mécanisme de purge.
 
-## Lot 8 — Mise en ligne · 1 jour, plus la relecture des textes · en cours (forum ouvert le 2026-10-30)
+## Lot 8 — Mise en ligne · 1 jour, plus la relecture des textes · terminé le 2026-10-31 (forum ouvert le 2026-10-30)
 
 - [x] Pages d'information relues et validées par Emmanuel (2026-10-31) ; confidentialité : contact du délégué à la protection des données (dpo@pierrez.net), l'adresse de l'administrateur étant vide
 - [x] `robots.txt`, `sitemap.xml`, URL canoniques sur le domaine final (vérifié sur avrobb.org le 2026-10-31)
@@ -207,7 +207,7 @@ Vigilance :
   - CPU par rendu, Worker chaud (médiane sur 5) : accueil 21 ms, forum 13 ms, sujet 9 ms, membres 9 ms, aide 5 ms ; 30 à 75 ms au premier rendu d'un isolat froid. Page servie par le cache : 0 à 1 ms. Sous l'objectif de 50 ms ;
   - poids : HTML de 1,6 à 3,6 Ko compressé, `base.css` 13 Ko ; le logo par défaut est passé de 86 Ko à 7 Ko (602 × 154, 256 couleurs) ;
   - D1 : ~60 000 lignes lues par jour (la lecture de `config`, 80 lignes toutes les 30 s par isolat, en fait les trois quarts), ~1 200 écritures par jour (présence dans `online`). Très loin des quotas de Workers Paid
-- [ ] Alerte en cas d'erreurs : notification Cloudflare sur le taux d'erreur du Worker (la panne du 2026-10-30 n'a été vue que par le message d'erreur)
+- [x] Suivi des erreurs : onglet Observability du Worker (événements, succès et erreurs par période), consulté à la main. Les alertes Cloudflare sur le taux d'erreur sont réservées à l'offre Enterprise ; Issues et les alertes personnalisées de Workers Observability sont en bêta (octobre 2026), sans envoi par e-mail. Si besoin plus tard : e-mail d'alerte envoyé par le forum (Resend) sur une erreur 500, espacé d'une heure au moins
 - [x] Catégories et forums de départ créés, premiers messages publiés
 - [x] `AMELIORATIONS.md` mis à jour (2026-10-31) : passages hérités de pv-forum corrigés (cohabitation avec le PHP, simulateurs), ajouts propres à AvroBB (SSO, Cloudflare, adresses propres, retours d'applications)
 - [x] **Limite de 100 paramètres par requête de D1** (premier message refusé en production le 2026-10-30, `too many SQL variables`) : le pilote (`db/d1Dialect.ts`) refuse toute requête au-delà, en local aussi. Listes lues en base découpées (`chunks()`) ou remplacées par des sous-requêtes : index de recherche, élagage d'un forum, bannissements échus. Listes venues d'un formulaire plafonnées à 80 (`MAX_SELECTED_ITEMS`, une page en affiche 75 au plus) : modération, messagerie, renommée, membres, flux public (`fid`/`nfid`), destinataires d'un MP. Tests avec plus de 100 éléments

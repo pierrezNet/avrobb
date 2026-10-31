@@ -54,6 +54,7 @@ export type ProfileError =
 	| { kind: 'invalidEmail' }
 	| { kind: 'bannedEmail' }
 	| { kind: 'dupeEmail' }
+	| { kind: 'emailNotVerified' }
 	| { kind: 'invalidWebsite' }
 	| { kind: 'websiteNotAllowed' }
 	| { kind: 'forbiddenTitle' }
@@ -143,11 +144,15 @@ export function readEssentials(input: EssentialsInput, context: EssentialsContex
 		if (context.isAdmin) changes.numPosts = Math.max(0, Math.trunc(Number(input.numPosts)) || 0);
 	}
 
-	// Sans mot de passe, pas de lien de confirmation à envoyer : l'adresse se modifie dans le formulaire.
-	// Adresse facultative : le fournisseur SSO n'en donne pas toujours une (elle ne sert qu'aux notifications).
+	// Adresse facultative : celle, vérifiée, du fournisseur SSO à la première connexion. Un membre peut
+	// l'effacer, pas en saisir une autre : sans lien de confirmation, une adresse non vérifiée ferait
+	// du forum un relais vers un tiers (formulaire de contact, notifications). Les modérateurs et
+	// administrateurs la corrigent.
 	const email = limited('email', input.email, errors).toLowerCase();
 	if (email !== '' && !isValidEmail(email)) errors.push({ kind: 'invalidEmail' });
-	else if (email !== '' && !context.isAnyModerator && email !== context.currentEmail.toLowerCase()) {
+	else if (email !== '' && !context.isAnyModerator && email !== context.currentEmail.toLowerCase())
+		errors.push({ kind: 'emailNotVerified' });
+	else if (email !== '' && email !== context.currentEmail.toLowerCase()) {
 		if (isBannedEmail(email, context.bans) && !context.allowBannedEmail) errors.push({ kind: 'bannedEmail' });
 		if (context.emailOwners.length > 0 && !context.allowDupeEmail) errors.push({ kind: 'dupeEmail' });
 	}

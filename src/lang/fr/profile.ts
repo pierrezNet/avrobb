@@ -36,6 +36,8 @@ function profileErrorText(error: ProfileError): string {
 			return "L'adresse électronique saisie est bannie de ces forums. Veuillez en choisir une autre.";
 		case 'dupeEmail':
 			return 'Cette adresse électronique est déjà utilisée. Veuillez en choisir une autre.';
+		case 'emailNotVerified':
+			return 'L’adresse ne peut être que celle, vérifiée, de votre compte GitHub ou Google : vous pouvez l’effacer, mais pas la remplacer. Pour la changer, écrivez à un administrateur.';
 		case 'invalidWebsite':
 			return "L'URL de site Web saisie est invalide.";
 		case 'websiteNotAllowed':
@@ -115,7 +117,7 @@ export const profile = {
 	usernameInfo: (username: string) => `Nom d'utilisateur\u00a0: ${username}`,
 	emailLegend: 'Adresse électronique',
 	emailOptional:
-		'Facultative : elle sert aux notifications (abonnements, messages privés) et n’est jamais affichée aux autres membres. À la première connexion, c’est l’adresse vérifiée de votre compte GitHub ou Google, s’il y en a une.',
+		'Facultative : elle sert aux notifications (abonnements, messages privés) et n’est jamais affichée aux autres membres. C’est l’adresse vérifiée de votre compte GitHub ou Google, reprise à la première connexion : vous pouvez l’effacer, pas la remplacer.',
 	usernameOnce:
 		'Votre nom d’utilisateur vient de votre compte de connexion. Vous pouvez le changer une seule fois ; ensuite, seul un administrateur pourra le modifier.',
 	accountLegend: 'Mon compte',

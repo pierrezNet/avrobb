@@ -107,6 +107,14 @@ describe('misc.php?email=', () => {
 		expect(fake.sentMails).toBeUndefined();
 	});
 
+	it('limitation de débit des écritures : 429, aucun e-mail (quota Resend, réputation du domaine)', async () => {
+		const fake = data();
+		app = await buildApp({ ...fakeDeps(fake), writeRateLimiter: { limit: async () => ({ success: false }) } });
+		const res = await submit(app, '/misc.php?email=5', { req_subject: 'Bonjour', req_message: 'Un message' });
+		expect(res.statusCode).toBe(429);
+		expect(fake.sentMails).toBeUndefined();
+	});
+
 	it('droits : invité, groupe sans e-mail, formulaire désactivé (sauf modérateur), destinataire inconnu', async () => {
 		app = await buildApp(fakeDeps(data()));
 		const status = async (url: string, cookie = tessy) => (await inject(app!, { url, headers: { cookie } }))?.statusCode;

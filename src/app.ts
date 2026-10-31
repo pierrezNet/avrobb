@@ -315,12 +315,17 @@ export async function buildApp(input: AppDeps): Promise<ForumApp> {
 		if (request.query.report !== undefined) return contact.reportForm(request, reply);
 		return misc.show(request, reply);
 	});
-	router.post<{ Querystring: MiscQuery & ContactQuery; Body: FormBody }>('/misc.php', [miscSession, verifyCsrf], (request, reply) => {
-		if (request.query.email !== undefined) return contact.sendEmail(request, reply);
-		if (request.query.report !== undefined) return contact.sendReport(request, reply);
-		if (request.query.action === 'subscribe' || request.query.action === 'unsubscribe') return misc.subscription(request, reply);
-		return misc.markRead(request, reply);
-	});
+	// writeLimit : le formulaire de contact envoie un e-mail (quota Resend, réputation du domaine).
+	router.post<{ Querystring: MiscQuery & ContactQuery; Body: FormBody }>(
+		'/misc.php',
+		[miscSession, verifyCsrf, writeLimit],
+		(request, reply) => {
+			if (request.query.email !== undefined) return contact.sendEmail(request, reply);
+			if (request.query.report !== undefined) return contact.sendReport(request, reply);
+			if (request.query.action === 'subscribe' || request.query.action === 'unsubscribe') return misc.subscription(request, reply);
+			return misc.markRead(request, reply);
+		},
+	);
 
 	const help = new HelpController(deps);
 	router.get('/help.php', [authenticate], help.show);

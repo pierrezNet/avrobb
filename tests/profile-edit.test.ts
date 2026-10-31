@@ -70,9 +70,18 @@ describe('readEssentials', () => {
 	it('fuseau inconnu ramené à 0 ; adresse invalide, déjà prise ou bannie refusée', () => {
 		expect(readEssentials({ ...input, timezone: '99' }, context).changes.timezone).toBe(0);
 		expect(readEssentials({ ...input, email: 'pas-une-adresse' }, context).errors).toEqual([{ kind: 'invalidEmail' }]);
-		expect(readEssentials({ ...input, email: 'pris@example.com' }, { ...context, emailOwners: ['MaxDUO'] }).errors).toEqual([
-			{ kind: 'dupeEmail' },
-		]);
+		const moderator = { ...context, isAnyModerator: true, emailOwners: ['MaxDUO'] };
+		expect(readEssentials({ ...input, email: 'pris@example.com' }, moderator).errors).toEqual([{ kind: 'dupeEmail' }]);
+	});
+
+	it('un membre efface son adresse mais ne la remplace pas (adresse non vérifiée : relais vers un tiers)', () => {
+		expect(readEssentials({ ...input, email: 'victime@example.org' }, context).errors).toEqual([{ kind: 'emailNotVerified' }]);
+		expect(readEssentials({ ...input, email: '' }, context)).toMatchObject({ errors: [], changes: { email: '' } });
+		const moderator = { ...context, isAnyModerator: true };
+		expect(readEssentials({ ...input, email: 'corrigee@example.org' }, moderator)).toMatchObject({
+			errors: [],
+			changes: { email: 'corrigee@example.org' },
+		});
 	});
 
 	it('un administrateur renomme, corrige les messages et la note ; un pseudo ressemblant est refusé', () => {
@@ -499,7 +508,7 @@ describe('profile.php : compte SSO', () => {
 	const essentials = (username: string) => ({
 		form_sent: '1',
 		req_username: username,
-		req_email: 'tessy@example.test',
+		req_email: 'tessy@example.com',
 		'form[timezone]': '1',
 	});
 

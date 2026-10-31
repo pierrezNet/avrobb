@@ -78,4 +78,19 @@ describe('migration 0005 : retours Phraséo', () => {
 			expect(config.phraseoFeedback?.targetForumId).toBe(4);
 		});
 	});
+
+	it('migration 0007 : compte système sans messagerie privée ni renommée', async () => {
+		await inRollback(async (trx) => {
+			await runScript(await migration());
+			const { userId } = toBoardConfig(await new ConfigRepository(trx).loadValues()).phraseoFeedback!;
+			const settings = () => trx.selectFrom('users').select(['id', 'use_pm', 'reputation_enable']).orderBy('id').execute();
+			const before = await settings();
+
+			await runScript(await migration('0007_phraseo_feedback_user.sql'));
+			// Seul le compte système change
+			const expected = before.map((user) => (user.id === userId ? { ...user, use_pm: 0, reputation_enable: 0 } : user));
+			expect(await settings()).toEqual(expected);
+			expect(before.find((user) => user.id === userId)).toMatchObject({ use_pm: 1, reputation_enable: 1 });
+		});
+	});
 });

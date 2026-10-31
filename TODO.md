@@ -203,7 +203,10 @@ Vigilance :
 - [x] `robots.txt`, `sitemap.xml`, URL canoniques sur le domaine final (vérifié sur avrobb.org le 2026-10-31)
 - [ ] Revue de sécurité (`/security-review`)
 - [ ] Contrôle à la main, sur mobile et bureau, avec et sans JS : lecture anonyme (servie par le cache), connexion GitHub et Google, réception des e-mails (abonnement, mention), publication, édition, galerie, messagerie, modération, administration
-- [ ] Mesures : CPU par page, lignes D1 lues par page, poids des pages
+- [x] Mesures en production (2026-10-31, `wrangler tail` et `wrangler d1 insights`) :
+  - CPU par rendu, Worker chaud (médiane sur 5) : accueil 21 ms, forum 13 ms, sujet 9 ms, membres 9 ms, aide 5 ms ; 30 à 75 ms au premier rendu d'un isolat froid. Page servie par le cache : 0 à 1 ms. Sous l'objectif de 50 ms ;
+  - poids : HTML de 1,6 à 3,6 Ko compressé, `base.css` 13 Ko ; le logo par défaut est passé de 86 Ko à 7 Ko (602 × 154, 256 couleurs) ;
+  - D1 : ~60 000 lignes lues par jour (la lecture de `config`, 80 lignes toutes les 30 s par isolat, en fait les trois quarts), ~1 200 écritures par jour (présence dans `online`). Très loin des quotas de Workers Paid
 - [ ] Alerte en cas d'erreurs : notification Cloudflare sur le taux d'erreur du Worker (la panne du 2026-10-30 n'a été vue que par le message d'erreur)
 - [x] Catégories et forums de départ créés, premiers messages publiés
 - [ ] `AMELIORATIONS.md` mis à jour

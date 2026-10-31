@@ -2,6 +2,8 @@
 
 Méthode : lots ordonnés, chacun **livrable et testé** (`npm run check` et `npm run test:db` passent à la fin de chaque lot, commit par étape cohérente). Chaque lot passe `mvc-review` avant d'être coché.
 
+**En ligne depuis le 2026-10-30 sur https://avrobb.org** (Workers Paid, D1 `avrobb` en Europe de l'Ouest, déploiement par GitHub Actions à chaque envoi sur `main`).
+
 Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé.
 
 Estimations en **jours de travail effectif** (développement, tests et vérification à la main), relecture comprise.
@@ -177,7 +179,7 @@ Vigilance :
 - [x] Anciennes adresses : **pas de redirection** (décidé : rien n'est encore publié). Elles restent servies sous les mêmes routes, mais plus aucun lien ne les produit, `robots.txt` les exclut et l'URL canonique désigne l'adresse propre
 - [x] `robots.txt`, `sitemap.xml` (avec slugs), URL canoniques, tests (dont l'exploration des liens internes)
 
-## Lot 7 — Déploiement : Wrangler, GitHub Actions, domaine, cache · 2 jours · code terminé le 2026-10-30
+## Lot 7 — Déploiement : Wrangler, GitHub Actions, domaine, cache · 2 jours · terminé le 2026-10-30
 
 - [x] **Cache en bordure** (`http/edgeCache.ts`) : pages `GET` d'un visiteur sans aucun cookie du forum gardées 60 s, fichiers une heure ; aucune réponse avec `Set-Cookie`, `no-store` ou en erreur gardée ; le navigateur revalide toujours une page (`private, no-cache`). Un invité ne reçoit plus le cookie CSRF que sur les pages de formulaire (connexion, rédaction) ; testé
 - [x] Cookies `__Host-` en HTTPS (`__Secure-` pour le cookie d'état OAuth, limité à `/auth/`), effacés avec `Secure`
@@ -187,24 +189,30 @@ Vigilance :
 - [x] Sauvegardes : D1 Time Travel, et export hebdomadaire compressé vers le bucket privé `avrobb-backups` (`.github/workflows/backup.yml`, jamais en artefact GitHub)
 - [x] Observabilité activée (`wrangler.jsonc`), procédure de suivi dans le README
 - [x] Membre banni : la déconnexion par `/connexion` (adresse propre) reste permise
-- [ ] **À faire par Emmanuel** (README, « Déploiement ») : base D1 (`--location weur`) et buckets R2, `database_id`, secrets, domaine dans `routes`, `o_base_url`, applications OAuth de production, jeton Cloudflare et secrets du dépôt GitHub
-- [ ] Alerte en cas d'erreurs (notifications Cloudflare sur le taux d'erreur du Worker) et mesure du CPU par page, une fois en ligne
+- [x] Mise en production par Emmanuel (README, « Déploiement ») : base D1 (`--location weur`) et buckets R2, `database_id`, secrets, domaine `avrobb.org` dans `routes`, `o_base_url`, applications OAuth GitHub et Google, jeton Cloudflare et secrets du dépôt GitHub (2026-10-30) ; Resend (`RESEND_API_KEY`, `MAIL_FROM`) le 2026-10-31
+- [x] Première panne vue en production et corrigée : message refusé au-delà d'une centaine de mots (limite de 100 paramètres par requête de D1, absente en local), lue avec `wrangler tail`
 
 Vigilance :
 - Le jeton Cloudflare de la CI ne doit pas pouvoir toucher d'autres zones ou comptes.
 - Une migration D1 appliquée avant le déploiement doit rester compatible avec la version précédente du code (ajouter, puis retirer dans un déploiement suivant).
 - Purge du cache : la durée courte évite d'avoir à purger ; ne pas monter au-delà de quelques minutes sans mécanisme de purge.
 
-## Lot 8 — Mise en ligne · 1 jour, plus la relecture des textes
+## Lot 8 — Mise en ligne · 1 jour, plus la relecture des textes · en cours (forum ouvert le 2026-10-30)
 
 - [ ] Pages d'information relues et complétées : responsable du traitement, hébergeur (Cloudflare), mentions légales, politique de confidentialité (SSO, cookies, journaux)
-- [ ] `robots.txt`, `sitemap.xml`, URL canoniques sur le domaine final
+- [x] `robots.txt`, `sitemap.xml`, URL canoniques sur le domaine final (vérifié sur avrobb.org le 2026-10-31)
 - [ ] Revue de sécurité (`/security-review`)
-- [ ] Contrôle à la main, sur mobile et bureau, avec et sans JS : lecture anonyme (servie par le cache), connexion GitHub, publication, édition, galerie, messagerie, modération, administration
+- [ ] Contrôle à la main, sur mobile et bureau, avec et sans JS : lecture anonyme (servie par le cache), connexion GitHub et Google, réception des e-mails (abonnement, mention), publication, édition, galerie, messagerie, modération, administration
 - [ ] Mesures : CPU par page, lignes D1 lues par page, poids des pages
-- [ ] Catégories et forums de départ créés, premier message publié
+- [ ] Alerte en cas d'erreurs : notification Cloudflare sur le taux d'erreur du Worker (la panne du 2026-10-30 n'a été vue que par le message d'erreur)
+- [x] Catégories et forums de départ créés, premiers messages publiés
 - [ ] `AMELIORATIONS.md` mis à jour
-- [ ] **Limite de 100 paramètres par requête de D1** (premier message refusé en production le 2026-10-30, `too many SQL variables`) : l'index de recherche écrit désormais par paquets, et le pilote (`db/d1Dialect.ts`) refuse toute requête au-delà de 100 paramètres, en local aussi. Restent à découper avec `chunks()` les listes `IN (…)` qui peuvent dépasser 100 éléments : modération de messages ou de sujets en masse (`ModerationRepository`), élagage d'un forum (`pruning.ts`), votes de réputation d'un membre supprimé (`ReputationRepository`) ; vérifier aussi `SearchRepository`, `BanRepository` et `ForumAdminRepository`. Un test `test:db` par cas, avec plus de 100 éléments
+- [~] **Limite de 100 paramètres par requête de D1** (premier message refusé en production le 2026-10-30, `too many SQL variables`) : l'index de recherche écrit désormais par paquets (corrigé et déployé), et le pilote (`db/d1Dialect.ts`) refuse toute requête au-delà de 100 paramètres, en local aussi. Restent à découper avec `chunks()` les listes `IN (…)` qui peuvent dépasser 100 éléments : modération de messages ou de sujets en masse (`ModerationRepository`), élagage d'un forum (`pruning.ts`), votes de réputation d'un membre supprimé (`ReputationRepository`) ; vérifier aussi `SearchRepository`, `BanRepository` et `ForumAdminRepository`. Un test `test:db` par cas, avec plus de 100 éléments
+
+
+## Après la mise en ligne
+
+- [x] **Retours d'applications** reçus par liaison de service, sans compte : Phraséo (2026-10-31) puis Donne Ton Point, sur un modèle commun (`services/appFeedback.ts`). Chaque application a un compte système (sans messagerie privée ni renommée), un forum privé « à trier » et un bouton « Accepter » qui publie le retour dans le forum public choisi dans les options
 
 ---
 

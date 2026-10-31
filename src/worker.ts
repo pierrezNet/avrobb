@@ -8,14 +8,16 @@
  * calculé au chargement du module.
  */
 
+import { WorkerEntrypoint } from 'cloudflare:workers';
 import type { ExecutionContext } from 'hono';
 import { createAssetUrl } from './adapters/assetUrls.ts';
 import { DohHostResolver } from './adapters/hostResolver.ts';
-import { LogMailer, ResendMailer } from './adapters/mailer.ts';
+import { LogMailer, type Mailer, ResendMailer } from './adapters/mailer.ts';
 import { FetchOAuthClient } from './adapters/oauth.ts';
 import { buildApp, type ForumApp } from './app.ts';
 import { loadConfig } from './config.ts';
 import type { RateLimiter } from './controllers/AuthController.ts';
+import { PhraseoFeedbackController, type PhraseoFeedbackResult } from './controllers/PhraseoFeedbackController.ts';
 import { ScheduledTasks } from './controllers/ScheduledTasks.ts';
 import type { D1Database } from './db/d1.ts';
 import { createDatabase, type Db } from './db/database.ts';
@@ -112,6 +114,11 @@ interface Services {
 	online: OnlineRepository;
 }
 
+/** Envoi d'e-mails : Resend si la clé est configurée, sinon le journal. */
+function createMailer(config: ReturnType<typeof loadConfig>): Mailer {
+	return config.mail !== null ? new ResendMailer(config.mail.apiKey, config.mail.from) : new LogMailer(consoleLogger);
+}
+
 function createServices(env: Env): Services {
 	const db = createDatabase(env.DB);
 	const configStore = new ConfigRepository(db);
@@ -163,7 +170,7 @@ async function createApp(env: Env, services: Services): Promise<ForumApp> {
 		...(env.WRITE_LIMITER !== undefined ? { writeRateLimiter: env.WRITE_LIMITER } : {}),
 		...(env.SEARCH_LIMITER !== undefined ? { searchRateLimiter: env.SEARCH_LIMITER } : {}),
 		mailTemplates: { load: async (name) => mail[name] },
-		mailer: config.mail !== null ? new ResendMailer(config.mail.apiKey, config.mail.from) : new LogMailer(consoleLogger),
+		mailer: createMailer(config),
 		profiles: users,
 		profileStore: new ProfileRepository(db),
 		topics,
@@ -228,6 +235,30 @@ function forumApp(env: Env): Promise<ForumApp> {
 		});
 	}
 	return app;
+}
+
+/**
+ * Retours de l'application Phraséo, appelés par le relais de Phraséo (même compte Cloudflare) via une
+ * liaison de service : `"entrypoint": "PhraseoFeedback"` côté relais. Cette classe n'a pas d'adresse
+ * publique : seul un Worker lié peut l'appeler, sans secret à partager.
+ */
+export class PhraseoFeedback extends WorkerEntrypoint<Env> {
+	async submit(input: unknown): Promise<PhraseoFeedbackResult> {
+		const env = this.env;
+		const config = loadConfig(env as unknown as Readonly<Record<string, unknown>>);
+		const { db, configLoader } = isolateServices(env);
+		const controller = new PhraseoFeedbackController({
+			config: configLoader,
+			posting: new PostingRepository(db),
+			stopwords: new BuiltinStopwords(),
+			mailer: createMailer(config),
+			mailTemplates: { load: async (name) => mail[name] },
+			texts: fr.phraseoFeedback,
+			clock,
+			logger: consoleLogger,
+		});
+		return controller.submit(input);
+	}
 }
 
 export default {

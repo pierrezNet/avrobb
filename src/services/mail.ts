@@ -24,7 +24,8 @@ export type MailTemplateName =
 	| 'form_email'
 	| 'new_report'
 	| 'new_pm'
-	| 'new_pm_full';
+	| 'new_pm_full'
+	| 'phraseo_feedback';
 
 export interface MailTemplateReader {
 	load(name: MailTemplateName): Promise<MailTemplate>;

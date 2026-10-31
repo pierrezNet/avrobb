@@ -1,9 +1,11 @@
 -- Jeu de données fixe des tests d'intégration (tests/db/*.test.ts). Horodatages autour de 1 782 900 000.
--- Il remplace les données par défaut de migrations/0002_default_data.sql.
+-- Il remplace les données par défaut des migrations (0002_default_data.sql, 0005_phraseo_feedback.sql).
 
 DELETE FROM config;
 DELETE FROM users;
 DELETE FROM groups;
+DELETE FROM forums;
+DELETE FROM forum_perms;
 
 INSERT INTO config (conf_name, conf_value) VALUES
 	('o_board_title', 'Forum de test'),

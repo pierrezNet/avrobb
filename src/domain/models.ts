@@ -242,6 +242,11 @@ export interface BoardConfig {
 	reportsByBoard: boolean;
 	/** Signalements envoyés aussi par e-mail à la liste d'administration (o_report_method 1 ou 2). */
 	reportsByEmail: boolean;
+	/**
+	 * Retours de l'application Phraséo (migration 0005) : forum privé qui les reçoit et compte système
+	 * qui signe les sujets (o_phraseo_feedback_forum, o_phraseo_feedback_user). Null : non configuré.
+	 */
+	phraseoFeedback: { forumId: number; userId: number } | null;
 	maintenance: boolean;
 	/** Message du mode maintenance (o_maintenance_message), HTML saisi par l'administrateur. */
 	maintenanceMessage: string;

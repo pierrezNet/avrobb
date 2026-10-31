@@ -50,6 +50,7 @@ export function toBoardConfig(values: ReadonlyMap<string, string>): BoardConfig 
 		// header.php : 0 = forum seulement, 1 = e-mail seulement, 2 = les deux.
 		reportsByBoard: reportMethod === '0' || reportMethod === '2',
 		reportsByEmail: reportMethod === '1' || reportMethod === '2',
+		phraseoFeedback: phraseoFeedback(int('o_phraseo_feedback_forum', 0), int('o_phraseo_feedback_user', 0)),
 		maintenance: flag('o_maintenance'),
 		maintenanceMessage: text('o_maintenance_message'),
 		coldTopicDays: int('o_cold_topic_days', 0),
@@ -108,4 +109,9 @@ export function toBoardConfig(values: ReadonlyMap<string, string>): BoardConfig 
 		reputationTimeout: int('o_reputation_timeout', 0),
 		usersOnline: flag('o_users_online'),
 	};
+}
+
+/** Retours Phraséo : forum et compte système tous deux désignés, sinon fonction désactivée. */
+function phraseoFeedback(forumId: number, userId: number): BoardConfig['phraseoFeedback'] {
+	return forumId > 0 && userId > 0 ? { forumId, userId } : null;
 }

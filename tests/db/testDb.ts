@@ -27,4 +27,7 @@ export async function inRollback(body: (db: Db) => Promise<void>): Promise<void>
 	}
 }
 
+/** Script SQL exécuté sur la base de test (une migration rejouée sur le jeu de données, par exemple). */
+export const runScript = (script: string): Promise<void> => runSqlScript(testD1.d1, script);
+
 export const closeTestDatabase = (): Promise<void> => testD1.dispose();

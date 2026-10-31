@@ -27,6 +27,7 @@ import { indexPage } from './indexPage.ts';
 import { login } from './login.ts';
 import { misc } from './misc.ts';
 import { moderate } from './moderate.ts';
+import { phraseoFeedback } from './phraseoFeedback.ts';
 import { pms } from './pms.ts';
 import { post } from './post.ts';
 import { profile } from './profile.ts';
@@ -70,6 +71,7 @@ export const fr = {
 	adminOptions,
 	adminPlugins,
 	adminPermissions,
+	phraseoFeedback,
 };
 
 export const frDateWords: DateWords = {

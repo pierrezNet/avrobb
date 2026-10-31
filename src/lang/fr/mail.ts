@@ -131,4 +131,15 @@ Lui répondre :
 
 ${signature}`,
 	},
+	phraseo_feedback: {
+		subject: 'Retour Phraséo : <type>',
+		body: `Nouveau retour envoyé depuis l'application Phraséo (<type>), rangé dans le forum privé « à trier ».
+
+Contact laissé par l'auteur (non publié) : <contact>
+
+Le lire, y répondre ou le déplacer vers le forum public :
+<post_url>
+
+${signature}`,
+	},
 };

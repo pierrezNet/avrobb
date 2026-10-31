@@ -12,6 +12,8 @@ export interface StaticPage {
 	title: string;
 	intro: string;
 	sections: StaticSection[];
+	/** Contact propre à la page, affiché à la place de l'adresse de l'administrateur (o_admin_email). */
+	contact?: { text: string; email: string };
 }
 
 export const staticPages = {
@@ -116,10 +118,14 @@ export const staticPages = {
 				title: 'Vos droits',
 				paragraphs: [
 					'Vous pouvez à tout moment consulter et corriger vos informations depuis votre profil, et vous déconnecter de tous vos appareils (« Me déconnecter de partout »). Vous disposez aussi d’un droit d’accès, de rectification, d’effacement, de limitation et d’opposition au traitement de vos données.',
-					'Pour l’exercer, écrivez à l’administrateur (adresse ci-dessous). En cas de difficulté, vous pouvez saisir la CNIL (cnil.fr).',
+					'Pour l’exercer, écrivez à l’adresse ci-dessous. En cas de difficulté, vous pouvez saisir la CNIL (cnil.fr).',
 				],
 			},
 		],
+		contact: {
+			text: 'Pour toute question sur vos données ou pour exercer vos droits, écrivez au délégué à la protection des données :',
+			email: 'dpo@pierrez.net',
+		},
 	},
 
 	faq: {

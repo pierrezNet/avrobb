@@ -6,6 +6,7 @@
 
 import type { StaticPageContent, StaticPageId, StaticSection, Viewer } from '../domain/models.ts';
 import type { Lang } from '../lang/fr/index.ts';
+import type { StaticPage } from '../lang/fr/staticPages.ts';
 import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
 import { type Crumb, crumbs } from './navigation.ts';
 
@@ -22,7 +23,9 @@ export interface StaticPageView {
 
 /** Contenu affiché : celui de l'administration, sinon le texte par défaut. */
 export function staticPageContent(id: StaticPageId, saved: StaticPageContent | undefined, lang: Lang): StaticPageContent {
-	return saved ?? { ...lang.staticPages[id], updatedAt: null };
+	if (saved !== undefined) return saved;
+	const { title, intro, sections } = lang.staticPages[id];
+	return { title, intro, sections, updatedAt: null };
 }
 
 export function buildStaticPage(input: {
@@ -37,6 +40,9 @@ export function buildStaticPage(input: {
 	const { id, lang } = input;
 	const t = lang.staticPages;
 	const page = staticPageContent(id, input.saved, lang);
+	// Le contact de la page reste valable même quand l'administration a remplacé ses textes.
+	const defaults: StaticPage = t[id];
+	const pageContact = defaults.contact;
 	return {
 		title: page.title,
 		intro: page.intro,
@@ -46,6 +52,11 @@ export function buildStaticPage(input: {
 			page.updatedAt !== null
 				? t.updatedOn(formatTime(page.updatedAt, viewerTimeSettings(input.viewer), input.dateWords, input.now, true))
 				: t.updated,
-		contact: input.adminEmail !== '' ? { title: t.contactTitle, text: t.contactText, email: input.adminEmail } : null,
+		contact:
+			pageContact !== undefined
+				? { title: t.contactTitle, ...pageContact }
+				: input.adminEmail !== ''
+					? { title: t.contactTitle, text: t.contactText, email: input.adminEmail }
+					: null,
 	};
 }

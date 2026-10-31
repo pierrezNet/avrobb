@@ -34,6 +34,19 @@ describe('pages d’information', () => {
 		expect(res.body).toContain(`<a href="${url}" aria-current="page">`);
 	});
 
+	it('confidentialité : le délégué à la protection des données, même sans adresse d’administrateur', async () => {
+		for (const adminEmail of ['admin@forum.test', '']) {
+			app = await buildApp(deps({ adminEmail }));
+			const privacy = (await inject(app, '/confidentialite')).body;
+			expect(privacy).toContain('<a href="mailto:dpo@pierrez.net">dpo@pierrez.net</a>');
+			expect(privacy).not.toContain('mailto:admin@forum.test');
+			// Les autres pages gardent l'adresse de l'administrateur, et n'ont pas de contact sans elle
+			const terms = (await inject(app, '/conditions')).body;
+			if (adminEmail === '') expect(terms).not.toContain('href="mailto:');
+			else expect(terms).toContain('mailto:admin@forum.test');
+		}
+	});
+
 	it('pied de page : les trois pages, plus de liste « Atteindre »', async () => {
 		app = await buildApp(deps());
 		const res = await inject(app, '/index.php');

@@ -209,7 +209,7 @@ Vigilance :
   - D1 : ~60 000 lignes lues par jour (la lecture de `config`, 80 lignes toutes les 30 s par isolat, en fait les trois quarts), ~1 200 écritures par jour (présence dans `online`). Très loin des quotas de Workers Paid
 - [ ] Alerte en cas d'erreurs : notification Cloudflare sur le taux d'erreur du Worker (la panne du 2026-10-30 n'a été vue que par le message d'erreur)
 - [x] Catégories et forums de départ créés, premiers messages publiés
-- [ ] `AMELIORATIONS.md` mis à jour
+- [x] `AMELIORATIONS.md` mis à jour (2026-10-31) : passages hérités de pv-forum corrigés (cohabitation avec le PHP, simulateurs), ajouts propres à AvroBB (SSO, Cloudflare, adresses propres, retours d'applications)
 - [x] **Limite de 100 paramètres par requête de D1** (premier message refusé en production le 2026-10-30, `too many SQL variables`) : le pilote (`db/d1Dialect.ts`) refuse toute requête au-delà, en local aussi. Listes lues en base découpées (`chunks()`) ou remplacées par des sous-requêtes : index de recherche, élagage d'un forum, bannissements échus. Listes venues d'un formulaire plafonnées à 80 (`MAX_SELECTED_ITEMS`, une page en affiche 75 au plus) : modération, messagerie, renommée, membres, flux public (`fid`/`nfid`), destinataires d'un MP. Tests avec plus de 100 éléments
 
 

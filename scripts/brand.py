@@ -133,7 +133,10 @@ alpha.paste(raw.getchannel('A'), (pad + 3, pad + 5))
 shadow.putalpha(alpha.filter(ImageFilter.GaussianBlur(7)).point(lambda a: int(a * 0.55)))
 canvas.alpha_composite(shadow)
 canvas.alpha_composite(raw, (pad, pad))
-canvas.save(OUT / 'logo.png', optimize=True)
+# Dessiné à 4 ×, enregistré à 2 × la taille affichée (602 × 154 : écrans haute densité) et réduit
+# à 256 couleurs : 7 Ko au lieu de 86, sans différence visible sur la bannière.
+logo = canvas.resize((LW // 2, LH // 2), Image.LANCZOS)
+logo.quantize(colors=256, method=Image.Quantize.FASTOCTREE, dither=Image.Dither.NONE).save(OUT / 'logo.png', optimize=True)
 
 # --- Icônes : emblème sur fond rouge arrondi ---
 (OUT / 'favicon.svg').write_text(svg(308, 308, icon(0, 0, 308, True)))

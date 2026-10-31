@@ -34,6 +34,9 @@ function toD1Value(value: unknown): D1Value {
  */
 export const MAX_QUERY_PARAMETERS = 100;
 
+/** Éléments d'une liste `IN (…)` par requête, avec de la marge pour les autres conditions. */
+export const ITEMS_PER_QUERY = 90;
+
 /** Paquets de `size` éléments au plus, pour rester sous MAX_QUERY_PARAMETERS. */
 export function chunks<T>(list: readonly T[], size: number): T[][] {
 	const result: T[][] = [];

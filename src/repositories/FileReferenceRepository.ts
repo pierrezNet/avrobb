@@ -3,9 +3,8 @@
  * noms des images de la galerie, membres encore inscrits.
  */
 
+import { chunks, ITEMS_PER_QUERY } from '../db/d1Dialect.ts';
 import type { Db } from '../db/database.ts';
-
-const PARAMS_PER_QUERY = 90;
 
 export interface FileReferenceReader {
 	/** Noms des images de la galerie (« <date_ajout><ext> »). */
@@ -25,12 +24,8 @@ export class FileReferenceRepository implements FileReferenceReader {
 	async existingUserIds(ids: readonly number[]): Promise<Set<number>> {
 		const existing = new Set<number>();
 		// D1 limite le nombre de paramètres d'une requête (100) : par paquets.
-		for (let start = 0; start < ids.length; start += PARAMS_PER_QUERY) {
-			const rows = await this.db
-				.selectFrom('users')
-				.select('id')
-				.where('id', 'in', ids.slice(start, start + PARAMS_PER_QUERY))
-				.execute();
+		for (const part of chunks(ids, ITEMS_PER_QUERY)) {
+			const rows = await this.db.selectFrom('users').select('id').where('id', 'in', part).execute();
 			for (const row of rows) existing.add(row.id);
 		}
 		return existing;

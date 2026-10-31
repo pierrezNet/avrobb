@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { buildApp, type ForumApp } from '../src/app.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
+import { MAX_SELECTED_ITEMS } from '../src/services/pagination.ts';
 import { parseBanExpire, readUserIds } from '../src/services/userActions.ts';
 import { parseAdminDate, readUserSearch } from '../src/services/userSearch.ts';
 import { type FakeData, fakeDeps, group, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
@@ -132,6 +133,9 @@ describe('admin_users.php', () => {
 describe('actions groupées', () => {
 	it('lecture des comptes sélectionnés et de la date d’expiration', () => {
 		expect(readUserIds({ 'users[7]': '1', 'users[1]': '1', users: '8,x,0' })).toEqual([7, 8]);
+		// Une page n'en affiche que 50 : le surplus d'une requête forgée est ignoré (limite de D1)
+		const many = Array.from({ length: 200 }, (_, index) => index + 2).join(',');
+		expect(readUserIds({ users: many })).toHaveLength(MAX_SELECTED_ITEMS);
 		const now = Date.UTC(2026, 9, 28) / 1000;
 		expect(parseBanExpire('', 0, now)).toBeNull();
 		expect(parseBanExpire('2026-11-01', 3600, now)).toBe(Date.UTC(2026, 10, 1) / 1000 - 3600);

@@ -369,6 +369,26 @@ describe('OnlineRepository et bannissements (écritures)', () => {
 		await bans.deleteBans(expired);
 		expect((await bans.listBans()).length).toBe(all.length - 1);
 	});
+
+	it('supprime plus de 100 bannissements échus d’un coup (par paquets)', async () => {
+		const values = Array.from({ length: 150 }, (_, index) => ({
+			username: `échu${index}`,
+			ip: null,
+			email: null,
+			message: null,
+			expire: 1,
+			ban_creator: 2,
+		}));
+		// 10 lignes de 6 colonnes par insertion : sous la limite de 100 paramètres
+		for (let start = 0; start < values.length; start += 10)
+			await db
+				.insertInto('bans')
+				.values(values.slice(start, start + 10))
+				.execute();
+		const before = await bans.listBans();
+		await bans.deleteBans(before.filter((ban) => ban.expire === 1).map((ban) => ban.id));
+		expect((await bans.listBans()).length).toBe(before.length - 150);
+	});
 });
 
 describe('ReportRepository et PrivateMessageRepository', () => {

@@ -6,7 +6,7 @@
  */
 
 import { type RawBuilder, sql } from 'kysely';
-import { chunks } from '../db/d1Dialect.ts';
+import { chunks, ITEMS_PER_QUERY } from '../db/d1Dialect.ts';
 import type { Compilable, Db } from '../db/database.ts';
 import { type CurrentIndex, type IndexedWords, planIndexUpdate } from '../services/searchIndex.ts';
 
@@ -14,12 +14,6 @@ import { type CurrentIndex, type IndexedWords, planIndexUpdate } from '../servic
 export const LAST_POST_ID = sql<number>`(SELECT MAX(id) FROM posts)`;
 /** Identifiant de la dernière discussion créée dans le lot en cours. */
 export const LAST_TOPIC_ID = sql<number>`(SELECT MAX(id) FROM topics)`;
-
-/**
- * Mots ou identifiants par requête : D1 plafonne une requête à 100 paramètres (d1Dialect.ts), et
- * un long message compte des centaines de mots. La marge laisse place aux autres paramètres.
- */
-const ITEMS_PER_QUERY = 90;
 
 /** Index actuel d'un message (mode « edit » de update_search_index()). */
 async function currentIndex(db: Db, postId: number): Promise<CurrentIndex> {

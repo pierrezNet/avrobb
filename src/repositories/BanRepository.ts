@@ -5,6 +5,7 @@
  */
 
 import type { Expression, ExpressionBuilder, SqlBool } from 'kysely';
+import { chunks, ITEMS_PER_QUERY } from '../db/d1Dialect.ts';
 import type { Db } from '../db/database.ts';
 import type { Database } from '../db/schema.ts';
 import type { BanSearchCriteria, BanValues } from '../services/banForm.ts';
@@ -90,7 +91,8 @@ export class BanRepository implements BanReader, BanWriter, BanStore {
 	}
 
 	async deleteBans(ids: readonly number[]): Promise<void> {
-		if (ids.length > 0) await this.db.deleteFrom('bans').where('id', 'in', ids).execute();
+		// Bannissements expirés accumulés : par paquets (limite de paramètres de D1).
+		await this.db.batch(chunks(ids, ITEMS_PER_QUERY).map((part) => this.db.deleteFrom('bans').where('id', 'in', part)));
 	}
 
 	async findBan(id: number): Promise<(BanValues & { id: number }) | null> {

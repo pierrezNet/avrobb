@@ -22,6 +22,7 @@ import { bbcodeToEmail } from '../services/bbcodeEmail.ts';
 import { buildCensor } from '../services/censor.ts';
 import type { MailMessage, MailTemplateReader } from '../services/mail.ts';
 import { fillTemplate } from '../services/mail.ts';
+import { MAX_SELECTED_ITEMS } from '../services/pagination.ts';
 import { isAnyModerator } from '../services/permissions.ts';
 import { canEditPrivateMessage, parseUsernames, validateSend } from '../services/privateMessages.ts';
 import { absoluteUrl } from '../services/routes.ts';
@@ -103,7 +104,9 @@ export class PrivateMessageSendController {
 		let usernames: string[] = [];
 		if (mode.kind === 'new') {
 			usernames = parseUsernames(state.usernames);
-			recipients = await store.findRecipientsByName([...usernames, viewer.username]);
+			// Recherche limitée (paramètres de D1) : au-delà de o_pms_max_receiver, validateSend refuse de
+			// toute façon l'envoi, d'après la liste complète des noms.
+			recipients = await store.findRecipientsByName([...usernames.slice(0, MAX_SELECTED_ITEMS), viewer.username]);
 		} else if (mode.kind === 'reply') {
 			recipients = await store.findRecipientsById([...(await store.listHolders(mode.sharedId)), viewer.id]);
 			usernames = recipients.map((recipient) => recipient.username);

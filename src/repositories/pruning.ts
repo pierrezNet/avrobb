@@ -14,15 +14,17 @@ import { stripSearchIndexWrites } from './searchIndexSql.ts';
  */
 export async function pruneForumsWrites(db: Db, forumIds: readonly number[]): Promise<Compilable[]> {
 	if (forumIds.length === 0) return [];
-	const topicIds = (await db.selectFrom('topics').select('id').where('forum_id', 'in', forumIds).execute()).map((row) => row.id);
-	if (topicIds.length === 0) return [];
+	// Un forum peut compter des milliers de sujets : sous-requêtes sur forum_id plutôt que des listes
+	// d'identifiants, D1 refusant plus de 100 paramètres par requête. Les messages d'abord, tant que
+	// leurs sujets existent ; seul l'index de recherche a besoin de leurs identifiants.
+	const topicIds = db.selectFrom('topics').select('id').where('forum_id', 'in', forumIds);
 	const postIds = (await db.selectFrom('posts').select('id').where('topic_id', 'in', topicIds).execute()).map((row) => row.id);
 
 	return [
-		db.deleteFrom('topics').where('id', 'in', topicIds),
-		db.deleteFrom('topic_subscriptions').where('topic_id', 'in', topicIds),
-		...(postIds.length > 0 ? [db.deleteFrom('posts').where('id', 'in', postIds)] : []),
 		...(await stripSearchIndexWrites(db, postIds)),
+		db.deleteFrom('posts').where('topic_id', 'in', topicIds),
+		db.deleteFrom('topic_subscriptions').where('topic_id', 'in', topicIds),
+		db.deleteFrom('topics').where('forum_id', 'in', forumIds),
 	];
 }
 

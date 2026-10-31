@@ -199,7 +199,7 @@ Vigilance :
 
 ## Lot 8 — Mise en ligne · 1 jour, plus la relecture des textes · en cours (forum ouvert le 2026-10-30)
 
-- [ ] Pages d'information relues et complétées : responsable du traitement, hébergeur (Cloudflare), mentions légales, politique de confidentialité (SSO, cookies, journaux)
+- [x] Pages d'information relues et validées par Emmanuel (2026-10-31) ; confidentialité : contact du délégué à la protection des données (dpo@pierrez.net), l'adresse de l'administrateur étant vide
 - [x] `robots.txt`, `sitemap.xml`, URL canoniques sur le domaine final (vérifié sur avrobb.org le 2026-10-31)
 - [ ] Revue de sécurité (`/security-review`)
 - [ ] Contrôle à la main, sur mobile et bureau, avec et sans JS : lecture anonyme (servie par le cache), connexion GitHub et Google, réception des e-mails (abonnement, mention), publication, édition, galerie, messagerie, modération, administration
@@ -207,7 +207,7 @@ Vigilance :
 - [ ] Alerte en cas d'erreurs : notification Cloudflare sur le taux d'erreur du Worker (la panne du 2026-10-30 n'a été vue que par le message d'erreur)
 - [x] Catégories et forums de départ créés, premiers messages publiés
 - [ ] `AMELIORATIONS.md` mis à jour
-- [~] **Limite de 100 paramètres par requête de D1** (premier message refusé en production le 2026-10-30, `too many SQL variables`) : l'index de recherche écrit désormais par paquets (corrigé et déployé), et le pilote (`db/d1Dialect.ts`) refuse toute requête au-delà de 100 paramètres, en local aussi. Restent à découper avec `chunks()` les listes `IN (…)` qui peuvent dépasser 100 éléments : modération de messages ou de sujets en masse (`ModerationRepository`), élagage d'un forum (`pruning.ts`), votes de réputation d'un membre supprimé (`ReputationRepository`) ; vérifier aussi `SearchRepository`, `BanRepository` et `ForumAdminRepository`. Un test `test:db` par cas, avec plus de 100 éléments
+- [x] **Limite de 100 paramètres par requête de D1** (premier message refusé en production le 2026-10-30, `too many SQL variables`) : le pilote (`db/d1Dialect.ts`) refuse toute requête au-delà, en local aussi. Listes lues en base découpées (`chunks()`) ou remplacées par des sous-requêtes : index de recherche, élagage d'un forum, bannissements échus. Listes venues d'un formulaire plafonnées à 80 (`MAX_SELECTED_ITEMS`, une page en affiche 75 au plus) : modération, messagerie, renommée, membres, flux public (`fid`/`nfid`), destinataires d'un MP. Tests avec plus de 100 éléments
 
 
 ## Après la mise en ligne

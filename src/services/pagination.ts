@@ -9,6 +9,14 @@ export type PageLink =
 	| { kind: 'previous'; page: number }
 	| { kind: 'next'; page: number };
 
+/**
+ * Éléments cochés au plus dans un formulaire (modération, messagerie, membres…). Une page en
+ * affiche 75 au plus (disp_topics, disp_posts) : au-delà, la requête est forgée. Le plafond garde
+ * chaque requête sous la limite de 100 paramètres de D1 (db/d1Dialect.ts), avec de la marge pour
+ * les autres conditions.
+ */
+export const MAX_SELECTED_ITEMS = 80;
+
 export function pageCount(items: number, perPage: number): number {
 	return Math.max(1, Math.ceil(items / perPage));
 }

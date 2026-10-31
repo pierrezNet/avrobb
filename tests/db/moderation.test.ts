@@ -12,6 +12,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import type { Database } from '../../src/db/schema.ts';
 import type { ModeratedTopic } from '../../src/domain/models.ts';
 import { ModerationRepository } from '../../src/repositories/ModerationRepository.ts';
+import { LAST_TOPIC_ID } from '../../src/repositories/searchIndexSql.ts';
 import { closeTestDatabase, db, inRollback } from './testDb.ts';
 
 afterAll(closeTestDatabase);
@@ -260,6 +261,31 @@ describe('ForumAdminRepository (admin_categories.php, admin_forums.php)', () => 
 			// Sujet 12 (forum 1) : lien vers le sujet 10 supprimé.
 			expect(await topicRow(trx, 12)).toBeUndefined();
 			expect(await trx.selectFrom('forum_perms').select('group_id').where('forum_id', '=', 2).execute()).toEqual([]);
+		});
+	});
+
+	it('supprime un forum de plus de 100 sujets et messages (limite de paramètres de D1)', async () => {
+		const { ForumAdminRepository } = await import('../../src/repositories/ForumAdminRepository.ts');
+		await inRollback(async (trx) => {
+			for (let index = 0; index < 120; index++)
+				await trx.batch([
+					trx
+						.insertInto('topics')
+						.values({ poster: 'Pilote', subject: `Sujet ${index}`, posted: 1, last_post: 1, last_poster: null, sticky: 0, forum_id: 2 }),
+					trx.insertInto('posts').values({
+						poster: 'Pilote',
+						poster_id: 2,
+						poster_ip: '',
+						poster_email: null,
+						message: 'Bonjour',
+						hide_smilies: 0,
+						posted: 1,
+						topic_id: LAST_TOPIC_ID,
+					}),
+				]);
+			await new ForumAdminRepository(trx).deleteForum(2);
+			expect(await trx.selectFrom('topics').select('id').where('forum_id', '=', 2).execute()).toEqual([]);
+			expect(await trx.selectFrom('posts').select('id').where('message', '=', 'Bonjour').execute()).toEqual([]);
 		});
 	});
 

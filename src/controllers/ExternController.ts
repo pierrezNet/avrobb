@@ -17,6 +17,7 @@ import { escapeHtml } from '../services/bbcode.ts';
 import { buildCensor } from '../services/censor.ts';
 import { type Feed, renderHtmlList, renderRss, renderXml } from '../services/feeds.ts';
 import { forumNumberFormat } from '../services/numberFormat.ts';
+import { MAX_SELECTED_ITEMS } from '../services/pagination.ts';
 
 export interface ExternControllerDeps extends LayoutDeps {
 	feeds: FeedReader;
@@ -43,12 +44,20 @@ const CONTENT_TYPES: Record<FeedType, string> = {
 	xml: 'application/xml; charset=utf-8',
 };
 
-/** Liste d'identifiants « 1,2,3 » (intval() de chaque élément, comme le PHP). */
+/**
+ * Liste d'identifiants « 1,2,3 » (intval() de chaque élément, comme le PHP). Adresse publique :
+ * fid et nfid ensemble restent sous MAX_SELECTED_ITEMS, pour ne pas dépasser la limite de
+ * paramètres de D1 (le forum compte quelques forums, pas des dizaines).
+ */
 const idList = (value: string | undefined): number[] =>
-	(value ?? '')
-		.split(',')
-		.map((part) => Number.parseInt(part.trim(), 10))
-		.filter((id) => Number.isSafeInteger(id) && id > 0);
+	[
+		...new Set(
+			(value ?? '')
+				.split(',')
+				.map((part) => Number.parseInt(part.trim(), 10))
+				.filter((id) => Number.isSafeInteger(id) && id > 0),
+		),
+	].slice(0, MAX_SELECTED_ITEMS / 2);
 
 export class ExternController {
 	constructor(private readonly deps: ExternControllerDeps) {}

@@ -3,6 +3,8 @@
  * reportée d'une étape à l'autre) et date d'expiration d'un bannissement.
  */
 
+import { MAX_SELECTED_ITEMS } from './pagination.ts';
+
 type Fields = Readonly<Record<string, string | readonly string[]>>;
 
 /** Identifiants sélectionnés, sans 0 ni 1 (l'invité), comme array_diff($user_ids, array(0, 1)). */
@@ -14,7 +16,7 @@ export function readUserIds(fields: Fields): number[] {
 	}
 	const list = fields.users;
 	if (typeof list === 'string') for (const part of list.split(',')) ids.add(Number.parseInt(part, 10));
-	return [...ids].filter((id) => Number.isSafeInteger(id) && id > 1);
+	return [...ids].filter((id) => Number.isSafeInteger(id) && id > 1).slice(0, MAX_SELECTED_ITEMS);
 }
 
 /**

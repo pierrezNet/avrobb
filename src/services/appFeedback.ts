@@ -8,6 +8,7 @@
  */
 
 import type { FeedbackDestination, FeedbackSourceId } from '../domain/models.ts';
+import { inertBbcode } from './bbcode.ts';
 import type { MailTemplateName } from './mail.ts';
 import { MAX_SUBJECT_LENGTH } from './posting.ts';
 
@@ -132,14 +133,6 @@ export function parseAppFeedback(source: FeedbackSource, input: unknown): AppFee
 		details.push({ name: field.name, value });
 	}
 	return { source: source.id, type, message, pseudo, contact, lang, details };
-}
-
-/**
- * Texte de l'auteur rendu inerte : une espace sans chasse après chaque crochet ouvrant empêche toute
- * balise BBCode ([url], [img]…) sans changer ce qui s'affiche.
- */
-export function inertBbcode(source: string): string {
-	return source.replace(/\[/g, '[​');
 }
 
 /** Sujet : « [Phraséo] Bug technique : début du message… », dans la limite de longueur des sujets. */

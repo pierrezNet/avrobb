@@ -111,6 +111,18 @@ describe('message privé au membre mentionné', () => {
 		);
 	});
 
+	it('titre du sujet recopié inerte : il ne ferme pas le lien ni n’ajoute de balise', async () => {
+		const fake = data({
+			topics: [
+				topic({ id: 10, subject: 'x[/url][img]https://e.test/a.png[/img]', forum: { id: 2, name: 'Captures', moderators: new Map() } }),
+			],
+		});
+		app = await buildApp(fakeDeps(fake));
+		await reply(app, `Regarde ${mention(5, 'MaxDUO')}`);
+		const message = fake.pm?.rows[0]?.message ?? '';
+		expect(message).toContain('x[\u200b/url][\u200bimg]https://e.test/a.png[\u200b/img][/url]');
+	});
+
 	it('rien si la messagerie est désactivée', async () => {
 		const fake = data({ config: { privateMessagesEnabled: false, baseUrl: BASE } });
 		app = await buildApp(fakeDeps(fake));

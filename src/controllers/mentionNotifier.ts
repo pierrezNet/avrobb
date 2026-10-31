@@ -9,6 +9,7 @@ import type { Logger } from '../http/context.ts';
 import type { PageContext } from '../http/layout.ts';
 import type { PrivateMessageStore } from '../repositories/PrivateMessageRepository.ts';
 import type { TopicReader } from '../repositories/TopicRepository.ts';
+import { inertBbcode } from '../services/bbcode.ts';
 import { extractMentionIds, mentionRecipients } from '../services/mentions.ts';
 import { postPath } from '../services/routes.ts';
 
@@ -38,7 +39,8 @@ export async function notifyMentions(deps: MentionNotifierDeps, input: MentionIn
 	const t = deps.page.lang.post;
 	try {
 		const recipients = mentionRecipients(await deps.privateMessageStore.findRecipientsById(ids));
-		const link = `[url=${postPath(input.postId)}]${input.subject}[/url]`;
+		// Le titre est du texte du membre : inerte, il ne peut pas fermer le [url] ni ajouter de balise.
+		const link = `[url=${postPath(input.postId)}]${inertBbcode(input.subject)}[/url]`;
 		for (const recipient of recipients) {
 			// Discussion illisible pour son groupe (forum réservé) : pas de message, rien ne doit fuiter.
 			if ((await deps.topics.findReadable(input.topicId, recipient.groupId)) === null) continue;

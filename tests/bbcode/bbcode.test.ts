@@ -102,6 +102,23 @@ describe('écarts volontaires', () => {
 		expect(other).not.toContain('" onload');
 	});
 
+	it('aucun attribut injecté par une adresse ou une balise imbriquée (revue de sécurité du lot 8)', () => {
+		// Lien vers une page du forum : le « " » reste dans l'adresse, échappé.
+		expect(parseMessage('[url=/profile.php?id=3#"style="color:red"]clic[/url]', options)).toBe(
+			'<p><a href="http://forum.test/membre/3#&quot;style=&quot;color:red&quot;" rel="nofollow">clic</a></p>',
+		);
+		// [acronym=…] converti avant [email] et [img=…] : son HTML ne doit pas atterrir dans un attribut.
+		for (const source of [
+			'[email][acronym=style=color:red id=x]S[/acronym][/email]',
+			'[email=[acronym=style=color:red]a[/acronym]]b[/email]',
+			'[img=[acronym=style=color:red x]y[/acronym]]https://e.test/f.png[/img]',
+		]) {
+			const html = parseMessage(source, options);
+			expect(html).not.toMatch(/(?:href|alt)="[^"]*<abbr/);
+			expect(html).not.toContain('mailto:<');
+		}
+	});
+
 	it('liens internes corrigés (le PHP de PV produit « id=.$matches[1] »)', () => {
 		expect(reference['lien interne']).toContain('.$matches[1]');
 		expect(render(byName('lien interne'))).toBe(

@@ -68,6 +68,15 @@ function decodeHtml(text: string): string {
 	return text.replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&quot;', '"').replaceAll('&#039;', "'").replaceAll('&amp;', '&');
 }
 
+/**
+ * Texte rendu inerte : une espace sans chasse après chaque crochet ouvrant empêche toute balise
+ * BBCode ([url], [img]…) sans changer ce qui s'affiche. Pour un texte recopié dans un message
+ * produit par le forum (retours d'applications, titre d'un sujet dans un MP de mention).
+ */
+export function inertBbcode(source: string): string {
+	return source.replace(/\[/g, '[​');
+}
+
 /** Caractère de substitution des blocs [code] mis de côté (extract_blocks() utilise "\1"). */
 const CODE_MARK = '\u0001';
 
@@ -129,7 +138,8 @@ function urlTag(rawUrl: string, rawLink: string, baseUrl: string): string {
 	else if (!/^[a-z0-9]{3,6}:\/\//.test(url)) fullUrl = `http://${fullUrl}`;
 	// Lien vers une page du forum à son ancienne adresse (« …/viewtopic.php?id=4 ») : adresse publique.
 	if (baseUrl !== '' && fullUrl.startsWith(`${baseUrl}/`) && /^[\w-]+\.php(?:[?#]|$)/.test(fullUrl.slice(baseUrl.length + 1)))
-		fullUrl = baseUrl + publicPath(decodeHtml(fullUrl.slice(baseUrl.length + 1))).replaceAll('&', '&amp;');
+		// Entièrement échappée : un « " » saisi dans l'adresse sortirait sinon de l'attribut href.
+		fullUrl = baseUrl + escapeHtml(publicPath(decodeHtml(fullUrl.slice(baseUrl.length + 1))));
 
 	let link = rawLink;
 	if (link === '' || link === url) {
@@ -201,8 +211,10 @@ const SIMPLE_TAGS: readonly [RegExp, string][] = [
 	[/\[right\](.*?)\[\/right\]/gs, '</p><p class="bbcode-right">$1</p><p>'],
 	[/\[center\](.*?)\[\/center\]/gs, '</p><p class="bbcode-center">$1</p><p>'],
 	[/\[justify\](.*?)\[\/justify\]/gs, '</p><p class="bbcode-justify">$1</p><p>'],
-	[/\[email\]([^[]*?)\[\/email\]/g, '<a href="mailto:$1">$1</a>'],
-	[/\[email=([^[]+?)\](.*?)\[\/email\]/gs, '<a href="mailto:$1">$2</a>'],
+	// Ni « < » ni « " » dans une adresse : le texte du membre est déjà échappé, ils ne peuvent venir
+	// que du HTML d'une balise déjà convertie ([acronym=…]), qui sortirait de l'attribut href.
+	[/\[email\]([^[<"]*?)\[\/email\]/g, '<a href="mailto:$1">$1</a>'],
+	[/\[email=([^[<"]+?)\](.*?)\[\/email\]/gs, '<a href="mailto:$1">$2</a>'],
 ];
 
 /** Liens internes [topic], [post], [forum], [user] : adresses publiques (services/routes.ts), préfixées de o_base_url. */
@@ -270,7 +282,8 @@ function doBbcode(input: string, isSignature: boolean, options: BbcodeOptions): 
 			imgTag(scheme + rest, null, isSignature, options),
 		);
 		text = text.replace(
-			/\[img=([^[]*?)\]((?:ht|f)tps?:\/\/|\/img\/)([^\s<"]*?)\[\/img\]/g,
+			// Texte alternatif sans « < » ni « " » : comme pour [email], rien d'une balise déjà convertie.
+			/\[img=([^[<"]*?)\]((?:ht|f)tps?:\/\/|\/img\/)([^\s<"]*?)\[\/img\]/g,
 			(_w, alt: string, scheme: string, rest: string) => imgTag(scheme + rest, alt, isSignature, options),
 		);
 	}

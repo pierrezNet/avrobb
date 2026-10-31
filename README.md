@@ -128,6 +128,12 @@ Front-end : `public/assets/css/base.css` (mobile d'abord) et un fichier de varia
   pas supprimer un sujet ou un message où un administrateur a écrit ; les erreurs s'affichent dans
   la page ; « Laisser un lien de redirection » proposé coché pour un sujet seul, comme le PHP.
   Consultation d'IP : résolution inverse limitée à 2 secondes.
+- Retours de l'application Phraséo (absent de FluxBB) : le relais de Phraséo crée un sujet dans le
+  forum privé « Retours Phraséo (à trier) » par liaison de service (`PhraseoFeedback`, aucune adresse
+  publique), signé d'un compte système sans connexion possible ; le contact de l'auteur part par
+  e-mail à la liste de diffusion, jamais dans le sujet. Un administrateur publie un retour par le
+  bouton « Accepter » (`phraseo_accept.php`, POST avec jeton CSRF) : rappel d'en-tête remplacé, sujet
+  déplacé vers le forum de l'option « Forum des retours Phraséo acceptés » (n° 4 par défaut).
 - Signalements (`admin_reports.php`) : bouton « Marquer comme traité » en POST avec jeton CSRF ;
   les 10 derniers signalements traités sont conservés, comme le PHP.
 - Accueil de l'administration : pas de vérification de mise à jour (`action=check_upgrade`, le

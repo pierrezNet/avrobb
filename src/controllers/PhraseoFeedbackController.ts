@@ -70,6 +70,7 @@ export class PhraseoFeedbackController {
 						subject: fillTemplate(template.subject, { type: feedback.type }),
 						text: fillTemplate(template.body, {
 							type: feedback.type,
+							pseudo: feedback.pseudo === '' ? deps.texts.anonymous : feedback.pseudo,
 							contact: feedback.contact === '' ? deps.texts.noContact : feedback.contact,
 							post_url: absoluteUrl(config.baseUrl, postPath(postId)),
 							board_mailer: config.boardTitle,

@@ -245,8 +245,10 @@ export interface BoardConfig {
 	/**
 	 * Retours de l'application Phraséo (migration 0005) : forum privé qui les reçoit et compte système
 	 * qui signe les sujets (o_phraseo_feedback_forum, o_phraseo_feedback_user). Null : non configuré.
+	 * targetForumId (o_phraseo_feedback_target, migration 0006) : forum public où un administrateur
+	 * publie un retour accepté ; null : bouton « Accepter » masqué.
 	 */
-	phraseoFeedback: { forumId: number; userId: number } | null;
+	phraseoFeedback: { forumId: number; userId: number; targetForumId: number | null } | null;
 	maintenance: boolean;
 	/** Message du mode maintenance (o_maintenance_message), HTML saisi par l'administrateur. */
 	maintenanceMessage: string;

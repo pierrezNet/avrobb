@@ -99,7 +99,12 @@ export const OPTION_SECTIONS: readonly OptionSection<OptionSectionId>[] = [
 	},
 	{
 		id: 'reports',
-		fields: [field('report_method', { kind: 'radio', choices: 'reportMethods' }), field('mailing_list', { kind: 'textarea', rows: 5 })],
+		fields: [
+			field('report_method', { kind: 'radio', choices: 'reportMethods' }),
+			field('mailing_list', { kind: 'textarea', rows: 5 }),
+			// Retours Phraséo (migration 0006) : forum public des retours acceptés ; 0 = bouton masqué
+			field('phraseo_feedback_target', num(0)),
+		],
 	},
 	{
 		id: 'avatars',
@@ -240,6 +245,7 @@ export function readOptionsForm(read: (key: string) => string, defaults: Options
 	set('additional_navlinks', navlinks !== '' ? punTrim(punLinebreaks(navlinks)) : '');
 	const mailingList = trimmed('mailing_list');
 	set('mailing_list', mailingList.replace(/\s/g, '').toLowerCase());
+	set('phraseo_feedback_target', atLeast(intval(read('phraseo_feedback_target')), 0, 0));
 
 	const avatarsDir = trimmed('avatars_dir');
 	set('avatars_dir', avatarsDir.endsWith('/') ? avatarsDir.slice(0, -1) : avatarsDir);

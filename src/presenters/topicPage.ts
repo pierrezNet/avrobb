@@ -13,6 +13,7 @@ import type { Censor } from '../services/censor.ts';
 import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
 import { safeExternalUrl } from '../services/links.ts';
 import {
+	canAcceptPhraseoFeedback,
 	canEditSubjectPrefixes,
 	canQuickPost,
 	canReply,
@@ -97,6 +98,8 @@ export interface TopicPageView {
 	quickPost: QuickPostView | null;
 	/** Abonnement au sujet (membres, o_topic_subscriptions) : bouton POST vers misc.php. */
 	subscription: { subscribed: boolean; action: string } | null;
+	/** Retour Phraséo à trier : bouton POST « Accepter » (publication dans le forum public), ou null. */
+	acceptAction: string | null;
 }
 
 export interface QuickPostView {
@@ -332,5 +335,6 @@ export function buildTopicPage(input: TopicPageInput): TopicPageView {
 						action: `misc.php?action=${topic.isSubscribed ? 'unsubscribe' : 'subscribe'}&tid=${topic.id}`,
 					}
 				: null,
+		acceptAction: canAcceptPhraseoFeedback(viewer, topic.forum.id, config) ? `phraseo_accept.php?id=${topic.id}` : null,
 	};
 }

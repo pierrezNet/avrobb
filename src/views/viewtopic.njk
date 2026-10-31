@@ -41,6 +41,10 @@
 </p>
 {% endif %}
 
+{% if view.acceptAction %}
+<p class="forum-actions">{{ actions.postButton(layout, view.acceptAction, lang.topic.acceptPhraseoFeedback) }}</p>
+{% endif %}
+
 {% if view.quickPost %}
 <form id="quickpostform" class="form-box form post-form" method="post" action="{{ url(view.quickPost.formAction) }}" aria-labelledby="quickpost-title">
 	<h2 id="quickpost-title" class="form-box__title">{{ lang.topic.quickPost }}</h2>

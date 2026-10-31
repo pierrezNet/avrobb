@@ -13,6 +13,7 @@ import { boardConfig } from './fixtures.ts';
 const valid = {
 	type: 'Bug technique',
 	message: "La voix de l'ATC se répète après ma réponse.\nDétails : Chrome, casque Bluetooth.",
+	pseudo: 'Pilote42',
 	contact: 'pilote@example.org',
 	mode: 'IFR',
 	level: 'avancé',
@@ -20,6 +21,11 @@ const valid = {
 };
 
 describe('parsePhraseoFeedback', () => {
+	it('pseudo facultatif (ancien formulaire)', () => {
+		const { pseudo: _pseudo, ...withoutPseudo } = valid;
+		expect(parsePhraseoFeedback(withoutPseudo)?.pseudo).toBe('');
+	});
+
 	it('accepte le format du formulaire, espaces retirés', () => {
 		expect(parsePhraseoFeedback({ ...valid, message: '  Bonjour  ' })).toEqual({ ...valid, message: 'Bonjour' });
 	});
@@ -30,6 +36,7 @@ describe('parsePhraseoFeedback', () => {
 		expect(parsePhraseoFeedback({ ...valid, message: 'x'.repeat(1801) })).toBeNull();
 		expect(parsePhraseoFeedback({ ...valid, mode: 'ULM' })).toBeNull();
 		expect(parsePhraseoFeedback({ ...valid, lang: 'de' })).toBeNull();
+		expect(parsePhraseoFeedback({ ...valid, pseudo: 'x'.repeat(41) })).toBeNull();
 		expect(parsePhraseoFeedback(null)).toBeNull();
 	});
 });
@@ -48,6 +55,7 @@ describe('sujet et message', () => {
 		const message = phraseoFeedbackMessage(feedback, texts);
 		expect(message).not.toContain('pilote@example.org');
 		expect(message).toContain('[b]Règle de vol :[/b] IFR');
+		expect(message).toContain('[b]Envoyé par :[/b] Pilote42');
 		expect(message).toContain('Chrome, casque Bluetooth.');
 	});
 
@@ -58,7 +66,7 @@ describe('sujet et message', () => {
 });
 
 describe('PhraseoFeedbackController', () => {
-	const setup = (config: BoardConfig = { ...boardConfig, phraseoFeedback: { forumId: 9, userId: 7 } }) => {
+	const setup = (config: BoardConfig = { ...boardConfig, phraseoFeedback: { forumId: 9, userId: 7, targetForumId: 4 } }) => {
 		const topics: NewTopic[] = [];
 		const mails: MailMessage[] = [];
 		const mailer: Mailer = {
@@ -102,6 +110,7 @@ describe('PhraseoFeedbackController', () => {
 		expect(mails[0]!.to).toBe(boardConfig.registration.mailingList);
 		expect(mails[0]!.subject).toBe('Retour Phraséo : Bug technique');
 		expect(mails[0]!.text).toContain('pilote@example.org');
+		expect(mails[0]!.text).toContain('Nouveau retour de Pilote42');
 		expect(mails[0]!.text).toContain('314');
 	});
 

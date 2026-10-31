@@ -56,6 +56,15 @@ export function isAdmin(viewer: Viewer): boolean {
 	return viewer.group.id === GroupId.Admin;
 }
 
+/**
+ * Bouton « Accepter » d'un retour Phraséo : administrateur, sujet du forum privé « à trier », forum
+ * public de destination configuré. Le forum privé n'est lisible que des administrateurs.
+ */
+export function canAcceptPhraseoFeedback(viewer: Viewer, forumId: number, config: Pick<BoardConfig, 'phraseoFeedback'>): boolean {
+	const feedback = config.phraseoFeedback;
+	return isAdmin(viewer) && feedback !== null && feedback.targetForumId !== null && forumId === feedback.forumId;
+}
+
 /** Administrateur, ou modérateur de groupe désigné sur ce forum ($is_admmod de viewforum/viewtopic). */
 export function isForumModerator(viewer: Viewer, forum: { moderators: ReadonlyMap<string, number> }): boolean {
 	return isAdmin(viewer) || (viewer.group.isModerator && forum.moderators.has(viewer.username));

@@ -13,7 +13,7 @@ import { closeTestDatabase, inRollback, runScript } from './testDb.ts';
 
 afterAll(closeTestDatabase);
 
-const migration = () => readFile(path.join(import.meta.dirname, '..', '..', 'migrations', '0005_phraseo_feedback.sql'), 'utf8');
+const migration = (file = '0005_phraseo_feedback.sql') => readFile(path.join(import.meta.dirname, '..', '..', 'migrations', file), 'utf8');
 
 describe('migration 0005 : retours Phraséo', () => {
 	it('crée le compte système, le forum privé et les réglages qui les désignent', async () => {
@@ -67,6 +67,15 @@ describe('migration 0005 : retours Phraséo', () => {
 				.where('id', '=', forumId)
 				.executeTakeFirstOrThrow();
 			expect(counters).toEqual({ num_topics: 1, num_posts: 1 });
+		});
+	});
+
+	it('migration 0006 : forum public des retours acceptés, le n° 4 s’il existe', async () => {
+		await inRollback(async (trx) => {
+			await runScript(await migration());
+			await runScript(await migration('0006_phraseo_feedback_target.sql'));
+			const config = toBoardConfig(await new ConfigRepository(trx).loadValues());
+			expect(config.phraseoFeedback?.targetForumId).toBe(4);
 		});
 	});
 });

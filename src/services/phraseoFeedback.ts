@@ -14,6 +14,8 @@ export const PHRASEO_FEEDBACK_TYPES = ['Erreur de phraséologie', 'Suggestion / 
 export interface PhraseoFeedback {
 	type: (typeof PHRASEO_FEEDBACK_TYPES)[number];
 	message: string;
+	/** Pseudo choisi par l'auteur, publié avec le retour (facultatif). */
+	pseudo: string;
 	/** Moyen de recontacter l'auteur : jamais publié, seulement envoyé aux administrateurs. */
 	contact: string;
 	mode: 'VFR' | 'IFR' | '';
@@ -23,6 +25,7 @@ export interface PhraseoFeedback {
 
 const MAX_MESSAGE = 1800;
 const MAX_CONTACT = 120;
+const MAX_PSEUDO = 40;
 const MAX_LEVEL = 20;
 
 const text = (value: unknown): string => (typeof value === 'string' ? value.trim() : '');
@@ -34,17 +37,19 @@ export function parsePhraseoFeedback(input: unknown): PhraseoFeedback | null {
 	const type = text(raw.type);
 	const message = text(raw.message);
 	const contact = text(raw.contact);
+	// Ancien formulaire (sans pseudo) accepté : le champ est facultatif
+	const pseudo = text(raw.pseudo).replace(/\s+/g, ' ');
 	const mode = text(raw.mode);
 	const level = text(raw.level);
 	const lang = text(raw.lang);
 
 	if (!(PHRASEO_FEEDBACK_TYPES as readonly string[]).includes(type)) return null;
 	if (message === '' || message.length > MAX_MESSAGE) return null;
-	if (contact.length > MAX_CONTACT || level.length > MAX_LEVEL) return null;
+	if (contact.length > MAX_CONTACT || pseudo.length > MAX_PSEUDO || level.length > MAX_LEVEL) return null;
 	if (mode !== 'VFR' && mode !== 'IFR' && mode !== '') return null;
 	if (lang !== 'fr' && lang !== 'en' && lang !== '') return null;
 
-	return { type: type as PhraseoFeedback['type'], message, contact, mode, level, lang };
+	return { type: type as PhraseoFeedback['type'], message, pseudo, contact, mode, level, lang };
 }
 
 /**
@@ -64,13 +69,22 @@ export function phraseoFeedbackSubject(feedback: PhraseoFeedback, texts: { subje
 	return `${head}${inertBbcode(excerpt)}`.slice(0, MAX_SUBJECT_LENGTH);
 }
 
+/**
+ * Retour accepté (publié dans le forum public) : le rappel d'en-tête, qui parlait du contact envoyé
+ * aux administrateurs, devient une simple mention d'origine. Le reste du message est inchangé.
+ */
+export function publicPhraseoFeedbackMessage(message: string, texts: { header: string; publicHeader: string }): string {
+	return message.replace(`[i]${texts.header}[/i]`, `[i]${texts.publicHeader}[/i]`);
+}
+
 /** Message : rappel, contexte de l'application (type, règle de vol, niveau, langue), puis le texte de l'auteur. */
 export function phraseoFeedbackMessage(
 	feedback: PhraseoFeedback,
-	texts: { header: string; none: string; fields: { type: string; mode: string; level: string; lang: string } },
+	texts: { header: string; none: string; fields: { pseudo: string; type: string; mode: string; level: string; lang: string } },
 ): string {
 	const value = (v: string) => (v === '' ? texts.none : inertBbcode(v));
 	const context = [
+		`[b]${texts.fields.pseudo} :[/b] ${value(feedback.pseudo)}`,
 		`[b]${texts.fields.type} :[/b] ${feedback.type}`,
 		`[b]${texts.fields.mode} :[/b] ${value(feedback.mode)}`,
 		`[b]${texts.fields.level} :[/b] ${value(feedback.level)}`,

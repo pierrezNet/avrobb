@@ -133,7 +133,7 @@ ${signature}`,
 	},
 	phraseo_feedback: {
 		subject: 'Retour Phraséo : <type>',
-		body: `Nouveau retour envoyé depuis l'application Phraséo (<type>), rangé dans le forum privé « à trier ».
+		body: `Nouveau retour de <pseudo> envoyé depuis l'application Phraséo (<type>), rangé dans le forum privé « à trier ».
 
 Contact laissé par l'auteur (non publié) : <contact>
 

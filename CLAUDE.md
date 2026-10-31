@@ -106,7 +106,7 @@ Principes :
 - Valider et typer toutes les entrées (paramètres de requête, corps de formulaire) dès le contrôleur, avec de petites fonctions dédiées (`positiveInt`…).
 - Vérifier les droits côté serveur dans le contrôleur, même quand la vue masque déjà le lien.
 - Fichiers envoyés : type lu dans le contenu (`services/images.ts`), dimensions et taille plafonnées, **clé R2 générée par le serveur** (jamais dérivée du nom envoyé), `Content-Type` fixé par le serveur, `Content-Disposition` et `nosniff` sur les fichiers servis.
-- En-têtes de sécurité (`http/securityHeaders.ts`) : CSP stricte, `frame-ancestors 'none'`, HSTS. Toute nouvelle origine (fournisseur OAuth, API) s'ajoute explicitement à la CSP si nécessaire.
+- En-têtes de sécurité (`http/securityHeaders.ts`) : CSP stricte, `frame-ancestors 'self'` (seule la fenêtre de la galerie, page du forum, s'ouvre dans un cadre ; aucun autre site ne peut encadrer le forum), HSTS. Toute nouvelle origine (fournisseur OAuth, API) s'ajoute explicitement à la CSP si nécessaire.
 - Secrets (`SESSION_SECRET`, identifiants OAuth, clé d'API e-mail) : `wrangler secret put` et `.dev.vars` en local (non versionné). Jamais dans `wrangler.jsonc` ni dans le dépôt.
 - Limitation de débit (liaison Rate Limiting de Workers) sur la connexion, la publication et l'envoi de fichiers.
 

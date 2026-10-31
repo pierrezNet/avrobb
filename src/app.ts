@@ -445,9 +445,9 @@ export async function buildApp(input: AppDeps): Promise<ForumApp> {
 
 	const drafts = new DraftController(deps);
 	router.get<{ Querystring: DraftQuery }>('/draft_list.php', [authenticate], drafts.list);
-	router.post<{ Body: FormBody }>('/draft_list.php', [authenticate, verifyCsrf], drafts.remove);
+	router.post<{ Body: FormBody }>('/draft_list.php', [authenticate, verifyCsrf, writeLimit], drafts.remove);
 	router.get<{ Querystring: DraftQuery }>('/draft_edit.php', [authenticate], drafts.edit);
-	router.post<{ Querystring: DraftQuery; Body: FormBody }>('/draft_edit.php', [authenticate, verifyCsrf], drafts.save);
+	router.post<{ Querystring: DraftQuery; Body: FormBody }>('/draft_edit.php', [authenticate, verifyCsrf, writeLimit], drafts.save);
 
 	const deletion = new DeleteController(deps);
 	router.get<{ Querystring: DeleteQuery }>('/delete.php', [authenticate], deletion.show);

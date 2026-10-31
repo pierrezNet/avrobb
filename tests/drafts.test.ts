@@ -201,4 +201,13 @@ describe('draft_edit.php', () => {
 		expect((await inject(app, { url: '/draft_edit.php?id=6', headers: { cookie: tessy } })).body).not.toContain('name="req_subject"');
 		expect((await inject(app, { url: '/draft_edit.php?id=7', headers: { cookie: tessy } })).statusCode).toBe(403);
 	});
+
+	it('limitation de débit des écritures, comme la publication : 429 au-delà', async () => {
+		const fake = data();
+		app = await buildApp({ ...fakeDeps(fake), writeRateLimiter: { limit: async () => ({ success: false }) } });
+		const fields = { form_sent: '1', req_subject: 'Vol de nuit', req_message: 'Texte' };
+		expect((await submit(app, '/draft_edit.php?id=5', '/draft_edit.php?id=5&action=edit', fields)).statusCode).toBe(429);
+		expect((await submit(app, '/draft_list.php', '/draft_list.php', { delete: '1', 'drafts[]': '5' })).statusCode).toBe(429);
+		expect(fake.drafts?.find((d) => d.id === 5)).toMatchObject({ subject: 'Mon vol de nuit' });
+	});
 });

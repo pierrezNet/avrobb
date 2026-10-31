@@ -171,9 +171,13 @@ export function validateSend(input: SendInput, context: SendContext): ValidatedS
 	return { errors, subject, message, recipients };
 }
 
-/** Modifier un message : son auteur, ou un administrateur ou modérateur qui détient la conversation. */
-export function canEditPrivateMessage(viewer: { id: number; isModerator: boolean }, message: { senderId: number }): boolean {
-	return message.senderId === viewer.id || viewer.isModerator;
+/**
+ * Modifier un message (toutes ses copies) : son auteur, ou un administrateur qui détient la
+ * conversation. Pas un modérateur (APMS le permettait) : il pourrait réécrire le message d'un
+ * administrateur, ce que le forum lui interdit ; la suppression pour tous lui reste.
+ */
+export function canEditPrivateMessage(viewer: { id: number; isAdmin: boolean }, message: { senderId: number }): boolean {
+	return message.senderId === viewer.id || viewer.isAdmin;
 }
 
 /** Supprimer un message de la conversation pour tous : réservé aux administrateurs et modérateurs. */

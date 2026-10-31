@@ -23,7 +23,7 @@ import { buildCensor } from '../services/censor.ts';
 import type { MailMessage, MailTemplateReader } from '../services/mail.ts';
 import { fillTemplate } from '../services/mail.ts';
 import { MAX_SELECTED_ITEMS } from '../services/pagination.ts';
-import { isAnyModerator } from '../services/permissions.ts';
+import { isAdmin, isAnyModerator } from '../services/permissions.ts';
 import { canEditPrivateMessage, parseUsernames, validateSend } from '../services/privateMessages.ts';
 import { absoluteUrl } from '../services/routes.ts';
 import { privateMessagesDenied } from './PrivateMessageController.ts';
@@ -179,7 +179,7 @@ export class PrivateMessageSendController {
 		const editId = positiveInt(query.edit ?? field(body, 'edit'));
 		if (editId > 0) {
 			const message = await this.ownMessage(request, editId);
-			return message !== null && canEditPrivateMessage({ id: viewer.id, isModerator: isAnyModerator(viewer) }, message)
+			return message !== null && canEditPrivateMessage({ id: viewer.id, isAdmin: isAdmin(viewer) }, message)
 				? { kind: 'edit', message }
 				: null;
 		}

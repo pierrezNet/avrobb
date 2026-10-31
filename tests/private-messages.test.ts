@@ -7,7 +7,13 @@ import { describe, expect, it } from 'vitest';
 import { buildApp, type ForumApp } from '../src/app.ts';
 import { GroupId, type PrivateRecipient } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
-import { markParticipantDeleted, parseParticipants, parseUsernames, validateSend } from '../src/services/privateMessages.ts';
+import {
+	canEditPrivateMessage,
+	markParticipantDeleted,
+	parseParticipants,
+	parseUsernames,
+	validateSend,
+} from '../src/services/privateMessages.ts';
 import { pmData } from './fakePrivateMessages.ts';
 import { type FakeData, fakeDeps, group, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
 import { inject } from './inject.ts';
@@ -297,5 +303,13 @@ describe('pms_view.php', () => {
 		expect(confirm.body).not.toContain('delete_all');
 		await post(server, 5, `/pms_view.php?action=delete&mid=${maxCopy?.id}&tid=${head?.sharedId}`, { delete_comply: '1' });
 		expect(fake.pm?.rows.some((row) => row.ownerId === 5)).toBe(false);
+	});
+});
+
+describe('canEditPrivateMessage()', () => {
+	it('l’auteur ou un administrateur ; pas un modérateur (il réécrirait le message d’un administrateur)', () => {
+		expect(canEditPrivateMessage({ id: 3, isAdmin: false }, { senderId: 3 })).toBe(true);
+		expect(canEditPrivateMessage({ id: 2, isAdmin: true }, { senderId: 3 })).toBe(true);
+		expect(canEditPrivateMessage({ id: 4, isAdmin: false }, { senderId: 3 })).toBe(false);
 	});
 });

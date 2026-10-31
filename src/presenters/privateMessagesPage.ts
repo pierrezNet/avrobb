@@ -15,7 +15,7 @@ import type { Lang } from '../lang/fr/index.ts';
 import { parseMessage, parseSignature } from '../services/bbcode.ts';
 import type { Censor } from '../services/censor.ts';
 import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
-import { isAnyModerator } from '../services/permissions.ts';
+import { isAdmin, isAnyModerator } from '../services/permissions.ts';
 import { canEditPrivateMessage } from '../services/privateMessages.ts';
 import { userTitle } from '../services/userTitle.ts';
 import { type PaginationLink, paginationLinks } from './navigation.ts';
@@ -150,7 +150,7 @@ function postActions(message: PrivateMessageWithAuthor, viewer: Viewer, lang: La
 	const t = lang.pms;
 	const ids = `mid=${message.id}&tid=${message.sharedId}`;
 	const actions: PostAction[] = [];
-	if (canEditPrivateMessage({ id: viewer.id, isModerator: isAnyModerator(viewer) }, message)) {
+	if (canEditPrivateMessage({ id: viewer.id, isAdmin: isAdmin(viewer) }, message)) {
 		actions.push({ kind: 'postdelete', href: `pms_view.php?action=delete&${ids}`, label: t.delete });
 		actions.push({ kind: 'postedit', href: `pms_send.php?edit=${message.id}&tid=${message.sharedId}`, label: t.edit });
 	}

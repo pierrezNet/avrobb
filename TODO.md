@@ -201,7 +201,7 @@ Vigilance :
 
 - [x] Pages d'information relues et validées par Emmanuel (2026-10-31) ; confidentialité : contact du délégué à la protection des données (dpo@pierrez.net), l'adresse de l'administrateur étant vide
 - [x] `robots.txt`, `sitemap.xml`, URL canoniques sur le domaine final (vérifié sur avrobb.org le 2026-10-31)
-- [ ] Revue de sécurité (`/security-review`)
+- [x] Revue de sécurité (2026-10-31, connexion et session, injection de contenu, droits et fichiers) : attributs HTML injectables par le BBCode, adresse e-mail du profil non vérifiée (relais vers un tiers), modification des MP d'un administrateur par un modérateur, brouillons et formulaire de contact sans limitation de débit ; tout corrigé et testé. Le reste a été vérifié et trouvé sain (OAuth, session, CSRF, cache en bordure, forums privés, fichiers R2, administration)
 - [ ] Contrôle à la main, sur mobile et bureau, avec et sans JS : lecture anonyme (servie par le cache), connexion GitHub et Google, réception des e-mails (abonnement, mention), publication, édition, galerie, messagerie, modération, administration
 - [x] Mesures en production (2026-10-31, `wrangler tail` et `wrangler d1 insights`) :
   - CPU par rendu, Worker chaud (médiane sur 5) : accueil 21 ms, forum 13 ms, sujet 9 ms, membres 9 ms, aide 5 ms ; 30 à 75 ms au premier rendu d'un isolat froid. Page servie par le cache : 0 à 1 ms. Sous l'objectif de 50 ms ;

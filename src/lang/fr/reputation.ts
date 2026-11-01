@@ -18,7 +18,7 @@ export const reputation = {
 	voteError: (error: VoteError, timeoutMinutes: number): string => {
 		switch (error) {
 			case 'guest':
-				return "Vous n'êtes pas autorisé(e) à afficher cette page.";
+				return "Vous n'êtes pas autorisé·e à afficher cette page.";
 			case 'self':
 				return 'Vous ne pouvez pas voter pour vous-même.';
 			case 'userDisabled':

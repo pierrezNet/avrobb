@@ -19,14 +19,14 @@ export const common = {
 	// Avis
 	badRequest: 'Erreur. Le lien que vous avez suivi est incorrect ou périmé.',
 	tooManyRequests: 'Trop de demandes en peu de temps. Patientez une minute avant de recommencer.',
-	noView: "Vous n'êtes pas autorisé(e) à visiter ces forums.",
-	badCsrf: "Mauvais hachage CSRF. Vous avez été renvoyé vers cette page à partir d'une source non autorisée.",
-	noPermission: "Vous n'êtes pas autorisé(e) à afficher cette page.",
+	noView: "Vous n'êtes pas autorisé·e à visiter ces forums.",
+	badCsrf: "Mauvais hachage CSRF. Vous avez été renvoyé·e vers cette page à partir d'une source non autorisée.",
+	noPermission: "Vous n'êtes pas autorisé·e à afficher cette page.",
 	/** Absent de FluxBB : remplace la page d'erreur technique de error(). */
 	serverError: 'Une erreur est survenue. Veuillez réessayer dans quelques instants.',
 
 	// Bannissement (check_bans())
-	banMessage: 'Vous êtes banni(e) de ce forum.',
+	banMessage: 'Vous êtes banni·e de ce forum.',
 	banExpires: (date: string) => `Votre bannissement expire le ${date}.`,
 	banReason: "L'administrateur ou le modérateur qui vous a banni envoie le message suivant\u00a0:",
 	banContact: "Pour toute question, contactez l'administrateur",
@@ -38,8 +38,8 @@ export const common = {
 	footerStats: 'Statistiques',
 	/** Pastille du menu (MP) : nombre suivi de ce texte pour les lecteurs d'écran. */
 	unreadCount: 'non lus',
-	banReadOnly: 'Vous êtes banni(e) : vous pouvez lire le forum, mais plus y écrire.',
-	banWriteRefused: 'Vous êtes banni(e) : vous pouvez lire le forum, mais plus y écrire. Cette action vous est refusée.',
+	banReadOnly: 'Vous êtes banni·e : vous pouvez lire le forum, mais plus y écrire.',
+	banWriteRefused: 'Vous êtes banni·e : vous pouvez lire le forum, mais plus y écrire. Cette action vous est refusée.',
 
 	// Divers
 	announcement: 'Annonce',
@@ -82,7 +82,7 @@ export const common = {
 	search: 'Recherche',
 	register: 'Inscription',
 	login: 'Identification',
-	notLoggedIn: "Vous n'êtes pas identifié(e).",
+	notLoggedIn: "Vous n'êtes pas identifié·e.",
 	profile: 'Profil',
 	logout: 'Déconnexion',
 	loggedInAs: "Connecté·e sous l'identité\u00a0",

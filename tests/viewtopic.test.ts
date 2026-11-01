@@ -28,7 +28,7 @@ describe('GET /viewtopic.php', () => {
 		expect(res.body).not.toContain('<script>alert(1)');
 		expect(res.body).toContain('<strong>gras</strong>');
 		expect(res.body).not.toContain('<img src=x');
-		expect(res.body).toContain('Vous n&#39;êtes pas identifié(e).');
+		expect(res.body).toContain('Vous n&#39;êtes pas identifié·e.');
 		expect(res.body).not.toContain('class="postdelete"');
 	});
 
@@ -52,7 +52,7 @@ describe('GET /viewtopic.php', () => {
 			url: '/viewtopic.php?id=10',
 			headers: { cookie: sessionCookie(2).replace(/.$/, (last) => (last === '0' ? '1' : '0')) },
 		});
-		expect(forged.body).toContain('Vous n&#39;êtes pas identifié(e).');
+		expect(forged.body).toContain('Vous n&#39;êtes pas identifié·e.');
 	});
 
 	it('redirige ?pid= vers la bonne page du sujet', async () => {

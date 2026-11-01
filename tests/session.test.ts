@@ -123,7 +123,7 @@ describe('session à chaque requête', () => {
 
 		expect(setCookies(res.headers['set-cookie']).find((c) => c.startsWith('avrobb_session='))).toMatch(/^avrobb_session=;/);
 		expect(online.log).toEqual(['enter 1 127.0.0.1']);
-		expect(res.body).toContain('Vous n&#39;êtes pas identifié(e).');
+		expect(res.body).toContain('Vous n&#39;êtes pas identifié·e.');
 	});
 
 	it('extern.php ne touche pas à la présence d’un membre (PUN_QUIET_VISIT)', async () => {

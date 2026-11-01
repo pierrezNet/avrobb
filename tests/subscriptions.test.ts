@@ -72,7 +72,7 @@ describe('abonnements', () => {
 		const fake = data();
 		app = await buildApp(fakeDeps(fake));
 		const { page, res } = await confirm(app, '/misc.php?action=subscribe&tid=10');
-		expect(page.body).toContain('Vous serez prévenu(e) par e-mail des nouvelles réponses');
+		expect(page.body).toContain('Vous serez prévenu·e par e-mail des nouvelles réponses');
 		expect(fake.subscribedTopics).toEqual([10]);
 		expect(res.statusCode).toBe(303);
 		expect(res.headers.location).toBe('/sujet/10');

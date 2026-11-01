@@ -109,7 +109,7 @@ export const profile = {
 	formErrors: 'Erreurs dans le profil',
 	formErrorsInfo: 'Les erreurs suivantes doivent être corrigées pour que le profil soit enregistré\u00a0:',
 	updated: 'Profil mis à jour.',
-	instructions: 'Après avoir mis à jour le profil vous serez redirigé(e) vers cette page.',
+	instructions: 'Après avoir mis à jour le profil vous serez redirigé·e vers cette page.',
 	submit: 'Valider',
 	required: '(obligatoire)',
 

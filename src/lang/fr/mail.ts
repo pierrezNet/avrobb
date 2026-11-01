@@ -13,7 +13,7 @@ const signature = `--
 export const mail: Readonly<Record<MailTemplateName, MailTemplate>> = {
 	new_reply: {
 		subject: 'Réponse à « <topic_subject> »',
-		body: `<replier> a répondu à la discussion « <topic_subject> », que vous suivez. D'autres réponses ont pu suivre : vous ne recevrez pas d'autre e-mail avant d'être retourné(e) sur le forum.
+		body: `<replier> a répondu à la discussion « <topic_subject> », que vous suivez. D'autres réponses ont pu suivre : vous ne recevrez pas d'autre e-mail avant d'être retourné·e sur le forum.
 
 Lire la réponse :
 <post_url>

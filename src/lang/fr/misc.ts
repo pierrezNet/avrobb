@@ -23,10 +23,10 @@ export const misc = {
 	subscribeForum: 'Suivre ce forum',
 	unsubscribe: 'Ne plus suivre',
 	/** Absents de FluxBB : confirmation d'un lien GET (anciennes pages PHP, e-mails de notification). */
-	confirmSubscribeTopic: 'Vous serez prévenu(e) par e-mail des nouvelles réponses à cette discussion.',
-	confirmSubscribeForum: 'Vous serez prévenu(e) par e-mail des nouvelles discussions de ce forum.',
-	confirmUnsubscribeTopic: 'Vous ne serez plus prévenu(e) des nouvelles réponses à cette discussion.',
-	confirmUnsubscribeForum: 'Vous ne serez plus prévenu(e) des nouvelles discussions de ce forum.',
+	confirmSubscribeTopic: 'Vous serez prévenu·e par e-mail des nouvelles réponses à cette discussion.',
+	confirmSubscribeForum: 'Vous serez prévenu·e par e-mail des nouvelles discussions de ce forum.',
+	confirmUnsubscribeTopic: 'Vous ne serez plus prévenu·e des nouvelles réponses à cette discussion.',
+	confirmUnsubscribeForum: 'Vous ne serez plus prévenu·e des nouvelles discussions de ce forum.',
 
 	// E-mail à un membre
 	formEmailDisabled: "L'utilisateur à qui vous essayez d'envoyer un e-mail a désactivé le formulaire e-mail.",

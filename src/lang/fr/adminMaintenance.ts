@@ -37,7 +37,7 @@ export const adminMaintenance = {
 	emptyIndex: "Effacer l'index",
 	emptyIndexHelp: "Choisissez cela si vous souhaitez que l'index soit vidé avant de débuter la reconstruction.",
 	rebuildCompletedInfo:
-		"Une fois le processus achevé, vous serez ramené à cette page. Avec JavaScript, chaque étape s'enchaîne automatiquement ; sinon, cliquez sur « Continuer » à chaque étape.",
+		"Une fois le processus achevé, vous serez ramené·e à cette page. Avec JavaScript, chaque étape s'enchaîne automatiquement ; sinon, cliquez sur « Continuer » à chaque étape.",
 	rebuild: "Reconstruire l'index",
 	rebuilding: "Reconstruction de l'index de recherche",
 	rebuildingInfo: "Reconstruction de l'index. Il serait bon de se servir un café en attendant :-)",

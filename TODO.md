@@ -221,6 +221,7 @@ Vigilance :
   - recherche : seul le texte d'origine est indexé (un lecteur anglais ne trouve pas un message français par ses mots anglais) ;
   - titres d'origine dans les résultats de recherche, les flux et les MP de mention ;
   - aucune redirection selon `Accept-Language` (incompatible avec le cache en bordure de `/`) : seul le lien du pied de page change de langue
+- [x] **Retours d'applications en anglais** (2026-11-01) : l'en-tête des retours (ligne en italique et champs « Envoyé par », « Type », « Langue »…) est gardé tel quel, hors du texte envoyé au modèle ; un retour écrit en anglais est donc bien détecté comme anglais et traduit en français (auparavant, l'en-tête français le faisait passer pour du français). Donne Ton Point (commit 07ca24e du dépôt `../donnetonpoint`) : en anglais, le formulaire « Send feedback » et la page About renvoient vers `https://avrobb.org/en/forum/3-donne-ton-point`, sans la mention « (in French) ». À faire de même pour Phraséo si son interface a une version anglaise
 - [x] **Retours d'applications** reçus par liaison de service, sans compte : Phraséo (2026-10-31) puis Donne Ton Point, sur un modèle commun (`services/appFeedback.ts`). Chaque application a un compte système (sans messagerie privée ni renommée), un forum privé « à trier » et un bouton « Accepter » qui publie le retour dans le forum public choisi dans les options
 
 ---

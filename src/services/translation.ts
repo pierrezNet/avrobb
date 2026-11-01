@@ -21,6 +21,8 @@ export const NOTHING_TO_TRANSLATE = '-';
 export interface ProtectedText {
 	text: string;
 	tokens: string[];
+	/** Début gardé tel quel, hors du texte envoyé au modèle (en-tête d'un retour d'application). */
+	prefix?: string;
 }
 
 /** Réponse du modèle, validée. */
@@ -43,6 +45,9 @@ const BBCODE_KEPT =
 /** Description de forum : HTML de l'administrateur, balises et entités gardées en plus. */
 const HTML_KEPT = new RegExp(`<[^>]*>|&[#a-z0-9]+;|${BBCODE_KEPT.source}`, 'giu');
 
+/** « [i]En-tête[/i] », une ligne vide, des lignes « [b]Champ :[/b] valeur », une ligne vide. */
+const APP_FEEDBACK_HEADER = /^\[i\][^\n]*\[\/i\]\n\n(?:\[b\][^\n[]*:\[\/b\][^\n]*\n)+\n/;
+
 const escapeRegExp = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /**
@@ -56,11 +61,17 @@ export function protectText(source: string, kind: TranslationKind, keep: readonl
 		tokens.push(kept);
 		return marker(tokens.length - 1);
 	};
-	let text = source.replace(kind === 'forum_desc' ? HTML_KEPT : BBCODE_KEPT, hide);
+	// En-tête d'un retour d'application (services/appFeedback.ts) : texte du forum, jamais traduit, et
+	// gardé d'un bloc pour que le modèle ne voie que le texte de l'auteur (sinon un retour anglais
+	// sous un en-tête français passe pour du français, et reste en anglais).
+	// Retiré du texte envoyé, et non remplacé par un marqueur : le modèle le déplacerait.
+	const header = kind === 'post' ? APP_FEEDBACK_HEADER.exec(source)?.[0] : undefined;
+	const body = header !== undefined ? source.slice(header.length) : source;
+	let text = body.replace(kind === 'forum_desc' ? HTML_KEPT : BBCODE_KEPT, hide);
 	const names = [...new Set(keep.filter((name) => name.trim() !== ''))].sort((a, b) => b.length - a.length);
 	if (names.length > 0)
 		text = text.replace(new RegExp(`(?<![\\p{L}\\d])(?:${names.map(escapeRegExp).join('|')})(?![\\p{L}\\d])`, 'gu'), hide);
-	return { text, tokens };
+	return header !== undefined ? { text, tokens, prefix: header } : { text, tokens };
 }
 
 /** Reste-t-il des mots une fois les marqueurs retirés ? */
@@ -80,12 +91,13 @@ export function restoreText(translated: string, prepared: ProtectedText, kind: T
 	if (found.length !== prepared.tokens.length || new Set(found).size !== found.length) return null;
 	if (found.some((index) => index >= prepared.tokens.length)) return null;
 	const parts = translated.split(/⟦(\d+)⟧/);
-	return parts
+	const restored = parts
 		.map((part, position) => {
 			if (position % 2 === 1) return prepared.tokens[Number(part)] ?? '';
 			return kind === 'forum_desc' ? part.replaceAll('<', '&lt;').replaceAll('>', '&gt;') : part;
 		})
 		.join('');
+	return (prepared.prefix ?? '') + restored;
 }
 
 /** Langue de la traduction d'après la langue détectée : le français ↔ l'anglais, le reste vers le français. */

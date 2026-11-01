@@ -35,6 +35,17 @@ describe('protectText()', () => {
 		expect(protectText('[Phraséo] La voix se répète', 'subject')).toEqual({ text: '⟦0⟧ La voix se répète', tokens: ['[Phraséo]'] });
 	});
 
+	it('retour d’application : en-tête et champs gardés d’un bloc, seul le texte de l’auteur se traduit', () => {
+		const source = '[i]Retour envoyé depuis l’application.[/i]\n\n[b]Envoyé par :[/b] Sam\n[b]Langue :[/b] en\n\nThe [b]badge[/b] counter';
+		const header = '[i]Retour envoyé depuis l’application.[/i]\n\n[b]Envoyé par :[/b] Sam\n[b]Langue :[/b] en\n\n';
+		const prepared = protectText(source, 'post');
+		expect(prepared).toEqual({ text: 'The ⟦0⟧badge⟦1⟧ counter', tokens: ['[b]', '[/b]'], prefix: header });
+		// Remis en tête au retour, quoi que fasse le modèle.
+		expect(restoreText('Le compteur de ⟦0⟧badges⟦1⟧', prepared, 'post')).toBe(`${header}Le compteur de [b]badges[/b]`);
+		// Un message ordinaire commençant en italique n'est pas concerné.
+		expect(protectText('[i]Bonjour[/i]\n\nÇa va ?', 'post').tokens).toEqual(['[i]', '[/i]']);
+	});
+
 	it('noms propres gardés, en mots entiers seulement', () => {
 		const prepared = protectText('Donne Ton Point et la phraséologie de Phraséo', 'post', ['Phraséo', 'Donne Ton Point']);
 		expect(prepared).toEqual({ text: '⟦0⟧ et la phraséologie de ⟦1⟧', tokens: ['Donne Ton Point', 'Phraséo'] });

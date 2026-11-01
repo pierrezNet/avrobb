@@ -495,7 +495,7 @@ describe('viewtopic de bout en bout', () => {
 			usersInfo: new UsersInfoLoader(new StatsRepository(db), () => NOW),
 			avatars: { urlFor: async () => null },
 			avatarStore: { save: async () => undefined, delete: async () => undefined },
-			page: { lang: fr, dateWords: frDateWords, clock: () => NOW },
+			page: { locale: 'fr', lang: fr, dateWords: frDateWords, clock: () => NOW },
 			cookie: { name: 'avrobb', secret: seed, secure: false },
 			templates,
 			assetUrl: (file: string) => `/assets/${file}`,

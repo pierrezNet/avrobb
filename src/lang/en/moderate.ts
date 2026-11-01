@@ -1,0 +1,63 @@
+/**
+ * English translation of src/lang/fr/moderate.ts: moderation texts (moderate.php). The “Redirecting…”
+ * messages become notices shown after the redirect.
+ */
+
+import type { moderate as frModerate } from '../fr/moderate.ts';
+
+export const moderate: typeof frModerate = {
+	moderate: 'Moderate',
+	select: 'Select',
+	selectTopic: (subject: string) => `Select “${subject}”`,
+	selectPost: (number: number) => `Select post #${number}`,
+	move: 'Move',
+	split: 'Split',
+	delete: 'Delete',
+	merge: 'Merge',
+	open: 'Open',
+	close: 'Close',
+	moveTopic: 'Move topic',
+	moveTopics: 'Move topics',
+	moveLegend: 'Choose a destination',
+	moveTo: 'Move to',
+	nowhereToMove: 'There is no forum available to move topics to.',
+	leaveRedirect: 'Leave a redirect link',
+	confirmDeleteLegend: 'Please confirm deletion',
+	deleteTopics: 'Delete topics',
+	deleteTopicsComply: 'Are you sure you want to delete the selected topics?',
+	noTopicsSelected: 'You must select at least one topic to move/delete/open/close.',
+	notEnoughTopics: 'You must select at least 2 topics to merge.',
+	mergeTopics: 'Merge topics',
+	confirmMergeLegend: 'Please confirm merge',
+	newSubject: 'New subject',
+	confirmSplitLegend: 'Please confirm splitting the selected posts and choose their destination.',
+	splitPosts: 'Split posts',
+	splitPostsComply: 'Are you sure you want to split the selected posts?',
+	deletePosts: 'Delete posts',
+	cannotSelectFirst: 'The first post cannot be selected for splitting/deletion.',
+	deletePostsComply: 'Are you sure you want to delete the selected posts?',
+	noPostsSelected: 'You must select at least one post to split/delete.',
+	adminPosts: 'An administrator wrote in these topics or posts: only an administrator can delete them.',
+	hostInfo1: (ip: string) => `The IP address is: ${ip}`,
+	hostInfo2: (host: string) => `The host name is: ${host}`,
+	showMoreUsers: 'Show more users for this IP',
+	// Notices after redirect
+	done: {
+		moved: 'Topic(s) moved.',
+		deleted: 'Topics deleted.',
+		merged: 'Topics merged.',
+		opened: 'Topics opened.',
+		closed: 'Topics closed.',
+		postsDeleted: 'Posts deleted.',
+	},
+	empty: 'This forum is empty.',
+	replies: 'Replies',
+	views: 'Views',
+	lastPost: 'Last post',
+	by: (name: string) => `by ${name}`,
+	lastEdit: 'Last edited by',
+	subjectRequired: 'You must enter a subject.',
+	subjectTooLong: 'The subject cannot be longer than 70 characters.',
+	errorsTitle: 'Error',
+	errorsInfo: 'The request cannot be processed:',
+};

@@ -6,7 +6,18 @@
 import { describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.ts';
 import { safeRedirect } from '../src/services/redirects.ts';
-import { absoluteUrl, forumPath, idFromSegment, memberPath, postPath, publicPath, slugify, topicPath } from '../src/services/routes.ts';
+import {
+	absoluteUrl,
+	delocalizePath,
+	forumPath,
+	idFromSegment,
+	localizePath,
+	memberPath,
+	postPath,
+	publicPath,
+	slugify,
+	topicPath,
+} from '../src/services/routes.ts';
 import { fakeDeps, guest, NOW, post, topic, viewer } from './fixtures.ts';
 import { inject } from './inject.ts';
 
@@ -57,6 +68,53 @@ describe('publicPath', () => {
 		expect(publicPath('mailto:a@example.test')).toBe('mailto:a@example.test');
 		expect(publicPath('#p12')).toBe('#p12');
 		expect(absoluteUrl('https://avrobb.example', 'viewtopic.php?pid=5')).toBe('https://avrobb.example/message/5#p5');
+	});
+});
+
+describe('adresses anglaises (/en/)', () => {
+	it('localizePath : mots anglais sous /en/, le reste inchangé', () => {
+		expect(localizePath('/', 'en')).toBe('/en/');
+		expect(localizePath('/?a=1', 'en')).toBe('/en/?a=1');
+		expect(localizePath('/sujet/4-premier-sujet/page/2', 'en')).toBe('/en/topic/4-premier-sujet/page/2');
+		expect(localizePath('/message/12#p12', 'en')).toBe('/en/post/12#p12');
+		expect(localizePath('/membre/3', 'en')).toBe('/en/member/3');
+		expect(localizePath('/membres?sort=x', 'en')).toBe('/en/members?sort=x');
+		expect(localizePath('/forum/2-avrobb', 'en')).toBe('/en/forum/2-avrobb');
+		expect(localizePath('/confidentialite', 'en')).toBe('/en/privacy');
+		expect(localizePath('/post.php?tid=4', 'en')).toBe('/en/post.php?tid=4');
+		// Communs aux deux langues, ou déjà anglais, ou externes
+		for (const path of [
+			'/auth/github/callback',
+			'/img/logo.png',
+			'/assets/css/base.css',
+			'/robots.txt',
+			'/sitemap.xml',
+			'/en/topic/4',
+			'https://ex.test/a',
+			'//ex.test',
+			'#p4',
+		])
+			expect(localizePath(path, 'en')).toBe(path);
+		expect(localizePath('/sujet/4', 'fr')).toBe('/sujet/4');
+	});
+
+	it('delocalizePath : retour à l’adresse française, null hors de /en/', () => {
+		expect(delocalizePath('/en')).toBe('/');
+		expect(delocalizePath('/en/')).toBe('/');
+		expect(delocalizePath('/en/topic/4-first-topic')).toBe('/sujet/4-first-topic');
+		expect(delocalizePath('/en/members')).toBe('/membres');
+		expect(delocalizePath('/en/post.php')).toBe('/post.php');
+		expect(delocalizePath('/en/privacy')).toBe('/confidentialite');
+		expect(delocalizePath('/sujet/4')).toBeNull();
+		expect(delocalizePath('/entree')).toBeNull();
+		// Aller-retour
+		for (const path of ['/', '/sujet/4-x', '/message/9', '/membre/3', '/statistiques', '/connexion', '/admin_index.php'])
+			expect(delocalizePath(localizePath(path, 'en'))).toBe(path);
+	});
+
+	it('absoluteUrl dans une langue', () => {
+		expect(absoluteUrl('https://avrobb.org', 'viewtopic.php?id=4', 'en')).toBe('https://avrobb.org/en/topic/4');
+		expect(absoluteUrl('https://avrobb.org', 'viewtopic.php?id=4')).toBe('https://avrobb.org/sujet/4');
 	});
 });
 

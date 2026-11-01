@@ -3,6 +3,8 @@
  * partage), robots.txt. Fonctions pures.
  */
 
+import { localizePath } from './routes.ts';
+
 const FIRST_IMG = /\[img(?:=[^\]]*)?\]\s*(https?:\/\/[^\s[\]"<>]+?)\s*\[\/img\]/i;
 
 /** Longueur conseillée d'une description de page (extrait affiché par les moteurs). */
@@ -66,5 +68,7 @@ const DISALLOWED = [
 ];
 
 export function robotsTxt(baseUrl: string): string {
-	return ['User-agent: *', ...DISALLOWED.map((path) => `Disallow: ${path}`), '', `Sitemap: ${baseUrl}/sitemap.xml`, ''].join('\n');
+	// Mêmes pages exclues sous /en/ (« /en/post.php »).
+	const paths = [...DISALLOWED, ...DISALLOWED.map((path) => localizePath(path, 'en'))];
+	return ['User-agent: *', ...paths.map((path) => `Disallow: ${path}`), '', `Sitemap: ${baseUrl}/sitemap.xml`, ''].join('\n');
 }

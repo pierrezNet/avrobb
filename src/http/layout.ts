@@ -14,12 +14,15 @@ import type { ReportReader } from '../repositories/ReportRepository.ts';
 import { escapeHtml } from '../services/bbcode.ts';
 import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
 import { canUsePrivateMessages, isAnyModerator } from '../services/permissions.ts';
+import type { Locale } from '../services/routes.ts';
 import type { AppReply, AppRequest } from './context.ts';
 import type { SessionBlock } from './session.ts';
 import type { ViewRenderer } from './views.ts';
 
 /** Dépendances de présentation partagées par les contrôleurs. */
 export interface PageContext {
+	/** Langue de l'instance : chaque langue a la sienne (worker.ts), avec ses textes et ses adresses. */
+	locale: Locale;
 	lang: Lang;
 	dateWords: DateWords;
 	/** Heure courante en secondes Unix (injectable pour les tests). */
@@ -46,6 +49,9 @@ export async function loadLayout(request: AppRequest, deps: LayoutDeps, options:
 	return buildLayout({
 		viewer,
 		config,
+		locale: deps.page.locale,
+		// Adresse française de la page : l'instance anglaise reçoit les adresses déjà ramenées au français.
+		currentPath: request.url,
 		lang: deps.page.lang,
 		dateWords: deps.page.dateWords,
 		now: deps.page.clock(),

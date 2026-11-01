@@ -1172,7 +1172,7 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 				data.censoredWords = (data.censoredWords ?? []).filter((_, index) => index + 1 !== id);
 			},
 		},
-		page: { lang: fr, dateWords: frDateWords, clock: () => NOW },
+		page: { locale: 'fr', lang: fr, dateWords: frDateWords, clock: () => NOW },
 		cookie: { name: 'avrobb', secret: COOKIE_SECRET, secure: false },
 		templates,
 		assetUrl: createAssetUrl(assetManifest),

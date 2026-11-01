@@ -97,7 +97,7 @@ import type { UsersInfoReader } from './repositories/UsersInfoLoader.ts';
 import type { MailTemplateReader } from './services/mail.ts';
 import type { OAuthProviderId } from './services/oauth.ts';
 import { type BannedWriteQuery, canWriteWhileBanned, readOnlyViewer } from './services/permissions.ts';
-import { CLEAN_STATIC_PATHS, idFromSegment, publicPath } from './services/routes.ts';
+import { CLEAN_STATIC_PATHS, idFromSegment, localizePath, publicPath } from './services/routes.ts';
 
 export type { ForumApp } from './http/server.ts';
 
@@ -188,8 +188,9 @@ export async function buildApp(input: AppDeps): Promise<ForumApp> {
 	const logger = input.logger ?? silentLogger;
 
 	// url('profile.php?id=2') dans les vues : point de passage unique des liens internes, traduits
-	// en adresses publiques (« /membre/2 ») par services/routes.ts.
-	const url = publicPath;
+	// en adresses publiques (« /membre/2 ») par services/routes.ts, dans la langue de l'instance.
+	const locale = input.page.locale;
+	const url = (target: string): string => localizePath(publicPath(target), locale);
 	const asset = input.assetUrl;
 	const deps = { ...input, views: createViews(input.templates, { url, asset }) };
 

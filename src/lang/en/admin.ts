@@ -1,0 +1,82 @@
+/**
+ * English translation of src/lang/fr/admin.ts: shared administration and report texts. The other
+ * admin pages have their own files.
+ */
+
+import type { admin as frAdmin } from '../fr/admin.ts';
+
+export const admin: typeof frAdmin = {
+	admin: 'Administration',
+	moderatorMenu: 'Moderator menu',
+	adminMenu: 'Admin menu',
+	index: 'Home',
+	categories: 'Categories',
+	forums: 'Forums',
+	users: 'Users',
+	userGroups: 'User groups',
+	options: 'Options',
+	appearance: 'Appearance',
+	pages: 'Info pages',
+	permissions: 'Permissions',
+	censoring: 'Censoring',
+	bans: 'Bans',
+	maintenance: 'Maintenance',
+	reports: 'Reports',
+	labels: 'Tags',
+	privateMessages: 'Private messages',
+	goBack: 'Go back',
+	delete: 'Delete',
+	update: 'Update',
+	add: 'Add',
+	edit: 'Edit',
+	remove: 'Remove',
+	yes: 'Yes',
+	no: 'No',
+	saveChanges: 'Save changes',
+	save: 'Save',
+	action: 'Action',
+	none: 'None',
+	errorsTitle: 'Errors',
+	errorsInfo: 'The following errors need to be fixed:',
+	saved: 'Changes saved.',
+
+	// Reports (admin_reports.php)
+	reportZapped: 'Report handled.',
+	newReportsHead: 'New reports',
+	deletedUser: 'Deleted user',
+	deleted: 'Deleted',
+	postId: (id: number) => `Post #${id}`,
+	reportSubhead: (date: string) => `Reported: ${date}`,
+	reportedBy: 'Reported by',
+	reason: 'Reason',
+	zap: 'Mark as handled',
+	noNewReports: 'No new reports for now.',
+	last10Head: 'Last 10 handled reports',
+	na: 'N/A',
+	zappedSubhead: (date: string, by: string) => `Handled on ${date} by ${by}`,
+	noZappedReports: 'No handled reports yet.',
+
+	// Home and statistics (admin_index.php, admin_statistics.php)
+	serverStatistics: 'Server statistics',
+	forumAdminHead: 'Forum administration',
+	welcome:
+		'Welcome to the forum control panel. From here you can manage the vital aspects of the forum. Depending on whether you are an administrator or a moderator, you can',
+	welcomeItems: [
+		'Organize categories and forums.',
+		'Set options and preferences for each forum.',
+		'Manage permissions for members and guests.',
+		'View IP statistics for members.',
+		'Ban members.',
+		'Censor words.',
+		'Set up user ranks.',
+		'Prune old posts.',
+		'Handle post reports.',
+	],
+	aboutHead: 'About the forum',
+	viewServerStatistics: 'View server statistics',
+	onlineLabel: 'Online',
+	onlineData: (online: number) => (online === 1 ? '1 user online' : `${online} users online`),
+	databaseLabel: 'Database',
+	databaseRows: (rows: string) => `Rows: ${rows}`,
+	databaseSize: (size: string) => `Size: ${size}`,
+};

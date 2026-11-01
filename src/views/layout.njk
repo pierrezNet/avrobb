@@ -10,13 +10,14 @@
 {% if layout.robotsNoIndex %}<meta name="robots" content="noindex, follow">
 {% endif %}
 {% if layout.canonicalUrl %}<link rel="canonical" href="{{ layout.canonicalUrl }}">
-{% endif %}{% if layout.meta.description %}<meta name="description" content="{{ layout.meta.description }}">
+{% endif %}{% for alternate in layout.alternates %}<link rel="alternate" hreflang="{{ alternate.locale }}" href="{{ alternate.href }}">
+{% endfor %}{% if layout.meta.description %}<meta name="description" content="{{ layout.meta.description }}">
 {% endif %}
 {% if not layout.robotsNoIndex %}{#- Aperçu de partage (réseaux sociaux, messageries) des pages indexables. -#}
 <meta property="og:site_name" content="{{ layout.meta.siteName }}">
 <meta property="og:title" content="{{ layout.meta.title }}">
 <meta property="og:type" content="{{ layout.meta.type }}">
-<meta property="og:locale" content="fr_FR">
+<meta property="og:locale" content="{{ lang.common.ogLocale }}">
 {% if layout.meta.url %}<meta property="og:url" content="{{ layout.meta.url }}">
 {% endif %}{% if layout.meta.description %}<meta property="og:description" content="{{ layout.meta.description }}">
 {% endif %}<meta property="og:image" content="{{ layout.meta.image }}">
@@ -130,6 +131,8 @@
 		<nav class="footer-links" aria-label="{{ lang.common.footerNav }}">
 			<ul>
 			{% for link in layout.footerLinks %}<li><a href="{{ url(link.href) }}"{% if link.active %} aria-current="page"{% endif %}>{{ link.label }}</a></li>{% endfor %}
+			{#- Adresse déjà dans l'autre langue : pas de url(), qui la ramènerait à la langue de la page. -#}
+			{% if layout.languageSwitch %}<li><a href="{{ layout.languageSwitch.href }}" hreflang="{{ layout.languageSwitch.hreflang }}" lang="{{ layout.languageSwitch.hreflang }}">{{ layout.languageSwitch.label }}</a></li>{% endif %}
 			</ul>
 		</nav>
 		<div class="site-footer__info">

@@ -11,7 +11,7 @@ import type { Lang } from '../lang/fr/index.ts';
 import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
 import { headerImageHref } from '../services/headerImages.ts';
 import { canSearch, canUsePrivateMessages, isAnyModerator, isForumModerator } from '../services/permissions.ts';
-import { absoluteUrl } from '../services/routes.ts';
+import { absoluteUrl, type Locale, localizePath } from '../services/routes.ts';
 import { plainExcerpt } from '../services/seo.ts';
 import { resolveTheme, type Theme } from '../services/themes.ts';
 
@@ -119,8 +119,18 @@ export interface FooterLink {
 	active: boolean;
 }
 
+/** Même page dans l'autre langue (lien du pied de page). */
+export interface LanguageSwitch {
+	href: string;
+	label: string;
+	hreflang: Locale;
+}
+
 export interface LayoutView {
 	lang: Lang;
+	/** Versions de la page dans chaque langue (balises hreflang), si elle a une adresse canonique. */
+	alternates: { locale: Locale; href: string }[];
+	languageSwitch: LanguageSwitch | null;
 	pageId: string;
 	pageTitle: string;
 	boardTitle: string;
@@ -153,6 +163,9 @@ export interface LayoutView {
 export interface LayoutInput {
 	viewer: Viewer;
 	config: BoardConfig;
+	locale: Locale;
+	/** Adresse française de la page demandée (chemin et requête), pour le lien vers l'autre langue. */
+	currentPath: string;
 	lang: Lang;
 	dateWords: DateWords;
 	now: number;
@@ -161,6 +174,8 @@ export interface LayoutInput {
 	pendingReports: boolean;
 	unreadPrivateMessages: number;
 }
+
+const LOCALES: readonly Locale[] = ['fr', 'en'];
 
 /** Image d'aperçu de partage par défaut : l'icône du forum (public/icons). */
 const SHARE_IMAGE = 'assets/icons/icon-512.png';
@@ -353,10 +368,17 @@ export function buildLayout(input: LayoutInput): LayoutView {
 	const { viewer, config, lang, options } = input;
 	const footer = options.footer ?? { kind: 'default' };
 	// Adresse canonique absolue (o_base_url) : les moteurs la préfèrent à une adresse relative.
-	const canonical = options.canonicalUrl ? absoluteUrl(config.baseUrl, options.canonicalUrl) : null;
+	const canonical = options.canonicalUrl ? absoluteUrl(config.baseUrl, options.canonicalUrl, input.locale) : null;
+	const target = options.canonicalUrl;
+	const other: Locale = input.locale === 'fr' ? 'en' : 'fr';
 
 	return {
 		lang,
+		alternates:
+			target !== undefined && target !== null && target !== ''
+				? LOCALES.map((locale) => ({ locale, href: absoluteUrl(config.baseUrl, target, locale) }))
+				: [],
+		languageSwitch: { href: localizePath(input.currentPath, other), label: lang.common.otherLanguage, hreflang: other },
 		pageId: options.pageId,
 		pageTitle: pageTitle(options.titleParts, options.pageNumber ?? null, lang),
 		boardTitle: config.boardTitle,
@@ -404,6 +426,8 @@ export function buildLayout(input: LayoutInput): LayoutView {
 export function buildMinimalLayout(lang: Lang, title: string): LayoutView {
 	return {
 		lang,
+		alternates: [],
+		languageSwitch: null,
 		pageId: 'message',
 		pageTitle: title,
 		boardTitle: title,

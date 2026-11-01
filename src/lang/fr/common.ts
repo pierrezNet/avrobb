@@ -6,6 +6,10 @@
 
 export const common = {
 	langCode: 'fr',
+	/** Lien vers la même page dans l'autre langue (pied de page). */
+	otherLanguage: 'English',
+	/** Langue des aperçus de partage (og:locale). */
+	ogLocale: 'fr_FR',
 
 	// Liens d'un forum de projet (AvroBB)
 	projectLinks: 'Liens du projet',

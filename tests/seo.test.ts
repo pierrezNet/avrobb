@@ -32,13 +32,19 @@ describe('référencement : fonctions pures', () => {
 		const robots = robotsTxt('https://forum.test');
 		expect(robots).toContain('Disallow: /admin_');
 		expect(robots).toContain('Disallow: /post.php');
+		expect(robots).toContain('Disallow: /en/post.php');
 		expect(robots).toContain('Sitemap: https://forum.test/sitemap.xml');
 		const xml = sitemapXml('https://forum.test', [
 			{ path: 'viewtopic.php?id=4&p=2', lastPost: 1_782_800_000 },
 			{ path: 'faq.php', lastPost: 0 },
 		]);
 		expect(xml).toContain('<loc>https://forum.test/sujet/4/page/2</loc><lastmod>2026-06-30</lastmod>');
-		expect(xml).toContain('<url><loc>https://forum.test/faq</loc></url>');
+		expect(xml).toContain('<loc>https://forum.test/en/topic/4/page/2</loc><lastmod>2026-06-30</lastmod>');
+		// Chaque page dans les deux langues, avec ses équivalents
+		const alternates =
+			'<xhtml:link rel="alternate" hreflang="fr" href="https://forum.test/faq"/><xhtml:link rel="alternate" hreflang="en" href="https://forum.test/en/faq"/>';
+		expect(xml).toContain(`<url><loc>https://forum.test/faq</loc>${alternates}</url>`);
+		expect(xml).toContain(`<url><loc>https://forum.test/en/faq</loc>${alternates}</url>`);
 	});
 });
 

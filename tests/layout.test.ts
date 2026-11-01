@@ -17,6 +17,8 @@ function input(overrides: Partial<LayoutInput> = {}): LayoutInput {
 	return {
 		viewer: viewer(),
 		config: boardConfig,
+		locale: 'fr',
+		currentPath: '/',
 		lang: fr,
 		dateWords: frDateWords,
 		now: NOW,

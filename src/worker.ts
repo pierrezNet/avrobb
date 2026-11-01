@@ -26,6 +26,7 @@ import assetManifest from './generated/assets.js';
 import templates from './generated/templates.js';
 import { type EdgeCache, withEdgeCache } from './http/edgeCache.ts';
 import { consoleLogger } from './http/log.ts';
+import { en, enDateWords } from './lang/en/index.ts';
 import { fr, frDateWords } from './lang/fr/index.ts';
 import { mail } from './lang/fr/mail.ts';
 import { AccountRepository } from './repositories/AccountRepository.ts';
@@ -68,6 +69,7 @@ import { TopicRepository } from './repositories/TopicRepository.ts';
 import { UserAdminRepository } from './repositories/UserAdminRepository.ts';
 import { UserRepository } from './repositories/UserRepository.ts';
 import { UsersInfoLoader } from './repositories/UsersInfoLoader.ts';
+import { delocalizePath, type Locale, localizePath } from './services/routes.ts';
 
 /** Liaison Static Assets (sous-ensemble de Fetcher). */
 interface AssetsBinding {
@@ -135,7 +137,7 @@ function defaultImageLoader(env: Env) {
 	};
 }
 
-async function createApp(env: Env, services: Services): Promise<ForumApp> {
+async function createApp(env: Env, services: Services, locale: Locale): Promise<ForumApp> {
 	const config = loadConfig(env as unknown as Readonly<Record<string, unknown>>);
 	const { db, files, configLoader } = services;
 
@@ -209,7 +211,7 @@ async function createApp(env: Env, services: Services): Promise<ForumApp> {
 		usersInfo: new UsersInfoLoader(stats, clock),
 		avatars,
 		avatarStore: avatars,
-		page: { lang: fr, dateWords: frDateWords, clock },
+		page: locale === 'en' ? { locale, lang: en, dateWords: enDateWords, clock } : { locale, lang: fr, dateWords: frDateWords, clock },
 		cookie: config.cookie,
 		templates,
 		assetUrl: createAssetUrl(assetManifest),
@@ -219,23 +221,40 @@ async function createApp(env: Env, services: Services): Promise<ForumApp> {
 }
 
 let services: Services | undefined;
-let app: Promise<ForumApp> | undefined;
+/** Une instance de l'application par langue, avec ses textes et ses adresses (services/routes.ts). */
+const apps: Partial<Record<Locale, Promise<ForumApp>>> = {};
 
 function isolateServices(env: Env): Services {
 	services ??= createServices(env);
 	return services;
 }
 
-function forumApp(env: Env): Promise<ForumApp> {
-	if (app === undefined) {
-		const created = createApp(env, isolateServices(env));
-		app = created;
-		// Une erreur de configuration (secret manquant…) ne reste pas en mémoire : on réessaiera.
-		created.catch(() => {
-			if (app === created) app = undefined;
-		});
-	}
-	return app;
+function forumApp(env: Env, locale: Locale): Promise<ForumApp> {
+	const existing = apps[locale];
+	if (existing !== undefined) return existing;
+	const created = createApp(env, isolateServices(env), locale);
+	apps[locale] = created;
+	// Une erreur de configuration (secret manquant…) ne reste pas en mémoire : on réessaiera.
+	created.catch(() => {
+		if (apps[locale] === created) delete apps[locale];
+	});
+	return created;
+}
+
+/**
+ * Requête d'une page anglaise (/en/…) : l'instance anglaise la reçoit à son adresse française, qu'elle
+ * route comme l'instance française ; ses redirections repartent en anglais. Le cache en bordure
+ * travaille sur l'adresse d'origine (une entrée par langue).
+ */
+async function serveEnglish(request: Request, frPath: string, env: Env, ctx: ExecutionContextLike): Promise<Response> {
+	const url = new URL(request.url);
+	url.pathname = frPath;
+	const response = await (await forumApp(env, 'en')).fetch(new Request(url, request), {}, ctx);
+	const location = response.headers.get('location');
+	if (location === null || !location.startsWith('/')) return response;
+	const localized = new Response(response.body, response);
+	localized.headers.set('location', localizePath(location, 'en'));
+	return localized;
 }
 
 /** Crée le sujet d'un retour reçu du relais d'une application source (AppFeedbackController). */
@@ -279,7 +298,16 @@ export class DonneTonPointFeedback extends WorkerEntrypoint<Env> {
 
 export default {
 	async fetch(request: Request, env: Env, ctx: ExecutionContextLike): Promise<Response> {
-		const forum = await forumApp(env);
+		const frPath = delocalizePath(new URL(request.url).pathname);
+		if (frPath !== null)
+			return withEdgeCache(
+				request,
+				caches.default,
+				COOKIE_PREFIX,
+				(promise) => ctx.waitUntil(promise),
+				() => serveEnglish(request, frPath, env, ctx),
+			);
+		const forum = await forumApp(env, 'fr');
 		return withEdgeCache(
 			request,
 			caches.default,

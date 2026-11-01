@@ -14,7 +14,7 @@ Cible : **100 % Cloudflare**. Un Worker (Hono), D1 (SQLite), R2 (fichiers), Stat
 - `AMELIORATIONS.md` (non versionné) : améliorations par rapport au forum PHP d'origine, à tenir à jour.
 - Projet voisin sur le même modèle (Workers + D1 + Hono) : `../donnetonpoint`.
 
-> **État** : en ligne depuis le 2026-10-30 sur https://avrobb.org. Lots 1 à 8 terminés (2026-10-31) ; la suite est dans « À décider » de TODO.md. Tout envoi sur `main` part en production.
+> **État** : en ligne depuis le 2026-10-30 sur https://avrobb.org. Lots 1 à 8 terminés (2026-10-31) ; forum bilingue (interface /en/, traduction automatique) le 2026-11-01. La suite est dans TODO.md. Tout envoi sur `main` part en production.
 
 ## Commandes
 
@@ -80,7 +80,9 @@ Principes :
 - **Dates** : timestamps Unix (secondes) jusqu'au presenter, formatage en dernier, horloge injectée (`PageContext.clock`). Formats fixes `d/m/Y` et `H:i`, fuseau du membre.
 - **Mise en page** : un contrôleur rend sa page avec `renderPage(…, 'page.njk', options, view)` ; `options` (`PageOptions`) décrit le titre, l'onglet actif et le pied.
 - **Configuration du forum** : table `config` en D1, lue par `ConfigLoader` avec un cache par isolat de courte durée (30 s) ; une modification dans l'administration est donc visible partout en moins d'une minute.
-- **Textes** : tous dans `src/lang/fr/` (un fichier par page), aucune chaîne en dur dans les vues ou les presenters. Gabarits d'e-mails compris.
+- **Textes** : tous dans `src/lang/fr/` (un fichier par page), aucune chaîne en dur dans les vues ou les presenters. Gabarits d'e-mails compris. Toute clé ajoutée en français l'est aussi dans `src/lang/en/` (même forme, vérifiée par le type `Lang`) ; e-mails et retours d'applications restent en français.
+- **Deux langues** : une instance de l'application par langue (`worker.ts`). Le code produit toujours les adresses françaises ; `/en/…` est ramené à l'adresse française à l'entrée (`delocalizePath`) et `url()`, les redirections et les URL canoniques repartent en anglais (`localizePath`). La langue d'une instance est `deps.page.locale`.
+- **Contenu traduit** (Workers AI, `services/translation.ts`, `controllers/translationJob.ts`) : à l'écriture puis chaque heure, jamais à l'affichage. Une traduction ne vaut que pour le texte qu'elle traduit (colonne `source`) : une nouvelle écriture de messages, titres ou forums n'a rien à supprimer.
 - **URL** : adresses propres (`/sujet/4-premier-sujet`, `/forum/2-avrobb`, `/membre/3`, `/aide`…), définies **uniquement** dans `services/routes.ts`. Le code manipule des cibles logiques héritées de FluxBB (`viewtopic.php?id=4`) que `publicPath()` traduit : `url()` dans les vues, `reply.redirect()`, BBCode, e-mails, flux, plan du site. Pour un lien avec slug, `topicPath()`/`forumPath()` avec le titre **censuré**. Les pages d'action (rédaction, administration, messagerie, profil en modification) gardent leur `.php`. Tout lien est absolu (« / ») : une adresse relative casse depuis `/sujet/…`.
 
 ## Comptes et session

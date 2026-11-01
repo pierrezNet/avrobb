@@ -47,6 +47,13 @@ export const staticPages: typeof frStaticPages = {
 				],
 			},
 			{
+				title: 'Machine translation',
+				paragraphs: [
+					'AvroBB is written for both French and English speakers: posts, topic titles and forum descriptions are machine translated into English or French. By posting, you allow AvroBB to show your post in the other language.',
+					'Translation is done by the Mistral Small 3.1 artificial intelligence model, from the French company Mistral AI, hosted by Cloudflare. It may be imperfect: it is marked as such, and the original text is always available. Private messages are never translated.',
+				],
+			},
+			{
 				title: 'Moderation and sanctions',
 				paragraphs: [
 					'Moderators can move, close, edit or delete a post or topic that does not follow these rules. Use a post’s “Report” link rather than replying to it.',
@@ -89,6 +96,7 @@ export const staticPages: typeof frStaticPages = {
 					'Your posts, profile and avatar are public. Your email address stays hidden, unless you choose to show it in your profile.',
 					'IP addresses are visible only to administrators and moderators, to spot abuse. Private messages are read only by their recipients.',
 					'The forum is hosted by Cloudflare (servers, database and files), which acts as a technical processor.',
+					'For machine translation, the text of public posts and titles is sent to Cloudflare’s artificial intelligence service (Workers AI, Mistral Small 3.1 model by Mistral AI), without your name or any other personal data. Cloudflare does not use it to train its models. Private messages are never sent to it.',
 				],
 			},
 			{

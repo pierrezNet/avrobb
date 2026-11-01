@@ -4,6 +4,9 @@
 
 export const topic = {
 	quickPost: 'Réponse',
+	/** Message traduit par Workers AI (texte d'origine dans une autre langue), avec le texte d'origine dépliable. */
+	machineTranslated: 'Traduit automatiquement',
+	showOriginal: 'Voir l’original',
 	isSubscribed: 'Vous suivez cette discussion',
 	unsubscribe: 'Ne plus suivre',
 	subscribe: 'Suivre cette discussion',

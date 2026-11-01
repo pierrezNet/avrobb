@@ -35,9 +35,12 @@ import { TOOLBAR } from '../services/toolbar.ts';
 import { markRead, parseTrackedTopics, serializeTrackedTopics } from '../services/trackedTopics.ts';
 import { type MentionNotifierDeps, notifyMentions } from './mentionNotifier.ts';
 import { positiveInt } from './params.ts';
+import { type TranslationJobDeps, translateInBackground } from './translationJob.ts';
 
 export interface PostControllerDeps extends LayoutDeps {
 	posting: PostingStore;
+	/** Traduction automatique après l'écriture ; null sans Workers AI. */
+	translationJob: TranslationJobDeps | null;
 	bans: BanReader;
 	censorship: CensorReader;
 	accounts: AccountLookup;
@@ -217,6 +220,11 @@ export class PostController {
 		}
 
 		const { topicId, postId } = await this.save(request, target, post, now);
+		// Traduction après la réponse : le message s'affiche tout de suite, dans sa langue.
+		translateInBackground(request, this.deps.translationJob, [
+			{ kind: 'post', id: postId, text: post.message },
+			...(target.topic === null ? [{ kind: 'subject' as const, id: topicId, text: post.subject }] : []),
+		]);
 		if (draftId !== null && !viewer.isGuest) await this.deps.drafts.delete(draftId, viewer.id);
 		await this.notify(request, target, post, censor, { topicId, postId });
 		if (!viewer.isGuest)

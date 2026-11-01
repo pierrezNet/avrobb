@@ -32,6 +32,15 @@
 			<textarea id="forum_desc" name="forum_desc" rows="3">{{ f.description }}</textarea>
 		</p>
 		<p class="form__field">
+			<label for="forum_name_en">{{ t.forumNameEn }}</label>
+			<input type="text" id="forum_name_en" name="forum_name_en" value="{{ f.nameEn }}" maxlength="80" lang="en" aria-describedby="translation-help">
+		</p>
+		<p class="form__field">
+			<label for="forum_desc_en">{{ t.forumDescriptionEn }}</label>
+			<textarea id="forum_desc_en" name="forum_desc_en" rows="3" lang="en" aria-describedby="translation-help">{{ f.descriptionEn }}</textarea>
+		</p>
+		<p class="form__help" id="translation-help">{{ t.translationInfo }}</p>
+		<p class="form__field">
 			<label for="cat_id">{{ t.category }}</label>
 			<select id="cat_id" name="cat_id">
 				{% for cat in view.categories %}<option value="{{ cat.id }}"{% if cat.selected %} selected{% endif %}>{{ cat.name }}</option>{% endfor %}

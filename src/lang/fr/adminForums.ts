@@ -60,6 +60,10 @@ export const adminForums = {
 	editDetailsSubhead: 'Modifier les informations sur le forum',
 	forumName: 'Nom du forum',
 	forumDescription: 'Description (HTML)',
+	// Interface anglaise (/en/) : traduction manuelle, prioritaire sur la traduction automatique.
+	forumNameEn: 'Nom en anglais',
+	forumDescriptionEn: 'Description en anglais (HTML)',
+	translationInfo: 'Facultatif. Laissés vides, le nom et la description sont traduits automatiquement pour l’interface anglaise.',
 	category: 'Catégorie',
 	sortBy: 'Trier les discussions par',
 	sortOptions: ['Dernier message', 'Début du sujet', 'Sujet'],

@@ -14,11 +14,12 @@ import { createAssetUrl } from './adapters/assetUrls.ts';
 import { DohHostResolver } from './adapters/hostResolver.ts';
 import { LogMailer, type Mailer, ResendMailer } from './adapters/mailer.ts';
 import { FetchOAuthClient } from './adapters/oauth.ts';
+import { type AiBinding, WorkersAiTextModel } from './adapters/textModel.ts';
 import { buildApp, type ForumApp } from './app.ts';
 import { loadConfig } from './config.ts';
 import { AppFeedbackController, type AppFeedbackResult } from './controllers/AppFeedbackController.ts';
 import type { RateLimiter } from './controllers/AuthController.ts';
-import { ScheduledTasks } from './controllers/ScheduledTasks.ts';
+import { ScheduledTasks, type ScheduledTasksDeps } from './controllers/ScheduledTasks.ts';
 import type { D1Database } from './db/d1.ts';
 import { createDatabase, type Db } from './db/database.ts';
 import type { FeedbackSourceId } from './domain/models.ts';
@@ -66,6 +67,7 @@ import { BuiltinStopwords } from './repositories/StopwordsLoader.ts';
 import { SubjectPrefixRepository } from './repositories/SubjectPrefixRepository.ts';
 import { SubscriptionRepository } from './repositories/SubscriptionRepository.ts';
 import { TopicRepository } from './repositories/TopicRepository.ts';
+import { TranslationRepository } from './repositories/TranslationRepository.ts';
 import { UserAdminRepository } from './repositories/UserAdminRepository.ts';
 import { UserRepository } from './repositories/UserRepository.ts';
 import { UsersInfoLoader } from './repositories/UsersInfoLoader.ts';
@@ -95,6 +97,8 @@ export interface Env {
 	GOOGLE_CLIENT_ID?: string;
 	GOOGLE_CLIENT_SECRET?: string;
 	ADMIN_ACCOUNTS?: string;
+	/** Workers AI (wrangler.jsonc, « ai ») : traduction automatique du contenu ; absente, rien n'est traduit. */
+	AI?: AiBinding;
 	RESEND_API_KEY?: string;
 	MAIL_FROM?: string;
 }
@@ -106,6 +110,8 @@ type ExecutionContextLike = ExecutionContext;
 declare const caches: { default: EdgeCache };
 
 const clock = (): number => Math.floor(Date.now() / 1000);
+/** Déclencheur horaire de wrangler.jsonc (traductions) ; l'autre est celui de la nuit. */
+const HOURLY_CRON = '7 * * * *';
 /** Préfixe des cookies du forum (config.ts, CookieConfig.name) : un visiteur qui en porte un n'est pas servi par le cache. */
 const COOKIE_PREFIX = 'avrobb';
 
@@ -120,6 +126,23 @@ interface Services {
 /** Envoi d'e-mails : Resend si la clé est configurée, sinon le journal. */
 function createMailer(config: ReturnType<typeof loadConfig>): Mailer {
 	return config.mail !== null ? new ResendMailer(config.mail.apiKey, config.mail.from) : new LogMailer(consoleLogger);
+}
+
+/** Traduction automatique : modèle de Workers AI et table translations, ou null sans liaison AI. */
+function createTranslation(env: Env, db: Db): ScheduledTasksDeps['translation'] {
+	if (env.AI === undefined) return null;
+	const { configLoader } = isolateServices(env);
+	return {
+		model: new WorkersAiTextModel(env.AI, consoleLogger),
+		translations: new TranslationRepository(db),
+		// Nom du forum et projets (balises de sujet) : des noms propres, jamais traduits.
+		keepNames: async () => {
+			const config = await configLoader.load();
+			return [config.boardTitle, 'AvroBB', ...config.subjectTags.filter((tag) => tag.group === 'project').map((tag) => tag.name)];
+		},
+		clock,
+		logger: consoleLogger,
+	};
 }
 
 function createServices(env: Env): Services {
@@ -208,6 +231,9 @@ async function createApp(env: Env, services: Services, locale: Locale): Promise<
 		homeActivity: new HomeActivityRepository(db),
 		sitemap: new SitemapRepository(db),
 		stopwords: new BuiltinStopwords(),
+		translations: new TranslationRepository(db),
+		manualTranslations: new TranslationRepository(db),
+		translationJob: createTranslation(env, db),
 		usersInfo: new UsersInfoLoader(stats, clock),
 		avatars,
 		avatarStore: avatars,
@@ -318,16 +344,18 @@ export default {
 		);
 	},
 
-	async scheduled(_controller: unknown, env: Env, ctx: ExecutionContextLike): Promise<void> {
+	async scheduled(controller: { cron: string }, env: Env, ctx: ExecutionContextLike): Promise<void> {
 		const { db, files, configLoader, online } = isolateServices(env);
 		const tasks = new ScheduledTasks({
 			config: configLoader,
 			online,
 			files,
 			fileReferences: new FileReferenceRepository(db),
+			translation: createTranslation(env, db),
 			clock,
 			logger: consoleLogger,
 		});
-		ctx.waitUntil(tasks.run());
+		// Deux déclencheurs (wrangler.jsonc) : la nuit, le ménage ; chaque heure, les traductions.
+		ctx.waitUntil(controller.cron === HOURLY_CRON ? tasks.runHourly() : tasks.run());
 	},
 };

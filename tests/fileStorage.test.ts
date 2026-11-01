@@ -118,6 +118,7 @@ describe('fichiers orphelins', () => {
 		const purges: unknown[] = [];
 		const logged: string[] = [];
 		const tasks = new ScheduledTasks({
+			translation: null,
 			config: { load: async () => boardConfig },
 			online: {
 				listStale: async () => [{ userId: 1, ident: '192.0.2.1', logged: 0, idle: false }],
@@ -144,6 +145,7 @@ describe('fichiers orphelins', () => {
 		await store.put('img/gallery/7.jpg', bytes('x'), 'image/jpeg');
 		const errors: unknown[] = [];
 		const tasks = new ScheduledTasks({
+			translation: null,
 			config: { load: async () => boardConfig },
 			online: {
 				listStale: async () => {

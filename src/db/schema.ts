@@ -301,6 +301,19 @@ export interface UsersTable {
 	reputation_enable: Generated<number>;
 }
 
+/** Traductions automatiques du contenu (migration 0009). */
+export interface TranslationsTable {
+	kind: 'post' | 'subject' | 'forum_name' | 'forum_desc';
+	item_id: number;
+	/** 'fr', 'en', ou '-' : rien à traduire. */
+	lang: string;
+	text: string;
+	/** Texte d'origine traduit : la traduction n'est valable que s'il est toujours le texte actuel. */
+	source: string;
+	manual: Generated<number>;
+	created: number;
+}
+
 export interface Database {
 	bans: BansTable;
 	brouillons: BrouillonsTable;
@@ -322,6 +335,7 @@ export interface Database {
 	search_words: SearchWordsTable;
 	topic_subscriptions: TopicSubscriptionsTable;
 	topics: TopicsTable;
+	translations: TranslationsTable;
 	users: UsersTable;
 }
 
@@ -346,5 +360,6 @@ export const TABLE_NAMES: readonly (keyof Database)[] = [
 	'search_words',
 	'topic_subscriptions',
 	'topics',
+	'translations',
 	'users',
 ];

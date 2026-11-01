@@ -4,24 +4,28 @@
  */
 
 import type { CookieConfig } from '../config.ts';
+import type { Post, Topic } from '../domain/models.ts';
 import type { AppReply, AppRequest } from '../http/context.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { setForumCookie } from '../http/session.ts';
-import { buildTopicPage, topicUrl } from '../presenters/topicPage.ts';
+import { buildTopicPage, displaySubject, topicUrl } from '../presenters/topicPage.ts';
 import type { AvatarLocator } from '../repositories/AvatarFiles.ts';
 import type { BanReader } from '../repositories/BanRepository.ts';
 import type { CensorReader } from '../repositories/CensorRepository.ts';
 import type { PostReader } from '../repositories/PostRepository.ts';
 import type { TopicReader, TopicWriter } from '../repositories/TopicRepository.ts';
+import type { TranslationReader } from '../repositories/TranslationRepository.ts';
 import { buildCensor } from '../services/censor.ts';
 import { clampPage, pageCount } from '../services/pagination.ts';
 import { firstImageUrl, plainExcerpt } from '../services/seo.ts';
 import { TOOLBAR } from '../services/toolbar.ts';
 import { markRead, parseTrackedTopics, serializeTrackedTopics } from '../services/trackedTopics.ts';
+import { type ContentTranslations, NO_TRANSLATIONS } from '../services/translation.ts';
 import { positiveInt } from './params.ts';
 
 export interface TopicControllerDeps extends LayoutDeps {
 	topics: TopicReader;
+	translations: TranslationReader;
 	posts: PostReader;
 	avatars: AvatarLocator;
 	bans: BanReader;
@@ -95,7 +99,8 @@ export class TopicController {
 		await this.recordVisit(request, reply, topic.id);
 
 		const censor = config.censoring ? buildCensor(censoredWords) : null;
-		const firstMessage = posts[0]?.message ?? '';
+		const translations = await this.#translations(topic, posts);
+		const firstMessage = translations.posts.get(posts[0]?.id ?? 0) ?? posts[0]?.message ?? '';
 		const view = buildTopicPage({
 			viewer,
 			config,
@@ -111,6 +116,7 @@ export class TopicController {
 			lang,
 			dateWords: this.deps.page.dateWords,
 			now: this.deps.page.clock(),
+			translations,
 		});
 
 		return renderPage(
@@ -120,12 +126,13 @@ export class TopicController {
 			'viewtopic.njk',
 			{
 				pageId: 'viewtopic',
-				titleParts: [config.boardTitle, topic.forum.name, view.topic.subject],
+				titleParts: [config.boardTitle, view.crumbs[1]?.label ?? topic.forum.name, view.topic.subject],
 				pageNumber: page,
 				activeNav: 'index',
 				footer: { kind: 'viewtopic', topic, page },
 				allowIndex: true,
-				canonicalUrl: topicUrl(topic.id, page, view.topic.subject),
+				// Slug du titre d'origine : la même adresse dans les deux langues.
+				canonicalUrl: topicUrl(topic.id, page, displaySubject(topic.subject, censor)),
 				// Référencement : extrait du premier message de la page, et sa première image pour le partage.
 				description: plainExcerpt(censor !== null ? censor(firstMessage) : firstMessage),
 				image: firstImageUrl(posts.map((post) => post.message)),
@@ -172,5 +179,20 @@ export class TopicController {
 
 	private notFound(request: AppRequest, reply: AppReply): Promise<AppReply> {
 		return renderMessage(request, reply, this.deps, 404, this.deps.page.lang.common.badRequest);
+	}
+
+	/** Traductions de la page dans sa langue : messages, titre et nom du forum (texte d'origine inchangé). */
+	async #translations(topic: Topic, posts: readonly Post[]): Promise<ContentTranslations> {
+		const { locale } = this.deps.page;
+		const [postTexts, subjects, forumNames] = await Promise.all([
+			this.deps.translations.find(
+				'post',
+				posts.map((post) => ({ id: post.id, text: post.message })),
+				locale,
+			),
+			this.deps.translations.find('subject', [{ id: topic.id, text: topic.subject }], locale),
+			this.deps.translations.find('forum_name', [{ id: topic.forum.id, text: topic.forum.name }], locale),
+		]);
+		return { ...NO_TRANSLATIONS, posts: postTexts, subjects, forumNames };
 	}
 }

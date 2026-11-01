@@ -10,11 +10,14 @@ import type { ForumReader } from '../repositories/ForumRepository.ts';
 import type { HomeActivityReader } from '../repositories/HomeActivityRepository.ts';
 import type { StatsReader } from '../repositories/StatsRepository.ts';
 import type { TopicReader } from '../repositories/TopicRepository.ts';
+import type { TranslationReader } from '../repositories/TranslationRepository.ts';
 import { HOME_WEEK } from '../services/homeActivity.ts';
 import { parseTrackedTopics } from '../services/trackedTopics.ts';
+import { withTranslatedForums, withTranslatedSubjects } from './contentTranslations.ts';
 
 export interface IndexControllerDeps extends LayoutDeps {
 	forums: ForumReader;
+	translations: TranslationReader;
 	topics: TopicReader;
 	stats: StatsReader;
 	homeActivity: HomeActivityReader;
@@ -38,7 +41,7 @@ export class IndexController {
 		if (!viewer.group.canReadBoard) return renderMessage(request, reply, this.deps, 403, lang.common.noView);
 
 		const weekStart = this.deps.page.clock() - HOME_WEEK;
-		const [categories, recentTopics, online, hotTopics, newMembers, activeSubjects] = await Promise.all([
+		const [indexCategories, recentTopics, online, indexHotTopics, newMembers, activeSubjects] = await Promise.all([
 			this.deps.forums.listIndex(viewer.group.id),
 			viewer.isGuest ? [] : this.deps.topics.listUpdatedSince(viewer.group.id, viewer.lastVisit),
 			config.usersOnline ? this.deps.stats.listOnline() : null,
@@ -46,6 +49,20 @@ export class IndexController {
 			this.deps.homeActivity.listNewMembers(weekStart, NEW_MEMBERS),
 			this.deps.homeActivity.listActiveSubjects(viewer.group.id, weekStart),
 		]);
+		const { locale } = this.deps.page;
+		const [forums, hotTopics] = await Promise.all([
+			withTranslatedForums(
+				this.deps.translations,
+				indexCategories.flatMap((category) => category.forums),
+				locale,
+			),
+			withTranslatedSubjects(this.deps.translations, indexHotTopics, locale),
+		]);
+		const shownForums = new Map(forums.map((forum) => [forum.id, forum]));
+		const categories = indexCategories.map((category) => ({
+			...category,
+			forums: category.forums.map((forum) => shownForums.get(forum.id) ?? forum),
+		}));
 		const members = (online ?? []).filter((visitor) => visitor.userId > 1).slice(0, ONLINE_AVATARS);
 		const [hotTopicImages, avatarUrls] = await Promise.all([
 			this.deps.homeActivity.findLatestImageMessages(hotTopics.map((topic) => topic.id)),

@@ -40,6 +40,7 @@ import { StatsRepository } from '../../src/repositories/StatsRepository.ts';
 import { SubjectPrefixRepository } from '../../src/repositories/SubjectPrefixRepository.ts';
 import { SubscriptionRepository } from '../../src/repositories/SubscriptionRepository.ts';
 import { TopicRepository } from '../../src/repositories/TopicRepository.ts';
+import { TranslationRepository } from '../../src/repositories/TranslationRepository.ts';
 import { UserAdminRepository } from '../../src/repositories/UserAdminRepository.ts';
 import { UserRepository } from '../../src/repositories/UserRepository.ts';
 import { UsersInfoLoader } from '../../src/repositories/UsersInfoLoader.ts';
@@ -492,6 +493,9 @@ describe('viewtopic de bout en bout', () => {
 			homeActivity: new HomeActivityRepository(db),
 			sitemap: new SitemapRepository(db),
 			stopwords: { load: async () => new Set<string>() },
+			translations: new TranslationRepository(db),
+			manualTranslations: new TranslationRepository(db),
+			translationJob: null,
 			usersInfo: new UsersInfoLoader(new StatsRepository(db), () => NOW),
 			avatars: { urlFor: async () => null },
 			avatarStore: { save: async () => undefined, delete: async () => undefined },

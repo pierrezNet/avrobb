@@ -121,7 +121,17 @@ Front-end : `public/assets/css/base.css` (mobile d'abord) et un fichier de varia
   sens du vote (le PHP exigeait les deux seuils) ; erreurs réaffichées dans le formulaire ; plus
   d'e-mail codé en dur à la suppression de votes ; pagination sans page vide en trop.
 - Site web du profil : préfixé de `http://` s'il n'a pas de schéma (le PHP laissait passer `javascript:`).
-- Textes en français seulement.
+- **Forum bilingue** (absent de FluxBB) : interface en français (sans préfixe) et en anglais sous
+  `/en/` (`/en/topic/4-…`, `/en/member/3`…), une instance de l'application par langue
+  (`src/worker.ts`, `localizePath`/`delocalizePath` de `services/routes.ts`), textes dans
+  `src/lang/fr` et `src/lang/en` (type `Lang` : rien ne manque à la compilation), `hreflang` et plan
+  du site dans les deux langues. Le contenu (messages, titres, noms et descriptions des forums) est
+  traduit une fois par **Workers AI** (Mistral Small 3.1, liaison `ai` de `wrangler.jsonc`), après
+  la réponse à l'écriture, et rattrapé chaque heure par la tâche planifiée (40 textes par passage) ;
+  le BBCode, les liens et les noms des projets sont protégés par des marqueurs contrôlés au retour.
+  Table `translations` (migration 0009) : chaque traduction garde le texte qu'elle traduit et ne
+  s'affiche que s'il n'a pas changé. Messages privés et e-mails jamais traduits. Le nom et la
+  description d'un forum en anglais peuvent être saisis dans l'administration (prioritaires).
 - Liens de modération du pied de page affichés : PV les masque visuellement (`sr-only`) sans autre accès.
   Fermer et épingler passent par un bouton POST avec jeton CSRF (le PHP écrivait sur un lien GET,
   vérifié par le seul Referer) ; un ancien lien GET mène à une confirmation.

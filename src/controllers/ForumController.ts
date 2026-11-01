@@ -9,13 +9,16 @@ import { buildForumPage, forumUrl } from '../presenters/forumPage.ts';
 import type { CensorReader } from '../repositories/CensorRepository.ts';
 import type { ForumReader } from '../repositories/ForumRepository.ts';
 import type { TopicReader } from '../repositories/TopicRepository.ts';
+import type { TranslationReader } from '../repositories/TranslationRepository.ts';
 import { buildCensor } from '../services/censor.ts';
 import { clampPage, pageCount } from '../services/pagination.ts';
 import { parseTrackedTopics } from '../services/trackedTopics.ts';
+import { withTranslatedForums, withTranslatedSubjects } from './contentTranslations.ts';
 import { positiveInt } from './params.ts';
 
 export interface ForumControllerDeps extends LayoutDeps {
 	forums: ForumReader;
+	translations: TranslationReader;
 	topics: TopicReader;
 	censorship: CensorReader;
 	trackCookieName: string;
@@ -68,12 +71,17 @@ export class ForumController {
 			age,
 		);
 		const censoredWords = config.censoring ? await this.deps.censorship.listWords() : [];
+		const { locale } = this.deps.page;
+		const [[shown = forum], shownTopics] = await Promise.all([
+			withTranslatedForums(this.deps.translations, [forum], locale),
+			withTranslatedSubjects(this.deps.translations, topics, locale),
+		]);
 
 		const view = buildForumPage({
 			viewer,
 			config,
-			forum,
-			topics,
+			forum: shown,
+			topics: shownTopics,
 			tracked: parseTrackedTopics(request.cookies[this.deps.trackCookieName]),
 			censor: config.censoring ? buildCensor(censoredWords) : null,
 			page,
@@ -91,13 +99,14 @@ export class ForumController {
 			'viewforum.njk',
 			{
 				pageId: 'viewforum',
-				titleParts: [config.boardTitle, forum.name, ...(age?.old ? [lang.forum.oldTopicsTitle] : [])],
+				titleParts: [config.boardTitle, shown.name, ...(age?.old ? [lang.forum.oldTopicsTitle] : [])],
 				pageNumber: page,
 				activeNav: 'index',
 				footer: { kind: 'viewforum', forum, page },
 				allowIndex: true,
+				// Slug du nom d'origine : la même adresse dans les deux langues.
 				canonicalUrl: forumUrl(forum.id, page, age?.old ?? false, forum.name),
-				description: lang.forum.metaDescription(forum.name, config.boardTitle),
+				description: lang.forum.metaDescription(shown.name, config.boardTitle),
 			},
 			view,
 		);

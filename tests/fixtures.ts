@@ -59,6 +59,7 @@ import type { CensoredWord } from '../src/services/censor.ts';
 import type { GroupForumPermissionRow } from '../src/services/forumPermissions.ts';
 import type { MailMessage } from '../src/services/mail.ts';
 import { buildSessionCookie } from '../src/services/session.ts';
+import type { TranslationKind } from '../src/services/translation.ts';
 import type { UserSearchCriteria } from '../src/services/userSearch.ts';
 import { fakePrivateMessageStore, type PmData, pmData } from './fakePrivateMessages.ts';
 
@@ -309,7 +310,19 @@ export const forumCategories: ForumCategory[] = [
 	{ id: 2, name: 'Ateliers', forums: [{ id: 2, name: 'Captures & Vidéos', isRedirect: false }] },
 ];
 
+/** Traduction automatique enregistrée (table translations). */
+export interface FakeTranslation {
+	kind: TranslationKind;
+	id: number;
+	lang: string;
+	text: string;
+	source: string;
+}
+
 export interface FakeData {
+	translations?: FakeTranslation[];
+	/** Traductions manuelles des forums : « kind:id:lang » → texte. */
+	manualTranslations?: Map<string, string>;
 	/** Membres connus ; `presence` vaut null par défaut (pas encore dans la liste des présents). */
 	users: (Omit<ViewerRecord, 'presence' | 'sessionVersion'> & {
 		presence?: ViewerRecord['presence'];
@@ -1087,6 +1100,24 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			},
 		},
 		stopwords: { load: async () => new Set(['les', 'pour']) },
+		translations: {
+			find: async (kind, items, lang) =>
+				new Map(
+					(data.translations ?? [])
+						.filter((row) => row.kind === kind && row.lang === lang && items.some((item) => item.id === row.id && item.text === row.source))
+						.map((row) => [row.id, row.text]),
+				),
+		},
+		translationJob: null,
+		manualTranslations: {
+			findManual: async (kind, id, lang) => data.manualTranslations?.get(`${kind}:${id}:${lang}`) ?? null,
+			setManual: async (source, lang, text) => {
+				const all = new Map(data.manualTranslations ?? []);
+				if (text === null) all.delete(`${source.kind}:${source.id}:${lang}`);
+				else all.set(`${source.kind}:${source.id}:${lang}`, text);
+				data.manualTranslations = all;
+			},
+		},
 		gallery: {
 			countImages: async (owner, search = '') =>
 				(data.galleryImages ?? [])

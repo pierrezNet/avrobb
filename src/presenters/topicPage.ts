@@ -27,6 +27,7 @@ import {
 import { forumPath, topicPath } from '../services/routes.ts';
 import { type SubjectSegment, subjectSegments } from '../services/subjectTags.ts';
 import type { ToolbarSettings } from '../services/toolbar.ts';
+import { type ContentTranslations, NO_TRANSLATIONS } from '../services/translation.ts';
 import { userTitle } from '../services/userTitle.ts';
 import { type Crumb, crumbs, type PaginationLink, paginationLinks } from './navigation.ts';
 import { bbcodeLabels, messageParserOptions } from './parserOptions.ts';
@@ -75,8 +76,10 @@ export interface PostView {
 	adminNote: string | null;
 	reputation: ReputationView | null;
 	isOnline: boolean | null;
-	/** HTML produit par parseMessage() (échappé par construction). */
+	/** HTML produit par parseMessage() (échappé par construction) ; celui de la traduction s'il y en a une. */
 	messageHtml: string;
+	/** Message traduit automatiquement : mention, et texte d'origine (parseMessage()) à déplier. */
+	translation: { label: string; showOriginal: string; originalHtml: string } | null;
 	/** HTML produit par parseSignature() (échappé par construction). */
 	signatureHtml: string | null;
 	edited: { by: string; at: string } | null;
@@ -145,6 +148,8 @@ export interface TopicPageInput {
 	lang: Lang;
 	dateWords: DateWords;
 	now: number;
+	/** Traductions dans la langue de la page (messages, titre, nom du forum) ; aucune par défaut. */
+	translations?: ContentTranslations;
 }
 
 /** URL d'une page du sujet (la page 1 n'a pas de paramètre p, comme dans FluxBB). */
@@ -255,7 +260,11 @@ export function buildTopicPage(input: TopicPageInput): TopicPageView {
 	const time = viewerTimeSettings(viewer);
 	const format = (ts: number | null, dateOnly = false): string => formatTime(ts, time, input.dateWords, input.now, dateOnly);
 	const censored = (text: string): string => (censor !== null ? censor(text) : text);
-	const subject = displaySubject(topic.subject, censor);
+	const translations = input.translations ?? NO_TRANSLATIONS;
+	// Adresses tirées du titre d'origine : les mêmes dans les deux langues (URL canonique, hreflang).
+	const urlSubject = displaySubject(topic.subject, censor);
+	const subject = displaySubject(translations.subjects.get(topic.id) ?? topic.subject, censor);
+	const forumName = translations.forumNames.get(topic.forum.id) ?? topic.forum.name;
 	const titleWords = { banned: lang.common.banned, guest: lang.common.guest, member: lang.common.member };
 	const parser = parserOptions(input);
 
@@ -293,7 +302,14 @@ export function buildTopicPage(input: TopicPageInput): TopicPageView {
 			adminNote: viewerIsMod && author !== null && author.adminNote !== '' ? author.adminNote : null,
 			reputation: author !== null ? reputation(post, author, input) : null,
 			isOnline: author !== null ? author.isOnline : null,
-			messageHtml: parseMessage(post.message, parser.message(post)),
+			messageHtml: parseMessage(translations.posts.get(post.id) ?? post.message, parser.message(post)),
+			translation: translations.posts.has(post.id)
+				? {
+						label: lang.topic.machineTranslated,
+						showOriginal: lang.topic.showOriginal,
+						originalHtml: parseMessage(post.message, parser.message(post)),
+					}
+				: null,
 			signatureHtml:
 				showSignatures && author !== null && author.signature !== '' ? parseSignature(author.signature, parser.signature) : null,
 			edited: post.edited !== null ? { by: post.editedBy, at: format(post.edited) } : null,
@@ -326,10 +342,10 @@ export function buildTopicPage(input: TopicPageInput): TopicPageView {
 		},
 		crumbs: crumbs(
 			{ label: lang.common.index, href: 'index.php' },
-			{ label: topic.forum.name, href: forumPath(topic.forum.id, topic.forum.name) },
-			{ label: subject, href: topicUrl(topic.id, 1, subject) },
+			{ label: forumName, href: forumPath(topic.forum.id, topic.forum.name) },
+			{ label: subject, href: topicUrl(topic.id, 1, urlSubject) },
 		),
-		pagination: paginationLinks(input.numPages, input.page, (page) => topicUrl(topic.id, page, subject)),
+		pagination: paginationLinks(input.numPages, input.page, (page) => topicUrl(topic.id, page, urlSubject)),
 		// Bouton « Répondre » seulement sans formulaire de réponse en bas de page (AvroBB).
 		replyUrl: reply === null && canReply(viewer, topic) ? `post.php?tid=${topic.id}` : null,
 		prefixesUrl: canEditSubjectPrefixes(viewer, topic) ? `topic_prefixes.php?id=${topic.id}` : null,

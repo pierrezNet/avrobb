@@ -215,20 +215,17 @@ Vigilance :
 
 ## Après la mise en ligne
 
+- [x] **Forum bilingue par traduction automatique** (2026-11-01) : interface anglaise sous `/en/` (textes de `src/lang/en`, adresses anglaises, `hreflang`, lien « English » / « Français »), contenu traduit par Workers AI (Mistral Small 3.1) à l'écriture et rattrapé chaque heure, mention « Traduit automatiquement » avec le texte d'origine dépliable, traduction anglaise des forums saisissable dans l'administration ; Termes et règles et politique de confidentialité complétés (modèle cité). Suites possibles :
+  - e-mails et messages de mention dans la langue du destinataire (préférence de langue dans le profil) ;
+  - titres des groupes (« Administrateur ») et balises de sujet, enregistrés en base, restent en français ;
+  - recherche : seul le texte d'origine est indexé (un lecteur anglais ne trouve pas un message français par ses mots anglais) ;
+  - titres d'origine dans les résultats de recherche, les flux et les MP de mention ;
+  - aucune redirection selon `Accept-Language` (incompatible avec le cache en bordure de `/`) : seul le lien du pied de page change de langue
 - [x] **Retours d'applications** reçus par liaison de service, sans compte : Phraséo (2026-10-31) puis Donne Ton Point, sur un modèle commun (`services/appFeedback.ts`). Chaque application a un compte système (sans messagerie privée ni renommée), un forum privé « à trier » et un bouton « Accepter » qui publie le retour dans le forum public choisi dans les options
 
 ---
 
 ## À décider
-
-- [ ] **Forum bilingue par traduction automatique** (idée du 2026-10-30) : un membre écrit en anglais, les lecteurs francophones lisent en français, et inversement. Faisable sur Cloudflare :
-  - Workers AI : modèle de traduction (`@cf/meta/m2m100-1.2b`) ou un LLM pour un meilleur rendu, dans le forfait Workers Paid (10 000 neurones par jour gratuits) ;
-  - traduire **une fois à l'écriture** (`waitUntil`), garder la traduction en base (table `post_translations` : message, langue, texte, empreinte du source pour invalider à l'édition), jamais à chaque affichage ;
-  - langue détectée à l'écriture, BBCode protégé (traduire le texte entre les balises, pas les balises ni les citations de code) ;
-  - affichage dans la langue du lecteur (`Accept-Language` ou préférence du profil) avec « Voir l'original » ; français sans préfixe (`/sujet/4-premier-sujet`, inchangé), anglais sous `/en/` avec des mots anglais (`/en/topic/4-first-subject`, `/en/member/3`) : le mot seul ne suffit pas (`/forum`, `/message`, `/faq` sont identiques) ; `hreflang` entre les deux versions ;
-  - interface : `src/lang/en/` à écrire (tous les textes sont déjà centralisés dans `src/lang/fr/`) ;
-  - mention « traduit automatiquement » sur chaque message traduit.
-    Estimation : 4 à 6 jours après la mise en ligne.
 
 - [ ] **Éditeur WYSIWYG** (SCEditor, mode source BBCode) : repris de la TODO de pv-forum, après la mise en ligne (2 à 3 jours).
 - [ ] Réputation : utile sur un forum personnel ? Gardée pour l'instant.

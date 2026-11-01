@@ -85,7 +85,7 @@ export const common = {
 	notLoggedIn: "Vous n'êtes pas identifié(e).",
 	profile: 'Profil',
 	logout: 'Déconnexion',
-	loggedInAs: "Connecté(e) sous l'identité\u00a0",
+	loggedInAs: "Connecté·e sous l'identité\u00a0",
 	admin: 'Administration',
 	lastVisit: (date: string) => `Dernière visite\u00a0: ${date}`,
 	topicSearches: 'Contributions\u00a0:',

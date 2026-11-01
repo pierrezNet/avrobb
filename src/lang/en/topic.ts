@@ -6,6 +6,8 @@ import type { topic as frTopic } from '../fr/topic.ts';
 
 export const topic: typeof frTopic = {
 	quickPost: 'Reply',
+	machineTranslated: 'Machine translated',
+	showOriginal: 'Show original',
 	isSubscribed: 'You are following this topic',
 	unsubscribe: 'Unfollow',
 	subscribe: 'Follow this topic',

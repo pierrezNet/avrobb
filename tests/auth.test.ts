@@ -168,7 +168,7 @@ describe('me déconnecter de partout', () => {
 		expect(res.headers.location).toBe('/');
 		expect(fake.accountLog).toEqual(['endAllSessions 3']);
 		const after = await inject(app, { url: '/index.php', headers: { host: HOST, cookie } });
-		expect(after.body).not.toContain('Connecté(e) sous l&#39;identité');
+		expect(after.body).not.toContain('Connecté·e sous l&#39;identité');
 		expect(cookiesOf(after).some((c) => c.startsWith('avrobb_session=;'))).toBe(true);
 	});
 });

@@ -82,6 +82,9 @@ export interface AdminForumEditView {
 		redirectEditable: boolean;
 		siteUrl: string;
 		repoUrl: string;
+		/** Traductions anglaises saisies à la main (vide : traduction automatique). */
+		nameEn: string;
+		descriptionEn: string;
 	};
 	formAction: string;
 	categories: { id: number; name: string; selected: boolean }[];
@@ -103,6 +106,7 @@ export function buildAdminForumEdit(input: {
 	permissions: readonly GroupForumPermissionRow[];
 	errors: string[];
 	notice: string | null;
+	manual: { name: string | null; description: string | null };
 }): AdminForumEditView {
 	const { forum } = input;
 	const redirected = forum.redirectUrl !== '';
@@ -115,6 +119,8 @@ export function buildAdminForumEdit(input: {
 			redirectEditable: forum.numTopics === 0,
 			siteUrl: forum.siteUrl,
 			repoUrl: forum.repoUrl,
+			nameEn: input.manual.name ?? '',
+			descriptionEn: input.manual.description ?? '',
 		},
 		formAction: `admin_forums.php?edit_forum=${forum.id}`,
 		categories: input.categories.map(({ id, name }) => ({ id, name, selected: id === forum.categoryId })),

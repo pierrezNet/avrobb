@@ -9,14 +9,20 @@ import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage } from '../http/layout.ts';
 import { buildAdminCategories, buildAdminForumEdit, buildAdminForumList } from '../presenters/adminForumsPage.ts';
 import type { AdminCategory, ForumAdminStore } from '../repositories/ForumAdminRepository.ts';
+import type { ManualTranslationStore } from '../repositories/TranslationRepository.ts';
 import { readCategoryUpdates, readForumDetails, readForumPositions, readGroupPermission } from '../services/forumAdminForms.ts';
 import { permissionChange } from '../services/forumPermissions.ts';
-import { punTrim } from '../services/phpString.ts';
+import { punLinebreaks, punTrim } from '../services/phpString.ts';
 import { adminDenied, renderAdminPage } from './adminPage.ts';
 import { positiveInt } from './params.ts';
+import { type TranslationJobDeps, translateInBackground } from './translationJob.ts';
 
 export interface ForumAdminControllerDeps extends LayoutDeps {
 	forumAdmin: ForumAdminStore;
+	/** Traduction automatique après l'écriture ; null sans Workers AI. */
+	translationJob: TranslationJobDeps | null;
+	/** Nom et description en anglais saisis à la main. */
+	manualTranslations: ManualTranslationStore;
 }
 
 export interface AdminForumsQuery {
@@ -206,6 +212,18 @@ export class ForumAdminController {
 		// L'URL de redirection n'est proposée que pour un forum vide : sinon elle reste inchangée (le PHP la vidait).
 		const { kind: _kind, ...values } = details;
 		await store.updateForum(forumId, forum.numTopics === 0 ? values : { ...values, redirectUrl: forum.redirectUrl || null });
+		// Traduction anglaise saisie : prioritaire ; sinon traduction automatique.
+		const now = this.deps.page.clock();
+		const nameSource = { kind: 'forum_name' as const, id: forumId, text: values.name };
+		const descSource = { kind: 'forum_desc' as const, id: forumId, text: values.description ?? '' };
+		const nameEn = punTrim(field(body, 'forum_name_en')).slice(0, 80);
+		const descEn = values.description !== null ? punLinebreaks(punTrim(field(body, 'forum_desc_en'))) : '';
+		await this.deps.manualTranslations.setManual(nameSource, 'en', nameEn !== '' ? nameEn : null, now);
+		await this.deps.manualTranslations.setManual(descSource, 'en', descEn !== '' ? descEn : null, now);
+		translateInBackground(request, this.deps.translationJob, [
+			...(nameEn === '' ? [nameSource] : []),
+			...(descEn === '' && descSource.text !== '' ? [descSource] : []),
+		]);
 		for (const row of await store.listGroupPermissions(forumId)) {
 			const sent = readGroupPermission(body, row.groupId);
 			if (sent === null) continue;
@@ -241,17 +259,20 @@ export class ForumAdminController {
 		const { lang } = this.deps.page;
 		const forum = await this.deps.forumAdmin.findForum(forumId);
 		if (forum === null) return renderMessage(request, reply, this.deps, 400, lang.common.badRequest);
-		const [categories, permissions] = await Promise.all([
+		const [categories, permissions, name, description] = await Promise.all([
 			this.deps.forumAdmin.listCategories(),
 			this.deps.forumAdmin.listGroupPermissions(forumId),
+			this.deps.manualTranslations.findManual('forum_name', forumId, 'en'),
+			this.deps.manualTranslations.findManual('forum_desc', forumId, 'en'),
 		]);
+		const manual = { name, description };
 		reply.code(status);
 		return renderAdminPage(
 			request,
 			reply,
 			this.deps,
 			{ active: 'forums', template: 'admin_forum_edit.njk', title: lang.adminForums.forums },
-			buildAdminForumEdit({ forum, categories, permissions, errors, notice }),
+			buildAdminForumEdit({ forum, categories, permissions, errors, notice, manual }),
 		);
 	}
 

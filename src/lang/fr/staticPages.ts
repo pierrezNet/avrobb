@@ -57,6 +57,13 @@ export const staticPages = {
 				],
 			},
 			{
+				title: 'Traduction automatique',
+				paragraphs: [
+					'AvroBB s’adresse à un public francophone et anglophone : les messages, les titres des discussions et la présentation des forums sont traduits automatiquement en anglais ou en français. En publiant, vous autorisez AvroBB à afficher votre message dans l’autre langue.',
+					'La traduction est faite par le modèle d’intelligence artificielle Mistral Small 3.1, de la société française Mistral AI, hébergé par Cloudflare. Elle peut être imparfaite : elle est signalée comme telle, et le texte d’origine reste toujours consultable. Les messages privés ne sont jamais traduits.',
+				],
+			},
+			{
 				title: 'Modération et sanctions',
 				paragraphs: [
 					'Les modérateurs peuvent déplacer, fermer, modifier ou supprimer un message ou une discussion qui ne respecte pas ces règles. Utilisez le lien « Signaler » d’un message plutôt que d’y répondre.',
@@ -99,6 +106,7 @@ export const staticPages = {
 					'Vos messages, votre profil et votre avatar sont publics. Votre adresse e-mail reste cachée, sauf si vous choisissez de l’afficher dans votre profil.',
 					'Les adresses IP ne sont visibles que des administrateurs et des modérateurs, pour repérer les abus. Les messages privés ne sont lus que par leurs destinataires.',
 					'Le forum est hébergé par Cloudflare (serveurs, base de données et fichiers), qui agit comme sous-traitant technique.',
+					'Pour la traduction automatique, le texte des messages publics et des titres est envoyé au service d’intelligence artificielle de Cloudflare (Workers AI, modèle Mistral Small 3.1 de Mistral AI), sans votre nom ni aucune autre donnée personnelle. Cloudflare ne s’en sert pas pour entraîner ses modèles. Les messages privés n’y sont jamais envoyés.',
 				],
 			},
 			{

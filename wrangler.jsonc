@@ -25,8 +25,13 @@
 	],
 	// Galerie, avatars, logo et bannière ; servis par le Worker sous /img/ (accès public r2.dev désactivé).
 	"r2_buckets": [{ "binding": "FILES", "bucket_name": "avrobb-files" }],
-	// Chaque nuit : purge de la table online et des fichiers orphelins (controllers/ScheduledTasks.ts).
-	"triggers": { "crons": ["17 3 * * *"] },
+	// Chaque nuit : purge de la table online, des fichiers orphelins et des traductions périmées ;
+	// chaque heure (« 7 * * * * », HOURLY_CRON de worker.ts) : traductions en attente
+	// (controllers/ScheduledTasks.ts).
+	"triggers": { "crons": ["17 3 * * *", "7 * * * *"] },
+	// Workers AI : traduction automatique du contenu (adapters/textModel.ts). En local, wrangler dev
+	// appelle le vrai service (compte Cloudflare, quota partagé).
+	"ai": { "binding": "AI" },
 	// Production : cookies Secure, connexion de développement toujours refusée (config.ts).
 	// Secrets : SESSION_SECRET, GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET (et GOOGLE_* en option), ADMIN_ACCOUNTS.
 	"vars": { "COOKIE_SECURE": "1", "ENVIRONMENT": "production" },

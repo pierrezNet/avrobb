@@ -107,6 +107,24 @@ describe('admin_forums.php', () => {
 		expect(fake.forumAdminLog).toEqual(['deleteForum 7']);
 	});
 
+	it('traduction anglaise du nom et de la description : saisie, puis retour à l’automatique', async () => {
+		const { server, fake } = await start();
+		const fields = { save: '1', forum_name: 'Le bar', forum_desc: 'On discute', site_url: '', repo_url: '', cat_id: '1', sort_by: '0' };
+		await post(server, 2, '/admin_forums.php?edit_forum=7', { ...fields, forum_name_en: 'The bar', forum_desc_en: 'Chat here' });
+		expect(fake.manualTranslations).toEqual(
+			new Map([
+				['forum_name:7:en', 'The bar'],
+				['forum_desc:7:en', 'Chat here'],
+			]),
+		);
+		const page = await get(server, 2, '/admin_forums.php?edit_forum=7');
+		expect(page.body).toContain('name="forum_name_en" value="The bar"');
+		expect(page.body).toContain('>Chat here</textarea>');
+		// Champs vidés : la traduction automatique reprend.
+		await post(server, 2, '/admin_forums.php?edit_forum=7', { ...fields, forum_name_en: '', forum_desc_en: '' });
+		expect(fake.manualTranslations).toEqual(new Map());
+	});
+
 	it('modification : détails et permissions des groupes', async () => {
 		const { server, fake } = await start();
 		const page = await get(server, 2, '/admin_forums.php?edit_forum=7');

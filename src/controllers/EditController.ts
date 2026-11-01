@@ -22,9 +22,12 @@ import { validatePost } from '../services/posting.ts';
 import { indexWords } from '../services/searchIndex.ts';
 import { TOOLBAR } from '../services/toolbar.ts';
 import { positiveInt } from './params.ts';
+import { type TranslationJobDeps, translateInBackground } from './translationJob.ts';
 
 export interface EditControllerDeps extends LayoutDeps {
 	postEdits: PostEditStore;
+	/** Traduction automatique après l'écriture ; null sans Workers AI. */
+	translationJob: TranslationJobDeps | null;
 	bans: BanReader;
 	censorship: CensorReader;
 	stopwords: StopwordsReader;
@@ -152,6 +155,11 @@ export class EditController {
 			topic: isTopicPost ? { subject: result.subject, sticky: moderator ? result.stickTopic : post.topic.sticky } : null,
 			words: indexWords(result.message, isTopicPost ? result.subject : null, await this.deps.stopwords.load()),
 		});
+		// L'ancienne traduction est périmée d'elle-même (texte d'origine changé) : nouvelle traduction.
+		translateInBackground(request, this.deps.translationJob, [
+			{ kind: 'post', id: post.id, text: result.message },
+			...(isTopicPost ? [{ kind: 'subject' as const, id: post.topic.id, text: result.subject }] : []),
+		]);
 		return reply.redirect(`viewtopic.php?pid=${post.id}#p${post.id}`);
 	};
 

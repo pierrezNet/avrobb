@@ -685,6 +685,32 @@ a.site-status__alert {
 	font-size: 0.875rem;
 }
 
+/* Message traduit automatiquement : mention discrète, texte d'origine à déplier (sans JS). */
+.post__translation {
+	margin: 0.75rem 0 0;
+	color: var(--color-muted);
+	font-size: 0.875rem;
+}
+
+.post__translation summary {
+	/* Bloc avec son triangle natif ; marge pour une cible tactile d'au moins 44 px. */
+	display: list-item;
+	padding: 0.75rem 0;
+	cursor: pointer;
+}
+
+.post__translated {
+	font-style: italic;
+}
+
+.post__translation[open] .post__message {
+	margin-top: 0.5rem;
+	padding-left: 0.75rem;
+	border-left: 3px solid var(--color-border);
+	color: var(--color-text);
+	font-size: 1rem;
+}
+
 .post__signature {
 	margin-top: 1rem;
 	padding-top: 0.5rem;

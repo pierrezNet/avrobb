@@ -197,6 +197,8 @@ export function buildConversation(input: ConversationInput): ConversationView {
 			reputation: null,
 			isOnline: author !== null ? author.isOnline : null,
 			messageHtml: parseMessage(message.message, messageParserOptions(config, viewer, lang, censor, message.hideSmilies)),
+			// Messages privés : jamais envoyés à la traduction automatique.
+			translation: null,
 			signatureHtml:
 				config.signatures && viewer.showSignatures && author !== null && author.signature !== ''
 					? parseSignature(author.signature, signatureParserOptions(config, viewer, lang, censor))

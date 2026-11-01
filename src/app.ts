@@ -46,6 +46,7 @@ import { StaticPageController } from './controllers/StaticPageController.ts';
 import { StatsPageController } from './controllers/StatsPageController.ts';
 import { SubjectPrefixController, type SubjectPrefixQuery } from './controllers/SubjectPrefixController.ts';
 import { TopicController, type TopicQuery } from './controllers/TopicController.ts';
+import type { TranslationJobDeps } from './controllers/translationJob.ts';
 import { UserlistController, type UserlistParams } from './controllers/UserlistController.ts';
 import type { BoardConfig, Viewer } from './domain/models.ts';
 import type { AppReply, AppRequest, Logger } from './http/context.ts';
@@ -91,6 +92,7 @@ import type { StopwordsReader } from './repositories/StopwordsLoader.ts';
 import type { SubjectPrefixStore } from './repositories/SubjectPrefixRepository.ts';
 import type { SubscriptionStore } from './repositories/SubscriptionRepository.ts';
 import type { TopicReader, TopicWriter } from './repositories/TopicRepository.ts';
+import type { ManualTranslationStore, TranslationReader } from './repositories/TranslationRepository.ts';
 import type { UserAdminReader, UserAdminWriter } from './repositories/UserAdminRepository.ts';
 import type { AccountLookup, MemberListReader, ProfileReader } from './repositories/UserRepository.ts';
 import type { UsersInfoReader } from './repositories/UsersInfoLoader.ts';
@@ -119,6 +121,12 @@ export interface AppDeps extends Omit<LayoutDeps, 'views'>, SessionDeps {
 	searchRateLimiter?: RateLimiter;
 	mailTemplates: MailTemplateReader;
 	mailer: Mailer;
+	/** Traductions automatiques du contenu, pour l'affichage. */
+	translations: TranslationReader;
+	/** Traduction à l'écriture (Workers AI) ; null sans liaison AI : la tâche planifiée rattrapera. */
+	translationJob: TranslationJobDeps | null;
+	/** Traductions anglaises des forums saisies dans l'administration. */
+	manualTranslations: ManualTranslationStore;
 	profiles: ProfileReader;
 	profileStore: ProfileStore;
 	topics: TopicReader;

@@ -40,6 +40,13 @@
 		<p class="post__subject">{% if not post.isFirstPost %}{{ lang.topic.re }} {% endif %}{{ subject }}</p>
 		{#- HTML produit par parseBbcode() : texte échappé avant de reconnaître les balises (services/bbcode.ts). #}
 		<div class="post__message bbcode">{{ post.messageHtml | safe }}</div>
+		{% if post.translation %}
+		<details class="post__translation">
+			<summary><span class="post__translated">{{ post.translation.label }}</span> · {{ post.translation.showOriginal }}</summary>
+			{#- Texte d'origine, même origine que messageHtml : parseBbcode(). #}
+			<div class="post__message bbcode">{{ post.translation.originalHtml | safe }}</div>
+		</details>
+		{% endif %}
 		{% if post.edited %}<p class="post__edited"><em>{{ lang.topic.lastEdit }} {{ post.edited.by }} ({{ post.edited.at }})</em></p>{% endif %}
 		{#- Même origine que messageHtml : parseBbcode(). #}
 		{% if post.signatureHtml %}<div class="post__signature bbcode">{{ post.signatureHtml | safe }}</div>{% endif %}

@@ -23,6 +23,8 @@ beforeAll(async () => {
 		configPath: path.join(import.meta.dirname, '..', '..', 'wrangler.jsonc'),
 		persist: { path: R2_DIR },
 		envFiles: [],
+		// Pas de liaison distante (Workers AI) : inutile ici, et impossible sans session Cloudflare (CI).
+		remoteBindings: false,
 	});
 	dispose = () => proxy.dispose();
 	bucket = proxy.env.FILES;

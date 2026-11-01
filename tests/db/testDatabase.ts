@@ -20,6 +20,9 @@ export async function openTestD1(): Promise<{ d1: D1Database; dispose: () => Pro
 		configPath: path.join(ROOT, 'wrangler.jsonc'),
 		persist: { path: TEST_D1_DIR },
 		envFiles: [],
+		// Pas de liaison distante (Workers AI) : les tests n'en ont pas besoin, et la CI n'a pas de
+		// session Cloudflare à ce stade (le démarrage échouait sur « Establishing remote connection »).
+		remoteBindings: false,
 	});
 	return { d1: proxy.env.DB, dispose: () => proxy.dispose() };
 }

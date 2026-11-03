@@ -11,6 +11,7 @@ import {
 	delocalizePath,
 	forumPath,
 	idFromSegment,
+	legacyRedirect,
 	localizePath,
 	memberPath,
 	postPath,
@@ -59,15 +60,32 @@ describe('publicPath', () => {
 		expect(publicPath('login.php?action=out')).toBe('/connexion?action=out');
 	});
 
-	it('pages d’action : même adresse, rendue absolue ; adresses absolues inchangées', () => {
-		expect(publicPath('profile.php?section=essentials&id=3')).toBe('/profile.php?section=essentials&id=3');
-		expect(publicPath('post.php?tid=4')).toBe('/post.php?tid=4');
+	it('pages d’action : plus de .php ; adresses absolues inchangées', () => {
+		expect(publicPath('profile.php?section=essentials&id=3')).toBe('/profil?section=essentials&id=3');
+		expect(publicPath('profile.php?id=3')).toBe('/membre/3');
+		expect(publicPath('post.php?tid=4')).toBe('/ecrire?tid=4');
+		expect(publicPath('pms_send.php?uid=5')).toBe('/messages/ecrire?uid=5');
+		expect(publicPath('admin_users.php?find_user=1')).toBe('/admin/membres?find_user=1');
+		expect(publicPath('admin_index.php')).toBe('/admin');
 		expect(publicPath('viewtopic.php?id=abc')).toBe('/viewtopic.php?id=abc');
 		expect(publicPath('/sujet/4')).toBe('/sujet/4');
 		expect(publicPath('https://github.com/x')).toBe('https://github.com/x');
 		expect(publicPath('mailto:a@example.test')).toBe('mailto:a@example.test');
 		expect(publicPath('#p12')).toBe('#p12');
 		expect(absoluteUrl('https://avrobb.example', 'viewtopic.php?pid=5')).toBe('https://avrobb.example/message/5#p5');
+	});
+});
+
+describe('anciennes adresses .php', () => {
+	it('redirigées vers la nouvelle adresse, dans la langue de la page', () => {
+		expect(legacyRedirect('/post.php', '?tid=4', 'fr')).toBe('/ecrire?tid=4');
+		expect(legacyRedirect('/post.php', '?tid=4', 'en')).toBe('/en/write?tid=4');
+		expect(legacyRedirect('/viewtopic.php', '?pid=12', 'fr')).toBe('/message/12#p12');
+		expect(legacyRedirect('/profile.php', '?id=3', 'en')).toBe('/en/member/3');
+		expect(legacyRedirect('/admin_users.php', '', 'fr')).toBe('/admin/membres');
+		// Paramètres invalides ou adresse déjà propre : pas de redirection.
+		expect(legacyRedirect('/viewtopic.php', '?id=abc', 'fr')).toBeNull();
+		expect(legacyRedirect('/sujet/4', '', 'fr')).toBeNull();
 	});
 });
 
@@ -82,6 +100,9 @@ describe('adresses anglaises (/en/)', () => {
 		expect(localizePath('/forum/2-avrobb', 'en')).toBe('/en/forum/2-avrobb');
 		expect(localizePath('/confidentialite', 'en')).toBe('/en/privacy');
 		expect(localizePath('/post.php?tid=4', 'en')).toBe('/en/post.php?tid=4');
+		expect(localizePath('/ecrire?tid=4', 'en')).toBe('/en/write?tid=4');
+		expect(localizePath('/admin/membres', 'en')).toBe('/en/admin/users');
+		expect(localizePath('/messages/ecrire?uid=5', 'en')).toBe('/en/messages/write?uid=5');
 		// Communs aux deux langues, ou déjà anglais, ou externes
 		for (const path of [
 			'/auth/github/callback',
@@ -108,7 +129,18 @@ describe('adresses anglaises (/en/)', () => {
 		expect(delocalizePath('/sujet/4')).toBeNull();
 		expect(delocalizePath('/entree')).toBeNull();
 		// Aller-retour
-		for (const path of ['/', '/sujet/4-x', '/message/9', '/membre/3', '/statistiques', '/connexion', '/admin_index.php'])
+		for (const path of [
+			'/',
+			'/sujet/4-x',
+			'/message/9',
+			'/membre/3',
+			'/statistiques',
+			'/connexion',
+			'/admin',
+			'/admin/groupes',
+			'/brouillons/modifier',
+			'/membres/suggestions',
+		])
 			expect(delocalizePath(localizePath(path, 'en'))).toBe(path);
 	});
 
@@ -128,7 +160,7 @@ describe('safeRedirect', () => {
 			'//evil.test/',
 			'/connexion',
 			'/auth/github/callback',
-			'/login.php',
+			'/connexion',
 			'javascript:alert(1)',
 		])
 			expect(safeRedirect(bad, 'forum.test'), bad).toBe('/');

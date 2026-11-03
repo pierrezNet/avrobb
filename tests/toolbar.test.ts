@@ -61,7 +61,7 @@ describe('pages de rédaction', () => {
 
 	it('place la barre (masquée sans JavaScript) au-dessus du message', async () => {
 		app = await buildApp(fakeDeps(data()));
-		for (const url of ['/post.php?tid=10', '/viewtopic.php?id=10']) {
+		for (const url of ['/ecrire?tid=10', '/viewtopic.php?id=10']) {
 			const res = await inject(app, { url, headers: { cookie } });
 			expect(res.body).toMatch(/<div class="bbcode-toolbar" data-toolbar="\{&quot;label&quot;:/);
 			expect(res.body).toContain('data-toolbar-images="/assets/img/toolbar/"');

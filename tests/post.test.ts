@@ -216,13 +216,13 @@ async function submit(server: ForumApp, url: string, fields: Record<string, stri
 	});
 }
 
-describe('GET /post.php', () => {
+describe('GET /ecrire', () => {
 	it('affiche le formulaire de réponse avec le rappel de la discussion', async () => {
 		app = await buildApp(fakeDeps(data()));
-		const res = await inject(app, { url: '/post.php?tid=10', headers: { cookie: memberCookie } });
+		const res = await inject(app, { url: '/ecrire?tid=10', headers: { cookie: memberCookie } });
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('<title>Répondre / Forum de test</title>');
-		expect(res.body).toContain('action="/post.php?action=post&amp;tid=10"');
+		expect(res.body).toContain('action="/ecrire?action=post&amp;tid=10"');
 		expect(res.body).toContain('Postez un « vintage »');
 		expect(res.body).toContain('Résumé de la discussion');
 		expect(res.body).toContain('name="subscribe"');
@@ -233,7 +233,7 @@ describe('GET /post.php', () => {
 
 	it('nouvelle discussion : sujet et préfixes PV', async () => {
 		app = await buildApp(fakeDeps(data()));
-		const res = await inject(app, { url: '/post.php?fid=2', headers: { cookie: memberCookie } });
+		const res = await inject(app, { url: '/ecrire?fid=2', headers: { cookie: memberCookie } });
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('name="req_subject"');
 		expect(res.body).toContain('data-prefix="[MSFS]"');
@@ -243,41 +243,41 @@ describe('GET /post.php', () => {
 
 	it('cite un message du sujet, sans ses images', async () => {
 		app = await buildApp(fakeDeps(data()));
-		const res = await inject(app, { url: '/post.php?tid=10&qid=100', headers: { cookie: memberCookie } });
+		const res = await inject(app, { url: '/ecrire?tid=10&qid=100', headers: { cookie: memberCookie } });
 		expect(res.body).toContain('>[quote=Tessy]Premier http://a.fr/i.png[/quote]\n</textarea>');
-		expect((await inject(app, { url: '/post.php?tid=10&qid=999', headers: { cookie: memberCookie } })).statusCode).toBe(404);
+		expect((await inject(app, { url: '/ecrire?tid=10&qid=999', headers: { cookie: memberCookie } })).statusCode).toBe(404);
 	});
 
 	it('cite seulement le passage sélectionné (qtext), sous le nom de l’auteur du message', async () => {
 		app = await buildApp(fakeDeps(data()));
-		const res = await inject(app, { url: '/post.php?tid=10&qid=100&qtext=%20Premier%20<b>%20', headers: { cookie: memberCookie } });
+		const res = await inject(app, { url: '/ecrire?tid=10&qid=100&qtext=%20Premier%20<b>%20', headers: { cookie: memberCookie } });
 		expect(res.body).toContain('>[quote=Tessy]Premier &lt;b&gt;[/quote]\n</textarea>');
 		// Sélection vide : message entier ; message d'un autre sujet : refusé.
-		expect((await inject(app, { url: '/post.php?tid=10&qid=100&qtext=', headers: { cookie: memberCookie } })).body).toContain(
+		expect((await inject(app, { url: '/ecrire?tid=10&qid=100&qtext=', headers: { cookie: memberCookie } })).body).toContain(
 			'[quote=Tessy]Premier http://a.fr/i.png[/quote]',
 		);
-		expect((await inject(app, { url: '/post.php?tid=10&qid=999&qtext=x', headers: { cookie: memberCookie } })).statusCode).toBe(404);
+		expect((await inject(app, { url: '/ecrire?tid=10&qid=999&qtext=x', headers: { cookie: memberCookie } })).statusCode).toBe(404);
 	});
 
 	it('refuse les demandes invalides et les écritures interdites', async () => {
 		app = await buildApp(fakeDeps(data()));
 		const status = async (url: string, cookie = memberCookie) => (await inject(app!, { url, headers: { cookie } }))?.statusCode;
-		expect(await status('/post.php')).toBe(404);
-		expect(await status('/post.php?tid=10&fid=2')).toBe(404);
-		expect(await status('/post.php?tid=99')).toBe(404);
-		expect(await status('/post.php?fid=4')).toBe(400);
-		expect(await status('/post.php?tid=11')).toBe(403);
-		expect(await status('/post.php?tid=10', '')).toBe(403);
+		expect(await status('/ecrire')).toBe(404);
+		expect(await status('/ecrire?tid=10&fid=2')).toBe(404);
+		expect(await status('/ecrire?tid=99')).toBe(404);
+		expect(await status('/ecrire?fid=4')).toBe(400);
+		expect(await status('/ecrire?tid=11')).toBe(403);
+		expect(await status('/ecrire?tid=10', '')).toBe(403);
 	});
 });
 
-describe('POST /post.php', () => {
+describe('POST /ecrire', () => {
 	it('exige le jeton CSRF', async () => {
 		const fake = data();
 		app = await buildApp(fakeDeps(fake));
 		const res = await inject(app, {
 			method: 'POST',
-			url: '/post.php?action=post&tid=10',
+			url: '/ecrire?action=post&tid=10',
 			headers: { cookie: memberCookie, 'content-type': 'application/x-www-form-urlencoded' },
 			payload: 'form_sent=1&req_message=Coucou',
 		});
@@ -288,7 +288,7 @@ describe('POST /post.php', () => {
 	it('prévisualise sans enregistrer', async () => {
 		const fake = data();
 		app = await buildApp(fakeDeps(fake));
-		const res = await submit(app, '/post.php?tid=10', { req_message: '[b]Gras[/b] <script>', preview: '1' });
+		const res = await submit(app, '/ecrire?tid=10', { req_message: '[b]Gras[/b] <script>', preview: '1' });
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('Prévisualisation du message');
 		expect(res.body).toContain('<strong>Gras</strong> &lt;script&gt;');
@@ -299,7 +299,7 @@ describe('POST /post.php', () => {
 	it('réaffiche le formulaire avec les erreurs', async () => {
 		const fake = data();
 		app = await buildApp(fakeDeps(fake));
-		const res = await submit(app, '/post.php?fid=2', { req_subject: 'Mon sujet', req_message: '[quote]sans fin' });
+		const res = await submit(app, '/ecrire?fid=2', { req_subject: 'Mon sujet', req_message: '[quote]sans fin' });
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('La balise [quote] a été trouvée sans balise [/quote] correspondante');
 		expect(res.body).toContain('value="Mon sujet"');
@@ -315,7 +315,7 @@ describe('POST /post.php', () => {
 			],
 		});
 		app = await buildApp({ ...fakeDeps(fake), push: push.deps });
-		const res = await submit(app, '/post.php?tid=10', { req_message: 'Merci !' });
+		const res = await submit(app, '/ecrire?tid=10', { req_message: 'Merci !' });
 		expect(res.statusCode).toBe(302);
 		await settle();
 		expect(push.sent.map((sent) => sent.endpoint)).toEqual([device(5).endpoint]);
@@ -327,7 +327,7 @@ describe('POST /post.php', () => {
 	it('enregistre une réponse, abonne, promeut, marque le sujet lu et prévient les abonnés', async () => {
 		const fake = data({ subscribers: [{ id: 5, email: 'abonne@example.test', notifyWithPost: true }] });
 		app = await buildApp(fakeDeps(fake));
-		const res = await submit(app, '/post.php?tid=10', { req_message: 'Superbe avion www.pilote-virtuel.com', subscribe: '1' });
+		const res = await submit(app, '/ecrire?tid=10', { req_message: 'Superbe avion www.pilote-virtuel.com', subscribe: '1' });
 		expect(res.statusCode).toBe(302);
 		expect(res.headers.location).toBe('/message/901#p901');
 		expect(fake.savedReplies).toEqual([
@@ -350,7 +350,7 @@ describe('POST /post.php', () => {
 		const fake = data({ forumInfos: [forumInfo({ topicPermission: true })] });
 		app = await buildApp(fakeDeps(fake));
 		const fields = { req_subject: '[MSFS] Premier vol', req_message: 'Bonjour', req_username: 'Pilote', req_email: 'p@example.test' };
-		expect((await submit(app, '/post.php?fid=2', fields, '')).statusCode).toBe(302);
+		expect((await submit(app, '/ecrire?fid=2', fields, '')).statusCode).toBe(302);
 	});
 
 	it('crée une discussion d’invité avec son e-mail', async () => {
@@ -358,13 +358,13 @@ describe('POST /post.php', () => {
 		app = await buildApp(fakeDeps(fake));
 		const fields = { req_subject: 'Premier vol', req_message: 'Bonjour', req_username: 'Pilote', req_email: 'Pilote@Example.test' };
 		// Sans balise de projet : avertissement, rien n'est publié ; le second envoi publie.
-		const warned = await submit(app, '/post.php?fid=2', fields, '');
+		const warned = await submit(app, '/ecrire?fid=2', fields, '');
 		expect(warned.statusCode).toBe(200);
 		expect(warned.body).toContain('Aucune balise de projet');
 		expect(warned.body).toContain('<input type="hidden" name="no_tag_ok" value="1">');
 		expect(warned.body).toContain('value="Premier vol"');
 		expect(fake.savedTopics).toBeUndefined();
-		const res = await submit(app, '/post.php?fid=2', { ...fields, no_tag_ok: '1' }, '');
+		const res = await submit(app, '/ecrire?fid=2', { ...fields, no_tag_ok: '1' }, '');
 		expect(res.statusCode).toBe(302);
 		expect(res.headers.location).toBe('/message/901#p901');
 		expect(fake.savedTopics).toEqual([

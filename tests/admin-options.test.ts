@@ -39,7 +39,7 @@ async function start(): Promise<{ server: ForumApp; fake: FakeData }> {
 	return { server: app, fake };
 }
 
-function save(server: ForumApp, userId: number, fields: Record<string, string>, url = '/admin_options.php') {
+function save(server: ForumApp, userId: number, fields: Record<string, string>, url = '/admin/options') {
 	const body = new URLSearchParams({ csrf_token: csrfToken(CSRF_SECRET, SEED, userId), form_sent: '1' });
 	for (const [name, value] of Object.entries(fields)) body.append(`form[${name}]`, value);
 	return inject(server, {
@@ -53,9 +53,9 @@ function save(server: ForumApp, userId: number, fields: Record<string, string>, 
 describe('admin_options.php', () => {
 	it('réservé aux administrateurs', async () => {
 		const { server } = await start();
-		expect((await inject(server, { url: '/admin_options.php', headers: { cookie: cookies(5) } })).statusCode).toBe(403);
+		expect((await inject(server, { url: '/admin/options', headers: { cookie: cookies(5) } })).statusCode).toBe(403);
 		expect((await save(server, 5, optionsForm())).statusCode).toBe(403);
-		const res = await inject(server, { url: '/admin_options.php', headers: { cookie: cookies(2) } });
+		const res = await inject(server, { url: '/admin/options', headers: { cookie: cookies(2) } });
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('name="form[board_title]" value="Pilote-Virtuel"');
 		// Options de FluxBB sans effet dans AvroBB : absentes du formulaire.
@@ -68,10 +68,10 @@ describe('admin_options.php', () => {
 	it("n'écrit que les clés modifiées et invalide le cache", async () => {
 		const { server, fake } = await start();
 		const res = await save(server, 2, optionsForm({ board_title: 'PV', quickpost: '1', announcement: '1' }));
-		expect(res.headers.location).toBe('/admin_options.php?done=updated');
+		expect(res.headers.location).toBe('/admin/options?done=updated');
 		expect(fake.configUpdates).toEqual([new Map([['o_board_title', 'PV']])]);
 		expect(fake.configInvalidations).toBe(1);
-		const page = await inject(server, { url: '/admin_options.php?done=updated', headers: { cookie: cookies(2) } });
+		const page = await inject(server, { url: '/admin/options?done=updated', headers: { cookie: cookies(2) } });
 		expect(page.body).toContain('Options mises à jour.');
 	});
 
@@ -89,13 +89,13 @@ describe('admin_options.php', () => {
 describe('admin_permissions.php', () => {
 	it('affiche et enregistre les clés p_* modifiées, jamais négatives', async () => {
 		const { server, fake } = await start();
-		expect((await inject(server, { url: '/admin_permissions.php', headers: { cookie: cookies(5) } })).statusCode).toBe(403);
-		const page = await inject(server, { url: '/admin_permissions.php', headers: { cookie: cookies(2) } });
+		expect((await inject(server, { url: '/admin/permissions', headers: { cookie: cookies(5) } })).statusCode).toBe(403);
+		const page = await inject(server, { url: '/admin/permissions', headers: { cookie: cookies(2) } });
 		expect(page.body).toContain('name="form[message_bbcode]" value="1" checked');
 		expect(page.body).toContain('name="form[sig_length]" value="400"');
-		expect(page.body).toContain('action="/admin_permissions.php"');
-		const res = await save(server, 2, { message_bbcode: '1', sig_length: '-5' }, '/admin_permissions.php');
-		expect(res.headers.location).toBe('/admin_permissions.php?done=updated');
+		expect(page.body).toContain('action="/admin/permissions"');
+		const res = await save(server, 2, { message_bbcode: '1', sig_length: '-5' }, '/admin/permissions');
+		expect(res.headers.location).toBe('/admin/permissions?done=updated');
 		expect(fake.configUpdates).toEqual([new Map([['p_sig_length', '0']])]);
 		expect(fake.configInvalidations).toBe(1);
 	});

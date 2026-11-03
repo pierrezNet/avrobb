@@ -128,7 +128,7 @@ describe('traduction à la publication', () => {
 			translationJob: deps,
 		});
 		const cookie = sessionCookie(3);
-		const form = await inject(app, { url: '/post.php?tid=10', headers: { cookie } });
+		const form = await inject(app, { url: '/ecrire?tid=10', headers: { cookie } });
 		const csrf =
 			[form.headers['set-cookie']]
 				.flat()
@@ -137,7 +137,7 @@ describe('traduction à la publication', () => {
 		const token = /name="csrf_token" value="([0-9a-f]+)"/.exec(form.body)?.[1] ?? '';
 		const res = await inject(app, {
 			method: 'POST',
-			url: '/post.php?action=post&tid=10',
+			url: '/ecrire?action=post&tid=10',
 			headers: { cookie: `${cookie}; ${csrf}`, 'content-type': 'application/x-www-form-urlencoded' },
 			payload: new URLSearchParams({ csrf_token: token, form_sent: '1', req_message: 'Merci' }).toString(),
 		});

@@ -144,7 +144,7 @@ describe('retour du fournisseur', () => {
 describe('page de connexion', () => {
 	it('bouton GitHub avec la page de retour ; pas de Google non configuré', async () => {
 		const app = await buildApp(fakeDeps(data()));
-		const page = await inject(app, { url: '/login.php', headers: { host: HOST, referer: 'http://forum.test/viewforum.php?id=2' } });
+		const page = await inject(app, { url: '/connexion', headers: { host: HOST, referer: 'http://forum.test/viewforum.php?id=2' } });
 		expect(page.body).toContain('href="/auth/github?return=%2Fforum%2F2">Se connecter avec GitHub</a>');
 		expect(page.body).not.toContain('Google');
 		expect(page.body).toContain('href="/confidentialite"');
@@ -161,7 +161,7 @@ describe('me déconnecter de partout', () => {
 		expect(before.body).toContain('Tessy');
 		const res = await inject(app, {
 			method: 'POST',
-			url: '/login.php?action=out_all',
+			url: '/connexion?action=out_all',
 			headers: { host: HOST, cookie, 'content-type': 'application/x-www-form-urlencoded' },
 			payload: `csrf_token=${csrfToken(csrf, COOKIE_SECRET, 3)}`,
 		});

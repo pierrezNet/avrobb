@@ -15,7 +15,7 @@ const CSRF_SECRET = '9'.repeat(64);
 const mod = viewer({ id: 5, username: 'MaxDUO', group: group({ id: GroupId.Moderator, isModerator: true }) });
 const admin = viewer({ id: 2, username: 'admin', group: group({ id: GroupId.Admin }) });
 const cookies = (userId: number): string => `${sessionCookie(userId)}; avrobb_csrf=${CSRF_SECRET}`;
-const PLUGIN = '/admin_loader.php?plugin=AP_Private_messaging.php';
+const PLUGIN = '/admin/messagerie';
 
 let app: ForumApp | undefined;
 
@@ -38,8 +38,8 @@ describe('admin_loader.php', () => {
 		const { server } = await start();
 		expect((await get(server, 2, PLUGIN)).statusCode).toBe(200);
 		expect((await get(server, 5, PLUGIN)).statusCode).toBe(403);
-		expect((await get(server, 2, '/admin_loader.php?plugin=AMP_Gestion_utilisateurs.php')).statusCode).toBe(400);
-		expect((await get(server, 2, '/admin_loader.php?plugin=../config.php')).statusCode).toBe(400);
+		expect((await get(server, 2, '/admin/extension?plugin=AMP_Gestion_utilisateurs.php')).statusCode).toBe(400);
+		expect((await get(server, 2, '/admin/extension?plugin=../config.php')).statusCode).toBe(400);
 	});
 });
 
@@ -47,7 +47,7 @@ describe('plugins de réglages', () => {
 	const send = (server: ForumApp, plugin: string, fields: Record<string, string>) =>
 		inject(server, {
 			method: 'POST',
-			url: `/admin_loader.php?plugin=${plugin}`,
+			url: `/admin/extension?plugin=${plugin}`,
 			headers: { cookie: cookies(2), 'content-type': 'application/x-www-form-urlencoded' },
 			payload: new URLSearchParams({ csrf_token: csrfToken(CSRF_SECRET, SEED, 2), ...fields }).toString(),
 		});
@@ -73,16 +73,16 @@ describe('plugins de réglages', () => {
 			'AP_Smilies.php',
 			'AP_Uploadile.php',
 		]) {
-			expect((await get(server, 2, `/admin_loader.php?plugin=${plugin}`)).statusCode).toBe(400);
+			expect((await get(server, 2, `/admin/extension?plugin=${plugin}`)).statusCode).toBe(400);
 		}
-		const index = (await get(server, 2, '/admin_index.php')).body;
+		const index = (await get(server, 2, '/admin')).body;
 		expect(index).not.toContain('AP_Sondage.php');
 		expect(index).not.toContain('Menu des plugins');
 	});
 
 	it('messagerie privée : options, destinataires (+1 comme le PHP) et droits des groupes', async () => {
 		const { server, fake } = await withConfig({ o_pms_enabled: '1', o_pms_notification: '0', o_pms_max_receiver: '5' });
-		const page = await get(server, 2, '/admin_loader.php?plugin=AP_Private_messaging.php');
+		const page = await get(server, 2, '/admin/messagerie');
 		expect(page.body).toContain('name="form[pms_max_receiver]" value="4"');
 		expect(page.body).toContain('name="limit[4]" value="20"');
 		expect(page.body).not.toContain('name="limit[1]"');
@@ -107,7 +107,7 @@ describe('page Balises : balises du sujet', () => {
 	const send = (server: ForumApp, query: string, fields: Record<string, string>) =>
 		inject(server, {
 			method: 'POST',
-			url: `/admin_loader.php?plugin=AP_Balises.php${query}`,
+			url: `/admin/balises?${query.replace(/^&/, '')}`,
 			headers: { cookie: cookies(2), 'content-type': 'application/x-www-form-urlencoded' },
 			payload: new URLSearchParams({ csrf_token: csrfToken(CSRF_SECRET, SEED, 2), ...fields }).toString(),
 		});
@@ -116,7 +116,7 @@ describe('page Balises : balises du sujet', () => {
 
 	it('liste en pastilles, sans version du mod', async () => {
 		const { server } = await start();
-		const page = await get(server, 2, '/admin_loader.php?plugin=AP_Balises.php');
+		const page = await get(server, 2, '/admin/balises');
 		expect(page.body).toContain('style="background-color: #1d4ed8; color: #ffffff">MSFS</span>');
 		expect(page.body).not.toContain('Version installée');
 	});
@@ -131,7 +131,7 @@ describe('page Balises : balises du sujet', () => {
 		await send(server, '&action=tag_add', { name: 'DCS', group: 'project', color: '#FF0000' });
 		expect(saved(fake).map((t) => t.name)).toContain('DCS');
 		const renamed = await send(server, '&action=tag_edit&tag=MSFS', { name: 'MSFS 2024', group: 'project', color: '#1d4ed8' });
-		expect(renamed.headers.location).toBe('/admin_loader.php?plugin=AP_Balises.php&done=tag_renamed_1');
+		expect(renamed.headers.location).toBe('/admin/balises?done=tag_renamed_1');
 		expect(fake.subjectUpdates).toEqual([{ topicId: 10, subject: '[MSFS 2024][Résolu] Vol de nuit' }]);
 		fake.config = { ...fake.config, subjectTags: saved(fake) as never };
 		await send(server, '&action=tag_down&tag=MSFS%202024', {});

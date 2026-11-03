@@ -50,7 +50,9 @@ export interface BannedWriteQuery {
  */
 export function canWriteWhileBanned(path: string, query: BannedWriteQuery): boolean {
 	return (
-		path === '/login.php' || path === '/connexion' || (path === '/misc.php' && query.email === undefined && query.report === undefined)
+		path === '/login.php' ||
+		path === '/connexion' ||
+		((path === '/misc.php' || path === '/actions') && query.email === undefined && query.report === undefined)
 	);
 }
 

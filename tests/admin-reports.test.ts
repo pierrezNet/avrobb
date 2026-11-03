@@ -69,13 +69,13 @@ function data(): FakeData {
 describe('admin_reports.php', () => {
 	it('réservé aux modérateurs et administrateurs', async () => {
 		app = await buildApp(fakeDeps(data()));
-		expect((await inject(app, '/admin_reports.php')).statusCode).toBe(403);
-		expect((await inject(app, { url: '/admin_reports.php', headers: { cookie: cookies(3) } })).statusCode).toBe(403);
+		expect((await inject(app, '/admin/signalements')).statusCode).toBe(403);
+		expect((await inject(app, { url: '/admin/signalements', headers: { cookie: cookies(3) } })).statusCode).toBe(403);
 	});
 
 	it('liste les nouveaux signalements et les derniers traités, motifs échappés', async () => {
 		app = await buildApp(fakeDeps(data()));
-		const res = await inject(app, { url: '/admin_reports.php', headers: { cookie: cookies(5) } });
+		const res = await inject(app, { url: '/admin/signalements', headers: { cookie: cookies(5) } });
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('Hors sujet<br>&lt;b&gt;vraiment&lt;/b&gt;');
 		expect(res.body).toContain('href="/message/101#p101">Message n°101</a>');
@@ -92,11 +92,11 @@ describe('admin_reports.php', () => {
 		const body = new URLSearchParams({ csrf_token: csrfToken(CSRF_SECRET, SEED, 5), zap_id: '2' });
 		const res = await inject(app, {
 			method: 'POST',
-			url: '/admin_reports.php',
+			url: '/admin/signalements',
 			headers: { cookie: cookies(5), 'content-type': 'application/x-www-form-urlencoded' },
 			payload: body.toString(),
 		});
-		expect(res.headers.location).toBe('/admin_reports.php?done=zapped');
+		expect(res.headers.location).toBe('/admin/signalements?done=zapped');
 		expect(fake.reportList?.find((r) => r.id === 2)?.zapped).toEqual({ at: NOW, by: { id: 5, username: 'modo' } });
 	});
 });

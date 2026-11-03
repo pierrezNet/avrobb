@@ -31,7 +31,7 @@ async function start(): Promise<{ server: ForumApp; fake: FakeData }> {
 function post(server: ForumApp, fields: Record<string, string>) {
 	return inject(server, {
 		method: 'POST',
-		url: '/admin_censoring.php',
+		url: '/admin/censure',
 		headers: { cookie: cookies(2), 'content-type': 'application/x-www-form-urlencoded' },
 		payload: new URLSearchParams({ csrf_token: csrfToken(CSRF_SECRET, SEED, 2), ...fields }).toString(),
 	});
@@ -40,14 +40,14 @@ function post(server: ForumApp, fields: Record<string, string>) {
 describe('admin_censoring.php', () => {
 	it('réservé aux administrateurs ; ajout, modification, suppression et cache PHP', async () => {
 		const { server, fake } = await start();
-		expect((await inject(server, { url: '/admin_censoring.php', headers: { cookie: cookies(5) } })).statusCode).toBe(403);
-		const page = await inject(server, { url: '/admin_censoring.php', headers: { cookie: cookies(2) } });
+		expect((await inject(server, { url: '/admin/censure', headers: { cookie: cookies(5) } })).statusCode).toBe(403);
+		const page = await inject(server, { url: '/admin/censure', headers: { cookie: cookies(2) } });
 		expect(page.body).toContain('name="search_for[1]" value="zut"');
 		expect((await post(server, { add_word: '1', new_search_for: ' ' })).statusCode).toBe(400);
 		await post(server, { add_word: '1', new_search_for: ' flûte ', new_replace_with: 'f***' });
 		await post(server, { 'update[1]': '1', 'search_for[1]': 'zut*', 'replace_with[1]': '!!!' });
 		const removed = await post(server, { 'remove[2]': '1' });
-		expect(removed.headers.location).toBe('/admin_censoring.php?done=removed');
+		expect(removed.headers.location).toBe('/admin/censure?done=removed');
 		expect(fake.censoredWords).toEqual([{ searchFor: 'zut*', replaceWith: '!!!' }]);
 	});
 });

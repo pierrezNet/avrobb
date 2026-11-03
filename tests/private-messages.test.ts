@@ -151,7 +151,7 @@ function post(server: ForumApp, userId: number, url: string, fields: Record<stri
 
 /** Tessy écrit à MaxDUO et valdefsx ; renvoie la conversation. */
 async function startConversation(server: ForumApp, fake: FakeData) {
-	const res = await post(server, 3, '/pms_send.php', {
+	const res = await post(server, 3, '/messages/ecrire', {
 		form_sent: '1',
 		p_username: 'MaxDUO, valdefsx',
 		req_subject: 'Vol de groupe',
@@ -164,9 +164,9 @@ async function startConversation(server: ForumApp, fake: FakeData) {
 describe('accès à la messagerie', () => {
 	it('refusée aux invités et quand la messagerie est désactivée', async () => {
 		const server = await start(data());
-		expect((await inject(server, '/pms_inbox.php')).statusCode).toBe(403);
+		expect((await inject(server, '/messages')).statusCode).toBe(403);
 		const off = await start(data({ config: { privateMessagesEnabled: false } }));
-		expect((await get(off, 3, '/pms_send.php')).statusCode).toBe(403);
+		expect((await get(off, 3, '/messages/ecrire')).statusCode).toBe(403);
 	});
 });
 
@@ -190,10 +190,10 @@ describe('pms_send.php et pms_inbox.php', () => {
 		expect(fake.sentMails?.map((mail) => mail.to)).toEqual(['val@example.test']);
 		expect(fake.sentMails?.[0]).toMatchObject({
 			subject: 'Sujet new_pm',
-			text: `Tessy : http://forum.test/pms_view.php?tid=${head?.sharedId}&mid=${fake.pm?.rows.find((r) => r.ownerId === 6)?.id}&box=inbox`,
+			text: `Tessy : http://forum.test/messages/conversation?tid=${head?.sharedId}&mid=${fake.pm?.rows.find((r) => r.ownerId === 6)?.id}&box=inbox`,
 		});
 
-		const inbox = await get(server, 5, '/pms_inbox.php');
+		const inbox = await get(server, 5, '/messages');
 		expect(inbox.body).toContain('<strong>Vol de groupe</strong>');
 		expect(inbox.body).toContain('href="/membre/3">Tessy</a>');
 	});
@@ -201,7 +201,7 @@ describe('pms_send.php et pms_inbox.php', () => {
 	it('réaffiche le formulaire avec les erreurs, et prévisualise', async () => {
 		const fake = data();
 		const server = await start(fake);
-		const res = await post(server, 3, '/pms_send.php', {
+		const res = await post(server, 3, '/messages/ecrire', {
 			form_sent: '1',
 			p_username: 'MaxDUO, Fantôme',
 			req_subject: 'X',
@@ -211,7 +211,7 @@ describe('pms_send.php et pms_inbox.php', () => {
 		expect(res.body).toContain('Il n&#39;y a pas de membre avec le nom d&#39;utilisateur « Fantôme ».');
 		expect(fake.pm?.rows).toEqual([]);
 
-		const preview = await post(server, 3, '/pms_send.php', {
+		const preview = await post(server, 3, '/messages/ecrire', {
 			form_sent: '1',
 			p_username: 'valdefsx',
 			req_subject: 'X',
@@ -224,8 +224,8 @@ describe('pms_send.php et pms_inbox.php', () => {
 	it('préremplit les destinataires depuis un profil', async () => {
 		const fake = data();
 		const server = await start(fake);
-		expect((await get(server, 3, '/pms_send.php?uid=5-6')).body).toContain('value="MaxDUO, valdefsx"');
-		expect((await get(server, 3, '/pms_send.php?uid=999')).statusCode).toBe(404);
+		expect((await get(server, 3, '/messages/ecrire?uid=5-6')).body).toContain('value="MaxDUO, valdefsx"');
+		expect((await get(server, 3, '/messages/ecrire?uid=999')).statusCode).toBe(404);
 	});
 
 	it('marque comme lu ou non lu, et supprime après confirmation', async () => {
@@ -234,19 +234,17 @@ describe('pms_send.php et pms_inbox.php', () => {
 		const head = await startConversation(server, fake);
 		const shared = String(head?.sharedId);
 
-		expect((await post(server, 5, '/pms_inbox.php', { action: 'markread', selected: shared })).headers.location).toBe(
-			'/pms_inbox.php?done=read',
-		);
+		expect((await post(server, 5, '/messages', { action: 'markread', selected: shared })).headers.location).toBe('/messages?done=read');
 		expect(head?.showed).toBe(true);
-		expect((await post(server, 5, '/pms_inbox.php', { action: 'markread' })).body).toContain('Vous devez sélectionner des messages');
+		expect((await post(server, 5, '/messages', { action: 'markread' })).body).toContain('Vous devez sélectionner des messages');
 
-		const confirm = await post(server, 5, '/pms_inbox.php', { action: 'delete_multiple', selected: shared });
+		const confirm = await post(server, 5, '/messages', { action: 'delete_multiple', selected: shared });
 		expect(confirm.body).toContain(`name="messages" value="${shared}"`);
-		await post(server, 5, '/pms_inbox.php', { action: 'delete_multiple', messages: shared, delete_multiple_comply: '1' });
+		await post(server, 5, '/messages', { action: 'delete_multiple', messages: shared, delete_multiple_comply: '1' });
 		expect(fake.pm?.rows.some((row) => row.ownerId === 5)).toBe(false);
 		expect(fake.pm?.members.find((m) => m.id === 5)?.privateMessageCount).toBe(0);
 		// Les autres voient MaxDUO comme ayant quitté la conversation.
-		expect((await get(server, 3, '/pms_inbox.php')).body).toContain('MaxDUO (supprimé)');
+		expect((await get(server, 3, '/messages')).body).toContain('MaxDUO (supprimé)');
 	});
 });
 
@@ -255,7 +253,7 @@ describe('pms_view.php', () => {
 		const fake = data();
 		const server = await start(fake);
 		const head = await startConversation(server, fake);
-		const url = `/pms_view.php?tid=${head?.sharedId}&mid=${head?.id}`;
+		const url = `/messages/conversation?tid=${head?.sharedId}&mid=${head?.id}`;
 
 		const res = await get(server, 5, url);
 		expect(res.statusCode).toBe(200);
@@ -269,17 +267,17 @@ describe('pms_view.php', () => {
 		const fake = data();
 		const server = await start(fake);
 		const head = await startConversation(server, fake);
-		await post(server, 6, '/pms_inbox.php', { action: 'delete_multiple', messages: String(head?.sharedId), delete_multiple_comply: '1' });
+		await post(server, 6, '/messages', { action: 'delete_multiple', messages: String(head?.sharedId), delete_multiple_comply: '1' });
 
-		const res = await post(server, 5, `/pms_send.php?reply=${head?.sharedId}`, { form_sent: '1', req_message: 'Oui, à 21 h.' });
+		const res = await post(server, 5, `/messages/ecrire?reply=${head?.sharedId}`, { form_sent: '1', req_message: 'Oui, à 21 h.' });
 		expect(res.statusCode).toBe(303);
-		expect(res.headers.location).toContain(`pms_view.php?tid=${head?.sharedId}&mid=${head?.id}&pid=`);
+		expect(res.headers.location).toContain(`/messages/conversation?tid=${head?.sharedId}&mid=${head?.id}&pid=`);
 		const replies = fake.pm?.rows.filter((row) => !row.isHead) ?? [];
 		expect(replies.map((row) => row.ownerId).sort()).toEqual([3, 5]);
 		expect(fake.pm?.rows.find((row) => row.ownerId === 3 && row.isHead)?.showed).toBe(false);
 
 		// Répondre à une conversation qu'on ne détient pas est refusé.
-		expect((await post(server, 6, `/pms_send.php?reply=${head?.sharedId}`, { req_message: 'x' })).statusCode).toBe(404);
+		expect((await post(server, 6, `/messages/ecrire?reply=${head?.sharedId}`, { req_message: 'x' })).statusCode).toBe(404);
 	});
 
 	it('citation, modification par l’auteur seulement, suppression d’un message', async () => {
@@ -289,19 +287,19 @@ describe('pms_view.php', () => {
 		const tessyCopy = fake.pm?.rows.find((row) => row.ownerId === 3);
 		const maxCopy = fake.pm?.rows.find((row) => row.ownerId === 5);
 
-		expect((await get(server, 5, `/pms_send.php?reply=${head?.sharedId}&quote=${maxCopy?.id}`)).body).toContain(
+		expect((await get(server, 5, `/messages/ecrire?reply=${head?.sharedId}&quote=${maxCopy?.id}`)).body).toContain(
 			'[quote=Tessy]On décolle à 21 h ?[/quote]',
 		);
-		expect((await get(server, 5, `/pms_send.php?edit=${maxCopy?.id}`)).statusCode).toBe(404);
+		expect((await get(server, 5, `/messages/ecrire?edit=${maxCopy?.id}`)).statusCode).toBe(404);
 
-		const edited = await post(server, 3, `/pms_send.php?edit=${tessyCopy?.id}`, { req_message: 'On décolle à 22 h.' });
+		const edited = await post(server, 3, `/messages/ecrire?edit=${tessyCopy?.id}`, { req_message: 'On décolle à 22 h.' });
 		expect(edited.statusCode).toBe(303);
 		expect(fake.pm?.rows.filter((row) => row.message === 'On décolle à 22 h.')).toHaveLength(3);
 
-		const confirm = await get(server, 5, `/pms_view.php?action=delete&mid=${maxCopy?.id}&tid=${head?.sharedId}`);
+		const confirm = await get(server, 5, `/messages/conversation?action=delete&mid=${maxCopy?.id}&tid=${head?.sharedId}`);
 		expect(confirm.body).toContain('Discussion démarrée par Tessy');
 		expect(confirm.body).not.toContain('delete_all');
-		await post(server, 5, `/pms_view.php?action=delete&mid=${maxCopy?.id}&tid=${head?.sharedId}`, { delete_comply: '1' });
+		await post(server, 5, `/messages/conversation?action=delete&mid=${maxCopy?.id}&tid=${head?.sharedId}`, { delete_comply: '1' });
 		expect(fake.pm?.rows.some((row) => row.ownerId === 5)).toBe(false);
 	});
 });

@@ -81,7 +81,7 @@ describe('misc.php?email=', () => {
 		app = await buildApp(fakeDeps(fake));
 		const res = await submit(
 			app,
-			'/misc.php?email=5',
+			'/actions?email=5',
 			{ req_subject: 'Bonjour', req_message: 'Un message' },
 			{ referer: 'http://forum.test/viewtopic.php?pid=100' },
 		);
@@ -100,7 +100,7 @@ describe('misc.php?email=', () => {
 	it('réaffiche le formulaire en cas d’erreur ou d’anti-flood', async () => {
 		const fake = data({ senderLimits: { lastEmailSent: NOW - 10, emailFlood: 60, lastReportSent: null, reportFlood: 60 } });
 		app = await buildApp(fakeDeps(fake));
-		const res = await submit(app, '/misc.php?email=5', { req_subject: 'Bonjour', req_message: 'Un message' });
+		const res = await submit(app, '/actions?email=5', { req_subject: 'Bonjour', req_message: 'Un message' });
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('L&#39;intervalle d&#39;envoi consécutif d&#39;e-mails est de 60 secondes');
 		expect(res.body).toContain('value="Bonjour"');
@@ -110,7 +110,7 @@ describe('misc.php?email=', () => {
 	it('limitation de débit des écritures : 429, aucun e-mail (quota Resend, réputation du domaine)', async () => {
 		const fake = data();
 		app = await buildApp({ ...fakeDeps(fake), writeRateLimiter: { limit: async () => ({ success: false }) } });
-		const res = await submit(app, '/misc.php?email=5', { req_subject: 'Bonjour', req_message: 'Un message' });
+		const res = await submit(app, '/actions?email=5', { req_subject: 'Bonjour', req_message: 'Un message' });
 		expect(res.statusCode).toBe(429);
 		expect(fake.sentMails).toBeUndefined();
 	});
@@ -118,10 +118,10 @@ describe('misc.php?email=', () => {
 	it('droits : invité, groupe sans e-mail, formulaire désactivé (sauf modérateur), destinataire inconnu', async () => {
 		app = await buildApp(fakeDeps(data()));
 		const status = async (url: string, cookie = tessy) => (await inject(app!, { url, headers: { cookie } }))?.statusCode;
-		expect(await status('/misc.php?email=5', '')).toBe(403);
-		expect(await status('/misc.php?email=6')).toBe(403);
-		expect(await status('/misc.php?email=1')).toBe(404);
-		expect(await status('/misc.php?email=99')).toBe(404);
+		expect(await status('/actions?email=5', '')).toBe(403);
+		expect(await status('/actions?email=6')).toBe(403);
+		expect(await status('/actions?email=1')).toBe(404);
+		expect(await status('/actions?email=99')).toBe(404);
 		app = await buildApp(
 			fakeDeps(
 				data({
@@ -129,7 +129,7 @@ describe('misc.php?email=', () => {
 				}),
 			),
 		);
-		expect((await inject(app, { url: '/misc.php?email=5', headers: { cookie: tessy } })).statusCode).toBe(403);
+		expect((await inject(app, { url: '/actions?email=5', headers: { cookie: tessy } })).statusCode).toBe(403);
 		app = await buildApp(
 			fakeDeps(
 				data({
@@ -137,7 +137,7 @@ describe('misc.php?email=', () => {
 				}),
 			),
 		);
-		expect((await inject(app, { url: '/misc.php?email=6', headers: { cookie: tessy } })).statusCode).toBe(200);
+		expect((await inject(app, { url: '/actions?email=6', headers: { cookie: tessy } })).statusCode).toBe(200);
 	});
 });
 
@@ -145,9 +145,9 @@ describe('misc.php?report=', () => {
 	it('enregistre le signalement et revient au forum', async () => {
 		const fake = data();
 		app = await buildApp(fakeDeps(fake));
-		const page = await inject(app, { url: '/misc.php?report=100', headers: { cookie: tessy } });
+		const page = await inject(app, { url: '/actions?report=100', headers: { cookie: tessy } });
 		expect(page.body).toContain('Sujet signalé');
-		const res = await submit(app, '/misc.php?report=100', { req_reason: 'Hors sujet' });
+		const res = await submit(app, '/actions?report=100', { req_reason: 'Hors sujet' });
 		expect(res.headers.location).toBe('/forum/2');
 		expect(fake.createdReports).toEqual([
 			{
@@ -163,7 +163,7 @@ describe('misc.php?report=', () => {
 	it('par e-mail seulement selon o_report_method', async () => {
 		const fake = data({ config: { ...boardConfig, reportsByBoard: false, reportsByEmail: true } });
 		app = await buildApp(fakeDeps(fake));
-		await submit(app, '/misc.php?report=100', { req_reason: 'Doublon' });
+		await submit(app, '/actions?report=100', { req_reason: 'Doublon' });
 		expect(fake.createdReports).toBeUndefined();
 		expect(fake.sentMails).toEqual([expect.objectContaining({ to: 'liste@forum.test', subject: 'Sujet new_report' })]);
 	});
@@ -171,9 +171,9 @@ describe('misc.php?report=', () => {
 	it('refuse un invité, un message inconnu et un motif vide', async () => {
 		const fake = data();
 		app = await buildApp(fakeDeps(fake));
-		expect((await inject(app, '/misc.php?report=100')).statusCode).toBe(403);
-		expect((await inject(app, { url: '/misc.php?report=999', headers: { cookie: tessy } })).statusCode).toBe(404);
-		const res = await submit(app, '/misc.php?report=100', { req_reason: ' ' });
+		expect((await inject(app, '/actions?report=100')).statusCode).toBe(403);
+		expect((await inject(app, { url: '/actions?report=999', headers: { cookie: tessy } })).statusCode).toBe(404);
+		const res = await submit(app, '/actions?report=100', { req_reason: ' ' });
 		expect(res.body).toContain('Vous devez indiquer un motif.');
 		expect(fake.createdReports).toBeUndefined();
 	});

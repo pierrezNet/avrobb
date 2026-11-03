@@ -135,7 +135,7 @@ describe('rendu de la mise en page', () => {
 		expect(res.body).toContain('<b>Maintenance dimanche</b>');
 		expect(res.body).not.toContain('id="qjump"');
 		expect(res.body).toContain('<a href="/confidentialite">Politique de confidentialité</a>');
-		expect(res.body).toContain('href="/admin_reports.php"');
+		expect(res.body).toContain('href="/admin/signalements"');
 		expect(res.body).toMatch(/href="\/assets\/css\/themes\/Air\.css\?v=[0-9a-f]{10}"/);
 	});
 
@@ -146,9 +146,7 @@ describe('rendu de la mise en page', () => {
 		const res = await inject(app, { url: '/index.php', headers: { cookie: sessionCookie(5) } });
 		expect(res.body).toContain('<li id="navpm" class="site-nav__item has-news">');
 		// Modérateur : lien Administration dans le menu burger (masqué sur grand écran).
-		expect(res.body).toContain(
-			'<li id="navadminmenu" class="site-nav__item site-nav__item--mobile"><a href="/admin_index.php">Administration</a>',
-		);
+		expect(res.body).toContain('<li id="navadminmenu" class="site-nav__item site-nav__item--mobile"><a href="/admin">Administration</a>');
 		expect(res.body).toContain('<span class="site-nav__count">3<span class="visually-hidden"> non lus</span></span>');
 		app = await buildApp(fakeDeps({ users, topics: [], posts: new Map(), config: { privateMessagesEnabled: true } }));
 		const none = await inject(app, { url: '/index.php', headers: { cookie: sessionCookie(5) } });

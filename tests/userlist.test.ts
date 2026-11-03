@@ -38,10 +38,10 @@ const deps = (overrides = {}) =>
 		...overrides,
 	});
 
-describe('GET /userlist.php', () => {
+describe('GET /membres', () => {
 	it('liste 50 membres par page avec titre, bannis et pagination conservant les critères', async () => {
 		app = await buildApp(deps());
-		const res = await inject(app, '/userlist.php');
+		const res = await inject(app, '/membres');
 
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('<title>Liste des membres (Page 1) / Forum de test</title>');
@@ -53,7 +53,7 @@ describe('GET /userlist.php', () => {
 
 	it('filtre par pseudo avec joker et par groupe, et ignore les tris inconnus', async () => {
 		app = await buildApp(deps());
-		const res = await inject(app, '/userlist.php?username=pilote0*&show_group=4&sort_by=password&sort_dir=DESC');
+		const res = await inject(app, '/membres?username=pilote0*&show_group=4&sort_by=password&sort_dir=DESC');
 
 		expect(res.body.match(/<tr>/g)?.length).toBe(1 + 10);
 		expect(res.body).toContain('<option value="username" selected>');
@@ -65,7 +65,7 @@ describe('GET /userlist.php', () => {
 	it('sans g_search_users, le champ pseudo disparaît et le filtre est ignoré', async () => {
 		const noSearch = { ...guest, group: group({ id: GroupId.Guest, canSearchUsers: false }) };
 		app = await buildApp(deps({ users: [{ viewer: noSearch }] }));
-		const res = await inject(app, '/userlist.php?username=Tessy');
+		const res = await inject(app, '/membres?username=Tessy');
 
 		expect(res.body).not.toContain('name="username"');
 		expect(res.body).toContain('admin');
@@ -74,9 +74,9 @@ describe('GET /userlist.php', () => {
 	it('refuse aux groupes qui ne peuvent pas voir les membres, aucun résultat sinon', async () => {
 		const blind = { ...guest, group: group({ id: GroupId.Guest, canViewUsers: false }) };
 		app = await buildApp(deps({ users: [{ viewer: blind }] }));
-		expect((await inject(app, '/userlist.php')).statusCode).toBe(403);
+		expect((await inject(app, '/membres')).statusCode).toBe(403);
 
 		app = await buildApp(deps());
-		expect((await inject(app, '/userlist.php?username=personne')).body).toContain('aucun résultat');
+		expect((await inject(app, '/membres?username=personne')).body).toContain('aucun résultat');
 	});
 });

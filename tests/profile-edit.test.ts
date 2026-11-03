@@ -382,10 +382,10 @@ describe('profile.php : sections', () => {
 	it('son propre profil ouvre la section Principal, avec le menu', async () => {
 		const fake = data();
 		const server = await start(fake);
-		const res = await get(server, 3, '/profile.php?id=3');
+		const res = await get(server, 3, '/profil?id=3');
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('<h1 class="page-title">Tessy - Principal</h1>');
-		expect(res.body).toContain('href="/profile.php?section=essentials&amp;id=3" aria-current="page"');
+		expect(res.body).toContain('href="/profil?section=essentials&amp;id=3" aria-current="page"');
 		expect(res.body).toContain('name="req_email" value="tessy@example.com"');
 		expect(res.body).not.toContain('admin_note');
 		expect(res.body).not.toContain('section=admin');
@@ -394,11 +394,11 @@ describe('profile.php : sections', () => {
 	it("le profil d'un autre reste en consultation, quelle que soit la section demandée", async () => {
 		const fake = data();
 		const server = await start(fake);
-		const res = await get(server, 3, '/profile.php?section=personal&id=6');
+		const res = await get(server, 3, '/profil?section=personal&id=6');
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('Profil de valdefsx');
 		expect(res.body).not.toContain('name="form[realname]"');
-		const forbidden = await post(server, 3, '/profile.php?section=personal&id=6', { form_sent: '1', 'form[realname]': 'X' });
+		const forbidden = await post(server, 3, '/profil?section=personal&id=6', { form_sent: '1', 'form[realname]': 'X' });
 		expect(forbidden.statusCode).toBe(403);
 		expect(fake.profileUpdates).toBeUndefined();
 	});
@@ -406,7 +406,7 @@ describe('profile.php : sections', () => {
 	it('enregistre une section et redirige avec un avis ; les erreurs réaffichent la saisie', async () => {
 		const fake = data();
 		const server = await start(fake);
-		const ok = await post(server, 3, '/profile.php?section=personal&id=3', {
+		const ok = await post(server, 3, '/profil?section=personal&id=3', {
 			form_sent: '1',
 			'form[realname]': 'Tess',
 			title: 'Pilote',
@@ -414,13 +414,13 @@ describe('profile.php : sections', () => {
 			'form[url]': 'www.tess.fr',
 		});
 		expect(ok.statusCode).toBe(303);
-		expect(ok.headers.location).toBe('/profile.php?section=personal&id=3&updated=1');
+		expect(ok.headers.location).toBe('/profil?section=personal&id=3&updated=1');
 		expect(fake.profileUpdates).toEqual([
 			{ id: 3, changes: { realname: 'Tess', location: 'Lyon', url: 'https://www.tess.fr', title: 'Pilote' } },
 		]);
-		expect((await get(server, 3, '/profile.php?section=personal&id=3&updated=1')).body).toContain('Profil mis à jour.');
+		expect((await get(server, 3, '/profil?section=personal&id=3&updated=1')).body).toContain('Profil mis à jour.');
 
-		const bad = await post(server, 3, '/profile.php?section=personal&id=3', {
+		const bad = await post(server, 3, '/profil?section=personal&id=3', {
 			form_sent: '1',
 			'form[realname]': '<Tess>',
 			'form[url]': 'javascript:alert(1)',
@@ -436,7 +436,7 @@ describe('profile.php : sections', () => {
 		const server = await start(fake);
 		const res = await inject(server, {
 			method: 'POST',
-			url: '/profile.php?section=messaging&id=3',
+			url: '/profil?section=messaging&id=3',
 			headers: { cookie: cookies(3), 'content-type': 'application/x-www-form-urlencoded' },
 			payload: 'form_sent=1&form%5Bgithub%5D=x',
 		});
@@ -447,19 +447,19 @@ describe('profile.php : sections', () => {
 	it('un modérateur autorisé modifie un membre, mais pas un administrateur ; plus de section Administration', async () => {
 		const fake = data();
 		const server = await start(fake);
-		const res = await get(server, 5, '/profile.php?id=6');
+		const res = await get(server, 5, '/profil?id=6');
 		expect(res.body).toContain('valdefsx - Principal');
 		expect(res.body).toContain('name="admin_note"');
-		expect(res.body).toContain('moderate.php?get_host=192.0.2.7');
-		expect((await get(server, 5, '/profile.php?id=2')).body).toContain('Profil de admin');
+		expect(res.body).toContain('/moderation?get_host=192.0.2.7');
+		expect((await get(server, 5, '/profil?id=2')).body).toContain('Profil de admin');
 
-		expect((await get(server, 2, '/profile.php?section=admin&id=6')).statusCode).toBe(404);
+		expect((await get(server, 2, '/profil?section=admin&id=6')).statusCode).toBe(404);
 	});
 
 	it("l'administrateur renomme : effets de bord", async () => {
 		const fake = data({ bans: [{ id: 1, username: 'valdefsx', ip: '', email: '', message: '', expire: null }] });
 		app = await buildApp(fakeDeps(fake));
-		const res = await post(app, 2, '/profile.php?section=essentials&id=6', {
+		const res = await post(app, 2, '/profil?section=essentials&id=6', {
 			form_sent: '1',
 			req_username: 'Valentin',
 			req_email: 'val@example.com',
@@ -475,10 +475,10 @@ describe('profile.php : sections', () => {
 	it('Affichage et Vie privée : thèmes, cases conditionnelles', async () => {
 		const fake = data();
 		const server = await start(fake, { privateMessagesEnabled: true });
-		const display = await get(server, 3, '/profile.php?section=display&id=3');
+		const display = await get(server, 3, '/profil?section=display&id=3');
 		expect(display.body).toContain('<option value="GreenDark">GreenDark</option>');
 		expect(display.body).not.toContain('reputation_enable');
-		const privacy = await get(server, 3, '/profile.php?section=privacy&id=3');
+		const privacy = await get(server, 3, '/profil?section=privacy&id=3');
 		expect(privacy.body).toContain('name="form[use_pm]" value="1" checked');
 		expect(privacy.body).not.toContain('notify_pm_full');
 	});
@@ -486,9 +486,9 @@ describe('profile.php : sections', () => {
 	it('Personnalité : aperçu de la signature et liens de l’avatar', async () => {
 		const fake = data();
 		const server = await start(fake, { avatars: true });
-		const res = await get(server, 3, '/profile.php?section=personality&id=3');
+		const res = await get(server, 3, '/profil?section=personality&id=3');
 		expect(res.body).toContain('<strong>Bons vols</strong>');
-		expect(res.body).toContain('profile.php?action=upload_avatar&amp;id=3');
+		expect(res.body).toContain('/profil?action=upload_avatar&amp;id=3');
 		expect(res.body).toContain('400 caractères et 4 lignes autorisés');
 	});
 });
@@ -497,22 +497,22 @@ describe('profile.php : avatar', () => {
 	it('envoie un avatar contrôlé sur son contenu, et refuse un faux', async () => {
 		const fake = data();
 		const server = await start(fake, { avatars: true });
-		const form = await get(server, 3, '/profile.php?action=upload_avatar&id=3');
+		const form = await get(server, 3, '/profil?action=upload_avatar&id=3');
 		expect(form.body).toContain('enctype="multipart/form-data"');
 		// Recadrage par le navigateur aux dimensions permises (js/image-resize.js).
 		expect(form.body).toMatch(/data-resize="cover" data-resize-width="\d+" data-resize-height="\d+"/);
 		expect(form.body).toContain('js/image-resize.js');
 
-		const ok = await postFile(server, 3, '/profile.php?action=upload_avatar2&id=3', 'req_file', 'moi.png', png(50, 50));
+		const ok = await postFile(server, 3, '/profil?action=upload_avatar2&id=3', 'req_file', 'moi.png', png(50, 50));
 		expect(ok.statusCode).toBe(303);
 		expect(fake.avatarLog).toEqual(['save 3.png']);
 
-		const bad = await postFile(server, 3, '/profile.php?action=upload_avatar2&id=3', 'req_file', 'moi.png', Buffer.from('<?php'));
+		const bad = await postFile(server, 3, '/profil?action=upload_avatar2&id=3', 'req_file', 'moi.png', Buffer.from('<?php'));
 		expect(bad.body).toContain('Ce type de fichier n&#39;est pas autorisé');
 		expect(fake.avatarLog).toHaveLength(1);
 
 		// Trop grande : refusée, comme dans FluxBB (pas de bibliothèque d'images dans le Worker).
-		const big = await postFile(server, 3, '/profile.php?action=upload_avatar2&id=3', 'req_file', 'grand.png', png(800, 600));
+		const big = await postFile(server, 3, '/profil?action=upload_avatar2&id=3', 'req_file', 'grand.png', png(800, 600));
 		expect(big.statusCode).toBe(200);
 		expect(big.body).toContain('plus large et/ou plus haute que le maximum autorisé');
 		expect(fake.avatarLog).toEqual(['save 3.png']);
@@ -521,17 +521,17 @@ describe('profile.php : avatar', () => {
 	it("efface l'avatar après confirmation (POST)", async () => {
 		const fake = data();
 		const server = await start(fake, { avatars: true });
-		const confirm = await get(server, 3, '/profile.php?action=delete_avatar&id=3');
-		expect(confirm.body).toContain('action="/profile.php?action=delete_avatar&amp;id=3"');
+		const confirm = await get(server, 3, '/profil?action=delete_avatar&id=3');
+		expect(confirm.body).toContain('action="/profil?action=delete_avatar&amp;id=3"');
 		expect(fake.avatarLog).toBeUndefined();
-		expect((await post(server, 3, '/profile.php?action=delete_avatar&id=3', {})).statusCode).toBe(303);
+		expect((await post(server, 3, '/profil?action=delete_avatar&id=3', {})).statusCode).toBe(303);
 		expect(fake.avatarLog).toEqual(['delete 3']);
 	});
 
 	it('avatars désactivés : action refusée', async () => {
 		const fake = data();
 		const server = await start(fake, { avatars: false });
-		expect((await get(server, 3, '/profile.php?action=upload_avatar&id=3')).statusCode).toBe(404);
+		expect((await get(server, 3, '/profil?action=upload_avatar&id=3')).statusCode).toBe(404);
 	});
 });
 
@@ -546,35 +546,35 @@ describe('profile.php : compte SSO', () => {
 	it('le membre change son pseudo une seule fois', async () => {
 		const fake = data();
 		const server = await start(fake);
-		const form = await get(server, 3, '/profile.php?section=essentials&id=3');
+		const form = await get(server, 3, '/profil?section=essentials&id=3');
 		expect(form.body).toContain('name="req_username"');
 		expect(form.body).toContain('Vous pouvez le changer une seule fois');
 
-		const renamed = await post(server, 3, '/profile.php?section=essentials&id=3', essentials('Tessy Pilote'));
+		const renamed = await post(server, 3, '/profil?section=essentials&id=3', essentials('Tessy Pilote'));
 		expect(renamed.statusCode).toBe(303);
 		expect(fake.renames).toEqual([{ id: 3, from: 'Tessy', to: 'Tessy Pilote' }]);
 		expect(fake.profileUpdates?.at(-1)?.changes.usernameChanged).toBe(true);
 
 		// Ensuite, le champ disparaît et un nouvel envoi n'a aucun effet sur le pseudo.
-		expect((await get(server, 3, '/profile.php?section=essentials&id=3')).body).not.toContain('name="req_username"');
-		await post(server, 3, '/profile.php?section=essentials&id=3', essentials('Encore autre'));
+		expect((await get(server, 3, '/profil?section=essentials&id=3')).body).not.toContain('name="req_username"');
+		await post(server, 3, '/profil?section=essentials&id=3', essentials('Encore autre'));
 		expect(fake.renames).toHaveLength(1);
 	});
 
 	it('un modérateur sans droit de renommer ne renomme pas un membre', async () => {
 		const fake = data();
 		const server = await start(fake);
-		expect((await get(server, 5, '/profile.php?section=essentials&id=3')).body).not.toContain('name="req_username"');
+		expect((await get(server, 5, '/profil?section=essentials&id=3')).body).not.toContain('name="req_username"');
 	});
 
 	it('« Mon compte » sur son profil seulement ; pas de suppression pour un administrateur', async () => {
 		const fake = data();
 		const server = await start(fake);
-		const own = await get(server, 3, '/profile.php?section=essentials&id=3');
+		const own = await get(server, 3, '/profil?section=essentials&id=3');
 		expect(own.body).toContain('action="/connexion?action=out_all"');
-		expect(own.body).toContain('href="/profile.php?action=delete_account&amp;id=3"');
-		expect((await get(server, 5, '/profile.php?section=essentials&id=3')).body).not.toContain('out_all');
-		const adminOwn = await get(server, 2, '/profile.php?section=essentials&id=2');
+		expect(own.body).toContain('href="/profil?action=delete_account&amp;id=3"');
+		expect((await get(server, 5, '/profil?section=essentials&id=3')).body).not.toContain('out_all');
+		const adminOwn = await get(server, 2, '/profil?section=essentials&id=2');
 		expect(adminOwn.body).toContain('out_all');
 		expect(adminOwn.body).not.toContain('delete_account');
 	});
@@ -582,11 +582,11 @@ describe('profile.php : compte SSO', () => {
 	it('supprime son compte après confirmation : session fermée, avatar effacé', async () => {
 		const fake = data();
 		const server = await start(fake);
-		const confirm = await get(server, 3, '/profile.php?action=delete_account&id=3');
+		const confirm = await get(server, 3, '/profil?action=delete_account&id=3');
 		expect(confirm.body).toContain('Supprimer définitivement votre compte');
 		expect(fake.accountLog).toBeUndefined();
 
-		const res = await post(server, 3, '/profile.php?action=delete_account&id=3', {});
+		const res = await post(server, 3, '/profil?action=delete_account&id=3', {});
 		expect(res.statusCode).toBe(303);
 		expect(fake.accountLog).toEqual(['delete 3 Tessy → Membre supprimé']);
 		expect(fake.avatarLog).toEqual(['delete 3']);
@@ -596,9 +596,9 @@ describe('profile.php : compte SSO', () => {
 	it('ni le compte d’un autre, ni celui d’un administrateur', async () => {
 		const fake = data();
 		const server = await start(fake);
-		expect((await post(server, 5, '/profile.php?action=delete_account&id=3', {})).statusCode).toBe(403);
-		expect((await get(server, 2, '/profile.php?action=delete_account&id=2')).statusCode).toBe(403);
-		expect((await post(server, 2, '/profile.php?action=delete_account&id=2', {})).statusCode).toBe(403);
+		expect((await post(server, 5, '/profil?action=delete_account&id=3', {})).statusCode).toBe(403);
+		expect((await get(server, 2, '/profil?action=delete_account&id=2')).statusCode).toBe(403);
+		expect((await post(server, 2, '/profil?action=delete_account&id=2', {})).statusCode).toBe(403);
 		expect(fake.accountLog).toBeUndefined();
 	});
 });
@@ -612,31 +612,31 @@ describe('notifications push : profil et push.php', () => {
 
 	it('préférences et bouton de l’appareil sur son propre profil ; préférences seules pour un autre', async () => {
 		const { server } = await withPush(data());
-		const own = (await get(server, 3, '/profile.php?section=privacy&id=3')).body;
+		const own = (await get(server, 3, '/profil?section=privacy&id=3')).body;
 		expect(own).toContain('name="form[push_pm]" value="1" checked');
-		expect(own).toContain('data-push data-key="BPublicKey" data-action="/push.php"');
-		const other = (await get(server, 2, '/profile.php?section=privacy&id=3')).body;
+		expect(own).toContain('data-push data-key="BPublicKey" data-action="/notifications"');
+		const other = (await get(server, 2, '/profil?section=privacy&id=3')).body;
 		expect(other).toContain('name="form[push_replies]"');
 		expect(other).not.toContain('data-push');
 		// Sans clés VAPID : rien.
 		app = await buildApp(fakeDeps(data()));
-		expect((await get(app, 3, '/profile.php?section=privacy&id=3')).body).not.toContain('push_pm');
+		expect((await get(app, 3, '/profil?section=privacy&id=3')).body).not.toContain('push_pm');
 	});
 
 	it('abonnement de l’appareil dans la langue de la page, désabonnement, refus', async () => {
 		const { server, push } = await withPush(data());
 		const subscription = { endpoint: 'https://fcm.googleapis.com/fcm/send/abc', p256dh: 'p'.repeat(20), auth: 'a'.repeat(20) };
-		expect((await post(server, 3, '/push.php?action=subscribe', subscription)).statusCode).toBe(200);
+		expect((await post(server, 3, '/notifications?action=subscribe', subscription)).statusCode).toBe(200);
 		expect(push.saved).toEqual(['3 https://fcm.googleapis.com/fcm/send/abc fr']);
 		// Service inconnu : le Worker n'appellera jamais cette adresse.
-		const forged = await post(server, 3, '/push.php?action=subscribe', { ...subscription, endpoint: 'https://evil.example/hook' });
+		const forged = await post(server, 3, '/notifications?action=subscribe', { ...subscription, endpoint: 'https://evil.example/hook' });
 		expect(forged.statusCode).toBe(400);
-		expect((await post(server, 3, '/push.php?action=unsubscribe', { endpoint: subscription.endpoint })).statusCode).toBe(200);
+		expect((await post(server, 3, '/notifications?action=unsubscribe', { endpoint: subscription.endpoint })).statusCode).toBe(200);
 		expect(push.removed).toEqual(['3 https://fcm.googleapis.com/fcm/send/abc']);
 		// Sans jeton CSRF, ou en invité : refusé.
 		const noToken = await inject(server, {
 			method: 'POST',
-			url: '/push.php?action=subscribe',
+			url: '/notifications?action=subscribe',
 			headers: { cookie: cookies(3), 'content-type': 'application/x-www-form-urlencoded' },
 			payload: new URLSearchParams(subscription).toString(),
 		});

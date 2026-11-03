@@ -522,7 +522,7 @@ describe('viewtopic de bout en bout', () => {
 		);
 		expect(res.body).toContain('Boîtes de messages privés pleines à 25');
 		// forum_perms : les membres ne peuvent pas répondre dans le forum 2.
-		expect(res.body).not.toContain('post.php?tid=10"');
+		expect(res.body).not.toContain('/ecrire?tid=10"');
 	});
 
 	it('refuse aux invités un sujet de forum interdit, et montre au modérateur ses outils', async () => {
@@ -531,8 +531,8 @@ describe('viewtopic de bout en bout', () => {
 		const mod = await inject(server, { url: '/viewtopic.php?id=10', headers: { cookie: cookie(5) } });
 
 		expect(denied.statusCode).toBe(404);
-		expect(mod.body).toContain('moderate.php?fid=2&amp;close=10');
-		expect(mod.body).toContain('admin_reports.php');
+		expect(mod.body).toContain('/moderation?fid=2&amp;close=10');
+		expect(mod.body).toContain('/admin/signalements');
 		expect(mod.body).toContain('themes/Air.css');
 	});
 });

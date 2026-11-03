@@ -74,7 +74,7 @@ import { TranslationRepository } from './repositories/TranslationRepository.ts';
 import { UserAdminRepository } from './repositories/UserAdminRepository.ts';
 import { UserRepository } from './repositories/UserRepository.ts';
 import { UsersInfoLoader } from './repositories/UsersInfoLoader.ts';
-import { delocalizePath, type Locale, localizePath } from './services/routes.ts';
+import { delocalizePath, type Locale, legacyRedirect, localizePath } from './services/routes.ts';
 
 /** Liaison Static Assets (sous-ensemble de Fetcher). */
 interface AssetsBinding {
@@ -342,7 +342,13 @@ export class DonneTonPointFeedback extends WorkerEntrypoint<Env> {
 
 export default {
 	async fetch(request: Request, env: Env, ctx: ExecutionContextLike): Promise<Response> {
-		const frPath = delocalizePath(new URL(request.url).pathname);
+		const url = new URL(request.url);
+		const frPath = delocalizePath(url.pathname);
+		// Ancienne adresse .php (favori, e-mail déjà envoyé) : redirection ; un formulaire (POST) reste accepté.
+		if (request.method === 'GET' || request.method === 'HEAD') {
+			const target = legacyRedirect(frPath ?? url.pathname, url.search, frPath !== null ? 'en' : 'fr');
+			if (target !== null) return Response.redirect(new URL(target, url).href, 301);
+		}
 		if (frPath !== null)
 			return withEdgeCache(
 				request,

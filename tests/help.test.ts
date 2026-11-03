@@ -9,10 +9,10 @@ import { inject } from './inject.ts';
 
 let app: ForumApp | undefined;
 
-describe('GET /help.php', () => {
+describe('GET /aide', () => {
 	it('montre chaque balise et son rendu réel, et les émoticônes en émojis', async () => {
 		app = await buildApp(fakeDeps({ users: [{ viewer: guest }], topics: [], posts: new Map() }));
-		const res = await inject(app, '/help.php');
+		const res = await inject(app, '/aide');
 
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('<title>Aide / Forum de test</title>');

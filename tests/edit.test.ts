@@ -73,19 +73,19 @@ async function submit(server: ForumApp, url: string, fields: Record<string, stri
 describe('edit.php', () => {
 	it('présente le premier message avec son sujet ; une réponse sans sujet', async () => {
 		app = await buildApp(fakeDeps(data()));
-		const first = await inject(app, { url: '/edit.php?id=100', headers: { cookie: tessy } });
+		const first = await inject(app, { url: '/modifier?id=100', headers: { cookie: tessy } });
 		expect(first.statusCode).toBe(200);
 		expect(first.body).toContain('Modifier le message et valider les modifications');
 		expect(first.body).toContain('value="Mon sujet"');
 		expect(first.body).not.toContain('name="silent"');
-		const reply = await inject(app, { url: '/edit.php?id=101', headers: { cookie: tessy } });
+		const reply = await inject(app, { url: '/modifier?id=101', headers: { cookie: tessy } });
 		expect(reply.body).not.toContain('name="req_subject"');
 		expect(reply.body).toContain('>Réponse [b]zut[/b]</textarea>');
 	});
 
 	it('présente le texte d’origine, non censuré (la censure reste à l’affichage)', async () => {
 		app = await buildApp(fakeDeps(data({ config: { censoring: true }, censoredWords: [{ searchFor: 'zut', replaceWith: '***' }] })));
-		const res = await inject(app, { url: '/edit.php?id=101', headers: { cookie: tessy } });
+		const res = await inject(app, { url: '/modifier?id=101', headers: { cookie: tessy } });
 		expect(res.body).toContain('>Réponse [b]zut[/b]</textarea>');
 	});
 
@@ -94,16 +94,16 @@ describe('edit.php', () => {
 			fakeDeps(data({ posts: new Map([[10, [post(100, { posted: NOW - 3600 }), post(101, { author: null, username: 'Invité' })]]]) })),
 		);
 		const status = async (url: string) => (await inject(app!, { url, headers: { cookie: tessy } }))?.statusCode;
-		expect(await status('/edit.php?id=100')).toBe(403);
-		expect(await status('/edit.php?id=101')).toBe(403);
-		expect(await status('/edit.php?id=999')).toBe(404);
-		expect(await status('/edit.php')).toBe(404);
+		expect(await status('/modifier?id=100')).toBe(403);
+		expect(await status('/modifier?id=101')).toBe(403);
+		expect(await status('/modifier?id=999')).toBe(404);
+		expect(await status('/modifier')).toBe(404);
 	});
 
 	it('enregistre le message, le sujet et la mention de modification', async () => {
 		const fake = data();
 		app = await buildApp(fakeDeps(fake));
-		const res = await submit(app, '/edit.php?id=100&action=edit', {
+		const res = await submit(app, '/modifier?id=100&action=edit', {
 			req_subject: 'Nouveau sujet',
 			req_message: 'Texte [I]revu[/I]',
 			stick_topic: '1',
@@ -127,11 +127,11 @@ describe('edit.php', () => {
 	it('modérateur : modification silencieuse et épinglage', async () => {
 		const fake = data({ posts: new Map([[10, [post(100, { posted: 0 })]]]) });
 		app = await buildApp(fakeDeps(fake));
-		const page = await inject(app, { url: '/edit.php?id=100', headers: { cookie: sessionCookie(5) } });
+		const page = await inject(app, { url: '/modifier?id=100', headers: { cookie: sessionCookie(5) } });
 		expect(page.body).toContain('name="silent" value="1" checked');
 		const res = await submit(
 			app,
-			'/edit.php?id=100&action=edit',
+			'/modifier?id=100&action=edit',
 			{ req_subject: 'S', req_message: 'M', silent: '1', stick_topic: '1' },
 			sessionCookie(5),
 		);
@@ -142,9 +142,9 @@ describe('edit.php', () => {
 	it('erreurs et prévisualisation sans enregistrer', async () => {
 		const fake = data();
 		app = await buildApp(fakeDeps(fake));
-		const errors = await submit(app, '/edit.php?id=100&action=edit', { req_subject: '', req_message: 'x' });
+		const errors = await submit(app, '/modifier?id=100&action=edit', { req_subject: '', req_message: 'x' });
 		expect(errors.body).toContain('Vous devez indiquer un sujet.');
-		const preview = await submit(app, '/edit.php?id=101&action=edit', { req_message: '[b]vu[/b]', preview: '1' });
+		const preview = await submit(app, '/modifier?id=101&action=edit', { req_message: '[b]vu[/b]', preview: '1' });
 		expect(preview.body).toContain('<strong>vu</strong>');
 		expect(fake.postUpdates).toBeUndefined();
 	});
@@ -154,10 +154,10 @@ describe('delete.php', () => {
 	it('confirme puis supprime une réponse et revient au message précédent', async () => {
 		const fake = data();
 		app = await buildApp(fakeDeps(fake));
-		const page = await inject(app, { url: '/delete.php?id=101', headers: { cookie: tessy } });
+		const page = await inject(app, { url: '/supprimer?id=101', headers: { cookie: tessy } });
 		expect(page.statusCode).toBe(200);
 		expect(page.body).toContain('Vous êtes sur le point de supprimer définitivement ce message');
-		const res = await submit(app, '/delete.php?id=101', { delete: '1' });
+		const res = await submit(app, '/supprimer?id=101', { delete: '1' });
 		expect(res.headers.location).toBe('/message/100#p100');
 		expect(fake.deletedPosts).toEqual([101]);
 	});
@@ -165,10 +165,10 @@ describe('delete.php', () => {
 	it('supprimer le premier message supprime la discussion', async () => {
 		const fake = data();
 		app = await buildApp(fakeDeps(fake));
-		expect((await inject(app, { url: '/delete.php?id=100', headers: { cookie: tessy } })).body).toContain(
+		expect((await inject(app, { url: '/supprimer?id=100', headers: { cookie: tessy } })).body).toContain(
 			'toute la discussion sera définitivement supprimée',
 		);
-		const res = await submit(app, '/delete.php?id=100', { delete: '1' });
+		const res = await submit(app, '/supprimer?id=100', { delete: '1' });
 		expect(res.headers.location).toBe('/forum/1');
 		expect(fake.deletedTopics).toEqual([10]);
 	});
@@ -176,11 +176,11 @@ describe('delete.php', () => {
 	it('refuse sans droit, et sans jeton CSRF', async () => {
 		const fake = data({ posts: new Map([[10, [post(100, { author: null })]]]) });
 		app = await buildApp(fakeDeps(fake));
-		expect((await inject(app, { url: '/delete.php?id=100', headers: { cookie: tessy } })).statusCode).toBe(403);
+		expect((await inject(app, { url: '/supprimer?id=100', headers: { cookie: tessy } })).statusCode).toBe(403);
 		app = await buildApp(fakeDeps(fake));
 		const res = await inject(app, {
 			method: 'POST',
-			url: '/delete.php?id=100',
+			url: '/supprimer?id=100',
 			headers: { cookie: sessionCookie(5), 'content-type': 'application/x-www-form-urlencoded' },
 			payload: 'delete=1',
 		});

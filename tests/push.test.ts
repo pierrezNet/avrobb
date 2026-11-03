@@ -39,7 +39,13 @@ describe('WebPushSender', async () => {
 		p256dh: b64url(await crypto.subtle.exportKey('raw', receiver.publicKey)),
 		auth: b64url(crypto.getRandomValues(new Uint8Array(16))),
 	};
-	const message = { title: 'Message privé de Tessy', body: 'Bonjour', url: '/pms_view.php?tid=1', tag: 'pm-1', lang: 'fr' as const };
+	const message = {
+		title: 'Message privé de Tessy',
+		body: 'Bonjour',
+		url: '/messages/conversation?tid=1',
+		tag: 'pm-1',
+		lang: 'fr' as const,
+	};
 	const silent = { error: () => undefined, info: () => undefined };
 	const privateKey = await crypto.subtle.exportKey('jwk', signing.privateKey);
 	const sender = async (status: number, calls: { url: string; init: RequestInit | undefined }[] = []) =>

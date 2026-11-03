@@ -135,7 +135,7 @@ describe('écarts volontaires', () => {
 		expect(parseMessage('[url]http://ailleurs.test/viewtopic.php?id=4[/url]', options)).toContain(
 			'href="http://ailleurs.test/viewtopic.php?id=4"',
 		);
-		expect(parseMessage('[url=http://forum.test/post.php?tid=4]r[/url]', options)).toContain('href="http://forum.test/post.php?tid=4"');
+		expect(parseMessage('[url=http://forum.test/post.php?tid=4]r[/url]', options)).toContain('href="http://forum.test/ecrire?tid=4"');
 	});
 });
 

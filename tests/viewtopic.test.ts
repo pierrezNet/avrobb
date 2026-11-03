@@ -74,7 +74,7 @@ describe('GET /viewtopic.php', () => {
 		expect(res.body).toContain('<strong aria-current="page">2</strong>');
 		expect(res.body).toContain('href="/forum/1-');
 		expect(res.body).toContain('href="/membre/3"');
-		expect(res.body).toContain('action="/post.php?action=post&amp;tid=20"');
+		expect(res.body).toContain('action="/ecrire?action=post&amp;tid=20"');
 		expect(res.body).toContain('href="/sujet/20-');
 	});
 
@@ -82,11 +82,11 @@ describe('GET /viewtopic.php', () => {
 		app = await buildApp(fakeDeps(data()));
 		const withForm = await inject(app, { url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(3) } });
 		expect(withForm.body).toContain('id="quickpostform"');
-		expect(withForm.body).not.toContain('href="/post.php?tid=10"');
+		expect(withForm.body).not.toContain('href="/ecrire?tid=10"');
 		app = await buildApp(fakeDeps(data({ config: { posting: { ...boardConfig.posting, quickpost: false } } })));
 		const withoutForm = await inject(app, { url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(3) } });
 		expect(withoutForm.body).not.toContain('id="quickpostform"');
-		expect(withoutForm.body).toContain('href="/post.php?tid=10"');
+		expect(withoutForm.body).toContain('href="/ecrire?tid=10"');
 	});
 });
 
@@ -176,8 +176,8 @@ describe('viewtopic : balises et censure', () => {
 		const asAdmin = await inject(app, { url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(2) } });
 		expect(asAdmin.body).toContain('<p class="post__usertitle">En vacances</p>');
 		expect(asAdmin.body).toContain('<strong>3</strong>');
-		expect(asAdmin.body).toContain('reputation.php?pid=100&amp;uid=3&amp;method=1');
-		expect(asAdmin.body).toContain('pms_send.php?uid=3');
+		expect(asAdmin.body).toContain('/renommee?pid=100&amp;uid=3&amp;method=1');
+		expect(asAdmin.body).toContain('/messages/ecrire?uid=3');
 		expect(asAdmin.body).toContain('href="http://javascript:alert(1)"');
 
 		// L'auteur voit sa renommée mais ne peut pas voter pour lui-même.
@@ -192,7 +192,7 @@ describe('réponse rapide (o_quickpost)', () => {
 		app = await buildApp(fakeDeps(data({ subscribedTopics: [10] })));
 		const res = await inject(app, { url: '/viewtopic.php?id=10', headers: { cookie: sessionCookie(3) } });
 		expect(res.body).toContain('id="quickpostform"');
-		expect(res.body).toContain('action="/post.php?action=post&amp;tid=10"');
+		expect(res.body).toContain('action="/ecrire?action=post&amp;tid=10"');
 		expect(res.body).toMatch(/name="csrf_token" value="[0-9a-f]{64}"/);
 		expect(res.body).toContain('<input type="hidden" name="subscribe" value="1">');
 		expect(res.body).not.toContain('name="req_username"');

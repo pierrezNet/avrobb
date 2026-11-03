@@ -30,9 +30,12 @@ describe('référencement : fonctions pures', () => {
 
 	it('robots.txt et sitemap.xml', () => {
 		const robots = robotsTxt('https://forum.test');
-		expect(robots).toContain('Disallow: /admin_');
-		expect(robots).toContain('Disallow: /post.php');
-		expect(robots).toContain('Disallow: /en/post.php');
+		expect(robots).toContain('Disallow: /*.php');
+		expect(robots).toContain('Disallow: /admin');
+		expect(robots).toContain('Disallow: /ecrire');
+		expect(robots).toContain('Disallow: /en/write');
+		expect(robots).toContain('Disallow: /en/admin');
+		expect(robots).not.toContain('Disallow: /message\n');
 		expect(robots).toContain('Sitemap: https://forum.test/sitemap.xml');
 		const xml = sitemapXml('https://forum.test', [
 			{ path: 'viewtopic.php?id=4&p=2', lastPost: 1_782_800_000 },
@@ -82,7 +85,7 @@ describe('référencement : pages', () => {
 		const index = await inject(app, '/index.php');
 		expect(index.body).toContain('<meta name="description" content="Le forum de test">');
 		expect(index.body).toContain('<meta property="og:image" content="http://forum.test/assets/icons/icon-512.png">');
-		const login = await inject(app, '/login.php');
+		const login = await inject(app, '/connexion');
 		expect(login.body).not.toContain('og:title');
 	});
 });

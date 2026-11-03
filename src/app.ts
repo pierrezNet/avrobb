@@ -101,7 +101,7 @@ import type { UsersInfoReader } from './repositories/UsersInfoLoader.ts';
 import type { MailTemplateReader } from './services/mail.ts';
 import type { OAuthProviderId } from './services/oauth.ts';
 import { type BannedWriteQuery, canWriteWhileBanned, readOnlyViewer } from './services/permissions.ts';
-import { CLEAN_STATIC_PATHS, idFromSegment, localizePath, publicPath } from './services/routes.ts';
+import { CLEAN_STATIC_PATHS, idFromSegment, localizePath, PLUGIN_PAGES, publicPath } from './services/routes.ts';
 
 export type { ForumApp } from './http/server.ts';
 
@@ -388,6 +388,17 @@ export async function buildApp(input: AppDeps): Promise<ForumApp> {
 	const adminLoader = new AdminLoaderController(deps);
 	router.get<{ Querystring: AdminLoaderQuery }>('/admin_loader.php', [authenticate], adminLoader.show);
 	router.post<{ Querystring: AdminLoaderQuery; Body: FormBody }>('/admin_loader.php', [authenticate, verifyCsrf], adminLoader.submit);
+	// Chaque page d'extension a son adresse (services/routes.ts) : le nom d'origine y est rétabli.
+	for (const [plugin, path] of PLUGIN_PAGES) {
+		router.get<{ Querystring: AdminLoaderQuery }>(path, [authenticate], (request, reply) => {
+			request.query.plugin = plugin;
+			return adminLoader.show(request, reply);
+		});
+		router.post<{ Querystring: AdminLoaderQuery; Body: FormBody }>(path, [authenticate, verifyCsrf], (request, reply) => {
+			request.query.plugin = plugin;
+			return adminLoader.submit(request, reply);
+		});
+	}
 
 	// Pages d'information : même en mode maintenance ou sans droit de lecture du forum.
 	const staticPages = new StaticPageController(deps);

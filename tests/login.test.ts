@@ -18,7 +18,7 @@ describe('safeRedirect', () => {
 		expect(safeRedirect('https://evil.test/index.php', 'forum.test')).toBe('/');
 		expect(safeRedirect('//evil.test/index.php', 'forum.test')).toBe('/');
 		expect(safeRedirect('javascript:alert(1)', 'forum.test')).toBe('/');
-		expect(safeRedirect('/login.php', 'forum.test')).toBe('/');
+		expect(safeRedirect('/connexion', 'forum.test')).toBe('/');
 	});
 });
 
@@ -56,7 +56,7 @@ describe('connexion de développement', () => {
 
 		const res = await postForm(
 			app,
-			'/login.php?action=in',
+			'/connexion?action=in',
 			`csrf_token=${guestToken}&req_username=TESSY&redirect_url=viewforum.php%3Fid%3D2`,
 			guestCookie,
 		);
@@ -68,20 +68,20 @@ describe('connexion de développement', () => {
 
 	it('refuse un pseudo inconnu, un jeton absent, une machine distante ou DEV_LOGIN désactivé', async () => {
 		app = await buildApp(fakeDeps({ users, topics: [], posts: new Map() }));
-		const unknown = await postForm(app, '/login.php?action=in', `csrf_token=${guestToken}&req_username=Personne`, guestCookie);
+		const unknown = await postForm(app, '/connexion?action=in', `csrf_token=${guestToken}&req_username=Personne`, guestCookie);
 		expect(sessionFrom(unknown.headers)).toBeUndefined();
 		expect(unknown.body).toContain('Aucun membre ne porte ce nom');
 
-		expect((await postForm(app, '/login.php?action=in', 'req_username=Tessy', guestCookie)).statusCode).toBe(403);
+		expect((await postForm(app, '/connexion?action=in', 'req_username=Tessy', guestCookie)).statusCode).toBe(403);
 
-		const remote = await postForm(app, '/login.php?action=in', `csrf_token=${guestToken}&req_username=Tessy`, guestCookie, '203.0.113.7');
+		const remote = await postForm(app, '/connexion?action=in', `csrf_token=${guestToken}&req_username=Tessy`, guestCookie, '203.0.113.7');
 		expect(remote.statusCode).toBe(403);
 		expect(sessionFrom(remote.headers)).toBeUndefined();
 
 		app = await buildApp({ ...fakeDeps({ users, topics: [], posts: new Map() }), devLogin: false });
-		const disabled = await postForm(app, '/login.php?action=in', `csrf_token=${guestToken}&req_username=Tessy`, guestCookie);
+		const disabled = await postForm(app, '/connexion?action=in', `csrf_token=${guestToken}&req_username=Tessy`, guestCookie);
 		expect(disabled.statusCode).toBe(403);
-		const page = await inject(app, { url: '/login.php', headers: { host: HOST } });
+		const page = await inject(app, { url: '/connexion', headers: { host: HOST } });
 		expect(page.body).not.toContain('name="req_username"');
 		// Sans JavaScript, les pages de GitHub et Google ne s'affichent pas : le visiteur est prévenu.
 		expect(page.body).toContain('<noscript><p class="form__help">JavaScript semble désactivé.');
@@ -89,7 +89,7 @@ describe('connexion de développement', () => {
 
 	it('formulaire accessible en maintenance, avec adresse de retour tirée du Referer', async () => {
 		app = await buildApp(fakeDeps({ users: [{ viewer: guest }], topics: [], posts: new Map(), config: { maintenance: true } }));
-		const res = await inject(app, { url: '/login.php', headers: { host: HOST, referer: 'http://forum.test/viewforum.php?id=2' } });
+		const res = await inject(app, { url: '/connexion', headers: { host: HOST, referer: 'http://forum.test/viewforum.php?id=2' } });
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('name="redirect_url" value="/forum/2"');
 		expect(res.body).not.toContain('type="password"');
@@ -103,17 +103,17 @@ describe('session et déconnexion', () => {
 		const online = fakeOnline();
 		app = await buildApp({ ...fakeDeps({ users, topics: [], posts: new Map() }), online });
 
-		expect((await inject(app, { url: '/login.php', headers: { cookie } })).headers.location).toBe('/');
+		expect((await inject(app, { url: '/connexion', headers: { cookie } })).headers.location).toBe('/');
 
 		// L'ancien lien GET ne déconnecte plus : aucune écriture en GET.
-		const get = await inject(app, { url: '/login.php?action=out', headers: { cookie } });
+		const get = await inject(app, { url: '/connexion?action=out', headers: { cookie } });
 		expect(get.headers.location).toBe('/');
 		expect(online.log).not.toContain('remove 3');
 
-		expect((await postForm(app, '/login.php?action=out', 'csrf_token=faux', cookie)).statusCode).toBe(403);
+		expect((await postForm(app, '/connexion?action=out', 'csrf_token=faux', cookie)).statusCode).toBe(403);
 		expect(online.log).not.toContain('remove 3');
 
-		const out = await postForm(app, '/login.php?action=out', `csrf_token=${csrfToken(CSRF_SECRET, COOKIE_SECRET, 3)}`, cookie);
+		const out = await postForm(app, '/connexion?action=out', `csrf_token=${csrfToken(CSRF_SECRET, COOKIE_SECRET, 3)}`, cookie);
 		expect(out.headers.location).toBe('/');
 		expect(online.log.slice(-2)).toEqual(['remove 3', `last_visit 3 ${NOW - 900}`]);
 		expect(sessionFrom(out.headers)).toBe('');
@@ -122,7 +122,7 @@ describe('session et déconnexion', () => {
 	it('cookie falsifié ou échu : visiteur traité en invité, cookie effacé', async () => {
 		app = await buildApp(fakeDeps({ users, topics: [], posts: new Map() }));
 		for (const bad of [sessionCookie(3).replace('avrobb_session=3.', 'avrobb_session=2.'), sessionCookie(3, NOW - 1)]) {
-			const res = await inject(app, { url: '/login.php', headers: { cookie: bad } });
+			const res = await inject(app, { url: '/connexion', headers: { cookie: bad } });
 			expect(res.statusCode).toBe(200);
 			expect(sessionFrom(res.headers)).toBe('');
 		}

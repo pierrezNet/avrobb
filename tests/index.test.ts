@@ -136,7 +136,7 @@ describe('GET /index.php', () => {
 		expect(res.body).toContain('X-Plane : 2 discussions');
 		expect(res.body).toContain('<a href="/membre/8">Nouveau</a>');
 		expect(res.body).not.toContain('Nouveaux messages');
-		expect(res.body).not.toContain('misc.php?action=markread');
+		expect(res.body).not.toContain('/actions?action=markread');
 		// L'index est porté : ses liens restent locaux.
 		expect(res.body).toContain('href="/"');
 	});
@@ -159,7 +159,7 @@ describe('GET /index.php', () => {
 
 		const fresh = await inject(app, { url: '/index.php', headers: { cookie: cookie(3) } });
 		expect(fresh.body).toContain('href="/recherche?action=show_new&amp;fid=1">Nouveaux messages</a>');
-		expect(fresh.body).toContain('misc.php?action=markread');
+		expect(fresh.body).toContain('/actions?action=markread');
 
 		const read = await inject(app, { url: '/index.php', headers: { cookie: `${cookie(3)}; avrobb_track=t7=${NOW}` } });
 		expect(read.body).not.toContain('Nouveaux messages');

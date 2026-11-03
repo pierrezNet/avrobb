@@ -84,16 +84,16 @@ describe('misc.php', () => {
 	it('un ancien lien GET « marquer comme lu » demande confirmation, sans rien écrire', async () => {
 		const online = fakeOnline();
 		app = await buildApp({ ...deps(), online });
-		const res = await inject(app, { url: '/misc.php?action=markread', headers: { cookie: cookie() } });
-		expect(res.body).toContain('<form class="message-box" method="post" action="/misc.php?action=markread">');
+		const res = await inject(app, { url: '/actions?action=markread', headers: { cookie: cookie() } });
+		expect(res.body).toContain('<form class="message-box" method="post" action="/actions?action=markread">');
 		expect(online.log).toEqual([]);
-		expect((await inject(app, '/misc.php?action=markread')).statusCode).toBe(403);
+		expect((await inject(app, '/actions?action=markread')).statusCode).toBe(403);
 	});
 
 	it('POST marquer comme lu : last_visit et suivi remis à zéro ; un forum : marqué dans le cookie', async () => {
 		const online = fakeOnline();
 		app = await buildApp({ ...deps(), online });
-		const page = await inject(app, { url: '/misc.php?action=markread', headers: { cookie: cookie() } });
+		const page = await inject(app, { url: '/actions?action=markread', headers: { cookie: cookie() } });
 		const csrf = setCookie(page.headers['set-cookie'], 'avrobb_csrf')?.split(';')[0] ?? '';
 		const token = /name="csrf_token" value="([0-9a-f]+)"/.exec(page.body)?.[1] ?? '';
 		const send = (url: string) =>
@@ -104,21 +104,21 @@ describe('misc.php', () => {
 				payload: `csrf_token=${token}`,
 			});
 
-		const all = await send('/misc.php?action=markread');
+		const all = await send('/actions?action=markread');
 		expect(all?.headers.location).toBe('/');
 		expect(online.log).toContain(`last_visit 3 ${NOW - 700}`);
 		expect(setCookie(all?.headers['set-cookie'], 'avrobb_track')).toMatch(/^avrobb_track=;/);
 
-		const forum = await send('/misc.php?action=markforumread&fid=2');
+		const forum = await send('/actions?action=markforumread&fid=2');
 		expect(forum?.headers.location).toBe('/forum/2');
 		expect(setCookie(forum?.headers['set-cookie'], 'avrobb_track')).toContain(`f2%3D${NOW}`);
 	});
 
 	it('règles affichées si activées ; action inconnue refusée', async () => {
 		app = await buildApp(deps({ rules: true }));
-		expect((await inject(app, '/misc.php?action=rules')).body).toContain('<p>Soyez <em>courtois</em>.</p>');
-		expect((await inject(app, '/misc.php?action=autre')).statusCode).toBe(400);
+		expect((await inject(app, '/actions?action=rules')).body).toContain('<p>Soyez <em>courtois</em>.</p>');
+		expect((await inject(app, '/actions?action=autre')).statusCode).toBe(400);
 		app = await buildApp(deps());
-		expect((await inject(app, '/misc.php?action=rules')).statusCode).toBe(404);
+		expect((await inject(app, '/actions?action=rules')).statusCode).toBe(404);
 	});
 });

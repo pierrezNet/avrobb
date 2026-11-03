@@ -103,30 +103,30 @@ const get = (server: ForumApp, userId: number, url: string) => inject(server, { 
 describe('admin_users.php', () => {
 	it('réservé aux administrateurs et modérateurs', async () => {
 		const { server } = await start();
-		expect((await get(server, 3, '/admin_users.php')).statusCode).toBe(403);
-		const page = await get(server, 5, '/admin_users.php');
+		expect((await get(server, 3, '/admin/membres')).statusCode).toBe(403);
+		const page = await get(server, 5, '/admin/membres');
 		expect(page.body).toContain('name="form[admin_note]"');
 		expect(page.body).toContain('<option value="0">Utilisateurs non vérifiés</option>');
 	});
 
 	it("statistiques d'IP d'un membre et membres d'une IP", async () => {
 		const { server } = await start();
-		const stats = await get(server, 5, '/admin_users.php?ip_stats=3');
-		expect(stats.body).toContain('href="/moderate.php?get_host=192.0.2.5"');
-		expect(stats.body).toContain('href="/admin_users.php?show_users=192.0.2.5"');
-		const posters = await get(server, 5, '/admin_users.php?show_users=192.0.2.5');
+		const stats = await get(server, 5, '/admin/membres?ip_stats=3');
+		expect(stats.body).toContain('href="/moderation?get_host=192.0.2.5"');
+		expect(stats.body).toContain('href="/admin/membres?show_users=192.0.2.5"');
+		const posters = await get(server, 5, '/admin/membres?show_users=192.0.2.5');
 		expect(posters.body).toContain('Messages&#160;: 1 200');
 		expect(posters.body).toContain('à surveiller');
 		expect(posters.body).toContain('Visiteur</strong> — Invité');
-		expect((await get(server, 5, '/admin_users.php?show_users=pas-une-ip')).statusCode).toBe(400);
+		expect((await get(server, 5, '/admin/membres?show_users=pas-une-ip')).statusCode).toBe(400);
 	});
 
 	it('résultats de recherche : compte non vérifié signalé', async () => {
 		const { server, fake } = await start();
-		const res = await get(server, 5, '/admin_users.php?find_user=&form%5Busername%5D=Nou*');
+		const res = await get(server, 5, '/admin/membres?find_user=&form%5Busername%5D=Nou*');
 		expect(res.body).toContain('Non vérifié');
 		expect(fake.userSearches?.[0]?.patterns).toEqual({ username: 'Nou%' });
-		expect((await get(server, 5, '/admin_users.php?find_user=&posts_less=x')).statusCode).toBe(400);
+		expect((await get(server, 5, '/admin/membres?find_user=&posts_less=x')).statusCode).toBe(400);
 	});
 });
 
@@ -146,20 +146,20 @@ describe('actions groupées', () => {
 	const post = (server: ForumApp, userId: number, fields: Record<string, string>) =>
 		inject(server, {
 			method: 'POST',
-			url: '/admin_users.php',
+			url: '/admin/membres',
 			headers: { cookie: cookie(userId), 'content-type': 'application/x-www-form-urlencoded' },
 			payload: new URLSearchParams({ csrf_token: csrfToken(CSRF_SECRET, SEED, userId), ...fields }).toString(),
 		});
 
 	it('cases et boutons selon les droits', async () => {
 		const { server } = await start();
-		const asMod = await get(server, 5, '/admin_users.php?find_user=');
+		const asMod = await get(server, 5, '/admin/membres?find_user=');
 		expect(asMod.body).not.toContain('name="users[7]"');
-		const asBanMod = await get(server, 6, '/admin_users.php?find_user=');
+		const asBanMod = await get(server, 6, '/admin/membres?find_user=');
 		expect(asBanMod.body).toContain('name="users[7]"');
 		expect(asBanMod.body).toContain('name="ban_users"');
 		expect(asBanMod.body).not.toContain('name="delete_users"');
-		expect((await get(server, 2, '/admin_users.php?find_user=')).body).toContain('name="move_users"');
+		expect((await get(server, 2, '/admin/membres?find_user=')).body).toContain('name="move_users"');
 	});
 
 	it('changer de groupe et supprimer : administrateurs seulement, après confirmation', async () => {
@@ -177,7 +177,7 @@ describe('actions groupées', () => {
 		expect((await post(server, 2, { move_users_comply: '1', users: '3', new_group: '3' })).statusCode).toBe(400);
 		expect((await post(server, 2, { delete_users: '1', 'users[2]': '1' })).body).toContain('Les administrateurs ne peuvent être supprimés');
 		const deleted = await post(server, 2, { delete_users_comply: '1', users: '3', delete_posts: '1' });
-		expect(deleted.headers.location).toBe('/admin_users.php?done=deleted');
+		expect(deleted.headers.location).toBe('/admin/membres?done=deleted');
 		expect(fake.userActionLog).toEqual(['move 3 -> 4', 'move 3 -> 1', 'delete 3 +posts']);
 	});
 
@@ -186,7 +186,7 @@ describe('actions groupées', () => {
 		expect((await post(server, 6, { ban_users: '1', 'users[5]': '1' })).body).toContain('Les modérateurs ne peuvent être bannis');
 		expect((await post(server, 6, { ban_users_comply: '1', users: '3', ban_expire: '2000-01-01' })).statusCode).toBe(400);
 		const done = await post(server, 6, { ban_users_comply: '1', users: '3', ban_message: ' Spam ', ban_expire: '', ban_the_ip: '1' });
-		expect(done.headers.location).toBe('/admin_users.php?done=banned');
+		expect(done.headers.location).toBe('/admin/membres?done=banned');
 		expect(fake.userActionLog).toEqual(['ban 3 {"message":"Spam","expire":null,"withIp":true,"creatorId":6}']);
 	});
 });

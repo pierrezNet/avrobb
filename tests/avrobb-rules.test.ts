@@ -36,11 +36,11 @@ describe('règles AvroBB', () => {
 	});
 
 	it('banni : connexion, lu/non lu et abonnements seulement', () => {
-		expect(canWriteWhileBanned('/login.php', {})).toBe(true);
-		expect(canWriteWhileBanned('/misc.php', {})).toBe(true);
-		expect(canWriteWhileBanned('/misc.php', { report: '12' })).toBe(false);
-		expect(canWriteWhileBanned('/misc.php', { email: '3' })).toBe(false);
-		expect(canWriteWhileBanned('/post.php', {})).toBe(false);
+		expect(canWriteWhileBanned('/connexion', {})).toBe(true);
+		expect(canWriteWhileBanned('/actions', {})).toBe(true);
+		expect(canWriteWhileBanned('/actions', { report: '12' })).toBe(false);
+		expect(canWriteWhileBanned('/actions', { email: '3' })).toBe(false);
+		expect(canWriteWhileBanned('/ecrire', {})).toBe(false);
 	});
 
 	it('discussions anciennes : nombre entier de jours', () => {

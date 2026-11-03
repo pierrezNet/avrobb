@@ -79,9 +79,9 @@ describe('GET /viewforum.php', () => {
 			'<span class="subject-tag" style="background-color: #1d4ed8; color: #ffffff">MSFS</span><span class="subject-tag-gap">&#160;</span>Sujet 13',
 		);
 		expect(res.body).toContain('<dd>1 500</dd>');
-		expect(res.body).toContain('href="/post.php?fid=2"');
-		expect(res.body).not.toContain('misc.php?action=subscribe');
-		expect(res.body).not.toContain('moderate.php?fid=2');
+		expect(res.body).toContain('href="/ecrire?fid=2"');
+		expect(res.body).not.toContain('/actions?action=subscribe');
+		expect(res.body).not.toContain('/moderation?fid=2');
 		// Le point n'est affiché qu'aux membres, et seulement si o_show_dot est activé.
 		expect(res.body).not.toContain('topic-row__dot');
 	});
@@ -94,15 +94,15 @@ describe('GET /viewforum.php', () => {
 		expect(res.body).not.toContain('/sujet/12?action=new');
 		// 31 messages à 1 par page : 1 2 … 31
 		expect(res.body).toMatch(/<a href="\/sujet\/13-[a-z0-9-]+\/page\/31">31<\/a>/);
-		expect(res.body).toContain('misc.php?action=subscribe&amp;fid=2');
-		expect(res.body).toContain('misc.php?action=markforumread&amp;fid=2');
+		expect(res.body).toContain('/actions?action=subscribe&amp;fid=2');
+		expect(res.body).toContain('/actions?action=markforumread&amp;fid=2');
 		expect(res.body).toContain('topic-row__dot');
 	});
 
 	it('modérateur du forum : lien de modération du pied', async () => {
 		app = await buildApp(deps());
 		const res = await inject(app, { url: '/viewforum.php?id=2', headers: { cookie: sessionCookie(5) } });
-		expect(res.body).toContain('moderate.php?fid=2&amp;p=1');
+		expect(res.body).toContain('/moderation?fid=2&amp;p=1');
 	});
 
 	it('redirige les forums de redirection, 404 si illisible ou inexistant', async () => {
@@ -150,6 +150,6 @@ describe('GET /viewforum.php', () => {
 		app = await buildApp(deps({ forumTopics: new Map(), forumInfos: [{ ...forumInfo, topicPermission: false, numTopics: 0 }] }));
 		const res = await inject(app, '/viewforum.php?id=2');
 		expect(res.body).toContain('Le forum ne contient aucune discussion.');
-		expect(res.body).not.toContain('post.php?fid=2');
+		expect(res.body).not.toContain('/ecrire?fid=2');
 	});
 });

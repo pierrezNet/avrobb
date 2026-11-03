@@ -45,7 +45,7 @@ async function send(server: ForumApp, userId: number, fields: Record<string, str
 	const request = new Request('http://x/', { method: 'POST', body: form });
 	return inject(server, {
 		method: 'POST',
-		url: '/admin_appearance.php',
+		url: '/admin/apparence',
 		headers: { cookie: cookies(userId), 'content-type': request.headers.get('content-type') ?? '' },
 		payload: Buffer.from(await request.arrayBuffer()),
 	});
@@ -54,10 +54,10 @@ async function send(server: ForumApp, userId: number, fields: Record<string, str
 describe('admin_appearance.php', () => {
 	it('réservé aux administrateurs ; dans le menu ; aperçus des deux images', async () => {
 		const { server } = await start();
-		expect((await inject(server, { url: '/admin_appearance.php', headers: { cookie: cookies(5) } })).statusCode).toBe(403);
-		const page = await inject(server, { url: '/admin_appearance.php', headers: { cookie: cookies(2) } });
+		expect((await inject(server, { url: '/admin/apparence', headers: { cookie: cookies(5) } })).statusCode).toBe(403);
+		const page = await inject(server, { url: '/admin/apparence', headers: { cookie: cookies(2) } });
 		expect(page.statusCode).toBe(200);
-		expect(page.body).toContain('href="/admin_appearance.php"');
+		expect(page.body).toContain('href="/admin/apparence"');
 		// Aucune image envoyée : celles d'AvroBB.
 		expect(page.body).toContain('src="/assets/img/avrobb-logo.png"');
 		expect(page.body).toContain('src="/assets/img/avrobb-banner.jpg"');
@@ -70,7 +70,7 @@ describe('admin_appearance.php', () => {
 		expect((await send(server, 2, { kind: 'logo' }, Buffer.from('pas une image'))).statusCode).toBe(400);
 		expect((await send(server, 2, { kind: 'autre' }, png)).statusCode).toBe(400);
 		const replaced = await send(server, 2, { kind: 'logo' }, png);
-		expect(replaced.headers.location).toBe('/admin_appearance.php?done=replaced');
+		expect(replaced.headers.location).toBe('/admin/apparence?done=replaced');
 		expect(fake.headerImageLog).toEqual([`replace logo image/png ${png.length}`]);
 		// Plus grand que le cadre du logo (1 204 × 308) : refusé, rien n'est écrit.
 		const wide = Buffer.from(png);
@@ -82,12 +82,12 @@ describe('admin_appearance.php', () => {
 		expect(fake.configValues?.get('o_header_version')).toBe(String(NOW));
 
 		const banner = await send(server, 2, { kind: 'banner' }, png);
-		expect(banner.headers.location).toBe('/admin_appearance.php?done=replaced');
+		expect(banner.headers.location).toBe('/admin/apparence?done=replaced');
 		expect(fake.headerImageLog?.at(-1)).toBe(`replace banner image/png ${png.length}`);
 
-		expect((await inject(server, { url: '/admin_appearance.php', headers: { cookie: cookies(2) } })).body).toContain('value="restore"');
+		expect((await inject(server, { url: '/admin/apparence', headers: { cookie: cookies(2) } })).body).toContain('value="restore"');
 		const restored = await send(server, 2, { kind: 'logo', action: 'restore' });
-		expect(restored.headers.location).toBe('/admin_appearance.php?done=restored');
+		expect(restored.headers.location).toBe('/admin/apparence?done=restored');
 		expect(fake.headerImageLog?.at(-1)).toBe('restore logo');
 	});
 

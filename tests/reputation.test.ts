@@ -99,16 +99,16 @@ function post(server: ForumApp, userId: number, url: string, fields: Record<stri
 	});
 }
 
-describe('GET /reputation.php', () => {
+describe('GET /renommee', () => {
 	it("historique d'un membre : totaux, raisons rendues, votant, discussion supprimée", async () => {
 		const fake = data();
 		app = await buildApp(fakeDeps(fake));
-		const res = await inject(app, { url: '/reputation.php?uid=5', headers: { cookie: cookies(3) } });
+		const res = await inject(app, { url: '/renommee?uid=5', headers: { cookie: cookies(3) } });
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('Renommée du membre MaxDUO');
 		expect(res.body).toContain('[+3 / -1]');
 		expect(res.body).toContain('Super <strong>capture</strong>');
-		expect(res.body).toContain('href="/reputation.php?uid=3">Tessy</a>');
+		expect(res.body).toContain('href="/renommee?uid=3">Tessy</a>');
 		expect(res.body).toContain('Enlevée ou effacée');
 		expect(res.body).toContain('Profil effacé');
 		expect(res.body).not.toContain('delete_rep_id');
@@ -116,29 +116,29 @@ describe('GET /reputation.php', () => {
 
 	it('renommée désactivée : page refusée', async () => {
 		app = await buildApp(fakeDeps(data({ config: { reputationEnabled: false } })));
-		expect((await inject(app, { url: '/reputation.php?uid=5', headers: { cookie: cookies(3) } })).statusCode).toBe(403);
+		expect((await inject(app, { url: '/renommee?uid=5', headers: { cookie: cookies(3) } })).statusCode).toBe(403);
 	});
 
 	it('formulaire de vote, et refus pour soi-même ou un invité', async () => {
 		app = await buildApp(fakeDeps(data()));
-		const form = await inject(app, { url: '/reputation.php?pid=101&uid=5&method=2', headers: { cookie: cookies(3) } });
+		const form = await inject(app, { url: '/renommee?pid=101&uid=5&method=2', headers: { cookie: cookies(3) } });
 		expect(form.body).toContain('Réduction de renommée');
 		expect(form.body).toContain('name="pid" value="101"');
-		expect((await inject(app, { url: '/reputation.php?pid=101&uid=6&method=1', headers: { cookie: cookies(3) } })).statusCode).toBe(404);
-		expect((await inject(app, '/reputation.php?pid=101&uid=5&method=1')).statusCode).toBe(403);
+		expect((await inject(app, { url: '/renommee?pid=101&uid=6&method=1', headers: { cookie: cookies(3) } })).statusCode).toBe(404);
+		expect((await inject(app, '/renommee?pid=101&uid=5&method=1')).statusCode).toBe(403);
 	});
 });
 
-describe('POST /reputation.php', () => {
+describe('POST /renommee', () => {
 	it('enregistre le vote, puis applique le délai entre deux votes', async () => {
 		const fake = data();
 		app = await buildApp(fakeDeps(fake));
-		const res = await post(app, 3, '/reputation.php', { form_sent: '1', pid: '101', method: '1', req_message: 'Bravo !' });
+		const res = await post(app, 3, '/renommee', { form_sent: '1', pid: '101', method: '1', req_message: 'Bravo !' });
 		expect(res.statusCode).toBe(303);
 		expect(res.headers.location).toBe('/message/101#p101');
 		expect(fake.addedVotes).toEqual([{ userId: 5, fromUserId: 3, postId: 101, topicId: 10, reason: 'Bravo !', plus: true, time: NOW }]);
 
-		const again = await post(app, 3, '/reputation.php', { form_sent: '1', pid: '101', method: '1', req_message: 'Encore' });
+		const again = await post(app, 3, '/renommee', { form_sent: '1', pid: '101', method: '1', req_message: 'Encore' });
 		expect(again.statusCode).toBe(403);
 		expect(again.body).toContain('Veuillez patienter 5 minutes');
 	});
@@ -146,7 +146,7 @@ describe('POST /reputation.php', () => {
 	it('raison manquante : formulaire réaffiché', async () => {
 		const fake = data();
 		app = await buildApp(fakeDeps(fake));
-		const res = await post(app, 3, '/reputation.php', { form_sent: '1', pid: '101', method: '2', req_message: '' });
+		const res = await post(app, 3, '/renommee', { form_sent: '1', pid: '101', method: '2', req_message: '' });
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('Raison requise');
 		expect(fake.addedVotes).toBeUndefined();
@@ -155,11 +155,11 @@ describe('POST /reputation.php', () => {
 	it('suppression de votes réservée aux administrateurs et modérateurs', async () => {
 		const fake = data();
 		app = await buildApp(fakeDeps(fake));
-		expect((await post(app, 3, '/reputation.php?uid=5', { delete_rep: '1', delete_rep_id: '41' })).statusCode).toBe(403);
-		const page = await inject(app, { url: '/reputation.php?uid=5', headers: { cookie: cookies(2) } });
+		expect((await post(app, 3, '/renommee?uid=5', { delete_rep: '1', delete_rep_id: '41' })).statusCode).toBe(403);
+		const page = await inject(app, { url: '/renommee?uid=5', headers: { cookie: cookies(2) } });
 		expect(page.body).toContain('name="delete_rep_id" value="41"');
-		const res = await post(app, 2, '/reputation.php?uid=5', { delete_rep: '1', delete_rep_id: ['41', '40'] });
-		expect(res.headers.location).toBe('/reputation.php?uid=5&done=deleted');
+		const res = await post(app, 2, '/renommee?uid=5', { delete_rep: '1', delete_rep_id: ['41', '40'] });
+		expect(res.headers.location).toBe('/renommee?uid=5&done=deleted');
 		expect(fake.deletedVotes).toEqual([{ userId: 5, ids: [41, 40] }]);
 	});
 });

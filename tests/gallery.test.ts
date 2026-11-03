@@ -119,24 +119,24 @@ let app: ForumApp | undefined;
 
 const get = (server: ForumApp, userId: number, url: string) => inject(server, { url, headers: { cookie: cookies(userId) } });
 
-describe('GET /gallery.php', () => {
+describe('GET /galerie', () => {
 	it('recherche dans le titre et la description, pagination et filtres la conservent', async () => {
 		app = await buildApp(fakeDeps(data()));
-		const res = await get(app, 6, '/gallery.php?q=image%201');
+		const res = await get(app, 6, '/galerie?q=image%201');
 		expect(res.body).toContain('role="search"');
 		expect(res.body).toContain('value="image 1"');
 		expect(res.body).toContain('Image 10');
 		expect(res.body).not.toContain('Image 2&lt;');
 		expect(res.body).toContain('href="/galerie?mine=1&amp;q=image+1"');
 		expect(res.body).toContain('<meta name="robots" content="noindex');
-		const none = await get(app, 6, '/gallery.php?mine=1&q=zzz');
+		const none = await get(app, 6, '/galerie?mine=1&q=zzz');
 		expect(none.body).toContain('Aucune image ne correspond à cette recherche.');
 		expect(none.body).toContain('<input type="hidden" name="mine" value="1">');
 	});
 
 	it('affiche 20 images par page, titres échappés, liens vers les fichiers du stockage', async () => {
 		app = await buildApp(fakeDeps(data()));
-		const res = await inject(app, '/gallery.php');
+		const res = await inject(app, '/galerie');
 		expect(res.statusCode).toBe(200);
 		expect(res.body.match(/class="gallery__item"/g)).toHaveLength(20);
 		expect(res.body).toContain('&lt;b&gt;Image 1&lt;/b&gt;');
@@ -149,7 +149,7 @@ describe('GET /gallery.php', () => {
 
 	it('« Mes images » ne montre que celles du membre, avec leur lien de suppression', async () => {
 		app = await buildApp(fakeDeps(data()));
-		const res = await get(app, 3, '/gallery.php?mine=1');
+		const res = await get(app, 3, '/galerie?mine=1');
 		expect(res.body.match(/class="gallery__item"/g)).toHaveLength(1);
 		expect(res.body).toContain('href="/galerie?mine=1" aria-current="page"');
 		expect(res.body).toContain('href="/galerie?info=modo&amp;option=del&amp;id=1"');
@@ -157,7 +157,7 @@ describe('GET /gallery.php', () => {
 
 	it('modérateur : liens d’envoi, de modération et de suppression', async () => {
 		app = await buildApp(fakeDeps(data()));
-		const res = await get(app, 5, '/gallery.php?info=modo');
+		const res = await get(app, 5, '/galerie?info=modo');
 		expect(res.body).toContain('href="/galerie?info=new"');
 		expect(res.body).toContain('href="/galerie?info=modo"');
 		expect(res.body.match(/option=del/g)).toHaveLength(20);
@@ -165,8 +165,8 @@ describe('GET /gallery.php', () => {
 
 	it('envoi réservé aux membres', async () => {
 		app = await buildApp(fakeDeps(data()));
-		expect((await inject(app, '/gallery.php?info=new')).statusCode).toBe(403);
-		expect((await get(app, 3, '/gallery.php?info=new')).body).toContain('data-gallery-upload');
+		expect((await inject(app, '/galerie?info=new')).statusCode).toBe(403);
+		expect((await get(app, 3, '/galerie?info=new')).body).toContain('data-gallery-upload');
 	});
 });
 
@@ -190,14 +190,14 @@ async function upload(
 	});
 }
 
-describe('POST /gallery.php', () => {
+describe('POST /galerie', () => {
 	it('garde l’image telle quelle, qui sert aussi de vignette, et redirige', async () => {
 		const fake = data();
 		app = await buildApp(fakeDeps(fake));
 		const res = await upload(
 			app,
 			3,
-			'/gallery.php?info=new',
+			'/galerie?info=new',
 			{ titre: 'Vol de nuit', description: 'Au-dessus de Lyon' },
 			{
 				req_file: ['vol.png', png],
@@ -215,7 +215,7 @@ describe('POST /gallery.php', () => {
 		const res = await upload(
 			app,
 			3,
-			'/gallery.php?info=new',
+			'/galerie?info=new',
 			{ titre: 'Vol', description: 'Réduite' },
 			{
 				req_file: ['vol.webp', webp(1024, 768)],
@@ -235,7 +235,7 @@ describe('POST /gallery.php', () => {
 		await upload(
 			app,
 			3,
-			'/gallery.php?info=new',
+			'/galerie?info=new',
 			{ titre: 'Vol', description: 'x' },
 			{ req_file: ['v.webp', big], req_file_thumb: ['v.png', png] },
 		);
@@ -246,7 +246,7 @@ describe('POST /gallery.php', () => {
 		const many = Array.from({ length: GALLERY_MAX_IMAGES_PER_MEMBER }, (_, index) => image(100 + index, { userId: 3 }));
 		const fake = data({ galleryImages: many });
 		app = await buildApp(fakeDeps(fake));
-		const res = await upload(app, 3, '/gallery.php?info=new', { titre: 'Vol', description: 'x' }, { req_file: ['v.png', png] });
+		const res = await upload(app, 3, '/galerie?info=new', { titre: 'Vol', description: 'x' }, { req_file: ['v.png', png] });
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('Vous avez atteint la limite de 200 images');
 		expect(fake.galleryFileLog).toBeUndefined();
@@ -254,7 +254,7 @@ describe('POST /gallery.php', () => {
 
 	it('formulaire : consigne de réduction pour le navigateur', async () => {
 		app = await buildApp(fakeDeps(data()));
-		const form = await inject(app, { url: '/gallery.php?info=new', headers: { cookie: cookies(3) } });
+		const form = await inject(app, { url: '/galerie?info=new', headers: { cookie: cookies(3) } });
 		expect(form.body).toContain(
 			'data-resize="contain" data-resize-width="1024" data-resize-height="1024" data-resize-variants="req_file_mobile:640 req_file_thumb:150"',
 		);
@@ -264,7 +264,7 @@ describe('POST /gallery.php', () => {
 	it('réaffiche le formulaire avec les erreurs', async () => {
 		const fake = data();
 		app = await buildApp(fakeDeps(fake));
-		const res = await upload(app, 3, '/gallery.php?info=new', { titre: 'Sans description', description: '' }, { req_file: ['x.png', png] });
+		const res = await upload(app, 3, '/galerie?info=new', { titre: 'Sans description', description: '' }, { req_file: ['x.png', png] });
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('Vous n&#39;avez pas donné de description à votre image.');
 		expect(res.body).toContain('value="Sans description"');
@@ -277,7 +277,7 @@ describe('POST /gallery.php', () => {
 		const res = await upload(
 			app,
 			3,
-			'/gallery.php?info=new&from=pick',
+			'/galerie?info=new&from=pick',
 			{ titre: 'Cockpit', description: 'Le [b]tableau de bord[/b]' },
 			{
 				req_file: ['c.png', png],
@@ -286,7 +286,7 @@ describe('POST /gallery.php', () => {
 		expect(res.headers.location).toBe('/galerie?info=pick&done=added');
 		expect(fake.galleryFileLog).toEqual([`save ${NOW}.png ${png.length} ${png.length} -`]);
 
-		const picker = await get(app, 3, '/gallery.php?info=pick&done=added');
+		const picker = await get(app, 3, '/galerie?info=pick&done=added');
 		expect(picker.body).toContain('Votre image a été envoyée correctement.');
 		expect(picker.body).toContain(`data-insert="[b]Cockpit[/b]\n[img]/img/gallery/${NOW}.png[/img]\nLe [b]tableau de bord[/b]"`);
 		// Seules les images du membre sont proposées.
@@ -299,13 +299,13 @@ describe('POST /gallery.php', () => {
 		const res = await upload(
 			app,
 			3,
-			'/gallery.php?info=new&from=pick&embed=1',
+			'/galerie?info=new&from=pick&embed=1',
 			{ titre: 'Cockpit', description: 'Vue' },
 			{ req_file: ['c.png', png] },
 		);
 		expect(res.headers.location).toBe('/galerie?info=pick&done=added&embed=1');
 
-		const picker = await get(app, 3, '/gallery.php?info=pick&done=added&embed=1');
+		const picker = await get(app, 3, '/galerie?info=pick&done=added&embed=1');
 		expect(picker.body).not.toContain('site-header');
 		expect(picker.body).toContain('<input type="hidden" name="embed" value="1">');
 		expect(picker.body).toContain('action="/galerie?info=new&amp;from=pick&amp;embed=1"');
@@ -315,32 +315,32 @@ describe('POST /gallery.php', () => {
 
 	it('sélecteur : recherche dans le titre et la description, ses images ou toute la galerie', async () => {
 		app = await buildApp(fakeDeps(data()));
-		const mine = await get(app, 6, '/gallery.php?info=pick&q=image%201');
+		const mine = await get(app, 6, '/galerie?info=pick&q=image%201');
 		expect(mine.body).toContain('Image 10');
 		expect(mine.body).not.toContain('Image 2&lt;');
 		expect(mine.body).not.toContain('Image 1&lt;');
 		expect(mine.body).toContain('value="image 1"');
 
-		const all = await get(app, 6, '/gallery.php?info=pick&scope=all&q=image%201');
+		const all = await get(app, 6, '/galerie?info=pick&scope=all&q=image%201');
 		expect(all.body).toContain('&lt;b&gt;Image 1&lt;/b&gt;');
 		expect(all.body).toContain('par Tessy');
 		expect(all.body).toContain('<option value="all" selected>');
 
-		const none = await get(app, 6, '/gallery.php?info=pick&q=zzz');
+		const none = await get(app, 6, '/galerie?info=pick&q=zzz');
 		expect(none.body).toContain('Aucune image ne correspond à cette recherche.');
 	});
 
 	it('supprime après confirmation, si le lecteur en a le droit', async () => {
 		const fake = data();
 		app = await buildApp(fakeDeps(fake));
-		expect((await get(app, 3, '/gallery.php?info=modo&option=del&id=2')).statusCode).toBe(403);
-		const confirm = await get(app, 3, '/gallery.php?info=modo&option=del&id=1');
+		expect((await get(app, 3, '/galerie?info=modo&option=del&id=2')).statusCode).toBe(403);
+		const confirm = await get(app, 3, '/galerie?info=modo&option=del&id=1');
 		expect(confirm.body).toContain('action="/galerie?info=modo&amp;option=del&amp;id=1"');
 
 		const body = new URLSearchParams({ csrf_token: csrfToken(CSRF_SECRET, SEED, 3) });
 		const res = await inject(app, {
 			method: 'POST',
-			url: '/gallery.php?info=modo&option=del&id=1',
+			url: '/galerie?info=modo&option=del&id=1',
 			headers: { cookie: cookies(3), 'content-type': 'application/x-www-form-urlencoded' },
 			payload: body.toString(),
 		});

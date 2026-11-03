@@ -64,7 +64,7 @@ const get = (server: ForumApp, userId: number, url: string) => inject(server, { 
 const send = (server: ForumApp, userId: number, fields: Record<string, string>) =>
 	inject(server, {
 		method: 'POST',
-		url: '/topic_prefixes.php?id=10',
+		url: '/balises?id=10',
 		headers: { cookie: cookies(userId), 'content-type': 'application/x-www-form-urlencoded' },
 		payload: new URLSearchParams({ csrf_token: csrfToken(CSRF_SECRET, SEED, userId), ...fields }).toString(),
 	});
@@ -72,15 +72,15 @@ const send = (server: ForumApp, userId: number, fields: Record<string, string>) 
 describe('topic_prefixes.php', () => {
 	it('lien sur viewtopic pour l’auteur et les modérateurs seulement', async () => {
 		const { server } = await start();
-		expect((await get(server, 3, '/viewtopic.php?id=10')).body).toContain('href="/topic_prefixes.php?id=10"');
-		expect((await get(server, 5, '/viewtopic.php?id=10')).body).toContain('href="/topic_prefixes.php?id=10"');
+		expect((await get(server, 3, '/viewtopic.php?id=10')).body).toContain('href="/balises?id=10"');
+		expect((await get(server, 5, '/viewtopic.php?id=10')).body).toContain('href="/balises?id=10"');
 		expect((await get(server, 7, '/viewtopic.php?id=10')).body).not.toContain('topic_prefixes.php');
-		expect((await get(server, 7, '/topic_prefixes.php?id=10')).statusCode).toBe(403);
+		expect((await get(server, 7, '/balises?id=10')).statusCode).toBe(403);
 	});
 
 	it('l’auteur coche et décoche des préfixes, sans délai', async () => {
 		const { server, fake } = await start();
-		const form = await get(server, 3, '/topic_prefixes.php?id=10');
+		const form = await get(server, 3, '/balises?id=10');
 		expect(form.body).toContain('name="prefix[MSFS]" value="1" checked');
 		expect(form.body).toContain('name="prefix[Résolu]" value="1">');
 		const res = await send(server, 3, { 'prefix[MSFS]': '1', 'prefix[Résolu]': '1' });

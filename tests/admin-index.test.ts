@@ -28,27 +28,27 @@ const get = async (userId: number | null, url: string) => {
 
 describe('admin_index.php', () => {
 	it('réservé aux modérateurs et administrateurs', async () => {
-		expect((await get(null, '/admin_index.php')).statusCode).toBe(403);
-		expect((await get(3, '/admin_index.php')).statusCode).toBe(403);
-		const res = await get(5, '/admin_index.php');
+		expect((await get(null, '/admin')).statusCode).toBe(403);
+		expect((await get(3, '/admin')).statusCode).toBe(403);
+		const res = await get(5, '/admin');
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('Administration du forum');
 		expect(res.body).not.toContain('1.5.4');
-		expect(res.body).toContain('href="/admin_statistics.php"');
+		expect(res.body).toContain('href="/admin/statistiques"');
 	});
 });
 
 describe('admin_statistics.php', () => {
 	it('membres en ligne pour un modérateur, sans détails de la base', async () => {
-		const res = await get(5, '/admin_statistics.php');
+		const res = await get(5, '/admin/statistiques');
 		expect(res.body).toContain('4 utilisateur(s) en ligne');
 		expect(res.body).not.toContain('MariaDB');
 	});
 
 	it('base de données pour un administrateur', async () => {
-		const res = await get(2, '/admin_statistics.php');
+		const res = await get(2, '/admin/statistiques');
 		expect(res.body).toContain('11.4.2-MariaDB');
 		expect(res.body).toContain('12');
-		expect((await get(3, '/admin_statistics.php')).statusCode).toBe(403);
+		expect((await get(3, '/admin/statistiques')).statusCode).toBe(403);
 	});
 });

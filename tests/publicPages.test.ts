@@ -67,8 +67,8 @@ describe('noms des cookies', () => {
 describe('membre banni', () => {
 	it('peut se déconnecter, par l’ancienne adresse comme par la nouvelle', () => {
 		expect(canWriteWhileBanned('/connexion', {})).toBe(true);
-		expect(canWriteWhileBanned('/login.php', {})).toBe(true);
-		expect(canWriteWhileBanned('/post.php', {})).toBe(false);
+		expect(canWriteWhileBanned('/connexion', {})).toBe(true);
+		expect(canWriteWhileBanned('/ecrire', {})).toBe(false);
 	});
 });
 

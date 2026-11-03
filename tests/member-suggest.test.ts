@@ -27,16 +27,16 @@ async function start(): Promise<ForumApp> {
 describe('member_suggest.php', () => {
 	it('membres dont le nom commence par le texte saisi', async () => {
 		const server = await start();
-		const res = await inject(server, { url: '/member_suggest.php?q=ma', headers: { cookie: cookie(3) } });
+		const res = await inject(server, { url: '/membres/suggestions?q=ma', headers: { cookie: cookie(3) } });
 		expect(res.headers['content-type']).toContain('application/json');
 		expect(res.json()).toEqual({ members: [{ id: 5, username: 'MaxDUO' }] });
-		expect((await inject(server, { url: '/member_suggest.php?q=%20', headers: { cookie: cookie(3) } })).json()).toEqual({ members: [] });
+		expect((await inject(server, { url: '/membres/suggestions?q=%20', headers: { cookie: cookie(3) } })).json()).toEqual({ members: [] });
 	});
 
 	it('refusé aux invités et aux groupes sans accès à la liste des membres', async () => {
 		const server = await start();
-		expect((await inject(server, '/member_suggest.php?q=ma')).statusCode).toBe(403);
-		expect((await inject(server, { url: '/member_suggest.php?q=ma', headers: { cookie: cookie(6) } })).statusCode).toBe(403);
+		expect((await inject(server, '/membres/suggestions?q=ma')).statusCode).toBe(403);
+		expect((await inject(server, { url: '/membres/suggestions?q=ma', headers: { cookie: cookie(6) } })).statusCode).toBe(403);
 	});
 
 	it('script et adresse des profils chargés pour un membre seulement', async () => {

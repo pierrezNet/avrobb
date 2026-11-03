@@ -82,7 +82,7 @@ function data(overrides: Partial<FakeData> = {}): FakeData {
 }
 
 async function reply(server: ForumApp, message: string) {
-	const page = await inject(server, { url: '/post.php?tid=10', headers: { cookie } });
+	const page = await inject(server, { url: '/ecrire?tid=10', headers: { cookie } });
 	const csrf =
 		[page.headers['set-cookie']]
 			.flat()
@@ -91,7 +91,7 @@ async function reply(server: ForumApp, message: string) {
 	const token = /name="csrf_token" value="([0-9a-f]+)"/.exec(page.body)?.[1] ?? '';
 	return inject(server, {
 		method: 'POST',
-		url: '/post.php?action=post&tid=10',
+		url: '/ecrire?action=post&tid=10',
 		headers: { cookie: `${cookie}; ${csrf}`, 'content-type': 'application/x-www-form-urlencoded' },
 		payload: new URLSearchParams({ csrf_token: token, form_sent: '1', req_message: message }).toString(),
 	});
@@ -131,7 +131,7 @@ describe('message privé au membre mentionné', () => {
 		await settle();
 		expect(push.sent).toHaveLength(1);
 		expect(push.sent[0]?.message).toMatchObject({ title: 'Private message from Tessy', lang: 'en' });
-		expect(push.sent[0]?.message.url).toMatch(/^\/en\/pms_view\.php\?tid=\d+&mid=\d+&box=inbox$/);
+		expect(push.sent[0]?.message.url).toMatch(/^\/en\/messages\/conversation\?tid=\d+&mid=\d+&box=inbox$/);
 	});
 
 	it('rien si la messagerie est désactivée', async () => {

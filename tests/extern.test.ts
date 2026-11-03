@@ -77,7 +77,7 @@ function feeds(overrides: Partial<FeedReader> = {}): FeedReader {
 
 let app: ForumApp | undefined;
 
-describe('GET /extern.php', () => {
+describe('GET /flux', () => {
 	const deps = (users = [{ viewer: guest }]) => ({
 		...fakeDeps({ users, topics: [], posts: new Map() }),
 		feeds: feeds(),
@@ -85,7 +85,7 @@ describe('GET /extern.php', () => {
 
 	it('flux RSS des discussions actives, sans e-mail pour un invité', async () => {
 		app = await buildApp(deps());
-		const res = await inject(app, '/extern.php?action=feed&type=rss&fid=2');
+		const res = await inject(app, '/flux?action=feed&type=rss&fid=2');
 		expect(res.headers['content-type']).toBe('application/xml; charset=utf-8');
 		expect(res.body).toContain('<title><![CDATA[Forum de test / Captures]]></title>');
 		expect(res.body).toContain('<link>http://forum.test/sujet/10-sujet-10?action=new</link>');
@@ -96,25 +96,25 @@ describe('GET /extern.php', () => {
 	it('flux d’une discussion, liste HTML par défaut, sujet inconnu', async () => {
 		app = await buildApp(deps());
 		// Ancienne adresse Atom : le flux est servi en RSS.
-		const atom = await inject(app, '/extern.php?action=feed&type=atom&tid=10');
+		const atom = await inject(app, '/flux?action=feed&type=atom&tid=10');
 		expect(atom.headers['content-type']).toBe('application/xml; charset=utf-8');
 		expect(atom.body).toContain('<rss version="2.0"');
 		expect(atom.body).not.toContain('<feed xmlns');
 
-		const html = await inject(app, '/extern.php');
+		const html = await inject(app, '/flux');
 		expect(html.body).toBe(
 			'<li><a href="http://forum.test/sujet/10-sujet-10?action=new" title="Sujet &lt;10&gt;">Sujet &lt;10&gt;</a></li>\n',
 		);
-		expect((await inject(app, '/extern.php?action=feed&tid=99')).body).toBe('Erreur. Le lien que vous avez suivi est incorrect ou périmé.');
+		expect((await inject(app, '/flux?action=feed&tid=99')).body).toBe('Erreur. Le lien que vous avez suivi est incorrect ou périmé.');
 	});
 
 	it('statistiques et présents en HTML, 401 sans g_read_board', async () => {
 		app = await buildApp(deps());
-		expect((await inject(app, '/extern.php?action=stats')).body).toContain('Nombre total de messages : 56 789<br />');
-		expect((await inject(app, '/extern.php?action=online')).body).toContain('Membres en ligne : 0<br />');
+		expect((await inject(app, '/flux?action=stats')).body).toContain('Nombre total de messages : 56 789<br />');
+		expect((await inject(app, '/flux?action=online')).body).toContain('Membres en ligne : 0<br />');
 
 		app = await buildApp(deps([{ viewer: { ...guest, group: group({ id: GroupId.Guest, canReadBoard: false }) } }]));
-		const denied = await inject(app, '/extern.php');
+		const denied = await inject(app, '/flux');
 		expect(denied.statusCode).toBe(401);
 		expect(denied.headers['www-authenticate']).toContain('External Syndication');
 	});

@@ -39,37 +39,34 @@ export function firstImageUrl(messages: readonly string[]): string | null {
 	return null;
 }
 
-/** Pages sans intérêt pour un moteur de recherche (formulaires, comptes, administration). */
+/**
+ * Pages sans intérêt pour un moteur de recherche (formulaires, comptes, administration) ; « /*.php »
+ * couvre les anciennes adresses, redirigées. « /messages » (messagerie) n'exclut pas « /message/12 ».
+ */
 const DISALLOWED = [
-	'/admin_',
-	'/post.php',
-	'/push.php',
-	'/edit.php',
-	'/delete.php',
-	'/moderate.php',
-	'/misc.php',
+	'/*.php',
+	'/admin',
+	'/ecrire',
+	'/modifier',
+	'/supprimer',
+	'/moderation',
+	'/actions',
 	'/recherche',
 	'/connexion',
 	'/auth/',
-	'/profile.php',
-	'/pms_',
-	'/draft_',
-	'/member_suggest.php',
-	'/topic_prefixes.php',
-	'/reputation.php',
-	'/extern.php',
-	// Anciennes adresses des pages publiques, toujours servies : seules les adresses propres comptent.
-	'/index.php',
-	'/viewforum.php',
-	'/viewtopic.php',
-	'/userlist.php',
-	'/search.php',
-	'/gallery.php',
-	'/login.php',
+	'/profil',
+	'/messages',
+	'/brouillons',
+	'/renommee',
+	'/balises',
+	'/notifications',
+	'/membres/suggestions',
+	'/flux',
+	'/retours',
 ];
 
 export function robotsTxt(baseUrl: string): string {
-	// Mêmes pages exclues sous /en/ (« /en/post.php »).
-	const paths = [...DISALLOWED, ...DISALLOWED.map((path) => localizePath(path, 'en'))];
+	// Mêmes pages exclues sous /en/ (« /en/write »).
+	const paths = [...new Set([...DISALLOWED, ...DISALLOWED.map((path) => localizePath(path, 'en'))])];
 	return ['User-agent: *', ...paths.map((path) => `Disallow: ${path}`), '', `Sitemap: ${baseUrl}/sitemap.xml`, ''].join('\n');
 }

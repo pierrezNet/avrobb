@@ -174,14 +174,14 @@ describe('feedback_accept.php', () => {
 	it('bouton affiché à l’administrateur dans le forum privé seulement', async () => {
 		const { server } = await start();
 		const page = await get(server, 2, '/viewtopic.php?id=20');
-		expect(page.body).toContain('action="/feedback_accept.php?app=phraseo&amp;id=20"');
+		expect(page.body).toContain('action="/retours/accepter?app=phraseo&amp;id=20"');
 		expect(page.body).toContain('Accepter : publier dans le forum de la phraséologie');
 		expect((await get(server, 2, '/viewtopic.php?id=10')).body).not.toContain('feedback_accept.php');
 	});
 
 	it('publie : en-tête remplacé (modification silencieuse, réindexée), sujet déplacé vers le forum public', async () => {
 		const { server, fake } = await start();
-		const res = await postForm(server, 2, '/feedback_accept.php?app=phraseo&id=20');
+		const res = await postForm(server, 2, '/retours/accepter?app=phraseo&id=20');
 		expect(res.statusCode).toBe(303);
 		expect(res.headers.location).toBe('/sujet/20');
 		const update = fake.postUpdates?.[0];
@@ -194,12 +194,12 @@ describe('feedback_accept.php', () => {
 
 	it('refuse un membre, un sujet hors du forum privé et l’absence de jeton CSRF', async () => {
 		const { server, fake } = await start();
-		expect((await postForm(server, member.id, '/feedback_accept.php?app=phraseo&id=20')).statusCode).toBe(403);
-		expect((await postForm(server, 2, '/feedback_accept.php?app=phraseo&id=10')).statusCode).toBe(404);
-		expect((await postForm(server, 2, '/feedback_accept.php?app=phraseo&id=20', false)).statusCode).toBeGreaterThanOrEqual(400);
-		expect((await postForm(server, 2, '/feedback_accept.php?id=20')).statusCode).toBe(400);
-		expect((await postForm(server, 2, '/feedback_accept.php?app=inconnue&id=20')).statusCode).toBe(400);
-		expect((await postForm(server, 2, '/feedback_accept.php?app=__proto__&id=20')).statusCode).toBe(400);
+		expect((await postForm(server, member.id, '/retours/accepter?app=phraseo&id=20')).statusCode).toBe(403);
+		expect((await postForm(server, 2, '/retours/accepter?app=phraseo&id=10')).statusCode).toBe(404);
+		expect((await postForm(server, 2, '/retours/accepter?app=phraseo&id=20', false)).statusCode).toBeGreaterThanOrEqual(400);
+		expect((await postForm(server, 2, '/retours/accepter?id=20')).statusCode).toBe(400);
+		expect((await postForm(server, 2, '/retours/accepter?app=inconnue&id=20')).statusCode).toBe(400);
+		expect((await postForm(server, 2, '/retours/accepter?app=__proto__&id=20')).statusCode).toBe(400);
 		expect(fake.postUpdates ?? []).toEqual([]);
 		expect(fake.moderationLog ?? []).toEqual([]);
 	});
@@ -209,14 +209,14 @@ describe('feedback_accept.php : Donne Ton Point', () => {
 	it('bouton propre à l’application, affiché à l’administrateur dans son forum privé seulement', async () => {
 		const { server } = await start();
 		const page = await get(server, 2, '/viewtopic.php?id=30');
-		expect(page.body).toContain('action="/feedback_accept.php?app=donneTonPoint&amp;id=30"');
+		expect(page.body).toContain('action="/retours/accepter?app=donneTonPoint&amp;id=30"');
 		expect(page.body).toContain('Accepter : publier dans le forum Donne ton point');
 		expect((await get(server, member.id, '/viewtopic.php?id=30')).body).not.toContain('feedback_accept.php');
 	});
 
 	it('publie : en-tête remplacé, sujet déplacé vers o_dtp_feedback_target', async () => {
 		const { server, fake } = await start();
-		const res = await postForm(server, 2, '/feedback_accept.php?app=donneTonPoint&id=30');
+		const res = await postForm(server, 2, '/retours/accepter?app=donneTonPoint&id=30');
 		expect(res.statusCode).toBe(303);
 		expect(res.headers.location).toBe('/sujet/30');
 		const update = fake.postUpdates?.[0];
@@ -230,14 +230,14 @@ describe('feedback_accept.php : Donne Ton Point', () => {
 	it('refuse un sujet de l’autre application, un membre, une cible non configurée', async () => {
 		const { server, fake } = await start();
 		// Sujet Phraséo annoncé comme Donne Ton Point (et inversement) : pas dans le forum privé attendu
-		expect((await postForm(server, 2, '/feedback_accept.php?app=donneTonPoint&id=20')).statusCode).toBe(404);
-		expect((await postForm(server, 2, '/feedback_accept.php?app=phraseo&id=30')).statusCode).toBe(404);
-		expect((await postForm(server, member.id, '/feedback_accept.php?app=donneTonPoint&id=30')).statusCode).toBe(403);
+		expect((await postForm(server, 2, '/retours/accepter?app=donneTonPoint&id=20')).statusCode).toBe(404);
+		expect((await postForm(server, 2, '/retours/accepter?app=phraseo&id=30')).statusCode).toBe(404);
+		expect((await postForm(server, member.id, '/retours/accepter?app=donneTonPoint&id=30')).statusCode).toBe(403);
 		expect(fake.postUpdates ?? []).toEqual([]);
 		expect(fake.moderationLog ?? []).toEqual([]);
 
 		const noTarget = await start(data({ config: { appFeedback: { ...APP_FEEDBACK, donneTonPoint: { ...DTP, targetForumId: null } } } }));
 		expect((await get(noTarget.server, 2, '/viewtopic.php?id=30')).body).not.toContain('feedback_accept.php');
-		expect((await postForm(noTarget.server, 2, '/feedback_accept.php?app=donneTonPoint&id=30')).statusCode).toBe(400);
+		expect((await postForm(noTarget.server, 2, '/retours/accepter?app=donneTonPoint&id=30')).statusCode).toBe(400);
 	});
 });

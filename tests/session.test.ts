@@ -129,7 +129,7 @@ describe('session à chaque requête', () => {
 	it('extern.php ne touche pas à la présence d’un membre (PUN_QUIET_VISIT)', async () => {
 		const online = fakeOnline();
 		app = await buildApp({ ...base(), online });
-		await inject(app, { url: '/extern.php?action=stats', headers: { cookie: sessionCookie(3) } });
+		await inject(app, { url: '/flux?action=stats', headers: { cookie: sessionCookie(3) } });
 		expect(online.log).toEqual([]);
 	});
 
@@ -163,11 +163,11 @@ describe('session à chaque requête', () => {
 		expect(online.log).toContain('remove ident Tessy');
 
 		// Écrire : formulaire refusé (droits du groupe retirés) et POST refusé avant tout traitement.
-		expect((await inject(app, { url: '/post.php?fid=1', headers: { cookie } })).statusCode).not.toBe(200);
+		expect((await inject(app, { url: '/ecrire?fid=1', headers: { cookie } })).statusCode).not.toBe(200);
 		const secret = 'a'.repeat(64);
 		const posted = await inject(app, {
 			method: 'POST',
-			url: '/post.php?tid=1',
+			url: '/ecrire?tid=1',
 			headers: { cookie: `${cookie}; avrobb_csrf=${secret}`, 'content-type': 'application/x-www-form-urlencoded' },
 			payload: new URLSearchParams({ csrf_token: csrfToken(secret, SEED, 3), req_message: 'Coucou' }).toString(),
 		});

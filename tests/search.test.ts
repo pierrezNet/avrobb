@@ -174,7 +174,7 @@ const users = [{ viewer: guest }, { viewer: viewer({ lastVisit: NOW - 3600 }) }]
 
 let app: ForumApp | undefined;
 
-describe('GET /search.php', () => {
+describe('GET /recherche', () => {
 	/** Doublures avec un search_cache en mémoire partagé entre lecture et écriture. */
 	const deps = (search: Partial<SearchReader> = {}) => {
 		const data: FakeData = { users, topics: [], posts: new Map() };
@@ -196,7 +196,7 @@ describe('GET /search.php', () => {
 
 	it('affiche le formulaire avec les forums à cocher', async () => {
 		app = await buildApp(deps());
-		const res = await inject(app, '/search.php');
+		const res = await inject(app, '/recherche');
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('<input type="hidden" name="action" value="search">');
 		expect(res.body).toContain('<input type="checkbox" name="forums" value="2"> Captures &amp; Vidéos');
@@ -204,7 +204,7 @@ describe('GET /search.php', () => {
 
 	it('mots-clés affichés en messages : message rendu, fil d’Ariane qui relance la recherche', async () => {
 		app = await buildApp(deps());
-		const res = await searchFor('/search.php?action=search&keywords=vintage&show_as=posts');
+		const res = await searchFor('/recherche?action=search&keywords=vintage&show_as=posts');
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('Message <strong>1</strong> <span class="smiley"');
 		expect(res.body).toContain('Messages contenant « vintage »');
@@ -216,37 +216,37 @@ describe('GET /search.php', () => {
 
 	it('mots-clés et auteur : intersection', async () => {
 		app = await buildApp(deps());
-		const res = await searchFor('/search.php?action=search&keywords=vintage&author=tessy&show_as=posts');
+		const res = await searchFor('/recherche?action=search&keywords=vintage&author=tessy&show_as=posts');
 		expect(res.body.match(/class="post__number"/g)).toHaveLength(1);
 		expect(res.body).toContain('Messages de tessy contenant « vintage »');
 	});
 
 	it('recherche rapide paginée avec ses paramètres, nom du membre dans le fil d’Ariane', async () => {
 		app = await buildApp(deps());
-		const res = await inject(app, '/search.php?action=show_user_topics&user_id=6');
+		const res = await inject(app, '/recherche?action=show_user_topics&user_id=6');
 		expect(res.body).toContain('Discussions de valdefsx');
 		expect(res.body.match(/<h3 class="forum-row__name/g)).toHaveLength(30);
 		const searchId = /href="\/recherche\?search_id=(\d+)&amp;p=2"/.exec(res.body)?.[1];
 		expect(searchId).toBeDefined();
 		// La page 2 relit les résultats mémorisés (même propriétaire : l'invité, par son IP).
-		const page2 = await inject(app, `/search.php?search_id=${searchId}&p=2`);
+		const page2 = await inject(app, `/recherche?search_id=${searchId}&p=2`);
 		expect(page2.body.match(/<h3 class="forum-row__name/g)).toHaveLength(5);
 		expect(res.body).toContain('<span class="badge">Épinglée :</span>');
 	});
 
 	it('messages d’absence de résultat et refus', async () => {
 		app = await buildApp(deps({ quickSearch: async () => [] }));
-		expect((await inject(app, '/search.php?action=show_unanswered')).body).toContain('Il n&#39;y a pas de message sans réponse');
-		expect((await inject(app, '/search.php?action=search&keywords=xyzzy')).body).toContain('aucun résultat');
-		expect((await inject(app, '/search.php?action=search&keywords=ab')).body).toContain('Vous devez saisir au moins un mot-clé');
-		expect((await inject(app, '/search.php?action=show_new')).statusCode).toBe(403);
-		expect((await inject(app, '/search.php?search_id=0')).statusCode).toBe(404);
+		expect((await inject(app, '/recherche?action=show_unanswered')).body).toContain('Il n&#39;y a pas de message sans réponse');
+		expect((await inject(app, '/recherche?action=search&keywords=xyzzy')).body).toContain('aucun résultat');
+		expect((await inject(app, '/recherche?action=search&keywords=ab')).body).toContain('Vous devez saisir au moins un mot-clé');
+		expect((await inject(app, '/recherche?action=show_new')).statusCode).toBe(403);
+		expect((await inject(app, '/recherche?search_id=0')).statusCode).toBe(404);
 	});
 
 	it('mémorise la recherche au format du PHP et applique l’anti-flood (last_search)', async () => {
 		const setup = deps();
 		app = await buildApp(setup);
-		const res = await inject(app, '/search.php?action=search&keywords=vintage');
+		const res = await inject(app, '/recherche?action=search&keywords=vintage');
 		expect(res.statusCode).toBe(302);
 		const id = Number(/search_id=(\d+)/.exec(String(res.headers.location))?.[1]);
 		const cached = setup.data.searchCache?.get(id);
@@ -263,7 +263,7 @@ describe('GET /search.php', () => {
 					uid === 3 ? { presence: null, sessionVersion: 0, viewer: viewer({ lastSearch: NOW - 5 }) } : member.users.findViewer(uid),
 			},
 		});
-		const flood = await inject(app, { url: '/search.php?action=search&keywords=vintage', headers: { cookie: sessionCookie(3) } });
+		const flood = await inject(app, { url: '/recherche?action=search&keywords=vintage', headers: { cookie: sessionCookie(3) } });
 		expect(flood.statusCode).toBe(429);
 		expect(flood.body).toContain('Vous devez patienter au minimum 30 secondes');
 	});
@@ -273,9 +273,9 @@ describe('GET /search.php', () => {
 		const data = `a:6:{s:10:"search_ids";s:${inner.length}:"${inner}";s:8:"num_hits";i:2;s:7:"sort_by";i:0;s:8:"sort_dir";s:4:"DESC";s:7:"show_as";s:6:"topics";s:11:"search_type";a:2:{i:0;s:6:"action";i:1;s:15:"show_unanswered";}}`;
 		app = await buildApp(deps({ findCachedSearch: async (id, ident) => (id === 77 && ident === 'Tessy' ? data : null) }));
 
-		const own = await inject(app, { url: '/search.php?search_id=77', headers: { cookie: sessionCookie(3) } });
+		const own = await inject(app, { url: '/recherche?search_id=77', headers: { cookie: sessionCookie(3) } });
 		expect(own.body.match(/<h3 class="forum-row__name/g)).toHaveLength(2);
 		expect(own.body).toContain('>Sans réponse</a>');
-		expect((await inject(app, '/search.php?search_id=77')).body).toContain('aucun résultat');
+		expect((await inject(app, '/recherche?search_id=77')).body).toContain('aucun résultat');
 	});
 });

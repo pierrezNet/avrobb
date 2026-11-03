@@ -60,18 +60,18 @@ describe('abonnements', () => {
 	it('viewtopic propose un bouton POST selon l’abonnement', async () => {
 		app = await buildApp(fakeDeps(data()));
 		const res = await inject(app, { url: '/viewtopic.php?id=10', headers: { cookie: tessy } });
-		expect(res.body).toContain('action="/misc.php?action=subscribe&amp;tid=10"');
+		expect(res.body).toContain('action="/actions?action=subscribe&amp;tid=10"');
 		app = await buildApp(fakeDeps(data({ subscribedTopics: [10] })));
 		const subscribed = await inject(app, { url: '/viewtopic.php?id=10', headers: { cookie: tessy } });
 		expect(subscribed.body).toContain('Vous suivez cette discussion');
-		expect(subscribed.body).toContain('action="/misc.php?action=unsubscribe&amp;tid=10"');
+		expect(subscribed.body).toContain('action="/actions?action=unsubscribe&amp;tid=10"');
 		expect((await inject(app, '/viewtopic.php?id=10')).body).not.toContain('action=subscribe');
 	});
 
 	it('un lien GET demande confirmation, puis le POST abonne et revient au sujet', async () => {
 		const fake = data();
 		app = await buildApp(fakeDeps(fake));
-		const { page, res } = await confirm(app, '/misc.php?action=subscribe&tid=10');
+		const { page, res } = await confirm(app, '/actions?action=subscribe&tid=10');
 		expect(page.body).toContain('Vous serez prévenu·e par e-mail des nouvelles réponses');
 		expect(fake.subscribedTopics).toEqual([10]);
 		expect(res.statusCode).toBe(303);
@@ -81,7 +81,7 @@ describe('abonnements', () => {
 	it('désabonnement d’un forum (lien des e-mails)', async () => {
 		const fake = data({ subscribedForums: [2] });
 		app = await buildApp(fakeDeps(fake));
-		const { res } = await confirm(app, '/misc.php?action=unsubscribe&fid=2');
+		const { res } = await confirm(app, '/actions?action=unsubscribe&fid=2');
 		expect(res.headers.location).toBe('/forum/2');
 		expect(fake.subscribedForums).toEqual([]);
 	});
@@ -89,19 +89,19 @@ describe('abonnements', () => {
 	it('contrôles de misc.php : invité, déjà abonné, pas abonné, cible inconnue, option désactivée', async () => {
 		app = await buildApp(fakeDeps(data({ subscribedTopics: [10] })));
 		const get = async (url: string, cookie = tessy) => inject(app!, { url, headers: { cookie } });
-		expect((await get('/misc.php?action=subscribe&tid=10', ''))?.statusCode).toBe(403);
-		expect((await get('/misc.php?action=subscribe&tid=10'))?.body).toContain('Vous suivez déjà cette discussion.');
-		expect((await get('/misc.php?action=unsubscribe&fid=2'))?.body).toContain('Vous ne suivez pas ce forum.');
-		expect((await get('/misc.php?action=subscribe&tid=99'))?.statusCode).toBe(404);
-		expect((await get('/misc.php?action=subscribe'))?.statusCode).toBe(400);
+		expect((await get('/actions?action=subscribe&tid=10', ''))?.statusCode).toBe(403);
+		expect((await get('/actions?action=subscribe&tid=10'))?.body).toContain('Vous suivez déjà cette discussion.');
+		expect((await get('/actions?action=unsubscribe&fid=2'))?.body).toContain('Vous ne suivez pas ce forum.');
+		expect((await get('/actions?action=subscribe&tid=99'))?.statusCode).toBe(404);
+		expect((await get('/actions?action=subscribe'))?.statusCode).toBe(400);
 		app = await buildApp(fakeDeps(data({ config: { ...boardConfig, forumSubscriptions: false } })));
-		expect((await inject(app, { url: '/misc.php?action=subscribe&fid=2', headers: { cookie: tessy } })).statusCode).toBe(403);
+		expect((await inject(app, { url: '/actions?action=subscribe&fid=2', headers: { cookie: tessy } })).statusCode).toBe(403);
 	});
 
 	it('refuse un POST sans jeton CSRF', async () => {
 		const fake = data();
 		app = await buildApp(fakeDeps(fake));
-		const res = await inject(app, { method: 'POST', url: '/misc.php?action=subscribe&tid=10', headers: { cookie: tessy } });
+		const res = await inject(app, { method: 'POST', url: '/actions?action=subscribe&tid=10', headers: { cookie: tessy } });
 		expect(res.statusCode).toBe(403);
 		expect(fake.subscribedTopics).toBeUndefined();
 	});

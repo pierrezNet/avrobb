@@ -133,8 +133,9 @@ modération, messagerie privée, renommée, recherche, flux RSS) et y ajoute ou 
 **Lecture**
 - Mobile d'abord : cartes empilées, menu repliable sans JavaScript, cibles tactiles de 44 px ;
   thèmes réduits à des variables CSS (contraste AA vérifié par `tests/themes.test.ts`).
-- Adresses propres (`/sujet/4-premier-sujet`, `/forum/2-avrobb`, `/membre/3`, `/aide`…) définies dans
-  `src/services/routes.ts` ; les pages d'action gardent leur `.php`.
+- Adresses propres partout (`/sujet/4-premier-sujet`, `/forum/2-avrobb`, `/membre/3`, `/ecrire`,
+  `/profil`, `/messages`, `/admin/membres`…), définies dans la table `PAGES` de
+  `src/services/routes.ts` ; une ancienne adresse `.php` est redirigée (301) vers la nouvelle.
 - Accueil vivant : membres en ligne, nouveaux inscrits, discussions les plus commentées de la
   semaine en cartes, projets de la semaine ; totaux sur la page Statistiques.
 - Balises de sujet (projets, état) en pastilles colorées, choisies dans une liste réglée par

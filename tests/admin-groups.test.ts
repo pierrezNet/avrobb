@@ -92,8 +92,8 @@ function post(server: ForumApp, url: string, fields: Record<string, string>) {
 describe('admin_groups.php', () => {
 	it('liste : groupes prédéfinis non supprimables, groupe par défaut sans modérateurs', async () => {
 		const { server } = await start();
-		const page = await get(server, '/admin_groups.php');
-		expect(page.body).toContain('href="/admin_groups.php?del_group=5"');
+		const page = await get(server, '/admin/groupes');
+		expect(page.body).toContain('href="/admin/groupes?del_group=5"');
 		expect(page.body).not.toContain('del_group=4');
 		const defaults = /name="default_group"[\s\S]*?<\/select>/.exec(page.body)?.[0] ?? '';
 		expect(defaults).toContain('<option value="5">Pilotes</option>');
@@ -102,37 +102,37 @@ describe('admin_groups.php', () => {
 
 	it('ajout en deux étapes, titre unique', async () => {
 		const { server, fake } = await start();
-		const form = await post(server, '/admin_groups.php', { add_group: '1', base_group: '4' });
+		const form = await post(server, '/admin/groupes', { add_group: '1', base_group: '4' });
 		expect(form.body).toContain('name="base_group" value="4"');
 		expect(form.body).toContain('name="mod_ban_users"');
-		const taken = await post(server, '/admin_groups.php', { add_edit_group: '1', mode: 'add', base_group: '4', req_title: 'Pilotes' });
+		const taken = await post(server, '/admin/groupes', { add_edit_group: '1', mode: 'add', base_group: '4', req_title: 'Pilotes' });
 		expect(taken.statusCode).toBe(400);
-		const done = await post(server, '/admin_groups.php', { add_edit_group: '1', mode: 'add', base_group: '4', req_title: 'Instructeurs' });
-		expect(done.headers.location).toBe('/admin_groups.php?done=added');
+		const done = await post(server, '/admin/groupes', { add_edit_group: '1', mode: 'add', base_group: '4', req_title: 'Instructeurs' });
+		expect(done.headers.location).toBe('/admin/groupes?done=added');
 		expect(fake.groupAdminLog).toEqual(['add Instructeurs from 4']);
 	});
 
 	it('modification du groupe des administrateurs : titres seulement', async () => {
 		const { server } = await start();
-		const page = await get(server, '/admin_groups.php?edit_group=1');
+		const page = await get(server, '/admin/groupes?edit_group=1');
 		expect(page.body).toContain('name="req_title" value="Administrateurs"');
 		expect(page.body).not.toContain('name="read_board"');
 	});
 
 	it('suppression : déplacement des membres, groupe par défaut protégé', async () => {
 		const { server, fake } = await start();
-		const step = await get(server, '/admin_groups.php?del_group=5');
+		const step = await get(server, '/admin/groupes?del_group=5');
 		expect(step.body).toContain('name="move_to_group"');
 		expect(fake.groupAdminLog).toBeUndefined();
-		await post(server, '/admin_groups.php?del_group=5', { del_group: '1', move_to_group: '4', group_to_delete: '5' });
+		await post(server, '/admin/groupes?del_group=5', { del_group: '1', move_to_group: '4', group_to_delete: '5' });
 		expect(fake.groupAdminLog).toEqual(['delete 5 -> 4']);
-		expect((await get(server, '/admin_groups.php?del_group=4')).statusCode).toBe(400);
+		expect((await get(server, '/admin/groupes?del_group=4')).statusCode).toBe(400);
 	});
 
 	it('groupe par défaut', async () => {
 		const { server, fake } = await start();
-		expect((await post(server, '/admin_groups.php', { set_default_group: '1', default_group: '2' })).statusCode).toBe(400);
-		await post(server, '/admin_groups.php', { set_default_group: '1', default_group: '5' });
+		expect((await post(server, '/admin/groupes', { set_default_group: '1', default_group: '2' })).statusCode).toBe(400);
+		await post(server, '/admin/groupes', { set_default_group: '1', default_group: '5' });
 		expect(fake.configUpdates).toEqual([new Map([['o_default_user_group', '5']])]);
 	});
 });

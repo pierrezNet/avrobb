@@ -59,9 +59,9 @@ describe('pages d’information', () => {
 	it('lisibles en mode maintenance et sans droit de lecture du forum', async () => {
 		app = await buildApp(deps({ maintenance: true }));
 		expect((await inject(app, '/index.php')).statusCode).toBe(503);
-		expect((await inject(app, '/privacy.php')).statusCode).toBe(200);
+		expect((await inject(app, '/confidentialite')).statusCode).toBe(200);
 		app = await buildApp(deps({}, false));
-		expect((await inject(app, '/terms.php')).statusCode).toBe(200);
+		expect((await inject(app, '/conditions')).statusCode).toBe(200);
 	});
 });
 
@@ -78,7 +78,7 @@ describe('stats.php', () => {
 				],
 			}),
 		);
-		const res = await inject(app, '/stats.php');
+		const res = await inject(app, '/statistiques');
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('<h1 class="page-title">Statistiques</h1>');
 		expect(res.body).toContain('Nombre total de messages');

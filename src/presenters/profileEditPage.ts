@@ -15,6 +15,7 @@ import type { Censor } from '../services/censor.ts';
 import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
 import { forumNumberFormat } from '../services/numberFormat.ts';
 import { canDeleteOwnAccount, canRenameProfile, isAdmin, isAnyModerator, isSelfRename } from '../services/permissions.ts';
+import { ACCOUNT_FIELDS, ACCOUNT_MAX_LENGTHS, type AccountField } from '../services/profileAccounts.ts';
 import { displayOptions, type ProfileSection } from '../services/profileForms.ts';
 import { THEMES } from '../services/themes.ts';
 import { signatureParserOptions } from './parserOptions.ts';
@@ -103,11 +104,7 @@ export interface PersonalView {
 }
 
 export interface MessagingView {
-	jabber: string;
-	icq: string;
-	msn: string;
-	aim: string;
-	yahoo: string;
+	accounts: { name: AccountField; label: string; value: string; hint: string; maxLength: number }[];
 }
 
 export interface PersonalityView {
@@ -322,8 +319,15 @@ function sectionView(input: ProfileEditInput): SectionView {
 		case 'personal':
 			return { section: 'personal', fields: personal(input) };
 		case 'messaging': {
-			const { jabber, icq, msn, aim, yahoo } = input.form;
-			return { section: 'messaging', fields: { jabber, icq, msn, aim, yahoo } };
+			const t = input.lang.profile;
+			const accounts = ACCOUNT_FIELDS.map((name) => ({
+				name,
+				label: t[name],
+				value: input.form[name],
+				hint: t.accountHints[name],
+				maxLength: ACCOUNT_MAX_LENGTHS[name],
+			}));
+			return { section: 'messaging', fields: { accounts } };
 		}
 		case 'personality':
 			return { section: 'personality', fields: personality(input) };

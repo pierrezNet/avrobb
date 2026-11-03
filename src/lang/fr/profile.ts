@@ -4,20 +4,26 @@
  */
 
 import type { AvatarError } from '../../services/images.ts';
+import type { AccountField } from '../../services/profileAccounts.ts';
 import type { LimitedField, ProfileError } from '../../services/profileForms.ts';
 import { account } from './account.ts';
 import { preparseErrorText } from './post.ts';
+
+const PROFILE_ACCOUNT_LABELS: Record<AccountField, string> = {
+	discord: 'Discord',
+	mastodon: 'Mastodon',
+	bluesky: 'Bluesky',
+	reddit: 'Reddit',
+	discourse: 'Discourse',
+	github: 'GitHub',
+	linkedin: 'LinkedIn',
+};
 
 const FIELD_LABELS: Record<LimitedField, string> = {
 	realname: 'Nom',
 	title: 'Titre',
 	location: 'Lieu',
 	url: 'Site Web',
-	jabber: 'Jabber',
-	icq: 'ICQ',
-	msn: 'Compte Microsoft',
-	aim: 'AOL IM',
-	yahoo: 'Yahoo! Messenger',
 	adminNote: "Note de l'administrateur",
 	email: 'E-mail',
 };
@@ -44,8 +50,8 @@ function profileErrorText(error: ProfileError): string {
 			return "Vous n'êtes pas autorisé à ajouter un site à votre profil pour le moment";
 		case 'forbiddenTitle':
 			return 'Votre titre contient un mot interdit. Choisissez un autre titre.';
-		case 'badIcq':
-			return 'Vous avez saisi un UIN ICQ invalide. Merci de corriger.';
+		case 'badAccount':
+			return `Le compte ${PROFILE_ACCOUNT_LABELS[error.field]} n’a pas un format reconnu (exemple : ${profile.accountHints[error.field]}).`;
 		case 'signatureTooLong':
 			return `Les signatures ne peuvent pas contenir plus de ${error.max} caractères. Veuillez raccourcir votre signature de ${error.excess} caractères.`;
 		case 'signatureTooManyLines':
@@ -72,7 +78,7 @@ export const profile = {
 	usersProfile: (username: string) => `Profil de ${username}`,
 	profile: 'Profil',
 	sectionPersonal: 'Personnel',
-	sectionMessaging: 'Messagerie',
+	sectionMessaging: 'Comptes',
 	sectionPersonality: 'Personnalité',
 	userActivity: "Activité de l'utilisateur",
 	username: "Nom d'utilisateur",
@@ -85,11 +91,23 @@ export const profile = {
 	pm: 'MP',
 	pmTitle: 'Messages privés',
 	quickMessage: 'Envoyer un message privé',
-	jabber: 'Jabber',
-	icq: 'ICQ',
-	msn: 'Compte Microsoft',
-	aim: 'AOL IM',
-	yahoo: 'Yahoo! Messenger',
+	discord: 'Discord',
+	mastodon: 'Mastodon',
+	bluesky: 'Bluesky',
+	reddit: 'Reddit',
+	discourse: 'Discourse',
+	github: 'GitHub',
+	linkedin: 'LinkedIn',
+	/** Exemples de saisie des comptes (formulaire). */
+	accountHints: {
+		discord: 'pseudo',
+		mastodon: '@pseudo@instance.social',
+		bluesky: 'pseudo.bsky.social',
+		reddit: 'u/pseudo',
+		discourse: 'https://forum.exemple.org/u/pseudo',
+		github: 'pseudo',
+		linkedin: 'https://www.linkedin.com/in/pseudo',
+	},
 	avatar: 'Avatar',
 	signature: 'Signature',
 	posts: 'Messages',
@@ -143,7 +161,8 @@ export const profile = {
 	leaveBlank: 'Laisser vide pour utiliser la valeur par défaut du forum.',
 	titleLeaveBlank: '(laisser vide pour le titre par défaut)',
 
-	contactDetailsLegend: 'Informations sur les messageries instantanées',
+	contactDetailsLegend: 'Vos comptes ailleurs',
+	contactDetailsInfo: 'Facultatif : affichés sur votre profil, avec un lien quand le service en a un.',
 
 	avatarLegend: "Définissez vos options d'affichage d'avatar",
 	avatarInfo:

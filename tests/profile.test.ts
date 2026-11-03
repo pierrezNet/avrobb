@@ -20,11 +20,13 @@ function profile(overrides: Partial<UserProfile> = {}): UserProfile {
 		realname: 'Valentin <V>',
 		url: 'www.valdefsx.test',
 		location: 'Lyon',
-		jabber: '',
-		icq: '12345',
-		msn: '',
-		aim: '',
-		yahoo: '',
+		discord: 'tessy',
+		mastodon: '@tessy@mastodon.social',
+		bluesky: '',
+		reddit: '',
+		discourse: '',
+		github: '',
+		linkedin: '',
 		signature: '[b]Bons vols[/b]',
 		numPosts: 12,
 		lastPost: NOW - 600,
@@ -73,7 +75,9 @@ describe('GET /profile.php', () => {
 		expect(res.body).toContain('<a href="http://www.valdefsx.test" rel="nofollow ugc">www.valdefsx.test</a>');
 		expect(res.body).toContain('href="/misc.php?email=6"');
 		expect(res.body).not.toContain('val@example.test');
-		expect(res.body).toContain('<dd>12345</dd>');
+		expect(res.body).toContain('<dd>tessy</dd>');
+		// Lien construit par le forum vers le profil Mastodon.
+		expect(res.body).toContain('href="https://mastodon.social/@tessy"');
 		expect(res.body).toContain('<strong>Bons vols</strong>');
 		expect(res.body).toContain('/recherche?action=show_user_posts&amp;user_id=6');
 		expect(res.body).not.toContain('show_subscriptions');

@@ -484,11 +484,14 @@ export interface UserProfile {
 	url: string;
 	location: string;
 	/** Messageries instantanées : Jabber, ICQ, MSN, AOL IM, Yahoo. */
-	jabber: string;
-	icq: string;
-	msn: string;
-	aim: string;
-	yahoo: string;
+	/** Comptes affichés dans le profil (services/profileAccounts.ts), forme enregistrée. */
+	discord: string;
+	mastodon: string;
+	bluesky: string;
+	reddit: string;
+	discourse: string;
+	github: string;
+	linkedin: string;
 	signature: string;
 	numPosts: number;
 	lastPost: number | null;
@@ -539,11 +542,13 @@ export interface ProfileChanges {
 	realname?: string;
 	url?: string;
 	location?: string;
-	jabber?: string;
-	icq?: string;
-	msn?: string;
-	aim?: string;
-	yahoo?: string;
+	discord?: string;
+	mastodon?: string;
+	bluesky?: string;
+	reddit?: string;
+	discourse?: string;
+	github?: string;
+	linkedin?: string;
 	signature?: string;
 	adminNote?: string;
 	numPosts?: number;

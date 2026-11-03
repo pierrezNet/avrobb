@@ -14,9 +14,9 @@ import { validWebsiteUrl } from '../src/services/links.ts';
 import { fileSize } from '../src/services/numberFormat.ts';
 import {
 	forbiddenTitles,
+	readAccounts,
 	readDisplay,
 	readEssentials,
-	readMessaging,
 	readPersonal,
 	readPrivacy,
 	readSignature,
@@ -108,7 +108,7 @@ describe('readEssentials', () => {
 	});
 });
 
-describe('readPersonal, readMessaging', () => {
+describe('readPersonal, readAccounts', () => {
 	const personal = { isAdmin: false, canSetTitle: true, canPostLinks: true, forbiddenTitles: forbiddenTitles(['Membre', 'Modérateur']) };
 
 	it('valide le site web et refuse les titres réservés', () => {
@@ -134,9 +134,32 @@ describe('readPersonal, readMessaging', () => {
 		]);
 	});
 
-	it("un UIN ICQ n'a que des chiffres", () => {
-		expect(readMessaging({ jabber: '', icq: '12a', msn: '', aim: '', yahoo: '' }).errors).toEqual([{ kind: 'badIcq' }]);
-		expect(readMessaging({ jabber: 'j@x', icq: '123', msn: '', aim: '', yahoo: '' }).changes).toMatchObject({ jabber: 'j@x', icq: '123' });
+	it('comptes : saisie ramenée à une forme reconnue, format inconnu refusé', () => {
+		const empty = { discord: '', mastodon: '', bluesky: '', reddit: '', discourse: '', github: '', linkedin: '' };
+		const result = readAccounts({
+			...empty,
+			discord: 'Tessy.42',
+			mastodon: 'tessy@Mastodon.Social',
+			bluesky: '@tessy.bsky.social',
+			reddit: 'u/Tessy_Pilote',
+			discourse: 'https://meta.discourse.org/u/tessy',
+			github: '@pierrezNet',
+			linkedin: 'https://www.linkedin.com/in/tessy-pilote/',
+		});
+		expect(result.errors).toEqual([]);
+		expect(result.changes).toEqual({
+			discord: 'tessy.42',
+			mastodon: '@tessy@mastodon.social',
+			bluesky: 'tessy.bsky.social',
+			reddit: 'Tessy_Pilote',
+			discourse: 'https://meta.discourse.org/u/tessy',
+			github: 'pierrezNet',
+			linkedin: 'tessy-pilote',
+		});
+		expect(readAccounts({ ...empty, mastodon: 'tessy', discourse: 'javascript:alert(1)//u/x' }).errors).toEqual([
+			{ kind: 'badAccount', field: 'mastodon' },
+			{ kind: 'badAccount', field: 'discourse' },
+		]);
 	});
 });
 
@@ -284,11 +307,13 @@ function member(overrides: Partial<UserProfile> = {}): UserProfile {
 		realname: '',
 		url: '',
 		location: '',
-		jabber: '',
-		icq: '',
-		msn: '',
-		aim: '',
-		yahoo: '',
+		discord: '',
+		mastodon: '',
+		bluesky: '',
+		reddit: '',
+		discourse: '',
+		github: '',
+		linkedin: '',
 		signature: '[b]Bons vols[/b]',
 		numPosts: 12,
 		lastPost: NOW - 600,
@@ -413,7 +438,7 @@ describe('profile.php : sections', () => {
 			method: 'POST',
 			url: '/profile.php?section=messaging&id=3',
 			headers: { cookie: cookies(3), 'content-type': 'application/x-www-form-urlencoded' },
-			payload: 'form_sent=1&form%5Bicq%5D=1',
+			payload: 'form_sent=1&form%5Bgithub%5D=x',
 		});
 		expect(res.statusCode).toBe(403);
 		expect(fake.profileUpdates).toBeUndefined();

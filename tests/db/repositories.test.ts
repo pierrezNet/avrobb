@@ -99,7 +99,7 @@ describe('liste des membres', () => {
 		expect(await members.findProfile(3)).toMatchObject({
 			username: 'Tessy',
 			title: 'Pilote de ligne',
-			icq: '',
+			github: '',
 			groupId: GroupId.Member,
 			groupIsModerator: false,
 			acceptsPrivateMessages: true,

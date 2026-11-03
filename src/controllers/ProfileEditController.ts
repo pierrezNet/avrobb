@@ -20,14 +20,15 @@ import type { CensorReader } from '../repositories/CensorRepository.ts';
 import { normalizeUsername, usernameSkeleton } from '../services/accounts.ts';
 import { buildCensor, type Censor } from '../services/censor.ts';
 import { canRenameProfile, isAdmin, isAnyModerator, isSelfRename } from '../services/permissions.ts';
+import { ACCOUNT_FIELDS, type Accounts } from '../services/profileAccounts.ts';
 import {
 	displayOptions,
 	type FormResult,
 	forbiddenTitles,
 	type ProfileSection,
+	readAccounts,
 	readDisplay,
 	readEssentials,
-	readMessaging,
 	readPersonal,
 	readPrivacy,
 	readSignature,
@@ -157,7 +158,7 @@ export class ProfileEditController {
 				};
 			case 'messaging':
 				return {
-					result: readMessaging({ jabber: form('jabber'), icq: form('icq'), msn: form('msn'), aim: form('aim'), yahoo: form('yahoo') }),
+					result: readAccounts(Object.fromEntries(ACCOUNT_FIELDS.map((name) => [name, form(name)])) as Accounts),
 					rename: null,
 				};
 			case 'personality': {

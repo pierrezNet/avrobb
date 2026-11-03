@@ -3,21 +3,27 @@
  */
 
 import type { AvatarError } from '../../services/images.ts';
+import type { AccountField } from '../../services/profileAccounts.ts';
 import type { LimitedField, ProfileError } from '../../services/profileForms.ts';
 import type { profile as frProfile } from '../fr/profile.ts';
 import { account } from './account.ts';
 import { preparseErrorText } from './post.ts';
+
+const PROFILE_ACCOUNT_LABELS: Record<AccountField, string> = {
+	discord: 'Discord',
+	mastodon: 'Mastodon',
+	bluesky: 'Bluesky',
+	reddit: 'Reddit',
+	discourse: 'Discourse',
+	github: 'GitHub',
+	linkedin: 'LinkedIn',
+};
 
 const FIELD_LABELS: Record<LimitedField, string> = {
 	realname: 'Real name',
 	title: 'Title',
 	location: 'Location',
 	url: 'Website',
-	jabber: 'Jabber',
-	icq: 'ICQ',
-	msn: 'Microsoft account',
-	aim: 'AOL IM',
-	yahoo: 'Yahoo! Messenger',
 	adminNote: 'Admin note',
 	email: 'Email',
 };
@@ -44,8 +50,8 @@ function profileErrorText(error: ProfileError): string {
 			return 'You are not allowed to add a website to your profile yet';
 		case 'forbiddenTitle':
 			return 'Your title contains a forbidden word. Please choose another title.';
-		case 'badIcq':
-			return 'You entered an invalid ICQ UIN. Please correct it.';
+		case 'badAccount':
+			return `The ${PROFILE_ACCOUNT_LABELS[error.field]} account is not in a recognized format (example: ${profile.accountHints[error.field]}).`;
 		case 'signatureTooLong':
 			return `Signatures cannot be longer than ${error.max} characters. Please shorten your signature by ${error.excess} ${error.excess === 1 ? 'character' : 'characters'}.`;
 		case 'signatureTooManyLines':
@@ -72,7 +78,7 @@ export const profile: typeof frProfile = {
 	usersProfile: (username: string) => `${username}'s profile`,
 	profile: 'Profile',
 	sectionPersonal: 'Personal',
-	sectionMessaging: 'Messaging',
+	sectionMessaging: 'Accounts',
 	sectionPersonality: 'Personality',
 	userActivity: 'User activity',
 	username: 'Username',
@@ -85,11 +91,22 @@ export const profile: typeof frProfile = {
 	pm: 'PM',
 	pmTitle: 'Private messages',
 	quickMessage: 'Send a private message',
-	jabber: 'Jabber',
-	icq: 'ICQ',
-	msn: 'Microsoft account',
-	aim: 'AOL IM',
-	yahoo: 'Yahoo! Messenger',
+	discord: 'Discord',
+	mastodon: 'Mastodon',
+	bluesky: 'Bluesky',
+	reddit: 'Reddit',
+	discourse: 'Discourse',
+	github: 'GitHub',
+	linkedin: 'LinkedIn',
+	accountHints: {
+		discord: 'username',
+		mastodon: '@username@instance.social',
+		bluesky: 'username.bsky.social',
+		reddit: 'u/username',
+		discourse: 'https://forum.example.org/u/username',
+		github: 'username',
+		linkedin: 'https://www.linkedin.com/in/username',
+	},
 	avatar: 'Avatar',
 	signature: 'Signature',
 	posts: 'Posts',
@@ -143,7 +160,8 @@ export const profile: typeof frProfile = {
 	leaveBlank: 'Leave blank to use the forum default.',
 	titleLeaveBlank: '(leave blank to use the default title)',
 
-	contactDetailsLegend: 'Instant messaging details',
+	contactDetailsLegend: 'Your accounts elsewhere',
+	contactDetailsInfo: 'Optional: shown on your profile, with a link when the service has one.',
 
 	avatarLegend: 'Set your avatar display options',
 	avatarInfo:

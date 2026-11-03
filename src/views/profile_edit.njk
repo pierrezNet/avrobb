@@ -101,12 +101,10 @@
 {% elif view.section == 'messaging' %}
 	<fieldset class="form__fieldset">
 		<legend class="form__legend">{{ lang.profile.contactDetailsLegend }}</legend>
+		<p class="form__help">{{ lang.profile.contactDetailsInfo }}</p>
 		<div class="form__grid form__grid--two">
-			<p class="form__field"><label for="jabber">{{ lang.profile.jabber }}</label><input type="text" id="jabber" name="form[jabber]" value="{{ f.jabber }}" maxlength="75"></p>
-			<p class="form__field"><label for="icq">{{ lang.profile.icq }}</label><input type="text" id="icq" name="form[icq]" value="{{ f.icq }}" maxlength="12" inputmode="numeric" pattern="[0-9]*"></p>
-			<p class="form__field"><label for="msn">{{ lang.profile.msn }}</label><input type="text" id="msn" name="form[msn]" value="{{ f.msn }}" maxlength="50"></p>
-			<p class="form__field"><label for="aim">{{ lang.profile.aim }}</label><input type="text" id="aim" name="form[aim]" value="{{ f.aim }}" maxlength="30"></p>
-			<p class="form__field"><label for="yahoo">{{ lang.profile.yahoo }}</label><input type="text" id="yahoo" name="form[yahoo]" value="{{ f.yahoo }}" maxlength="30"></p>
+			{% for account in f.accounts %}<p class="form__field"><label for="{{ account.name }}">{{ account.label }}</label><input type="text" id="{{ account.name }}" name="form[{{ account.name }}]" value="{{ account.value }}" maxlength="{{ account.maxLength }}" placeholder="{{ account.hint }}" autocapitalize="none" spellcheck="false"></p>
+			{% endfor %}
 		</div>
 	</fieldset>
 

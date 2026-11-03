@@ -21,6 +21,7 @@ import { validWebsiteUrl } from './links.ts';
 import { isValidEmail } from './mail.ts';
 import { isAllUppercase, punLinebreaks, punTrim } from './phpString.ts';
 import { type PreparseError, type PreparseOptions, preparseBbcode } from './preparse.ts';
+import { ACCOUNT_FIELDS, ACCOUNT_MAX_LENGTHS, type AccountField, type Accounts, normalizeAccount } from './profileAccounts.ts';
 import { THEMES } from './themes.ts';
 
 /** Sections modifiables par Node ; « admin » reste servie par le PHP (lot Administration). */
@@ -37,11 +38,6 @@ export const FIELD_MAX_LENGTHS = {
 	title: 50,
 	location: 30,
 	url: 80,
-	jabber: 75,
-	icq: 12,
-	msn: 50,
-	aim: 30,
-	yahoo: 30,
 	adminNote: 30,
 	email: 80,
 } as const;
@@ -58,7 +54,7 @@ export type ProfileError =
 	| { kind: 'invalidWebsite' }
 	| { kind: 'websiteNotAllowed' }
 	| { kind: 'forbiddenTitle' }
-	| { kind: 'badIcq' }
+	| { kind: 'badAccount'; field: AccountField }
 	| { kind: 'signatureTooLong'; max: number; excess: number }
 	| { kind: 'signatureTooManyLines'; max: number }
 	| { kind: 'bbcode'; error: PreparseError };
@@ -211,27 +207,16 @@ export function readPersonal(input: PersonalInput, context: PersonalContext): Fo
 	return { changes, errors };
 }
 
-// ——— Messagerie ———
+// ——— Comptes ———
 
-export interface MessagingInput {
-	jabber: string;
-	icq: string;
-	msn: string;
-	aim: string;
-	yahoo: string;
-}
-
-export function readMessaging(input: MessagingInput): FormResult {
+export function readAccounts(input: Accounts): FormResult {
 	const errors: ProfileError[] = [];
-	const changes: ProfileChanges = {
-		jabber: limited('jabber', input.jabber, errors),
-		icq: limited('icq', input.icq, errors),
-		msn: limited('msn', input.msn, errors),
-		aim: limited('aim', input.aim, errors),
-		yahoo: limited('yahoo', input.yahoo, errors),
-	};
-	// Un numéro ICQ (UIN) ne contient que des chiffres.
-	if (/[^0-9]/.test(changes.icq ?? '')) errors.push({ kind: 'badIcq' });
+	const changes: ProfileChanges = {};
+	for (const field of ACCOUNT_FIELDS) {
+		const value = normalizeAccount(field, input[field].slice(0, ACCOUNT_MAX_LENGTHS[field] * 2));
+		if (value === null || value.length > ACCOUNT_MAX_LENGTHS[field]) errors.push({ kind: 'badAccount', field });
+		else changes[field] = value;
+	}
 	return { changes, errors };
 }
 

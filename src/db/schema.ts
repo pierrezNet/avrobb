@@ -261,11 +261,13 @@ export interface UsersTable {
 	title: string | null;
 	realname: string | null;
 	url: string | null;
-	jabber: string | null;
-	icq: string | null;
-	msn: string | null;
-	aim: string | null;
-	yahoo: string | null;
+	discord: string | null;
+	mastodon: string | null;
+	bluesky: string | null;
+	reddit: string | null;
+	discourse: string | null;
+	github: string | null;
+	linkedin: string | null;
 	location: string | null;
 	last_post: number | null;
 	signature: string | null;

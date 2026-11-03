@@ -10,6 +10,7 @@ import { type DateWords, formatTime, viewerTimeSettings } from '../services/date
 import { safeExternalUrl } from '../services/links.ts';
 import { forumNumberFormat } from '../services/numberFormat.ts';
 import { canSearch, canUsePrivateMessages, isAnyModerator } from '../services/permissions.ts';
+import { ACCOUNT_FIELDS, accountLink } from '../services/profileAccounts.ts';
 import { userTitle } from '../services/userTitle.ts';
 
 /** Ligne « intitulé : valeur » ; `links` pour les valeurs qui sont des liens. */
@@ -98,15 +99,11 @@ export function buildProfilePage(input: ProfilePageInput): ProfilePageView {
 		personal.push(links(t.pm, [{ href: `pms_send.php?uid=${profile.id}`, label: t.quickMessage, external: false }]));
 	}
 
-	const messaging: ProfileField[] = [
-		[t.jabber, censored(profile.jabber)],
-		[t.icq, profile.icq],
-		[t.msn, censored(profile.msn)],
-		[t.aim, censored(profile.aim)],
-		[t.yahoo, censored(profile.yahoo)],
-	]
-		.filter(([, value]) => value !== '')
-		.map(([label = '', value = '']) => text(label, value));
+	const messaging: ProfileField[] = ACCOUNT_FIELDS.filter((name) => profile[name] !== '').map((name) => {
+		const href = accountLink(name, profile[name]);
+		const label = censored(profile[name]);
+		return href !== null ? links(t[name], [{ href, label, external: true }]) : text(t[name], label);
+	});
 
 	const personality: ProfileField[] = [];
 	if (config.avatars && input.avatarUrl !== null) personality.push({ ...empty, label: t.avatar, imageUrl: input.avatarUrl });

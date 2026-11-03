@@ -45,11 +45,13 @@ function toColumns(changes: ProfileChanges): UserColumns {
 	set('realname', text(changes.realname));
 	set('url', text(changes.url));
 	set('location', text(changes.location));
-	set('jabber', text(changes.jabber));
-	set('icq', text(changes.icq));
-	set('msn', text(changes.msn));
-	set('aim', text(changes.aim));
-	set('yahoo', text(changes.yahoo));
+	set('discord', text(changes.discord));
+	set('mastodon', text(changes.mastodon));
+	set('bluesky', text(changes.bluesky));
+	set('reddit', text(changes.reddit));
+	set('discourse', text(changes.discourse));
+	set('github', text(changes.github));
+	set('linkedin', text(changes.linkedin));
 	set('signature', text(changes.signature));
 	set('admin_note', text(changes.adminNote));
 	set('num_posts', changes.numPosts);
@@ -114,11 +116,13 @@ export class ProfileRepository implements ProfileStore {
 			realname: row.realname ?? '',
 			url: row.url ?? '',
 			location: row.location ?? '',
-			jabber: row.jabber ?? '',
-			icq: row.icq ?? '',
-			msn: row.msn ?? '',
-			aim: row.aim ?? '',
-			yahoo: row.yahoo ?? '',
+			discord: row.discord ?? '',
+			mastodon: row.mastodon ?? '',
+			bluesky: row.bluesky ?? '',
+			reddit: row.reddit ?? '',
+			discourse: row.discourse ?? '',
+			github: row.github ?? '',
+			linkedin: row.linkedin ?? '',
 			signature: row.signature ?? '',
 			numPosts: row.num_posts,
 			lastPost: row.last_post !== null && row.last_post > 0 ? row.last_post : null,

@@ -226,8 +226,6 @@ export interface BoardConfig {
 	topicSubscriptions: boolean;
 	/** Compteur de vues des sujets (o_topic_views). */
 	topicViews: boolean;
-	/** Règles du forum (o_rules_message), HTML saisi par l'administrateur. */
-	rulesMessage: string;
 	/** Recherche dans plusieurs forums (o_search_all_forums) ; sinon un seul forum à choisir. */
 	searchAllForums: boolean;
 	dateFormat: string;
@@ -243,7 +241,7 @@ export interface BoardConfig {
 	avatarMaxBytes: number;
 	bbcode: boolean;
 	imgTag: boolean;
-	/** Lien « Règles » dans le menu (o_rules). */
+	/** Lien vers les Termes et règles dans le menu (o_rules). */
 	rules: boolean;
 	registrationsAllowed: boolean;
 	/** Liens de menu supplémentaires, en HTML saisi par l'administrateur (o_additional_navlinks). */

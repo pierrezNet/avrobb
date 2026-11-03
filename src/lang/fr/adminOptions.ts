@@ -185,12 +185,8 @@ export const adminOptions = {
 			help: 'Si activée, un e-mail part vers la liste de diffusion (voir ci-dessus) à chaque création de compte.',
 		},
 		rules: {
-			label: 'Règles du forum pour les utilisateurs',
-			help: "Si activée, les utilisateurs devront accepter les règles lorsqu'ils s'inscriront (indiquez le texte ci-dessous). Ces règles seront toujours disponibles sous forme de lien dans le menu de navigation en haut de chaque page.",
-		},
-		rules_message: {
-			label: "Indiquez vos règles d'utilisation ici",
-			help: "Ici vous pouvez indiquer toute règle ou autre information que l'utilisateur doit considérer et accepter avant de s'inscrire. Si vous avez activé les règles ci-dessus vous devez saisir quelque chose ici, sinon, elles seront désactivées. Ce texte ne sera pas traité comme les messages ordinaires et peut contenir du code HTML.",
+			label: 'Termes et règles dans le menu',
+			help: 'Ajoute un lien « Règles » dans le menu du haut, vers la page Termes et règles (aussi en pied de page, modifiable dans Pages d’information).',
 		},
 		default_email_setting: {
 			label: 'Paramètre e-mail par défaut',
@@ -225,7 +221,6 @@ export const adminOptions = {
 	},
 	defaults: {
 		announcement: 'Veuillez saisir votre annonce ici.',
-		rules: 'Veuillez saisir vos règles ici.',
 		maintenance: 'Les forums sont temporairement fermés pour maintenance. Veuillez essayer à nouveau dans quelques minutes.',
 	},
 };

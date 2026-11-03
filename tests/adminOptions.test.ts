@@ -43,12 +43,14 @@ describe('readOptionsForm', () => {
 	});
 
 	it('message vide : texte par défaut et option désactivée', () => {
-		const v = values({ announcement: '1', announcement_message: '', maintenance: '1', rules: '1', rules_message: 'a\r\nb' });
+		const v = values({ announcement: '1', announcement_message: '', maintenance: '1', rules: '1' });
 		expect(v.get('o_announcement')).toBe('0');
 		expect(v.get('o_announcement_message')).toBe('Annonce ici');
 		// Le mode maintenance se règle dans admin_maintenance.php.
 		expect(v.has('o_maintenance')).toBe(false);
-		expect(v.get('o_rules_message')).toBe('a\nb');
+		// « Règles » : un lien vers la page Termes et règles, sans texte propre.
+		expect(v.get('o_rules')).toBe('1');
+		expect(v.has('o_rules_message')).toBe(false);
 	});
 
 	it('mode maintenance : interrupteur et message, texte par défaut si vide', () => {

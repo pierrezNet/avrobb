@@ -137,11 +137,7 @@ export const OPTION_SECTIONS: readonly OptionSection<OptionSectionId>[] = [
 	},
 	{
 		id: 'registration',
-		fields: [
-			...flags('regs_allow', 'regs_report', 'rules'),
-			field('rules_message', { kind: 'textarea', rows: 10 }),
-			field('default_email_setting', { kind: 'radio', choices: 'emailSettings' }),
-		],
+		fields: [...flags('regs_allow', 'regs_report', 'rules'), field('default_email_setting', { kind: 'radio', choices: 'emailSettings' })],
 	},
 	{ id: 'announcement', fields: [field('announcement', yesno), field('announcement_message', { kind: 'textarea', rows: 5 })] },
 ];
@@ -156,7 +152,6 @@ export type OptionsResult =
 
 export interface OptionsDefaults {
 	announcement: string;
-	rules: string;
 	maintenance: string;
 }
 
@@ -269,10 +264,7 @@ export function readOptionsForm(read: (key: string) => string, defaults: Options
 	set('webmaster_email', webmasterEmail);
 
 	// Message vide : texte par défaut et option désactivée.
-	for (const [flagKey, messageKey, fallback] of [
-		['announcement', 'announcement_message', defaults.announcement],
-		['rules', 'rules_message', defaults.rules],
-	] as const) {
+	for (const [flagKey, messageKey, fallback] of [['announcement', 'announcement_message', defaults.announcement]] as const) {
 		const message = trimmed(messageKey);
 		if (message !== '') set(messageKey, punLinebreaks(message));
 		else {

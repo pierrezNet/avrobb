@@ -6,7 +6,6 @@
 import type { EmailError, ReportError } from '../../services/contact.ts';
 
 export const misc = {
-	forumRules: "Conditions d'utilisation des forums",
 	markRead: 'Marquer toutes les discussions comme lues',
 	markForumRead: 'Marquer ce forum comme lu',
 	/** Absent de FluxBB : confirmation d'un ancien lien GET (Node n'écrit pas sur un GET). */

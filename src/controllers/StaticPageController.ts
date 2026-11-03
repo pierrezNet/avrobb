@@ -32,6 +32,7 @@ export class StaticPageController {
 				'static_page.njk',
 				{
 					pageId: id,
+					...(id === 'terms' ? { activeNav: 'rules' as const } : {}),
 					titleParts: [request.board.boardTitle, view.title],
 					allowIndex: true,
 					canonicalUrl: `${id}.php`,

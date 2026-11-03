@@ -16,6 +16,7 @@
 	{% else %}
 	<p class="form__help">{{ lang.login.noProvider }}</p>
 	{% endif %}
+	<p class="form__help">{{ lang.login.termsInfo }} <a href="{{ url('terms.php') }}">{{ lang.login.termsLink }}</a>.</p>
 	<p class="form__help">{{ lang.login.privacyInfo }} <a href="{{ url('privacy.php') }}">{{ lang.login.privacyLink }}</a>.</p>
 </section>
 

@@ -7,7 +7,6 @@ import type { EmailError, ReportError } from '../../services/contact.ts';
 import type { misc as frMisc } from '../fr/misc.ts';
 
 export const misc: typeof frMisc = {
-	forumRules: 'Forum rules',
 	markRead: 'Mark all topics as read',
 	markForumRead: 'Mark this forum as read',
 	/** Not in FluxBB: confirmation for an old GET link (Node doesn't write on a GET). */

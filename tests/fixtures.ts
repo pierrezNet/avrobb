@@ -230,7 +230,6 @@ export const boardConfig: BoardConfig = {
 	forumSubscriptions: true,
 	topicSubscriptions: true,
 	topicViews: true,
-	rulesMessage: '<p>Soyez <em>courtois</em>.</p>',
 	searchAllForums: true,
 	dateFormat: 'Y-m-d',
 	timeFormat: 'H:i:s',

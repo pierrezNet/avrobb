@@ -14,6 +14,8 @@ export const login = {
 	// Le forum fonctionne sans JavaScript, mais les pages de connexion de GitHub et Google le demandent.
 	noScript:
 		'JavaScript semble désactivé. AvroBB se lit sans, mais la connexion passe par le site de votre compte, qui en a besoin : activez-le le temps de vous connecter.',
+	termsInfo: 'En vous connectant pour la première fois, vous créez votre compte et acceptez les',
+	termsLink: 'Termes et règles',
 	privacyInfo: 'Ce que nous recevons de ce compte est décrit dans la',
 	privacyLink: 'politique de confidentialité',
 	ssoCancelled: 'Connexion annulée.',

@@ -215,8 +215,8 @@ function buildNav(input: LayoutInput): NavLink[] {
 	if (viewer.group.canReadBoard && viewer.group.canViewUsers)
 		links.push(link('navuserlist', 'userlist.php', t.userList, active === 'userlist'));
 
-	if (config.rules && (!viewer.isGuest || viewer.group.canReadBoard || config.registrationsAllowed))
-		links.push(link('navrules', 'misc.php?action=rules', t.rules, active === 'rules'));
+	// Option « Termes et règles dans le menu » : la page des Termes et règles, aussi au pied de page.
+	if (config.rules) links.push(link('navrules', 'terms.php', t.rules, active === 'rules'));
 
 	if (canSearch(viewer)) links.push(link('navsearch', 'search.php', t.search, active === 'search'));
 

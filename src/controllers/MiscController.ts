@@ -44,18 +44,7 @@ export class MiscController {
 		const { lang } = this.deps.page;
 		const { action } = request.query;
 
-		if (action === 'rules') {
-			if (!config.rules || (viewer.isGuest && !viewer.group.canReadBoard && !config.registrationsAllowed))
-				return renderMessage(request, reply, this.deps, 404, lang.common.badRequest);
-			return renderPage(
-				request,
-				reply,
-				this.deps,
-				'rules.njk',
-				{ pageId: 'misc', titleParts: [config.boardTitle, lang.misc.forumRules], activeNav: 'rules' },
-				{ rulesHtml: config.rulesMessage },
-			);
-		}
+		if (action === 'rules') return reply.redirect('terms.php', 301);
 
 		if (action === 'markread' || action === 'markforumread') {
 			if (viewer.isGuest) return renderMessage(request, reply, this.deps, 403, lang.common.noPermission);

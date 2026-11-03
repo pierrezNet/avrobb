@@ -187,12 +187,8 @@ export const adminOptions: typeof frAdminOptions = {
 			help: 'When enabled, an email goes to the mailing list (see above) whenever an account is created.',
 		},
 		rules: {
-			label: 'User forum rules',
-			help: 'When enabled, users must accept the rules when they register (enter the text below). The rules will always be available through a link in the navigation menu at the top of every page.',
-		},
-		rules_message: {
-			label: 'Enter your rules here',
-			help: 'Here you can enter any rules or other information users must review and accept before registering. If you enabled the rules above, you must enter something here, otherwise they will be disabled. This text is not parsed like regular posts and may contain HTML.',
+			label: 'Terms and rules in the menu',
+			help: 'Adds a “Rules” link to the top menu, pointing to the Terms and rules page (also in the footer, editable in Information pages).',
 		},
 		default_email_setting: {
 			label: 'Default email setting',
@@ -226,7 +222,6 @@ export const adminOptions: typeof frAdminOptions = {
 	},
 	defaults: {
 		announcement: 'Enter your announcement here.',
-		rules: 'Enter your rules here.',
 		maintenance: 'The forums are temporarily down for maintenance. Please try again in a few minutes.',
 	},
 };

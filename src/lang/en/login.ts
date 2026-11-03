@@ -16,6 +16,8 @@ export const login: typeof frLogin = {
 	// The forum works without JavaScript, but the GitHub and Google sign-in pages require it.
 	noScript:
 		'JavaScript seems to be disabled. You can read AvroBB without it, but signing in goes through your account’s website, which needs it: turn it on while you sign in.',
+	termsInfo: 'By signing in for the first time, you create your account and accept the',
+	termsLink: 'Terms and rules',
 	privacyInfo: 'What we receive from this account is described in the',
 	privacyLink: 'privacy policy',
 	ssoCancelled: 'Sign-in cancelled.',

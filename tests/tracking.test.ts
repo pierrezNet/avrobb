@@ -114,11 +114,12 @@ describe('misc.php', () => {
 		expect(setCookie(forum?.headers['set-cookie'], 'avrobb_track')).toContain(`f2%3D${NOW}`);
 	});
 
-	it('règles affichées si activées ; action inconnue refusée', async () => {
+	it('règles : lien du menu vers les Termes et règles si activé ; ancienne page redirigée ; action inconnue refusée', async () => {
 		app = await buildApp(deps({ rules: true }));
-		expect((await inject(app, '/actions?action=rules')).body).toContain('<p>Soyez <em>courtois</em>.</p>');
+		expect((await inject(app, '/')).body).toContain('<a href="/conditions"');
+		expect((await inject(app, '/actions?action=rules')).headers.location).toBe('/conditions');
 		expect((await inject(app, '/actions?action=autre')).statusCode).toBe(400);
 		app = await buildApp(deps());
-		expect((await inject(app, '/actions?action=rules')).statusCode).toBe(404);
+		expect((await inject(app, '/')).body).not.toContain('id="navrules"');
 	});
 });

@@ -136,7 +136,7 @@ export const adminOptions: typeof frAdminOptions = {
 		},
 		mailing_list: {
 			label: 'Mailing list',
-			help: 'A comma-separated list of subscribers. The people on this list receive reports and feedback from the Phraséo and Donne Ton Point apps.',
+			help: 'A comma-separated list of subscribers. The people on this list receive reports and feedback from the Phraséo, Donne Ton Point, UTC clock and SELCAL apps.',
 		},
 		phraseo_feedback_target: {
 			label: 'Forum for accepted Phraséo feedback',
@@ -145,6 +145,14 @@ export const adminOptions: typeof frAdminOptions = {
 		dtp_feedback_target: {
 			label: 'Forum for accepted Donne Ton Point feedback',
 			help: 'Number of the public forum where the “Accept” button posts feedback from the private “Donne Ton Point feedback (to sort)” forum. 0: button hidden.',
+		},
+		utc_feedback_target: {
+			label: 'Forum for accepted UTC clock feedback',
+			help: 'Number of the public forum where the “Accept” button posts feedback from the private “UTC clock feedback (to sort)” forum. 0: button hidden.',
+		},
+		selcal_feedback_target: {
+			label: 'Forum for accepted SELCAL feedback',
+			help: 'Number of the public forum where the “Accept” button posts feedback from the private “SELCAL feedback (to sort)” forum. 0: button hidden.',
 		},
 		avatars: {
 			label: 'Use avatars',

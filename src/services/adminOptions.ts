@@ -102,9 +102,11 @@ export const OPTION_SECTIONS: readonly OptionSection<OptionSectionId>[] = [
 		fields: [
 			field('report_method', { kind: 'radio', choices: 'reportMethods' }),
 			field('mailing_list', { kind: 'textarea', rows: 5 }),
-			// Retours Phraséo (migration 0006) et Donne Ton Point (0008) : forum public des retours acceptés ; 0 = bouton masqué
+			// Retours Phraséo (migration 0006), Donne Ton Point (0008), Horloge UTC et SELCAL (0012) : forum public des retours acceptés ; 0 = bouton masqué
 			field('phraseo_feedback_target', num(0)),
 			field('dtp_feedback_target', num(0)),
+			field('utc_feedback_target', num(0)),
+			field('selcal_feedback_target', num(0)),
 		],
 	},
 	{
@@ -248,6 +250,8 @@ export function readOptionsForm(read: (key: string) => string, defaults: Options
 	set('mailing_list', mailingList.replace(/\s/g, '').toLowerCase());
 	set('phraseo_feedback_target', atLeast(intval(read('phraseo_feedback_target')), 0, 0));
 	set('dtp_feedback_target', atLeast(intval(read('dtp_feedback_target')), 0, 0));
+	set('utc_feedback_target', atLeast(intval(read('utc_feedback_target')), 0, 0));
+	set('selcal_feedback_target', atLeast(intval(read('selcal_feedback_target')), 0, 0));
 
 	const avatarsDir = trimmed('avatars_dir');
 	set('avatars_dir', avatarsDir.endsWith('/') ? avatarsDir.slice(0, -1) : avatarsDir);

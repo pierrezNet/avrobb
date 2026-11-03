@@ -1,6 +1,6 @@
 /**
- * Migrations des retours d'applications rejouées sur le jeu de données : Phraséo (0005 à 0007) et
- * Donne Ton Point (0008). Compte système, forum privé « à trier » et réglages, puis création d'un
+ * Migrations des retours d'applications rejouées sur le jeu de données : Phraséo (0005 à 0007),
+ * Donne Ton Point (0008), Horloge UTC et SELCAL (0012). Compte système, forum privé « à trier » et réglages, puis création d'un
  * sujet dans ce forum.
  */
 
@@ -172,6 +172,37 @@ describe('migration 0008 : retours Donne Ton Point', () => {
 			});
 			const topic = await trx.selectFrom('topics').select(['forum_id', 'poster']).where('id', '=', topicId).executeTakeFirstOrThrow();
 			expect(topic).toEqual({ forum_id: forumId, poster: 'Retours Donne Ton Point' });
+		});
+	});
+});
+
+describe('migration 0012 : retours Horloge UTC et SELCAL', () => {
+	it('deux comptes système, deux forums privés et leurs réglages, indépendants des autres applications', async () => {
+		await inRollback(async (trx) => {
+			await runScript(await migration('0008_donnetonpoint_feedback.sql'));
+			await runScript(await migration('0012_aeronautique_feedback.sql'));
+			const { horlogeUtc, selcal, donneTonPoint } = toBoardConfig(await new ConfigRepository(trx).loadValues()).appFeedback;
+			expect(horlogeUtc).not.toBeNull();
+			expect(selcal).not.toBeNull();
+			expect(new Set([horlogeUtc!.forumId, selcal!.forumId, donneTonPoint!.forumId]).size).toBe(3);
+			expect(new Set([horlogeUtc!.userId, selcal!.userId, donneTonPoint!.userId]).size).toBe(3);
+
+			const users = await trx
+				.selectFrom('users')
+				.select(['username', 'provider', 'group_id', 'use_pm', 'reputation_enable'])
+				.where('id', 'in', [horlogeUtc!.userId, selcal!.userId])
+				.orderBy('id')
+				.execute();
+			expect(users).toEqual([
+				{ username: 'Retours Horloge UTC', provider: null, group_id: 4, use_pm: 0, reputation_enable: 0 },
+				{ username: 'Retours SELCAL', provider: null, group_id: 4, use_pm: 0, reputation_enable: 0 },
+			]);
+
+			const posting = new PostingRepository(trx);
+			for (const forumId of [horlogeUtc!.forumId, selcal!.forumId]) {
+				for (const groupId of [2, 3, 4]) expect(await posting.findTarget({ forumId }, { id: 2, groupId })).toBeNull();
+				expect(await posting.findTarget({ forumId }, { id: 2, groupId: 1 })).not.toBeNull();
+			}
 		});
 	});
 });

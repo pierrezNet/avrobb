@@ -15,6 +15,8 @@ export const topic: typeof frTopic = {
 	acceptAppFeedback: {
 		phraseo: 'Accept: publish in the phraseology forum',
 		donneTonPoint: 'Accept: publish in the Donne Ton Point forum',
+		horlogeUtc: 'Accept: publish in the UTC clock forum',
+		selcal: 'Accept: publish in the SELCAL forum',
 	},
 	postReply: 'Post reply',
 	topicClosed: 'Topic closed',

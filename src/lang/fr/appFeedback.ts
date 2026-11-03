@@ -1,5 +1,5 @@
 /**
- * Textes des retours des applications sources (Phraséo, Donne Ton Point) : sujets créés dans le
+ * Textes des retours des applications sources (Phraséo, Donne Ton Point, Horloge UTC, SELCAL) : sujets créés dans le
  * forum privé « à trier » de chaque application à partir de son formulaire « J'ai un retour » (sans
  * compte), reçus de son relais (worker.ts).
  */
@@ -48,6 +48,36 @@ export const appFeedback: Readonly<Record<FeedbackSourceId, FeedbackTexts>> = {
 		header:
 			"Retour envoyé depuis l'application Donne Ton Point, sans compte. Le contact éventuel de l'auteur a été envoyé par e-mail aux administrateurs ; il ne figure pas ici.",
 		publicHeader: "Retour d'un utilisateur de l'application Donne Ton Point, envoyé sans compte.",
+		anonymous,
+		noContact,
+	},
+	horlogeUtc: {
+		appName: 'Horloge UTC',
+		/** Compte système de la migration 0012 (même nom qu'en base). */
+		authorName: 'Retours Horloge UTC',
+		subjectTag: '[Horloge UTC]',
+		subjectSeparator,
+		fields,
+		details: {},
+		none,
+		header:
+			"Retour envoyé depuis l'application Horloge UTC d'aeronautique.xyz, sans compte. Le contact éventuel de l'auteur a été envoyé par e-mail aux administrateurs ; il ne figure pas ici.",
+		publicHeader: "Retour d'un utilisateur de l'application Horloge UTC d'aeronautique.xyz, envoyé sans compte.",
+		anonymous,
+		noContact,
+	},
+	selcal: {
+		appName: 'SELCAL',
+		/** Compte système de la migration 0012 (même nom qu'en base). */
+		authorName: 'Retours SELCAL',
+		subjectTag: '[SELCAL]',
+		subjectSeparator,
+		fields,
+		details: { code: 'Code SELCAL' },
+		none,
+		header:
+			"Retour envoyé depuis l'application SELCAL d'aeronautique.xyz, sans compte. Le contact éventuel de l'auteur a été envoyé par e-mail aux administrateurs ; il ne figure pas ici.",
+		publicHeader: "Retour d'un utilisateur de l'application SELCAL d'aeronautique.xyz, envoyé sans compte.",
 		anonymous,
 		noContact,
 	},

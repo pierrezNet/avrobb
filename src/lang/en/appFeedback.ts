@@ -1,6 +1,6 @@
 /**
  * English translation of src/lang/fr/appFeedback.ts: feedback from source apps (Phraséo, Donne Ton
- * Point), turned into topics in each app's private “to sort” forum.
+ * Point, Horloge UTC, SELCAL), turned into topics in each app's private “to sort” forum.
  *
  * Deliberately left in French: these texts compose the subjects and posts stored in the database
  * (the header is also matched verbatim when a feedback is accepted), the system account names must
@@ -52,6 +52,36 @@ export const appFeedback: typeof frAppFeedback & Readonly<Record<FeedbackSourceI
 		header:
 			"Retour envoyé depuis l'application Donne Ton Point, sans compte. Le contact éventuel de l'auteur a été envoyé par e-mail aux administrateurs ; il ne figure pas ici.",
 		publicHeader: "Retour d'un utilisateur de l'application Donne Ton Point, envoyé sans compte.",
+		anonymous,
+		noContact,
+	},
+	horlogeUtc: {
+		appName: 'Horloge UTC',
+		/** System account from migration 0012 (same name as in the database). */
+		authorName: 'Retours Horloge UTC',
+		subjectTag: '[Horloge UTC]',
+		subjectSeparator,
+		fields,
+		details: {},
+		none,
+		header:
+			"Retour envoyé depuis l'application Horloge UTC d'aeronautique.xyz, sans compte. Le contact éventuel de l'auteur a été envoyé par e-mail aux administrateurs ; il ne figure pas ici.",
+		publicHeader: "Retour d'un utilisateur de l'application Horloge UTC d'aeronautique.xyz, envoyé sans compte.",
+		anonymous,
+		noContact,
+	},
+	selcal: {
+		appName: 'SELCAL',
+		/** System account from migration 0012 (same name as in the database). */
+		authorName: 'Retours SELCAL',
+		subjectTag: '[SELCAL]',
+		subjectSeparator,
+		fields,
+		details: { code: 'Code SELCAL' },
+		none,
+		header:
+			"Retour envoyé depuis l'application SELCAL d'aeronautique.xyz, sans compte. Le contact éventuel de l'auteur a été envoyé par e-mail aux administrateurs ; il ne figure pas ici.",
+		publicHeader: "Retour d'un utilisateur de l'application SELCAL d'aeronautique.xyz, envoyé sans compte.",
 		anonymous,
 		noContact,
 	},

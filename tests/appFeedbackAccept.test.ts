@@ -28,7 +28,7 @@ const dtpTexts = appFeedback.donneTonPoint;
 const FEEDBACK = { forumId: 6, userId: 4, targetForumId: 4 };
 /** Donne Ton Point : forum privé « à trier » n° 7, forum public « Donne ton point » n° 3 */
 const DTP = { forumId: 7, userId: 5, targetForumId: 3 };
-const APP_FEEDBACK = { phraseo: FEEDBACK, donneTonPoint: DTP };
+const APP_FEEDBACK = { phraseo: FEEDBACK, donneTonPoint: DTP, horlogeUtc: null, selcal: null };
 const MESSAGE = `[i]${texts.header}[/i]\n\n[b]Type :[/b] Bug technique\n\nLa voix se répète.`;
 const DTP_MESSAGE = `[i]${dtpTexts.header}[/i]\n\n[b]Type :[/b] Bug\n\nLe compteur ne bouge plus.`;
 

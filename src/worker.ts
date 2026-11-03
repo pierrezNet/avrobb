@@ -340,6 +340,24 @@ export class DonneTonPointFeedback extends WorkerEntrypoint<Env> {
 	}
 }
 
+/**
+ * Retours des applications Horloge UTC et SELCAL d'aeronautique.xyz, appelés par le relais du site
+ * (Worker « aeronautique-relais », route aeronautique.xyz/api/retour) via deux liaisons de service :
+ * `"entrypoint": "HorlogeUtcFeedback"` et `"entrypoint": "SelcalFeedback"`. Même contrat que
+ * PhraseoFeedback, sans adresse publique.
+ */
+export class HorlogeUtcFeedback extends WorkerEntrypoint<Env> {
+	async submit(input: unknown): Promise<AppFeedbackResult> {
+		return submitAppFeedback(this.env, 'horlogeUtc', input);
+	}
+}
+
+export class SelcalFeedback extends WorkerEntrypoint<Env> {
+	async submit(input: unknown): Promise<AppFeedbackResult> {
+		return submitAppFeedback(this.env, 'selcal', input);
+	}
+}
+
 export default {
 	async fetch(request: Request, env: Env, ctx: ExecutionContextLike): Promise<Response> {
 		const url = new URL(request.url);

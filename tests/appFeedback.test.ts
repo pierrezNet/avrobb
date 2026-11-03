@@ -1,5 +1,5 @@
 /**
- * Retours des applications sources (Phraséo, Donne Ton Point) : validation, sujet, message et
+ * Retours des applications sources (Phraséo, Donne Ton Point, Horloge UTC, SELCAL) : validation, sujet, message et
  * contrôleur avec doublures (sujet du forum privé, e-mail à la liste d'administration).
  */
 
@@ -111,6 +111,33 @@ describe('parseAppFeedback (Donne Ton Point)', () => {
 	});
 });
 
+describe('parseAppFeedback (Horloge UTC et SELCAL)', () => {
+	const horloge = FEEDBACK_SOURCES.horlogeUtc;
+	const selcal = FEEDBACK_SOURCES.selcal;
+	const base = { type: 'Bug', message: 'Les aiguilles sautent.', lang: 'en' };
+
+	it('mêmes types que Donne Ton Point ; seul le SELCAL a un champ propre, le code', () => {
+		expect(parseAppFeedback(horloge, base)).toMatchObject({ source: 'horlogeUtc', details: [] });
+		expect(parseAppFeedback(selcal, { ...base, code: 'AB-CD' })).toMatchObject({
+			source: 'selcal',
+			details: [{ name: 'code', value: 'AB-CD' }],
+		});
+		expect(parseAppFeedback(selcal, base)).toMatchObject({ details: [{ name: 'code', value: '' }] });
+		expect(parseAppFeedback(horloge, { ...base, type: 'Bug technique' })).toBeNull();
+	});
+
+	it('code SELCAL limité à 5 caractères', () => {
+		expect(parseAppFeedback(FEEDBACK_SOURCES.selcal, { ...base, code: 'AB-CDE' })).toBeNull();
+	});
+
+	it('message : code SELCAL dans le contexte, balise de chaque application dans le sujet', () => {
+		const feedback = parseAppFeedback(selcal, { ...base, code: 'AB-CD' })!;
+		expect(appFeedbackMessage(feedback, allTexts.selcal)).toContain('[b]Code SELCAL :[/b] AB-CD');
+		expect(appFeedbackSubject(feedback, allTexts.selcal)).toBe('[SELCAL] Bug : Les aiguilles sautent.');
+		expect(appFeedbackSubject(parseAppFeedback(horloge, base)!, allTexts.horlogeUtc)).toBe('[Horloge UTC] Bug : Les aiguilles sautent.');
+	});
+});
+
 describe('sujet et message (Phraséo)', () => {
 	const feedback = parseAppFeedback(phraseo, valid)!;
 
@@ -173,6 +200,8 @@ describe('AppFeedbackController', () => {
 	const destinations = {
 		phraseo: { forumId: 9, userId: 7, targetForumId: 4 },
 		donneTonPoint: { forumId: 11, userId: 8, targetForumId: 3 },
+		horlogeUtc: null,
+		selcal: null,
 	};
 	const setup = (source: FeedbackSourceId = 'phraseo', config: BoardConfig = { ...boardConfig, appFeedback: destinations }) => {
 		const topics: NewTopic[] = [];

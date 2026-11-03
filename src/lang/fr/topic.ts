@@ -14,6 +14,8 @@ export const topic = {
 	acceptAppFeedback: {
 		phraseo: 'Accepter : publier dans le forum de la phraséologie',
 		donneTonPoint: 'Accepter : publier dans le forum Donne ton point',
+		horlogeUtc: "Accepter : publier dans le forum de l'horloge UTC",
+		selcal: 'Accepter : publier dans le forum SELCAL',
 	},
 	postReply: 'Répondre',
 	topicClosed: 'Discussion fermée',

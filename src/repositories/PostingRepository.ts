@@ -196,14 +196,14 @@ export class PostingRepository implements PostingStore {
 			.leftJoin('forum_perms as fp', (join) => join.onRef('fp.group_id', '=', 'u.group_id').on('fp.forum_id', '=', forumId))
 			.leftJoin('online as o', 'o.user_id', 'u.id')
 			.leftJoin('bans as b', 'b.username', 'u.username')
-			.select(['u.email', 'u.notify_with_post'])
+			.select(['u.id', 'u.email', 'u.notify_with_post'])
 			.where('b.username', 'is', null)
 			.where((eb) => eb(eb.fn.coalesce('o.logged', 'u.last_visit'), '>', previousPostTime))
 			.where(forumReadable)
 			.where('s.topic_id', '=', topicId)
 			.where('u.id', '!=', excludeUserId)
 			.execute();
-		return rows.map((row) => ({ email: row.email, notifyWithPost: row.notify_with_post === 1 }));
+		return rows.map((row) => ({ id: row.id, email: row.email, notifyWithPost: row.notify_with_post === 1 }));
 	}
 
 	async listForumSubscribers(forumId: number, excludeUserId: number): Promise<Subscriber[]> {
@@ -212,13 +212,13 @@ export class PostingRepository implements PostingStore {
 			.innerJoin('forum_subscriptions as s', 's.user_id', 'u.id')
 			.leftJoin('forum_perms as fp', (join) => join.onRef('fp.group_id', '=', 'u.group_id').on('fp.forum_id', '=', forumId))
 			.leftJoin('bans as b', 'b.username', 'u.username')
-			.select(['u.email', 'u.notify_with_post'])
+			.select(['u.id', 'u.email', 'u.notify_with_post'])
 			.where('b.username', 'is', null)
 			.where(forumReadable)
 			.where('s.forum_id', '=', forumId)
 			.where('u.id', '!=', excludeUserId)
 			.execute();
-		return rows.map((row) => ({ email: row.email, notifyWithPost: row.notify_with_post === 1 }));
+		return rows.map((row) => ({ id: row.id, email: row.email, notifyWithPost: row.notify_with_post === 1 }));
 	}
 }
 

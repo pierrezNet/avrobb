@@ -201,6 +201,23 @@
 		{% endif %}
 	</fieldset>
 	{% endif %}
+	{% if f.push %}
+	<fieldset class="form__fieldset">
+		<legend class="form__legend">{{ lang.push.legend }}</legend>
+		<p class="form__help">{{ lang.push.info }}</p>
+		<p class="form__check"><label><input type="checkbox" name="form[push_pm]" value="1"{% if f.push.pm %} checked{% endif %}> {{ lang.push.pushPm }}</label></p>
+		<p class="form__check"><label><input type="checkbox" name="form[push_replies]" value="1"{% if f.push.replies %} checked{% endif %}> {{ lang.push.pushReplies }}</label></p>
+		{% if f.push.device %}
+		{#- Abonnement de l'appareil : JavaScript seulement (pwa.js) ; sans lui, le texte noscript reste. -#}
+		<div class="push-device" data-push data-key="{{ f.push.device.publicKey }}" data-action="{{ url(f.push.device.action) }}" data-csrf="{{ layout.csrfToken }}"
+			data-enable="{{ lang.push.enable }}" data-disable="{{ lang.push.disable }}" data-enabled="{{ lang.push.enabled }}"
+			data-denied="{{ lang.push.denied }}" data-unsupported="{{ lang.push.unsupported }}" data-failed="{{ lang.push.failed }}">
+			<p class="form__help push-device__status" role="status">{{ lang.push.needsScript }}</p>
+			<button type="button" class="button push-device__toggle" hidden></button>
+		</div>
+		{% endif %}
+	</fieldset>
+	{% endif %}
 {% endif %}
 
 	<p class="form__buttons"><button type="submit" class="button button--primary" name="update" value="1" accesskey="s">{{ lang.profile.submit }}</button> {{ lang.profile.instructions }}</p>

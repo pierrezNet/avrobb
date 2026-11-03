@@ -20,3 +20,7 @@ ADMIN_ACCOUNTS=
 # Sans eux, les e-mails sont seulement notés dans le journal.
 RESEND_API_KEY=
 MAIL_FROM=forum@example.org
+# Notifications push (facultatif) : node scripts/generate-vapid.mjs, puis recopier les trois lignes.
+VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_KEY=
+VAPID_SUBJECT=mailto:dpo@pierrez.net

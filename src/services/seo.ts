@@ -43,6 +43,7 @@ export function firstImageUrl(messages: readonly string[]): string | null {
 const DISALLOWED = [
 	'/admin_',
 	'/post.php',
+	'/push.php',
 	'/edit.php',
 	'/delete.php',
 	'/moderate.php',

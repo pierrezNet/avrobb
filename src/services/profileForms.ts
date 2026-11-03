@@ -353,6 +353,8 @@ export interface PrivacyInput {
 	usesPrivateMessages: boolean;
 	notifyPrivateMessages: boolean;
 	notifyPrivateMessagesFull: boolean;
+	pushPrivateMessages: boolean;
+	pushReplies: boolean;
 }
 
 export interface PrivacyOptions {
@@ -364,6 +366,8 @@ export interface PrivacyOptions {
 	privateMessages: boolean;
 	/** Alertes par e-mail des MP (o_pms_notification). */
 	privateMessageNotification: boolean;
+	/** Notifications push configurées (clés VAPID). */
+	push: boolean;
 	defaultEmailSetting: number;
 }
 
@@ -380,6 +384,10 @@ export function readPrivacy(input: PrivacyInput, options: PrivacyOptions): FormR
 			changes.notifyPrivateMessages = input.notifyPrivateMessages;
 			changes.notifyPrivateMessagesFull = input.notifyPrivateMessagesFull;
 		}
+	}
+	if (options.push) {
+		changes.pushPrivateMessages = input.pushPrivateMessages;
+		changes.pushReplies = input.pushReplies;
 	}
 	return { changes, errors: [] };
 }

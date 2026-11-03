@@ -127,6 +127,8 @@ export interface PrivacyView {
 	emailSettings: Option<number>[];
 	subscriptions: Checkbox[];
 	privateMessages: { usePm: boolean; notify: { notifyPm: boolean; notifyPmFull: boolean } | null } | null;
+	/** `device` : bouton d'abonnement de l'appareil, sur son propre profil seulement (public/assets/js/pwa.js). */
+	push: { pm: boolean; replies: boolean; device: { publicKey: string; action: string } | null } | null;
 }
 
 export type SectionView =
@@ -160,6 +162,8 @@ export interface ProfileEditInput {
 	lang: Lang;
 	dateWords: DateWords;
 	now: number;
+	/** Clé publique VAPID, ou null sans notifications push. */
+	pushPublicKey: string | null;
 }
 
 function essentials(input: ProfileEditInput): EssentialsView {
@@ -300,6 +304,14 @@ function privacy(input: ProfileEditInput): PrivacyView {
 		emailSettings: t.emailSettings.map((label, value) => ({ value, label, selected: value === form.emailSetting })),
 		subscriptions,
 		privateMessages,
+		push:
+			input.pushPublicKey !== null
+				? {
+						pm: form.pushPrivateMessages,
+						replies: form.pushReplies,
+						device: viewer.id === input.profile.id ? { publicKey: input.pushPublicKey, action: 'push.php' } : null,
+					}
+				: null,
 	};
 }
 

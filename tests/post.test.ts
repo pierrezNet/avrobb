@@ -11,6 +11,7 @@ import { canPostIn } from '../src/services/permissions.ts';
 import { type PostContext, type PostForm, promotionGroup, quoteText, subscriptionChange, validatePost } from '../src/services/posting.ts';
 import { type FakeData, fakeDeps, group, guest, NOW, post, sessionCookie, TEST_SUBJECT_TAGS, topic, viewer } from './fixtures.ts';
 import { inject } from './inject.ts';
+import { device, fakePush, settle } from './pushFake.ts';
 
 const form = (overrides: Partial<PostForm> = {}): PostForm => ({
 	subject: null,
@@ -305,8 +306,26 @@ describe('POST /post.php', () => {
 		expect(fake.savedTopics).toBeUndefined();
 	});
 
+	it('notification push aux abonnés de la discussion qui l’acceptent ; appareil expiré effacé', async () => {
+		const push = fakePush([device(5), device(6)], { gone: [device(5).endpoint], refused: ['6:replies'] });
+		const fake = data({
+			subscribers: [
+				{ id: 5, email: 'a@example.test', notifyWithPost: false },
+				{ id: 6, email: 'b@example.test', notifyWithPost: false },
+			],
+		});
+		app = await buildApp({ ...fakeDeps(fake), push: push.deps });
+		const res = await submit(app, '/post.php?tid=10', { req_message: 'Merci !' });
+		expect(res.statusCode).toBe(302);
+		await settle();
+		expect(push.sent.map((sent) => sent.endpoint)).toEqual([device(5).endpoint]);
+		expect(push.sent[0]?.message).toMatchObject({ title: expect.stringMatching(/^Nouvelle réponse : /), tag: 'topic-10', lang: 'fr' });
+		expect(push.sent[0]?.message.url).toMatch(/^\/message\/\d+#p\d+$/);
+		expect(push.removed).toEqual([device(5).endpoint]);
+	});
+
 	it('enregistre une réponse, abonne, promeut, marque le sujet lu et prévient les abonnés', async () => {
-		const fake = data({ subscribers: [{ email: 'abonne@example.test', notifyWithPost: true }] });
+		const fake = data({ subscribers: [{ id: 5, email: 'abonne@example.test', notifyWithPost: true }] });
 		app = await buildApp(fakeDeps(fake));
 		const res = await submit(app, '/post.php?tid=10', { req_message: 'Superbe avion www.pilote-virtuel.com', subscribe: '1' });
 		expect(res.statusCode).toBe(302);

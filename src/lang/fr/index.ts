@@ -31,6 +31,7 @@ import { moderate } from './moderate.ts';
 import { pms } from './pms.ts';
 import { post } from './post.ts';
 import { profile } from './profile.ts';
+import { push } from './push.ts';
 import { reputation } from './reputation.ts';
 import { search } from './search.ts';
 import { staticPages } from './staticPages.ts';
@@ -72,6 +73,7 @@ export const fr = {
 	adminPlugins,
 	adminPermissions,
 	appFeedback,
+	push,
 };
 
 export const frDateWords: DateWords = {

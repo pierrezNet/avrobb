@@ -215,6 +215,7 @@ Vigilance :
 
 ## Après la mise en ligne
 
+- [x] **Application installable (PWA) et notifications push** (2026-11-03) : manifeste `standalone`, service worker `public/sw.js` (aucun cache de page, page hors ligne), Web Push repris de Donne Ton Point (RFC 8291 et VAPID en `crypto.subtle`), messages privés et mentions, réponses aux discussions suivies, réglables dans le profil, e-mails inchangés ; politique de confidentialité complétée. **À faire par Emmanuel** : `node scripts/generate-vapid.mjs`, puis `wrangler secret put` pour `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` ; essai réel sur téléphone (Android : Chrome ; iPhone : après « Sur l'écran d'accueil »). Suites possibles : icônes `maskable` (le pictogramme actuel a des coins arrondis), notification des retours d'applications aux administrateurs
 - [x] **Forum bilingue par traduction automatique** (2026-11-01) : interface anglaise sous `/en/` (textes de `src/lang/en`, adresses anglaises, `hreflang`, lien « English » / « Français »), contenu traduit par Workers AI (Mistral Small 3.1) à l'écriture et rattrapé chaque heure, mention « Traduit automatiquement » avec le texte d'origine dépliable, traduction anglaise des forums saisissable dans l'administration ; Termes et règles et politique de confidentialité complétés (modèle cité). Suites possibles :
   - e-mails et messages de mention dans la langue du destinataire (préférence de langue dans le profil) ;
   - titres des groupes (« Administrateur ») et balises de sujet, enregistrés en base, restent en français ;
@@ -228,9 +229,7 @@ Vigilance :
 
 ## À décider
 
-- [ ] **Éditeur WYSIWYG** (SCEditor, mode source BBCode) : repris de la TODO de pv-forum, après la mise en ligne (2 à 3 jours).
-- [ ] Réputation : utile sur un forum personnel ? Gardée pour l'instant.
-- [ ] Biographie du membre (retirée avec Plugile) : la remettre comme champ de la section Personnalité du profil ?
+- [x] Réputation : gardée (décidé le 2026-11-03).
 - [ ] Thème aux couleurs d'AvroBB (bordeaux et or du logo) comme thème par défaut, à la place d'Air (bleu), qui jure avec la bannière.
 - [ ] Notifications sur le site (page « Notifications ») à la place des messages privés pour les mentions, si la messagerie se révèle inutile.
 - [ ] Adresses propres pour les pages d'action aussi (`/nouvelle-discussion/1` au lieu de `post.php?action=post&fid=1`, jugée étrange) : gardées en `.php` pour l'instant, un changement dans `services/routes.ts`.

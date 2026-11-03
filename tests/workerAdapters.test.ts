@@ -194,11 +194,25 @@ describe('loadConfig', () => {
 			oauth: {},
 			adminAccounts: new Set(),
 			mail: null,
+			vapid: null,
 		});
 		expect(loadConfig({ SESSION_SECRET: secret, COOKIE_SECURE: '0', DEV_LOGIN: '1' })).toMatchObject({
 			cookie: { secure: false },
 			devLogin: true,
 		});
+	});
+
+	it('notifications push : clés VAPID complètes, clé privée JWK', () => {
+		const jwk = { kty: 'EC', crv: 'P-256', x: 'x', y: 'y', d: 'd' };
+		expect(loadConfig({ SESSION_SECRET: secret, VAPID_PUBLIC_KEY: 'BPub' }).vapid).toBeNull();
+		expect(loadConfig({ SESSION_SECRET: secret, VAPID_PUBLIC_KEY: 'BPub', VAPID_PRIVATE_KEY: JSON.stringify(jwk) }).vapid).toEqual({
+			publicKey: 'BPub',
+			privateKey: jwk,
+			subject: 'mailto:dpo@pierrez.net',
+		});
+		expect(() => loadConfig({ SESSION_SECRET: secret, VAPID_PUBLIC_KEY: 'BPub', VAPID_PRIVATE_KEY: 'pas du JSON' })).toThrow(
+			/VAPID_PRIVATE_KEY/,
+		);
 	});
 
 	it('jamais de connexion de développement en production', () => {

@@ -39,6 +39,7 @@ import { PostController, type PostQuery } from './controllers/PostController.ts'
 import { PrivateMessageController, type PrivateMessageQuery } from './controllers/PrivateMessageController.ts';
 import { PrivateMessageSendController, type PrivateMessageSendQuery } from './controllers/PrivateMessageSendController.ts';
 import { ProfileController, type ProfileQuery } from './controllers/ProfileController.ts';
+import { PushController, type PushQuery } from './controllers/PushController.ts';
 import { ReputationController, type ReputationQuery } from './controllers/ReputationController.ts';
 import { SearchController, type SearchQuery } from './controllers/SearchController.ts';
 import { SeoController } from './controllers/SeoController.ts';
@@ -54,6 +55,7 @@ import { ensureCsrfToken, existingCsrfToken, isValidCsrf } from './http/csrf.ts'
 import { type FormBody, FormError } from './http/forms.ts';
 import { type LayoutDeps, renderBlock, renderMessage, renderMinimalMessage } from './http/layout.ts';
 import { silentLogger } from './http/log.ts';
+import type { PushDeps } from './http/push.ts';
 import { rateLimited } from './http/rateLimit.ts';
 import { createRouter, type ForumApp, type Router, serveStoredFiles, useSecurityHeaders } from './http/server.ts';
 import { checkAccess, purgeOnline, type SessionDeps, startSession, trackCookieName as trackCookieOf } from './http/session.ts';
@@ -125,6 +127,8 @@ export interface AppDeps extends Omit<LayoutDeps, 'views'>, SessionDeps {
 	translations: TranslationReader;
 	/** Traduction à l'écriture (Workers AI) ; null sans liaison AI : la tâche planifiée rattrapera. */
 	translationJob: TranslationJobDeps | null;
+	/** Notifications push (VAPID configuré) ; null sinon : ni bouton ni envoi. */
+	push: PushDeps | null;
 	/** Traductions anglaises des forums saisies dans l'administration. */
 	manualTranslations: ManualTranslationStore;
 	profiles: ProfileReader;
@@ -462,6 +466,9 @@ export async function buildApp(input: AppDeps): Promise<ForumApp> {
 	router.post<{ Body: FormBody }>('/draft_list.php', [authenticate, verifyCsrf, writeLimit], drafts.remove);
 	router.get<{ Querystring: DraftQuery }>('/draft_edit.php', [authenticate], drafts.edit);
 	router.post<{ Querystring: DraftQuery; Body: FormBody }>('/draft_edit.php', [authenticate, verifyCsrf, writeLimit], drafts.save);
+
+	const push = new PushController(deps);
+	router.post<{ Querystring: PushQuery; Body: FormBody }>('/push.php', [authenticate, verifyCsrf, writeLimit], push.submit);
 
 	const deletion = new DeleteController(deps);
 	router.get<{ Querystring: DeleteQuery }>('/delete.php', [authenticate], deletion.show);

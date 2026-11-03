@@ -302,6 +302,7 @@ export class UserAdminRepository implements UserAdminReader, UserAdminWriter {
 		await this.db.batch([
 			...(await removeFromModeratorsWrites(this.db, ids)),
 			this.db.deleteFrom('topic_subscriptions').where('user_id', 'in', ids),
+			this.db.deleteFrom('push_subscriptions').where('user_id', 'in', ids),
 			this.db.deleteFrom('forum_subscriptions').where('user_id', 'in', ids),
 			this.db.deleteFrom('online').where('user_id', 'in', ids),
 			...(withPosts

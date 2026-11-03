@@ -14,6 +14,7 @@ import type { AppReply, AppRequest } from '../http/context.ts';
 import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { sendInBackground } from '../http/mail.ts';
+import { type PushDeps, pushInBackground } from '../http/push.ts';
 import { setForumCookie } from '../http/session.ts';
 import { buildPostPage, type PostFormState } from '../presenters/postPage.ts';
 import type { BanReader } from '../repositories/BanRepository.ts';
@@ -29,6 +30,8 @@ import type { MailMessage, MailTemplateReader } from '../services/mail.ts';
 import { bannedEmailAlert, notifySubscribers, type PostLinks, replyValues, topicValues } from '../services/notifications.ts';
 import { canPostIn, isAnyModerator, isForumModerator } from '../services/permissions.ts';
 import { type PostForm, promotionGroup, quoteText, subscriptionChange, type ValidatedPost, validatePost } from '../services/posting.ts';
+import { privateMessagePush, replyPush } from '../services/push.ts';
+import { localizePath, publicPath } from '../services/routes.ts';
 import { indexWords } from '../services/searchIndex.ts';
 import { needsProjectTagWarning } from '../services/subjectPrefixes.ts';
 import { TOOLBAR } from '../services/toolbar.ts';
@@ -41,6 +44,7 @@ export interface PostControllerDeps extends LayoutDeps {
 	posting: PostingStore;
 	/** Traduction automatique après l'écriture ; null sans Workers AI. */
 	translationJob: TranslationJobDeps | null;
+	push: PushDeps | null;
 	bans: BanReader;
 	censorship: CensorReader;
 	accounts: AccountLookup;
@@ -227,8 +231,8 @@ export class PostController {
 		]);
 		if (draftId !== null && !viewer.isGuest) await this.deps.drafts.delete(draftId, viewer.id);
 		await this.notify(request, target, post, censor, { topicId, postId });
-		if (!viewer.isGuest)
-			await notifyMentions(
+		if (!viewer.isGuest) {
+			const mentions = await notifyMentions(
 				this.deps,
 				{
 					config: request.board,
@@ -240,6 +244,22 @@ export class PostController {
 				},
 				request.log,
 			);
+			pushInBackground(
+				request,
+				this.deps.push,
+				'pm',
+				mentions.map((mention) => ({
+					userId: mention.recipientId,
+					message: (texts, locale) =>
+						privateMessagePush(texts, locale, {
+							sender: viewer.username,
+							subject: mention.subject,
+							url: localizePath(publicPath(`pms_view.php?tid=${mention.sharedId}&mid=${mention.messageId}&box=inbox`), locale),
+							conversationId: mention.sharedId,
+						}),
+				})),
+			);
+		}
 
 		if (!viewer.isGuest) {
 			const tracked = markRead(parseTrackedTopics(request.cookies[this.deps.trackCookieName]), 'topics', topicId, now);
@@ -457,6 +477,22 @@ export class PostController {
 					message: message(),
 				});
 				mails.push(...notifySubscribers(subscribers, { short, full }, values));
+				const subject = censor !== null ? censor(target.topic.subject) : target.topic.subject;
+				pushInBackground(
+					request,
+					this.deps.push,
+					'replies',
+					subscribers.map((subscriber) => ({
+						userId: subscriber.id,
+						message: (texts, locale) =>
+							replyPush(texts, locale, {
+								replier: post.username,
+								subject,
+								url: localizePath(publicPath(`viewtopic.php?pid=${postId}#p${postId}`), locale),
+								topicId,
+							}),
+					})),
+				);
 			}
 		} else if (target.topic === null && config.forumSubscriptions) {
 			const subscribers = await this.deps.posting.listForumSubscribers(target.forum.id, viewer.id);

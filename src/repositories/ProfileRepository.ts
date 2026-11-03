@@ -64,6 +64,8 @@ function toColumns(changes: ProfileChanges): UserColumns {
 	set('use_pm', flag(changes.usesPrivateMessages));
 	set('notify_pm', flag(changes.notifyPrivateMessages));
 	set('notify_pm_full', flag(changes.notifyPrivateMessagesFull));
+	set('push_pm', flag(changes.pushPrivateMessages));
+	set('push_replies', flag(changes.pushReplies));
 	set('show_smilies', flag(changes.showSmilies));
 	set('show_img', flag(changes.showImages));
 	set('show_img_sig', flag(changes.showSignatureImages));
@@ -135,6 +137,8 @@ export class ProfileRepository implements ProfileStore {
 			usesPrivateMessages: row.use_pm === 1,
 			notifyPrivateMessages: row.notify_pm === 1,
 			notifyPrivateMessagesFull: row.notify_pm_full === 1,
+			pushPrivateMessages: row.push_pm === 1,
+			pushReplies: row.push_replies === 1,
 			showSmilies: row.show_smilies === 1,
 			showImages: row.show_img === 1,
 			showSignatureImages: row.show_img_sig === 1,

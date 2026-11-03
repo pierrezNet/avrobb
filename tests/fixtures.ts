@@ -453,6 +453,8 @@ export function editableProfile(profile: UserProfile, details: Partial<EditableP
 		usesPrivateMessages: true,
 		notifyPrivateMessages: false,
 		notifyPrivateMessagesFull: false,
+		pushPrivateMessages: true,
+		pushReplies: true,
 		showSmilies: true,
 		showImages: true,
 		showSignatureImages: true,
@@ -1109,6 +1111,7 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 				),
 		},
 		translationJob: null,
+		push: null,
 		manualTranslations: {
 			findManual: async (kind, id, lang) => data.manualTranslations?.get(`${kind}:${id}:${lang}`) ?? null,
 			setManual: async (source, lang, text) => {

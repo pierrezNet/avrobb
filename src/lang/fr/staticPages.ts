@@ -107,6 +107,7 @@ export const staticPages = {
 					'Les adresses IP ne sont visibles que des administrateurs et des modérateurs, pour repérer les abus. Les messages privés ne sont lus que par leurs destinataires.',
 					'Le forum est hébergé par Cloudflare (serveurs, base de données et fichiers), qui agit comme sous-traitant technique.',
 					'Pour la traduction automatique, le texte des messages publics et des titres est envoyé au service d’intelligence artificielle de Cloudflare (Workers AI, modèle Mistral Small 3.1 de Mistral AI), sans votre nom ni aucune autre donnée personnelle. Cloudflare ne s’en sert pas pour entraîner ses modèles. Les messages privés n’y sont jamais envoyés.',
+					'Si vous activez les notifications sur un appareil, AvroBB garde l’adresse d’abonnement que fournit votre navigateur. Chaque notification (titre de la discussion, nom de l’expéditeur) est chiffrée et transmise par le service de notifications de votre navigateur (Google, Mozilla, Apple ou Microsoft), qui ne peut pas la lire. Vous pouvez les désactiver à tout moment dans votre profil ; l’abonnement est effacé avec votre compte.',
 				],
 			},
 			{

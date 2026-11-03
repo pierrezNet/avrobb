@@ -15,6 +15,7 @@ import type { AppReply, AppRequest } from '../http/context.ts';
 import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { sendInBackground } from '../http/mail.ts';
+import { type PushDeps, pushInBackground } from '../http/push.ts';
 import { buildSendForm, conversationUrl } from '../presenters/privateMessagesPage.ts';
 import type { CensorReader } from '../repositories/CensorRepository.ts';
 import type { PrivateMessageStore, SentCopies } from '../repositories/PrivateMessageRepository.ts';
@@ -25,12 +26,14 @@ import { fillTemplate } from '../services/mail.ts';
 import { MAX_SELECTED_ITEMS } from '../services/pagination.ts';
 import { isAdmin, isAnyModerator } from '../services/permissions.ts';
 import { canEditPrivateMessage, parseUsernames, validateSend } from '../services/privateMessages.ts';
-import { absoluteUrl } from '../services/routes.ts';
+import { privateMessagePush } from '../services/push.ts';
+import { absoluteUrl, localizePath, publicPath } from '../services/routes.ts';
 import { privateMessagesDenied } from './PrivateMessageController.ts';
 import { positiveInt } from './params.ts';
 
 export interface PrivateMessageSendControllerDeps extends LayoutDeps {
 	privateMessageStore: PrivateMessageStore;
+	push: PushDeps | null;
 	censorship: CensorReader;
 	mailTemplates: MailTemplateReader;
 	mailer: Mailer;
@@ -163,11 +166,11 @@ export class PrivateMessageSendController {
 		};
 		if (mode.kind === 'new') {
 			const { sharedId, copies } = await store.createConversation(outgoing);
-			await this.notify(request, result.recipients, sharedId, copies, result.message);
+			await this.notify(request, result.recipients, sharedId, copies, outgoing);
 			return reply.redirect('pms_inbox.php?done=sent', 303);
 		}
 		const copies = await store.reply(mode.sharedId, outgoing);
-		await this.notify(request, result.recipients, mode.sharedId, copies, result.message);
+		await this.notify(request, result.recipients, mode.sharedId, copies, outgoing);
 		const own = copies.get(viewer.id) ?? mode.headId;
 		return reply.redirect(`pms_view.php?tid=${mode.sharedId}&mid=${mode.headId}&pid=${own}&done=sent#p${own}`, 303);
 	};
@@ -219,9 +222,27 @@ export class PrivateMessageSendController {
 		recipients: readonly PrivateRecipient[],
 		sharedId: number,
 		copies: SentCopies,
-		message: string,
+		outgoing: { subject: string; message: string },
 	): Promise<void> {
 		const { viewer, board: config } = request;
+		const message = outgoing.message;
+		pushInBackground(
+			request,
+			this.deps.push,
+			'pm',
+			recipients
+				.filter((recipient) => recipient.id !== viewer.id)
+				.map((recipient) => ({
+					userId: recipient.id,
+					message: (texts, locale) =>
+						privateMessagePush(texts, locale, {
+							sender: viewer.username,
+							subject: outgoing.subject,
+							url: localizePath(publicPath(`pms_view.php?tid=${sharedId}&mid=${copies.get(recipient.id) ?? 0}&box=inbox`), locale),
+							conversationId: sharedId,
+						}),
+				})),
+		);
 		if (!config.privateMessageNotification) return;
 		const targets = recipients.filter((recipient) => recipient.id !== viewer.id && recipient.notifyPrivateMessages);
 		if (targets.length === 0) return;

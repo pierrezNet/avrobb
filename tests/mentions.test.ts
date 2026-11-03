@@ -10,6 +10,7 @@ import { extractMentionIds, MAX_MENTIONS, mentionRecipients } from '../src/servi
 import { pmData } from './fakePrivateMessages.ts';
 import { type FakeData, fakeDeps, guest, post, sessionCookie, topic, viewer } from './fixtures.ts';
 import { inject } from './inject.ts';
+import { device, fakePush, settle } from './pushFake.ts';
 
 const BASE = 'http://forum.test';
 const mention = (id: number, name: string): string => `[url=${BASE}/profile.php?id=${id}]@${name}[/url]`;
@@ -121,6 +122,16 @@ describe('message privé au membre mentionné', () => {
 		await reply(app, `Regarde ${mention(5, 'MaxDUO')}`);
 		const message = fake.pm?.rows[0]?.message ?? '';
 		expect(message).toContain('x[\u200b/url][\u200bimg]https://e.test/a.png[\u200b/img][/url]');
+	});
+
+	it('notification push du membre mentionné, dans la langue de son appareil', async () => {
+		const push = fakePush([device(5, 'en'), device(6)]);
+		app = await buildApp({ ...fakeDeps(data()), push: push.deps });
+		await reply(app, `Regarde ${mention(5, 'MaxDUO')}`);
+		await settle();
+		expect(push.sent).toHaveLength(1);
+		expect(push.sent[0]?.message).toMatchObject({ title: 'Private message from Tessy', lang: 'en' });
+		expect(push.sent[0]?.message.url).toMatch(/^\/en\/pms_view\.php\?tid=\d+&mid=\d+&box=inbox$/);
 	});
 
 	it('rien si la messagerie est désactivée', async () => {

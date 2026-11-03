@@ -15,8 +15,9 @@ import { DohHostResolver } from './adapters/hostResolver.ts';
 import { LogMailer, type Mailer, ResendMailer } from './adapters/mailer.ts';
 import { FetchOAuthClient } from './adapters/oauth.ts';
 import { type AiBinding, WorkersAiTextModel } from './adapters/textModel.ts';
+import { WebPushSender } from './adapters/webPush.ts';
 import { buildApp, type ForumApp } from './app.ts';
-import { loadConfig } from './config.ts';
+import { type AppConfig, loadConfig } from './config.ts';
 import { AppFeedbackController, type AppFeedbackResult } from './controllers/AppFeedbackController.ts';
 import type { RateLimiter } from './controllers/AuthController.ts';
 import { ScheduledTasks, type ScheduledTasksDeps } from './controllers/ScheduledTasks.ts';
@@ -27,6 +28,7 @@ import assetManifest from './generated/assets.js';
 import templates from './generated/templates.js';
 import { type EdgeCache, withEdgeCache } from './http/edgeCache.ts';
 import { consoleLogger } from './http/log.ts';
+import type { PushDeps } from './http/push.ts';
 import { en, enDateWords } from './lang/en/index.ts';
 import { fr, frDateWords } from './lang/fr/index.ts';
 import { mail } from './lang/fr/mail.ts';
@@ -58,6 +60,7 @@ import { PostingRepository } from './repositories/PostingRepository.ts';
 import { PostRepository } from './repositories/PostRepository.ts';
 import { PrivateMessageRepository } from './repositories/PrivateMessageRepository.ts';
 import { ProfileRepository } from './repositories/ProfileRepository.ts';
+import { PushSubscriptionRepository } from './repositories/PushSubscriptionRepository.ts';
 import { ReportRepository } from './repositories/ReportRepository.ts';
 import { ReputationRepository } from './repositories/ReputationRepository.ts';
 import { SearchRepository } from './repositories/SearchRepository.ts';
@@ -100,6 +103,9 @@ export interface Env {
 	/** Workers AI (wrangler.jsonc, « ai ») : traduction automatique du contenu ; absente, rien n'est traduit. */
 	AI?: AiBinding;
 	RESEND_API_KEY?: string;
+	VAPID_PUBLIC_KEY?: string;
+	VAPID_PRIVATE_KEY?: string;
+	VAPID_SUBJECT?: string;
 	MAIL_FROM?: string;
 }
 
@@ -142,6 +148,17 @@ function createTranslation(env: Env, db: Db): ScheduledTasksDeps['translation'] 
 		},
 		clock,
 		logger: consoleLogger,
+	};
+}
+
+/** Notifications push, si les clés VAPID sont configurées. */
+function createPush(config: AppConfig, db: Db): PushDeps | null {
+	if (config.vapid === null) return null;
+	return {
+		sender: new WebPushSender(config.vapid, clock, consoleLogger),
+		subscriptions: new PushSubscriptionRepository(db),
+		publicKey: config.vapid.publicKey,
+		texts: { fr: fr.push, en: en.push },
 	};
 }
 
@@ -233,6 +250,7 @@ async function createApp(env: Env, services: Services, locale: Locale): Promise<
 		stopwords: new BuiltinStopwords(),
 		translations: new TranslationRepository(db),
 		manualTranslations: new TranslationRepository(db),
+		push: createPush(config, db),
 		translationJob: createTranslation(env, db),
 		usersInfo: new UsersInfoLoader(stats, clock),
 		avatars,

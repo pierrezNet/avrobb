@@ -513,6 +513,9 @@ export interface EditableProfile extends UserProfile {
 	usesPrivateMessages: boolean;
 	notifyPrivateMessages: boolean;
 	notifyPrivateMessagesFull: boolean;
+	/** Notifications push : messages privés et mentions, réponses aux discussions suivies. */
+	pushPrivateMessages: boolean;
+	pushReplies: boolean;
 	showSmilies: boolean;
 	showImages: boolean;
 	showSignatureImages: boolean;
@@ -555,6 +558,8 @@ export interface ProfileChanges {
 	usesPrivateMessages?: boolean;
 	notifyPrivateMessages?: boolean;
 	notifyPrivateMessagesFull?: boolean;
+	pushPrivateMessages?: boolean;
+	pushReplies?: boolean;
 	showSmilies?: boolean;
 	showImages?: boolean;
 	showSignatureImages?: boolean;
@@ -624,6 +629,7 @@ export interface ReviewPost {
 
 /** Abonné à prévenir d'une nouvelle réponse ou discussion. */
 export interface Subscriber {
+	id: number;
 	email: string;
 	/** Notification avec le texte du message (notify_with_post). */
 	notifyWithPost: boolean;

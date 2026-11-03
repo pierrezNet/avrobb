@@ -97,6 +97,7 @@ export const staticPages: typeof frStaticPages = {
 					'IP addresses are visible only to administrators and moderators, to spot abuse. Private messages are read only by their recipients.',
 					'The forum is hosted by Cloudflare (servers, database and files), which acts as a technical processor.',
 					'For machine translation, the text of public posts and titles is sent to Cloudflare’s artificial intelligence service (Workers AI, Mistral Small 3.1 model by Mistral AI), without your name or any other personal data. Cloudflare does not use it to train its models. Private messages are never sent to it.',
+					'If you turn notifications on for a device, AvroBB keeps the subscription address provided by your browser. Each notification (topic title, sender name) is encrypted and delivered by your browser’s notification service (Google, Mozilla, Apple or Microsoft), which cannot read it. You can turn them off at any time in your profile; the subscription is deleted with your account.',
 				],
 			},
 			{

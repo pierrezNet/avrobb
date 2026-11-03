@@ -4,6 +4,7 @@
  */
 
 import type { OAuthCredentials } from './adapters/oauth.ts';
+import type { VapidKeys } from './adapters/webPush.ts';
 import { type OAuthProviderId, parseAdminAccounts } from './services/oauth.ts';
 
 /**
@@ -31,6 +32,8 @@ export interface AppConfig {
 	adminAccounts: ReadonlySet<string>;
 	/** Envoi des e-mails par Resend (RESEND_API_KEY, MAIL_FROM) ; null : e-mails seulement journalisés. */
 	mail: { apiKey: string; from: string } | null;
+	/** Notifications push : VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY (JWK), VAPID_SUBJECT ; null sans clés. */
+	vapid: VapidKeys | null;
 }
 
 /**
@@ -64,6 +67,20 @@ function credentials(env: ConfigVars, prefix: 'GITHUB' | 'GOOGLE'): OAuthCredent
 	return clientId !== '' && clientSecret !== '' ? { clientId, clientSecret } : null;
 }
 
+/** Clés de scripts/generate-vapid.mjs ; une clé privée illisible est une erreur de configuration. */
+function vapidKeys(env: ConfigVars): VapidKeys | null {
+	const publicKey = text(env, 'VAPID_PUBLIC_KEY');
+	const privateKey = text(env, 'VAPID_PRIVATE_KEY');
+	if (publicKey === '' || privateKey === '') return null;
+	let jwk: JsonWebKey;
+	try {
+		jwk = JSON.parse(privateKey) as JsonWebKey;
+	} catch {
+		throw new Error('VAPID_PRIVATE_KEY doit être la clé privée JWK de scripts/generate-vapid.mjs');
+	}
+	return { publicKey, privateKey: jwk, subject: text(env, 'VAPID_SUBJECT') || 'mailto:dpo@pierrez.net' };
+}
+
 export function loadConfig(env: ConfigVars): AppConfig {
 	const github = credentials(env, 'GITHUB');
 	const google = credentials(env, 'GOOGLE');
@@ -76,5 +93,6 @@ export function loadConfig(env: ConfigVars): AppConfig {
 			text(env, 'RESEND_API_KEY') !== '' && text(env, 'MAIL_FROM') !== ''
 				? { apiKey: text(env, 'RESEND_API_KEY'), from: text(env, 'MAIL_FROM') }
 				: null,
+		vapid: vapidKeys(env),
 	};
 }

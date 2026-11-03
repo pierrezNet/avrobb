@@ -12,6 +12,7 @@ import type { EditableProfile, ProfileChanges } from '../domain/models.ts';
 import type { AppReply, AppRequest } from '../http/context.ts';
 import { type FormBody, field } from '../http/forms.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
+import type { PushDeps } from '../http/push.ts';
 import { buildProfileEditPage, sectionTitle } from '../presenters/profileEditPage.ts';
 import type { AvatarLocator } from '../repositories/AvatarFiles.ts';
 import type { BanReader } from '../repositories/BanRepository.ts';
@@ -34,6 +35,8 @@ import {
 import { isProfile, loadEditableProfile, type ProfileAccessDeps, type ProfileQuery } from './profileAccess.ts';
 
 export interface ProfileEditControllerDeps extends LayoutDeps, ProfileAccessDeps {
+	/** Notifications push configurées : préférences et bouton par appareil. */
+	push: PushDeps | null;
 	bans: BanReader;
 	censorship: CensorReader;
 	avatars: AvatarLocator;
@@ -205,12 +208,15 @@ export class ProfileEditController {
 							usesPrivateMessages: checked(body, 'form[use_pm]'),
 							notifyPrivateMessages: checked(body, 'form[notify_pm]'),
 							notifyPrivateMessagesFull: checked(body, 'form[notify_pm_full]'),
+							pushPrivateMessages: checked(body, 'form[push_pm]'),
+							pushReplies: checked(body, 'form[push_replies]'),
 						},
 						{
 							subscriptions: config.forumSubscriptions || config.topicSubscriptions,
 							autoNotify: config.topicSubscriptions,
 							privateMessages: config.privateMessagesEnabled && viewer.group.canUsePrivateMessages,
 							privateMessageNotification: config.privateMessageNotification,
+							push: this.deps.push !== null,
 							defaultEmailSetting: config.registration.defaultEmailSetting,
 						},
 					),
@@ -251,6 +257,7 @@ export class ProfileEditController {
 			lang,
 			dateWords: this.deps.page.dateWords,
 			now: this.deps.page.clock(),
+			pushPublicKey: this.deps.push?.publicKey ?? null,
 		});
 		return renderPage(
 			request,

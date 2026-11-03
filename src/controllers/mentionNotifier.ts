@@ -30,13 +30,22 @@ export interface MentionInput {
 	subject: string;
 }
 
+/** Conversation de mention créée, pour la notification push du destinataire. */
+export interface SentMention {
+	recipientId: number;
+	sharedId: number;
+	messageId: number;
+	subject: string;
+}
+
 /** Envoie les messages privés ; un échec est journalisé sans annuler le message publié. */
-export async function notifyMentions(deps: MentionNotifierDeps, input: MentionInput, log: Logger): Promise<void> {
+export async function notifyMentions(deps: MentionNotifierDeps, input: MentionInput, log: Logger): Promise<SentMention[]> {
 	const { config, author } = input;
-	if (!config.privateMessagesEnabled) return;
+	if (!config.privateMessagesEnabled) return [];
 	const ids = extractMentionIds(input.message, config.baseUrl, author.id);
-	if (ids.length === 0) return;
+	if (ids.length === 0) return [];
 	const t = deps.page.lang.post;
+	const sent: SentMention[] = [];
 	try {
 		const recipients = mentionRecipients(await deps.privateMessageStore.findRecipientsById(ids));
 		// Le titre est du texte du membre : inerte, il ne peut pas fermer le [url] ni ajouter de balise.
@@ -44,16 +53,19 @@ export async function notifyMentions(deps: MentionNotifierDeps, input: MentionIn
 		for (const recipient of recipients) {
 			// Discussion illisible pour son groupe (forum réservé) : pas de message, rien ne doit fuiter.
 			if ((await deps.topics.findReadable(input.topicId, recipient.groupId)) === null) continue;
-			await deps.privateMessageStore.createConversation({
-				subject: t.mentionSubject(author.username),
+			const subject = t.mentionSubject(author.username);
+			const { sharedId, copies } = await deps.privateMessageStore.createConversation({
+				subject,
 				message: t.mentionMessage(author.username, link),
 				hideSmilies: false,
 				sender: { id: author.id, username: author.username, ip: author.ip },
 				recipients: [recipient],
 				now: deps.page.clock(),
 			});
+			sent.push({ recipientId: recipient.id, sharedId, messageId: copies.get(recipient.id) ?? 0, subject });
 		}
 	} catch (error) {
 		log.error({ err: error }, "Échec de l'envoi d'un message privé de mention");
 	}
+	return sent;
 }

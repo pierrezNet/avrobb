@@ -3,13 +3,27 @@
 	"short_name": "AvroBB",
 	"description": "Forum d'échange autour des projets personnels d'Emmanuel Pierrez",
 	"lang": "fr",
-	"start_url": "/index.php",
-	"display": "browser",
+	"start_url": "/",
+	"display": "standalone",
 	"background_color": "#5b1313",
 	"theme_color": "#5b1313",
 	"icons": [
-		{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-		{ "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
-		{ "src": "icons/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
-	]
+		{
+			"src": "icons/icon-192.png",
+			"sizes": "192x192",
+			"type": "image/png"
+		},
+		{
+			"src": "icons/icon-512.png",
+			"sizes": "512x512",
+			"type": "image/png"
+		},
+		{
+			"src": "icons/favicon.svg",
+			"sizes": "any",
+			"type": "image/svg+xml"
+		}
+	],
+	"id": "/",
+	"scope": "/"
 }

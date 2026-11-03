@@ -217,9 +217,9 @@ describe('PostingRepository', () => {
 	it('abonnés à prévenir : venus depuis le message précédent, non bannis, sauf l’auteur', async () => {
 		const posting = new PostingRepository(db);
 		// Tessy (abonnée au sujet 10) est en ligne depuis 1782899000, après le message précédent.
-		expect(await posting.listTopicSubscribers(10, 2, 2)).toEqual([{ email: 'tessy@example.test', notifyWithPost: false }]);
+		expect(await posting.listTopicSubscribers(10, 2, 2)).toEqual([{ id: 3, email: 'tessy@example.test', notifyWithPost: false }]);
 		expect(await posting.listTopicSubscribers(10, 2, 3)).toEqual([]);
-		expect(await posting.listForumSubscribers(2, 5)).toEqual([{ email: 'tessy@example.test', notifyWithPost: false }]);
+		expect(await posting.listForumSubscribers(2, 5)).toEqual([{ id: 3, email: 'tessy@example.test', notifyWithPost: false }]);
 	});
 });
 

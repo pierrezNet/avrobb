@@ -276,6 +276,9 @@ export interface UsersTable {
 	/** Messagerie privée (mod APMS) : alerte par e-mail d'un nouveau MP, avec ou sans son texte. */
 	notify_pm: Generated<number>;
 	notify_pm_full: Generated<number>;
+	/** Notifications push : messages privés et mentions, réponses aux discussions suivies (migration 0010). */
+	push_pm: Generated<number>;
+	push_replies: Generated<number>;
 	auto_notify: Generated<number>;
 	show_avatars: Generated<number>;
 	show_sig: Generated<number>;
@@ -314,6 +317,17 @@ export interface TranslationsTable {
 	created: number;
 }
 
+/** Abonnements aux notifications push, un par appareil (migration 0010). */
+export interface PushSubscriptionsTable {
+	id: Generated<number>;
+	user_id: number;
+	endpoint: string;
+	p256dh: string;
+	auth: string;
+	locale: string;
+	created: number;
+}
+
 export interface Database {
 	bans: BansTable;
 	brouillons: BrouillonsTable;
@@ -328,6 +342,7 @@ export interface Database {
 	messages: MessagesTable;
 	online: OnlineTable;
 	posts: PostsTable;
+	push_subscriptions: PushSubscriptionsTable;
 	reports: ReportsTable;
 	reputation: ReputationTable;
 	search_cache: SearchCacheTable;
@@ -353,6 +368,7 @@ export const TABLE_NAMES: readonly (keyof Database)[] = [
 	'messages',
 	'online',
 	'posts',
+	'push_subscriptions',
 	'reports',
 	'reputation',
 	'search_cache',

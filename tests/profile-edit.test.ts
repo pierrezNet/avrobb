@@ -23,6 +23,7 @@ import {
 } from '../src/services/profileForms.ts';
 import { type FakeData, fakeDeps, group, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
 import { inject } from './inject.ts';
+import { fakePush } from './pushFake.ts';
 
 const SEED = 'graine-de-test';
 const CSRF_SECRET = 'a'.repeat(64);
@@ -188,6 +189,7 @@ describe('readDisplay, readPrivacy', () => {
 			autoNotify: true,
 			privateMessages: false,
 			privateMessageNotification: false,
+			push: false,
 			defaultEmailSetting: 1,
 		};
 		const input = {
@@ -197,9 +199,13 @@ describe('readDisplay, readPrivacy', () => {
 			usesPrivateMessages: false,
 			notifyPrivateMessages: false,
 			notifyPrivateMessagesFull: false,
+			pushPrivateMessages: true,
+			pushReplies: false,
 		};
 		expect(readPrivacy(input, options).changes).toEqual({ emailSetting: 1, notifyWithPost: true, autoNotify: false });
 		expect(readPrivacy(input, { ...options, privateMessages: true }).changes.usesPrivateMessages).toBe(false);
+		// Préférences push enregistrées seulement si les notifications push sont configurées.
+		expect(readPrivacy(input, { ...options, push: true }).changes).toMatchObject({ pushPrivateMessages: true, pushReplies: false });
 	});
 });
 
@@ -569,5 +575,47 @@ describe('profile.php : compte SSO', () => {
 		expect((await get(server, 2, '/profile.php?action=delete_account&id=2')).statusCode).toBe(403);
 		expect((await post(server, 2, '/profile.php?action=delete_account&id=2', {})).statusCode).toBe(403);
 		expect(fake.accountLog).toBeUndefined();
+	});
+});
+
+describe('notifications push : profil et push.php', () => {
+	const withPush = async (fake: FakeData) => {
+		const push = fakePush();
+		app = await buildApp({ ...fakeDeps(fake), push: push.deps });
+		return { server: app, push };
+	};
+
+	it('préférences et bouton de l’appareil sur son propre profil ; préférences seules pour un autre', async () => {
+		const { server } = await withPush(data());
+		const own = (await get(server, 3, '/profile.php?section=privacy&id=3')).body;
+		expect(own).toContain('name="form[push_pm]" value="1" checked');
+		expect(own).toContain('data-push data-key="BPublicKey" data-action="/push.php"');
+		const other = (await get(server, 2, '/profile.php?section=privacy&id=3')).body;
+		expect(other).toContain('name="form[push_replies]"');
+		expect(other).not.toContain('data-push');
+		// Sans clés VAPID : rien.
+		app = await buildApp(fakeDeps(data()));
+		expect((await get(app, 3, '/profile.php?section=privacy&id=3')).body).not.toContain('push_pm');
+	});
+
+	it('abonnement de l’appareil dans la langue de la page, désabonnement, refus', async () => {
+		const { server, push } = await withPush(data());
+		const subscription = { endpoint: 'https://fcm.googleapis.com/fcm/send/abc', p256dh: 'p'.repeat(20), auth: 'a'.repeat(20) };
+		expect((await post(server, 3, '/push.php?action=subscribe', subscription)).statusCode).toBe(200);
+		expect(push.saved).toEqual(['3 https://fcm.googleapis.com/fcm/send/abc fr']);
+		// Service inconnu : le Worker n'appellera jamais cette adresse.
+		const forged = await post(server, 3, '/push.php?action=subscribe', { ...subscription, endpoint: 'https://evil.example/hook' });
+		expect(forged.statusCode).toBe(400);
+		expect((await post(server, 3, '/push.php?action=unsubscribe', { endpoint: subscription.endpoint })).statusCode).toBe(200);
+		expect(push.removed).toEqual(['3 https://fcm.googleapis.com/fcm/send/abc']);
+		// Sans jeton CSRF, ou en invité : refusé.
+		const noToken = await inject(server, {
+			method: 'POST',
+			url: '/push.php?action=subscribe',
+			headers: { cookie: cookies(3), 'content-type': 'application/x-www-form-urlencoded' },
+			payload: new URLSearchParams(subscription).toString(),
+		});
+		expect(noToken.statusCode).toBe(403);
+		expect(push.saved).toHaveLength(1);
 	});
 });

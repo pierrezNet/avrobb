@@ -69,7 +69,8 @@ Une fois pour toutes (compte Cloudflare sur l'offre **Workers Paid**, `npx wrang
 2. Schéma : `npm run db:migrate:remote`.
 3. Secrets : `npx wrangler secret put` pour `SESSION_SECRET` (`openssl rand -hex 32`),
    `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`,
-   `ADMIN_ACCOUNTS` (`github:…,google:…`), `RESEND_API_KEY`, `MAIL_FROM`.
+   `ADMIN_ACCOUNTS` (`github:…,google:…`), `RESEND_API_KEY`, `MAIL_FROM`, et pour les notifications
+   push `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (`node scripts/generate-vapid.mjs`).
 4. Domaine : `avrobb.org`, acheté chez Cloudflare Registrar, déclaré dans `routes` de
    `wrangler.jsonc` (domaine personnalisé du Worker : DNS et certificat créés au déploiement).
 5. Premier déploiement : `npm run deploy`, puis l'adresse du forum dans la base :
@@ -156,6 +157,17 @@ modération, messagerie privée, renommée, recherche, flux RSS) et y ajoute ou 
   (table `translations`, migration 0009). Mention « Traduit automatiquement » et texte d'origine à
   déplier. Messages privés et e-mails jamais traduits ; nom et description anglais d'un forum
   saisissables dans l'administration.
+
+**Application installable et notifications push**
+- Manifeste en `standalone` et service worker à la racine (`public/sw.js`) : AvroBB s'installe sur
+  téléphone et ordinateur. Aucune page n'est mise en cache (jamais de contenu périmé) ; sans réseau,
+  une page « hors ligne » (`public/offline.html`).
+- Notifications push (Web Push, chiffrement RFC 8291 et VAPID écrits avec `crypto.subtle`, sans
+  dépendance) : messages privés et mentions, réponses aux discussions suivies, chacun réglable dans
+  le profil ; un abonnement par appareil (table `push_subscriptions`, migration 0010), dans la langue
+  de la page où il a été pris ; seuls les services de push des navigateurs sont appelés. Les e-mails
+  ne changent pas. Clés : `node scripts/generate-vapid.mjs`, puis `VAPID_PUBLIC_KEY`,
+  `VAPID_PRIVATE_KEY` et `VAPID_SUBJECT` en secrets ; sans elles, ni bouton ni envoi.
 
 **Écrire**
 - BBCode avec émojis, `[video]` en lecteur intégré, `[spoiler]` en `<details>` ; écarts listés en

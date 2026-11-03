@@ -16,6 +16,8 @@
 	--color-accent-text: #fff7f0;
 	--color-header-bg: #3b1917;
 	--color-header-text: #fff7f0;
+	/* Bannière d'AvroBB (rouge) amenée à la teinte du thème. */
+	--banner-filter: none;
 	--color-active: #a3362b;
 	--color-border: #e2c8b6;
 	--color-code-bg: #f6ebe1;

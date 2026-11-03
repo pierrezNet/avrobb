@@ -155,7 +155,8 @@ export interface LayoutView {
 	 */
 	memberSuggest: { profileBase: string } | null;
 	/** Logo et bannière de l'en-tête (page Apparence), adresses versionnées. */
-	header: { logoHref: string; bannerHref: string };
+	/** `tinted` : bannière d'AvroBB, teintée aux couleurs du thème (une bannière envoyée garde les siennes). */
+	header: { logoHref: string; bannerHref: string; tinted: boolean };
 	/** Visiteur banni : il lit le forum mais n'écrit plus (bandeau sous l'en-tête). */
 	ban: { expires: string | null; reason: string | null } | null;
 }
@@ -402,7 +403,11 @@ export function buildLayout(input: LayoutInput): LayoutView {
 		modControls: buildModControls(footer, viewer, lang),
 		footerLinks: buildFooterLinks(lang, options.pageId),
 		csrfToken: input.csrfToken,
-		header: { logoHref: headerImageHref('logo', config.headerVersion), bannerHref: headerImageHref('banner', config.headerVersion) },
+		header: {
+			logoHref: headerImageHref('logo', config.headerVersion),
+			bannerHref: headerImageHref('banner', config.headerVersion),
+			tinted: config.headerVersion <= 0,
+		},
 		memberSuggest: !viewer.isGuest && viewer.group.canViewUsers ? { profileBase: '/membre/' } : null,
 		// Bandeau pour les membres seulement : un invité banni par son adresse IP n'écrit déjà presque
 		// rien (ses envois restent refusés), le message ne ferait que l'intriguer.
@@ -443,7 +448,7 @@ export function buildMinimalLayout(lang: Lang, title: string): LayoutView {
 		modControls: [],
 		footerLinks: buildFooterLinks(lang, 'message'),
 		csrfToken: '',
-		header: { logoHref: headerImageHref('logo', 0), bannerHref: headerImageHref('banner', 0) },
+		header: { logoHref: headerImageHref('logo', 0), bannerHref: headerImageHref('banner', 0), tinted: true },
 		memberSuggest: null,
 		ban: null,
 	};

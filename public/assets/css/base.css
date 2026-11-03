@@ -2392,11 +2392,24 @@ h2.form__legend {
 		display: flex;
 		flex: 1 0 100%;
 		align-items: flex-end;
+		position: relative;
+		isolation: isolate;
 		min-height: 7.75rem;
 		padding: 0 0.5rem;
-		background:
-			var(--header-banner, none) center / cover no-repeat,
-			linear-gradient(90deg, var(--color-header-bg) 12%, var(--color-accent) 75%);
+		background: linear-gradient(90deg, var(--color-header-bg) 12%, var(--color-accent) 75%);
+	}
+
+	/* Bannière dans un calque à part : le filtre de teinte ne touche pas le logo. */
+	.site-header__logo::before {
+		content: "";
+		position: absolute;
+		inset: 0;
+		z-index: -1;
+		background: var(--header-banner, none) center / cover no-repeat;
+	}
+
+	.site-header--tinted .site-header__logo::before {
+		filter: var(--banner-filter, none);
 	}
 
 	.site-header__logo img {

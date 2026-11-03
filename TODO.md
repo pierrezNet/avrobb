@@ -233,9 +233,15 @@ Vigilance :
 
 - [ ] **Votes et réactions sur les messages** (demande du 2026-11-03) :
   - voter pour un message (« j'aime ») et y ajouter une réaction émoji (liste courte et fixe, par exemple 👍 ❤️ 😂 😮 🙏), un vote et une réaction au plus par membre, modifiables ; compteurs sous le message ;
-  - sur l'accueil, à côté de « Projets de la semaine », une colonne des messages les plus aimés de la semaine (extrait, auteur, lien) ;
+  - sur l'accueil, à côté de « Projets de la semaine », une colonne des messages les plus aimés et/ou votés de la semaine (extrait, auteur, lien) : classement sur les « j'aime », les votes ou leur somme, à choisir ;
   - à articuler avec la renommée, qui vote déjà « + / − » sur l'auteur d'un message : garder les deux (renommée = le membre, vote = le message) ou faire du vote la seule mesure ;
   - membres seulement, POST avec jeton CSRF (bouton sans JavaScript, mise à jour sans rechargement avec), limitation de débit ; une table `post_reactions` (message, membre, type), compteurs relus par message ou dénormalisés pour l'accueil
+  - chaque fonction désactivable dans l'administration, au choix : renommée (réglage `o_reputation_enabled` déjà lu, mais absent des pages d'administration), réactions émoji, votes
+- [ ] **Options de l'administration héritées de FluxBB** (relevé du 2026-11-03) :
+  - sans effet, à retirer : temps de mise en cache des flux (`o_feed_ttl`, le cache en bordure s'en charge), serveur SMTP (`o_smtp_*`, les e-mails passent par Resend : afficher plutôt « Resend configuré / non configuré »), vérification des inscriptions (`o_regs_verify`, pas de mot de passe) ;
+  - trompeuse, à rendre effective : « Autoriser les nouvelles inscriptions » (`o_regs_allow`) ne bloque pas la création d'un compte par GitHub ou Google ; la faire refuser les nouveaux comptes SSO (forum réservé aux membres existants) ;
+  - « Prévenir des nouvelles inscriptions » (`o_regs_report`) : sans effet ; envoyer un e-mail aux administrateurs à chaque nouveau compte, ou retirer ;
+  - à garder : réponse rapide (effective), e-mail de l'invité obligatoire (utile seulement si le groupe Invités peut écrire : l'afficher dans ce cas seulement ?)
 - [ ] **Robots comptés comme invités** (constaté le 2026-11-03 : « Emmanuel Pierrez + 7 invités », surtout Googlebot, des serveurs Google Cloud et Tencent Cloud, aucun lecteur humain). À traiter seulement si le compteur s'emballe comme sur PV (4 membres, 544 invités) : ne pas enregistrer la présence des robots qui se déclarent (« bot », « crawler », « spider », Googlebot, bingbot, GPTBot, ClaudeBot…) ; les robots anonymes des hébergeurs resteraient comptés. Pour savoir qui lit vraiment : Cloudflare Web Analytics (gratuit, sans cookie), le cache en bordure masquant de toute façon une partie des vrais visiteurs.
 - [x] Réputation : gardée (décidé le 2026-11-03).
 - [x] Thème et bannière accordés (2026-11-03) : la bannière d'AvroBB prend la teinte du thème choisi (`--banner-filter` de chaque thème), plus de bannière rouge sur un thème bleu ou vert.

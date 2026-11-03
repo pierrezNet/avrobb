@@ -2177,8 +2177,10 @@ h2.form__legend {
 		max-width: 100%;
 	}
 
+	/* En colonne, flex-basis: 100 % deviendrait une hauteur : contacts repoussés en bas. */
 	.post__details {
 		flex-direction: column;
+		flex-basis: auto;
 	}
 
 	/* Colonne : « IP de connexion » sur sa ligne, puis E-mail et MP côte à côte. */

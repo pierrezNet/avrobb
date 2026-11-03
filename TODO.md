@@ -232,7 +232,7 @@ Vigilance :
 ## À décider
 
 - [x] Réputation : gardée (décidé le 2026-11-03).
-- [ ] Thème aux couleurs d'AvroBB (bordeaux et or du logo) comme thème par défaut, à la place d'Air (bleu), qui jure avec la bannière.
+- [x] Thème et bannière accordés (2026-11-03) : la bannière d'AvroBB prend la teinte du thème choisi (`--banner-filter` de chaque thème), plus de bannière rouge sur un thème bleu ou vert.
 - [ ] Notifications sur le site (page « Notifications ») à la place des messages privés pour les mentions, si la messagerie se révèle inutile.
 
 ## Estimation globale

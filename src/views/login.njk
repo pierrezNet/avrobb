@@ -7,7 +7,7 @@
 
 <section class="form-box sso-login" aria-labelledby="sso-title">
 	<h2 class="visually-hidden" id="sso-title">{{ lang.login.login }}</h2>
-	<p>{{ lang.login.intro }}</p>
+	{% if view.registrationsOpen %}<p>{{ lang.login.intro }}</p>{% else %}<p class="sso-login__closed" role="note">{{ lang.login.registrationsClosedIntro }}</p>{% endif %}
 	<noscript><p class="form__help">{{ lang.login.noScript }}</p></noscript>
 	{% if view.providers.length %}
 	<ul class="sso-login__providers">
@@ -16,7 +16,7 @@
 	{% else %}
 	<p class="form__help">{{ lang.login.noProvider }}</p>
 	{% endif %}
-	<p class="form__help">{{ lang.login.termsInfo }} <a href="{{ url('terms.php') }}">{{ lang.login.termsLink }}</a>.</p>
+	{% if view.registrationsOpen %}<p class="form__help">{{ lang.login.termsInfo }} <a href="{{ url('terms.php') }}">{{ lang.login.termsLink }}</a>.</p>{% endif %}
 	<p class="form__help">{{ lang.login.privacyInfo }} <a href="{{ url('privacy.php') }}">{{ lang.login.privacyLink }}</a>.</p>
 </section>
 

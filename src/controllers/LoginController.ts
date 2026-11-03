@@ -60,6 +60,7 @@ export class LoginController {
 			{ pageId: 'login', titleParts: [request.board.boardTitle, lang.login.login], activeNav: 'login' },
 			{
 				providers,
+				registrationsOpen: request.board.registrationsAllowed,
 				devLogin: isDevLoginAllowed(this.deps.devLogin, request.ip),
 				redirectUrl,
 			},

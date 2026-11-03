@@ -19,6 +19,8 @@ export const login = {
 	privacyInfo: 'Ce que nous recevons de ce compte est décrit dans la',
 	privacyLink: 'politique de confidentialité',
 	ssoCancelled: 'Connexion annulée.',
+	registrationsClosedIntro:
+		'Les inscriptions sont fermées pour le moment : seuls les membres déjà inscrits peuvent se connecter, avec le compte GitHub ou Google utilisé à leur inscription.',
 	registrationsClosed: 'Les inscriptions sont fermées : seuls les membres déjà inscrits peuvent se connecter.',
 	ssoExpired: 'La tentative de connexion a expiré ou ne vient pas de ce navigateur. Recommencez depuis la page de connexion.',
 	ssoFailed: (provider: string) => `La connexion avec ${provider} a échoué. Réessayez dans quelques instants.`,

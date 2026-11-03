@@ -686,6 +686,13 @@ a.site-status__alert {
 }
 
 /* Message traduit automatiquement : mention discrète, texte d'origine à déplier (sans JS). */
+/* Connexion, inscriptions fermées : prévenu avant de partir chez le fournisseur. */
+.sso-login__closed {
+	padding: 0.75rem 1rem;
+	border-left: 4px solid var(--color-accent);
+	background: var(--color-surface-alt);
+}
+
 .post__translation {
 	margin: 0.75rem 0 0;
 	color: var(--color-muted);

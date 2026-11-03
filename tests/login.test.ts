@@ -85,6 +85,14 @@ describe('connexion de développement', () => {
 		expect(page.body).not.toContain('name="req_username"');
 		// Sans JavaScript, les pages de GitHub et Google ne s'affichent pas : le visiteur est prévenu.
 		expect(page.body).toContain('<noscript><p class="form__help">JavaScript semble désactivé.');
+		// Inscriptions fermées : annoncé avant le départ chez le fournisseur.
+		const closed = await buildApp({
+			...fakeDeps({ users, topics: [], posts: new Map(), config: { registrationsAllowed: false } }),
+			devLogin: false,
+		});
+		const closedPage = await inject(closed, { url: '/login.php', headers: { host: HOST } });
+		expect(closedPage.body).toContain('Les inscriptions sont fermées pour le moment');
+		expect(closedPage.body).not.toContain('vous créez votre compte');
 		// Le compte se crée à la première connexion : les Termes et règles sont annoncés ici.
 		expect(page.body).toContain('vous créez votre compte et acceptez les <a href="/conditions">Termes et règles</a>.');
 	});

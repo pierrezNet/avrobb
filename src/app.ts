@@ -123,6 +123,7 @@ export interface AppDeps extends Omit<LayoutDeps, 'views'>, SessionDeps {
 	searchRateLimiter?: RateLimiter;
 	mailTemplates: MailTemplateReader;
 	mailer: Mailer;
+	mailConfigured: boolean;
 	/** Traductions automatiques du contenu, pour l'affichage. */
 	translations: TranslationReader;
 	/** Traduction à l'écriture (Workers AI) ; null sans liaison AI : la tâche planifiée rattrapera. */

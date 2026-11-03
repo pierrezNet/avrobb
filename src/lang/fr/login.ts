@@ -17,6 +17,7 @@ export const login = {
 	privacyInfo: 'Ce que nous recevons de ce compte est décrit dans la',
 	privacyLink: 'politique de confidentialité',
 	ssoCancelled: 'Connexion annulée.',
+	registrationsClosed: 'Les inscriptions sont fermées : seuls les membres déjà inscrits peuvent se connecter.',
 	ssoExpired: 'La tentative de connexion a expiré ou ne vient pas de ce navigateur. Recommencez depuis la page de connexion.',
 	ssoFailed: (provider: string) => `La connexion avec ${provider} a échoué. Réessayez dans quelques instants.`,
 	tooManyAttempts: 'Trop de tentatives de connexion. Réessayez dans une minute.',

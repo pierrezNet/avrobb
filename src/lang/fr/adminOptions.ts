@@ -120,13 +120,13 @@ export const adminOptions = {
 			label: 'Éléments de menu supplémentaires',
 			help: "En ajoutant des hyperliens HTML dans cette boîte, un nombre illimité d'éléments peuvent être ajoutés au menu de navigation situé en haut de chaque page. Le format pour ajouter de nouveaux liens est le suivant : X = <a href=\"URL\">INTITULE DU LIEN</a> où X est la position à laquelle le lien devra être inséré (ex. : 0 pour insérer au début et 2 pour insérer après l'élément « Liste d'utilisateurs »). Chaque élément devra se trouver dans une nouvelle ligne.",
 		},
+		reputation_enabled: {
+			label: 'Renommée',
+			help: "Votes « + » et « − » des membres sur l'auteur d'un message, et score affiché sous son nom. Désactivée, ni vote ni score ne sont affichés ; les votes déjà donnés sont conservés.",
+		},
 		feed_type: {
 			label: 'Type de flux par défaut',
 			help: "Type d'abonnement de flux devant être affiché. Remarque : le choix « Aucun » ne désactive pas le flux mais le masque simplement par défaut.",
-		},
-		feed_ttl: {
-			label: 'Temps de mise en cache des flux',
-			help: "Les flux peuvent être placés dans le cache afin de réduire l'utilisation des ressources.",
 		},
 		report_method: {
 			label: 'Méthode de signalement',
@@ -176,33 +176,13 @@ export const adminOptions = {
 			label: 'Suivi de discussion',
 			help: "Autorise les utilisateurs à suivre des discussions (reçoivent un e-mail lorsque quelqu'un répond).",
 		},
-		smtp_host: {
-			label: 'Adresse du serveur SMTP',
-			help: "L'adresse d'un serveur SMTP externe à utiliser pour envoyer les e-mails. Vous pouvez spécifier un numéro de port personnalisé si le serveur SMTP n'utilise pas le port par défaut 25 (exemple : mail.monhôte.com:3580). Laisser vide pour utiliser le programme d'envoi d'e-mail local.",
-		},
-		smtp_user: {
-			label: "Nom d'utilisateur SMTP",
-			help: "Nom d'utilisateur pour serveur SMTP. Indiquez un nom d'utilisateur uniquement si cela est demandé par le serveur SMTP (la plupart des serveurs ne nécessitent pas d'authentification).",
-		},
-		smtp_pass: {
-			label: 'Mot de passe SMTP',
-			help: "Mot de passe pour serveur SMTP. Indiquez un mot de passe uniquement si cela est demandé par le serveur SMTP (la plupart des serveurs ne nécessitent pas d'authentification). Veuillez indiquer deux fois votre mot de passe pour confirmation.",
-		},
-		smtp_ssl: {
-			label: 'Chiffrage du SMTP par SSL',
-			help: 'Chiffre la connexion vers le serveur SMTP en utilisant SSL. Ne devrait être utilisé que si votre serveur SMTP le demande et que votre version de PHP prend en charge SSL.',
-		},
 		regs_allow: {
-			label: 'Autoriser de nouvelles inscriptions',
-			help: 'Indique si ce forum accepte de nouvelles inscriptions. Ne désactiver que sous certaines conditions.',
-		},
-		regs_verify: {
-			label: 'Vérifier les inscriptions',
-			help: "Si activée, les utilisateurs obtiendront par e-mail un mot de passe aléatoire lors de leur inscription. Ils pourront alors se connecter et modifier leur mot de passe dans leur profil s'ils le souhaitent. Cette fonctionnalité demande également une vérification de leur adresse électronique s'ils choisissent d'en changer. Ceci est un moyen efficace d'éviter l'inscription abusive et de vérifier que les utilisateurs ont une adresse électronique correcte associée à leur profil.",
+			label: 'Nouveaux comptes',
+			help: 'Si activée, une personne qui se connecte pour la première fois avec GitHub ou Google obtient un compte. Désactivée, seuls les membres déjà inscrits peuvent se connecter : un nouveau venu voit un message indiquant que les inscriptions sont fermées.',
 		},
 		regs_report: {
-			label: 'Signaler les nouvelles inscriptions',
-			help: "Si activée, AvroBB notifiera les utilisateurs dans la liste de diffusion (voir ci-dessus) lorsqu'un nouvel utilisateur s'inscrit sur les forums.",
+			label: 'Prévenir des nouveaux comptes',
+			help: 'Si activée, un e-mail part vers la liste de diffusion (voir ci-dessus) à chaque création de compte.',
 		},
 		rules: {
 			label: 'Règles du forum pour les utilisateurs',
@@ -222,17 +202,16 @@ export const adminOptions = {
 			help: 'Ce texte ne sera pas traité comme les messages ordinaires et peut contenir du code HTML.',
 		},
 	} as Record<string, { label: string; help: string | null }>,
-	smtpChangePass: 'Cocher ceci si vous souhaitez modifier ou supprimer le mot de passe stocké actuellement.',
-	smtpPassConfirm: 'Confirmer le mot de passe SMTP',
 	feedTypes: ['Aucun', 'RSS'],
-	feedTtlNone: 'Ne pas placer dans le cache',
-	feedTtlMinutes: (minutes: number) => `${minutes} minutes`,
 	reportMethods: ['Interne', 'E-mail', 'Les deux'],
 	emailSettings: [
 		"Divulguer l'adresse électronique aux autres utilisateurs.",
 		"Masquer l'adresse électronique mais autoriser l'utilisation du formulaire d'envoi d'e-mail.",
 		"Masquer l'adresse électronique et ne pas autoriser l'utilisation du formulaire d'envoi d'e-mail.",
 	],
+	mailResend: "Envoi des e-mails : Resend (clé d'API configurée dans les secrets du Worker).",
+	mailLog:
+		'Envoi des e-mails : aucun service configuré, les e-mails sont seulement notés dans le journal (secrets RESEND_API_KEY et MAIL_FROM).',
 	yes: 'Oui',
 	no: 'Non',
 	save: 'Enregistrer les modifications',
@@ -241,7 +220,6 @@ export const adminOptions = {
 		missingTitle: 'Vous devez spécifier un nom pour le forum.',
 		invalidAdminEmail: "L'adresse électronique d'administrateur que vous avez indiquée est invalide.",
 		invalidWebmasterEmail: "L'adresse électronique de Webmestre que vous avez indiquée est invalide.",
-		smtpMismatch: 'Vous devez indiquer le mot de passe SMTP deux fois exactement de la même manière pour le modifier.',
 		timeout: 'La valeur pour « Délai avant déconnexion » doit être inférieure à celle du champ « Délai de fin de visite ».',
 		invalidBaseUrl: "L'URL de base n'est pas une adresse valide.",
 	},

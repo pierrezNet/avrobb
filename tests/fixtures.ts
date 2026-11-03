@@ -260,10 +260,8 @@ export const boardConfig: BoardConfig = {
 	timeoutOnline: 300,
 	adminEmail: 'admin@forum.test',
 	webmasterEmail: 'webmaster@forum.test',
-	smtp: { host: '', user: '', pass: '', ssl: false },
 	defaultUserGroup: 4,
 	registration: {
-		verify: false,
 		report: false,
 		mailingList: 'liste@forum.test',
 		allowBannedEmail: false,
@@ -1112,6 +1110,7 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 		},
 		translationJob: null,
 		push: null,
+		mailConfigured: false,
 		manualTranslations: {
 			findManual: async (kind, id, lang) => data.manualTranslations?.get(`${kind}:${id}:${lang}`) ?? null,
 			setManual: async (source, lang, text) => {

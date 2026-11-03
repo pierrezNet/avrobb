@@ -25,7 +25,8 @@ export type MailTemplateName =
 	| 'new_report'
 	| 'new_pm'
 	| 'new_pm_full'
-	| 'app_feedback';
+	| 'app_feedback'
+	| 'new_user';
 
 export interface MailTemplateReader {
 	load(name: MailTemplateName): Promise<MailTemplate>;

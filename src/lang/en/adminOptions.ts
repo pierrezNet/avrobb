@@ -122,13 +122,13 @@ export const adminOptions: typeof frAdminOptions = {
 			label: 'Additional menu items',
 			help: 'By entering HTML hyperlinks into this box, any number of items can be added to the navigation menu at the top of every page. The format for adding new links is X = <a href="URL">LINK</a> where X is the position at which the link should be inserted (e.g. 0 to insert at the beginning and 2 to insert after “User list”). Separate entries with a line break.',
 		},
+		reputation_enabled: {
+			label: 'Reputation',
+			help: "Members' “+” and “−” votes on the author of a post, and the score shown under their name. When disabled, neither votes nor scores are shown; votes already cast are kept.",
+		},
 		feed_type: {
 			label: 'Default feed type',
 			help: 'The type of feed subscription to display. Note: choosing “None” does not disable the feed, it only hides it by default.',
-		},
-		feed_ttl: {
-			label: 'Duration to cache feeds',
-			help: 'Feeds can be cached to reduce resource usage.',
 		},
 		report_method: {
 			label: 'Reporting method',
@@ -178,33 +178,13 @@ export const adminOptions: typeof frAdminOptions = {
 			label: 'Topic subscriptions',
 			help: 'Allow users to subscribe to topics (they receive an email when someone replies).',
 		},
-		smtp_host: {
-			label: 'SMTP server address',
-			help: 'The address of an external SMTP server to send emails with. You can specify a custom port number if the SMTP server does not use the default port 25 (e.g. mail.myhost.com:3580). Leave blank to use the local mail program.',
-		},
-		smtp_user: {
-			label: 'SMTP username',
-			help: 'Username for the SMTP server. Only enter a username if the SMTP server requires it (most servers do not require authentication).',
-		},
-		smtp_pass: {
-			label: 'SMTP password',
-			help: 'Password for the SMTP server. Only enter a password if the SMTP server requires it (most servers do not require authentication). Please enter your password twice to confirm.',
-		},
-		smtp_ssl: {
-			label: 'Encrypt SMTP using SSL',
-			help: 'Encrypt the connection to the SMTP server using SSL. Should only be used if your SMTP server requires it and your version of PHP supports SSL.',
-		},
 		regs_allow: {
-			label: 'Allow new registrations',
-			help: 'Whether this board accepts new registrations. Disable only under special circumstances.',
-		},
-		regs_verify: {
-			label: 'Verify registrations',
-			help: 'When enabled, users receive a random password by email when they register. They can then log in and change the password in their profile if they wish. This feature also requires users to verify new email addresses if they change them. It is an effective way to prevent registration abuse and to make sure all users have a valid email address in their profile.',
+			label: 'New accounts',
+			help: 'When enabled, someone signing in with GitHub or Google for the first time gets an account. When disabled, only existing members can sign in: a newcomer sees a message saying registrations are closed.',
 		},
 		regs_report: {
-			label: 'Report new registrations',
-			help: 'When enabled, AvroBB will notify the users on the mailing list (see above) when a new user registers on the forums.',
+			label: 'Report new accounts',
+			help: 'When enabled, an email goes to the mailing list (see above) whenever an account is created.',
 		},
 		rules: {
 			label: 'User forum rules',
@@ -224,17 +204,15 @@ export const adminOptions: typeof frAdminOptions = {
 			help: 'This text is not parsed like regular posts and may contain HTML.',
 		},
 	} as Record<string, { label: string; help: string | null }>,
-	smtpChangePass: 'Check this to change or remove the currently stored password.',
-	smtpPassConfirm: 'Confirm SMTP password',
 	feedTypes: ['None', 'RSS'],
-	feedTtlNone: 'Don’t cache',
-	feedTtlMinutes: (minutes: number) => (minutes === 1 ? '1 minute' : `${minutes} minutes`),
 	reportMethods: ['Internal', 'Email', 'Both'],
 	emailSettings: [
 		'Display email address to other users.',
 		'Hide email address but allow the email form.',
 		'Hide email address and do not allow the email form.',
 	],
+	mailResend: 'Email delivery: Resend (API key set in the Worker secrets).',
+	mailLog: 'Email delivery: no service configured, emails are only written to the log (RESEND_API_KEY and MAIL_FROM secrets).',
 	yes: 'Yes',
 	no: 'No',
 	save: 'Save changes',
@@ -243,7 +221,6 @@ export const adminOptions: typeof frAdminOptions = {
 		missingTitle: 'You must enter a board title.',
 		invalidAdminEmail: 'The admin email address you entered is invalid.',
 		invalidWebmasterEmail: 'The webmaster email address you entered is invalid.',
-		smtpMismatch: 'You need to enter the SMTP password exactly the same way twice to change it.',
 		timeout: 'The value of “Online timeout” must be smaller than the value of “Visit timeout”.',
 		invalidBaseUrl: 'The base URL is not a valid address.',
 	},

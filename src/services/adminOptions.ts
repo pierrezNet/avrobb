@@ -17,17 +17,15 @@ import { punLinebreaks, punTrim } from './phpString.ts';
 import { THEMES } from './themes.ts';
 
 /** Durées de cache des flux proposées par le PHP (minutes, 0 : pas de cache). */
-export const FEED_TTLS = [0, 5, 15, 30, 60] as const;
 
-export type OptionChoices = 'timezones' | 'styles' | 'feedTypes' | 'feedTtls' | 'reportMethods' | 'emailSettings';
+export type OptionChoices = 'timezones' | 'styles' | 'feedTypes' | 'reportMethods' | 'emailSettings';
 
 export type OptionInput =
 	| { kind: 'text'; maxLength: number; type: 'text' | 'email' | 'url' }
 	| { kind: 'number'; min: number; max: number }
 	| { kind: 'textarea'; rows: number }
 	| { kind: 'yesno' }
-	| { kind: 'select' | 'radio'; choices: OptionChoices }
-	| { kind: 'smtpPass' };
+	| { kind: 'select' | 'radio'; choices: OptionChoices };
 
 export interface OptionField {
 	/** Nom sans le préfixe o_ : champ form[<key>] et clé o_<key> de la table config. */
@@ -89,13 +87,23 @@ export const OPTION_SECTIONS: readonly OptionSection<OptionSectionId>[] = [
 	{
 		id: 'features',
 		fields: [
-			...flags('quickpost', 'users_online', 'censoring', 'signatures', 'show_dot', 'topic_views', 'quickjump', 'search_all_forums'),
+			...flags(
+				'quickpost',
+				'users_online',
+				'censoring',
+				'signatures',
+				'show_dot',
+				'topic_views',
+				'quickjump',
+				'search_all_forums',
+				'reputation_enabled',
+			),
 			field('additional_navlinks', { kind: 'textarea', rows: 3 }),
 		],
 	},
 	{
 		id: 'feed',
-		fields: [field('feed_type', { kind: 'radio', choices: 'feedTypes' }), field('feed_ttl', { kind: 'select', choices: 'feedTtls' })],
+		fields: [field('feed_type', { kind: 'radio', choices: 'feedTypes' })],
 	},
 	{
 		id: 'reports',
@@ -125,16 +133,12 @@ export const OPTION_SECTIONS: readonly OptionSection<OptionSectionId>[] = [
 			field('admin_email', text(80, 'email')),
 			field('webmaster_email', text(80, 'email')),
 			...flags('forum_subscriptions', 'topic_subscriptions'),
-			field('smtp_host', text(100)),
-			field('smtp_user', text(50)),
-			field('smtp_pass', { kind: 'smtpPass' }),
-			field('smtp_ssl', yesno),
 		],
 	},
 	{
 		id: 'registration',
 		fields: [
-			...flags('regs_allow', 'regs_verify', 'regs_report', 'rules'),
+			...flags('regs_allow', 'regs_report', 'rules'),
 			field('rules_message', { kind: 'textarea', rows: 10 }),
 			field('default_email_setting', { kind: 'radio', choices: 'emailSettings' }),
 		],
@@ -142,7 +146,7 @@ export const OPTION_SECTIONS: readonly OptionSection<OptionSectionId>[] = [
 	{ id: 'announcement', fields: [field('announcement', yesno), field('announcement_message', { kind: 'textarea', rows: 5 })] },
 ];
 
-export type OptionsError = 'missingTitle' | 'invalidBaseUrl' | 'invalidAdminEmail' | 'invalidWebmasterEmail' | 'smtpMismatch' | 'timeout';
+export type OptionsError = 'missingTitle' | 'invalidBaseUrl' | 'invalidAdminEmail' | 'invalidWebmasterEmail' | 'timeout';
 
 export type OptionsResult =
 	| { kind: 'badRequest' }
@@ -210,7 +214,6 @@ export function readOptionsForm(read: (key: string) => string, defaults: Options
 	const timezone = floatval(read('default_timezone'));
 	const style = trimmed('default_style');
 	const feedType = intval(read('feed_type'));
-	const feedTtl = intval(read('feed_ttl'));
 	const reportMethod = intval(read('report_method'));
 	const emailSetting = intval(read('default_email_setting'));
 	if (
@@ -218,7 +221,6 @@ export function readOptionsForm(read: (key: string) => string, defaults: Options
 		!(THEMES as readonly string[]).includes(style) ||
 		feedType < 0 ||
 		feedType > 1 ||
-		feedTtl < 0 ||
 		reportMethod < 0 ||
 		reportMethod > 2 ||
 		emailSetting < 0 ||
@@ -228,7 +230,6 @@ export function readOptionsForm(read: (key: string) => string, defaults: Options
 	set('default_timezone', timezone);
 	set('default_style', style);
 	set('feed_type', feedType);
-	set('feed_ttl', feedTtl);
 	set('report_method', reportMethod);
 	set('default_email_setting', emailSetting);
 
@@ -266,13 +267,6 @@ export function readOptionsForm(read: (key: string) => string, defaults: Options
 	if (webmasterEmail !== '' && !isValidEmail(webmasterEmail)) errors.push('invalidWebmasterEmail');
 	set('admin_email', adminEmail);
 	set('webmaster_email', webmasterEmail);
-	set('smtp_host', trimmed('smtp_host'));
-	set('smtp_user', trimmed('smtp_user'));
-	if (read('smtp_change_pass') !== '') {
-		const pass = trimmed('smtp_pass1');
-		if (pass !== trimmed('smtp_pass2')) errors.push('smtpMismatch');
-		set('smtp_pass', pass);
-	}
 
 	// Message vide : texte par défaut et option désactivée.
 	for (const [flagKey, messageKey, fallback] of [

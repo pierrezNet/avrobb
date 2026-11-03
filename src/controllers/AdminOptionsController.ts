@@ -13,6 +13,8 @@ import { changedOptions, OPTION_SECTIONS, type OptionsError, readOptionsForm } f
 import { adminDenied, renderAdminPage } from './adminPage.ts';
 
 export interface AdminOptionsControllerDeps extends LayoutDeps {
+	/** Clé Resend configurée : les e-mails partent vraiment. */
+	mailConfigured: boolean;
 	configStore: ConfigStore;
 	configCache: ConfigCache;
 }
@@ -81,6 +83,7 @@ export class AdminOptionsController {
 				errors: errors.map((error) => lang.adminOptions.errors[error]),
 				notice,
 				lang,
+				notes: { email: this.deps.mailConfigured ? lang.adminOptions.mailResend : lang.adminOptions.mailLog },
 			}),
 		);
 	}

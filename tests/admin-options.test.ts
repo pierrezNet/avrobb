@@ -59,9 +59,22 @@ describe('admin_options.php', () => {
 		expect(res.statusCode).toBe(200);
 		expect(res.body).toContain('name="form[board_title]" value="Pilote-Virtuel"');
 		// Options de FluxBB sans effet dans AvroBB : absentes du formulaire.
-		for (const removed of ['gzip', 'time_format', 'date_format', 'default_lang', 'show_version'])
+		for (const removed of [
+			'gzip',
+			'time_format',
+			'date_format',
+			'default_lang',
+			'show_version',
+			'feed_ttl',
+			'smtp_host',
+			'smtp_pass1',
+			'regs_verify',
+		])
 			expect(res.body).not.toContain(`name="form[${removed}]"`);
 		expect(res.body).toContain('name="form[quickpost]" value="1" checked');
+		expect(res.body).toContain('name="form[reputation_enabled]"');
+		expect(res.body).toContain('Envoi des e-mails : aucun service configuré');
+		expect(res.body).toContain('Nouveaux comptes');
 		expect(res.body).not.toContain('old');
 	});
 

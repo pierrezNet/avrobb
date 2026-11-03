@@ -9,12 +9,14 @@
  * à l'ouverture de la session : c'est la connexion elle-même.
  */
 
+import type { Mailer } from '../adapters/mailer.ts';
 import type { OAuthClient, OAuthCredentials } from '../adapters/oauth.ts';
 import { createPkce, randomState } from '../adapters/oauth.ts';
 import { type CookieConfig, cookieName } from '../config.ts';
 import { GroupId } from '../domain/models.ts';
 import type { AppReply, AppRequest } from '../http/context.ts';
 import { type LayoutDeps, renderMessage } from '../http/layout.ts';
+import { sendInBackground } from '../http/mail.ts';
 import type { RateLimiter } from '../http/rateLimit.ts';
 import { setForumCookie, setSessionCookie, trackCookieName } from '../http/session.ts';
 import type { AccountStore } from '../repositories/AccountRepository.ts';
@@ -24,6 +26,7 @@ import type { OnlineWriter } from '../repositories/OnlineRepository.ts';
 import type { AccountLookup } from '../repositories/UserRepository.ts';
 import { usernameSkeleton } from '../services/accounts.ts';
 import { buildCensor } from '../services/censor.ts';
+import { fillTemplate, type MailTemplateReader } from '../services/mail.ts';
 import {
 	accountKey,
 	authorizationUrl,
@@ -37,6 +40,7 @@ import {
 	usernameVariant,
 } from '../services/oauth.ts';
 import { safeRedirect } from '../services/redirects.ts';
+import { absoluteUrl } from '../services/routes.ts';
 
 export type { RateLimiter } from '../http/rateLimit.ts';
 
@@ -52,6 +56,8 @@ export interface AuthControllerDeps extends LayoutDeps {
 	cookie: CookieConfig;
 	/** Limite de tentatives par adresse IP ; absente dans les tests et hors Cloudflare. */
 	authRateLimiter?: RateLimiter;
+	mailer: Mailer;
+	mailTemplates: MailTemplateReader;
 }
 
 export interface AuthQuery {
@@ -132,9 +138,12 @@ export class AuthController {
 		});
 		if (identity === null) return renderMessage(request, reply, this.deps, 502, lang.login.ssoFailed(lang.login.providers[provider]));
 
+		const existing = await this.deps.accountStore.findByProvider(provider, identity.providerId);
+		// Inscriptions fermées : pas de nouveau compte, sauf pour un administrateur désigné (ADMIN_ACCOUNTS).
+		if (existing === null && !request.board.registrationsAllowed && !this.deps.adminAccounts.has(accountKey(provider, identity.providerId)))
+			return renderMessage(request, reply, this.deps, 403, lang.login.registrationsClosed);
 		const account =
-			(await this.deps.accountStore.findByProvider(provider, identity.providerId)) ??
-			(await this.#createAccount(request, provider, identity.providerId, identity.usernames, identity.email ?? '', now));
+			existing ?? (await this.#createAccount(request, provider, identity.providerId, identity.usernames, identity.email ?? '', now));
 		if (account === null) return renderMessage(request, reply, this.deps, 500, lang.login.ssoFailed(lang.login.providers[provider]));
 
 		// L'entrée « invité » de ce navigateur quitte la liste des présents.
@@ -180,9 +189,31 @@ export class AuthController {
 				style: config.defaultStyle,
 				emailSetting: config.registration.defaultEmailSetting,
 			});
-			if (id !== null) return { id, sessionVersion: 0 };
+			if (id !== null) {
+				await this.#reportNewUser(request, provider, id, username);
+				return { id, sessionVersion: 0 };
+			}
 		}
 		return null;
+	}
+
+	/** Option « Prévenir des nouveaux comptes » : e-mail à la liste de diffusion. */
+	async #reportNewUser(request: AuthRequest, provider: OAuthProviderId, id: number, username: string): Promise<void> {
+		const config = request.board;
+		if (!config.registration.report || config.registration.mailingList === '') return;
+		const template = await this.deps.mailTemplates.load('new_user');
+		const values = {
+			username,
+			provider: this.deps.page.lang.login.providers[provider],
+			profile_url: absoluteUrl(config.baseUrl, `profile.php?id=${id}`),
+			board_mailer: config.boardTitle,
+		};
+		sendInBackground(
+			request,
+			this.deps.mailer,
+			[{ to: config.registration.mailingList, subject: fillTemplate(template.subject, values), text: fillTemplate(template.body, values) }],
+			config,
+		);
 	}
 
 	async #rateLimited(request: AppRequest, reply: AppReply): Promise<AppReply | null> {

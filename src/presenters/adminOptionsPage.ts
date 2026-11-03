@@ -6,7 +6,7 @@
 
 import type { Lang } from '../lang/fr/index.ts';
 import { TIMEZONES } from '../services/accounts.ts';
-import { FEED_TTLS, type OptionChoices, type OptionInput, type OptionSection } from '../services/adminOptions.ts';
+import type { OptionChoices, OptionInput, OptionSection } from '../services/adminOptions.ts';
 import { THEMES } from '../services/themes.ts';
 
 export interface OptionChoiceView {
@@ -20,8 +20,7 @@ export type OptionControlView =
 	| { kind: 'number'; min: number; max: number; value: string }
 	| { kind: 'textarea'; rows: number; value: string }
 	| { kind: 'yesno'; checked: boolean }
-	| { kind: 'select' | 'radio'; choices: OptionChoiceView[] }
-	| { kind: 'smtpPass' };
+	| { kind: 'select' | 'radio'; choices: OptionChoiceView[] };
 
 export interface OptionFieldView {
 	/** Nom du champ : form[<key>]. */
@@ -34,7 +33,8 @@ export interface OptionFieldView {
 export interface AdminOptionsView {
 	title: string;
 	formAction: string;
-	sections: { id: string; legend: string; fields: OptionFieldView[] }[];
+	/** `note` : information propre à une section (service d'envoi des e-mails…). */
+	sections: { id: string; legend: string; note: string | null; fields: OptionFieldView[] }[];
 	errors: readonly string[];
 	notice: string | null;
 }
@@ -50,8 +50,6 @@ function choiceList(choices: OptionChoices, current: string, lang: Lang): Option
 			return list(THEMES.map((name) => [name, name] as const));
 		case 'feedTypes':
 			return list(t.feedTypes.map((label, index) => [String(index), label] as const));
-		case 'feedTtls':
-			return list(FEED_TTLS.map((minutes) => [String(minutes), minutes === 0 ? t.feedTtlNone : t.feedTtlMinutes(minutes)] as const));
 		case 'reportMethods':
 			return list(t.reportMethods.map((label, index) => [String(index), label] as const));
 		case 'emailSettings':
@@ -70,8 +68,6 @@ function fieldControl(input: OptionInput, value: string, lang: Lang): OptionCont
 		case 'select':
 		case 'radio':
 			return { kind: input.kind, choices: choiceList(input.choices, value, lang) };
-		case 'smtpPass':
-			return { kind: 'smtpPass' };
 	}
 }
 
@@ -94,6 +90,7 @@ export function buildAdminOptions(input: {
 	errors: readonly string[];
 	notice: string | null;
 	lang: Lang;
+	notes?: Readonly<Record<string, string>>;
 }): AdminOptionsView {
 	const value = (key: string): string => input.values.get(`${input.prefix}${key}`) ?? '';
 	return {
@@ -102,6 +99,7 @@ export function buildAdminOptions(input: {
 		sections: input.sections.map((section) => ({
 			id: section.id,
 			legend: input.texts.sections[section.id] ?? section.id,
+			note: input.notes?.[section.id] ?? null,
 			fields: section.fields.map(({ key, input: control }): OptionFieldView => {
 				const texts = input.texts.fields[key] ?? { label: key, help: null };
 				const help = texts.help;

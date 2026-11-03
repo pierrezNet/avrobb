@@ -278,12 +278,9 @@ export interface BoardConfig {
 	adminEmail: string;
 	/** Expéditeur des e-mails automatiques (o_webmaster_email). */
 	webmasterEmail: string;
-	smtp: { host: string; user: string; pass: string; ssl: boolean };
 	/** Groupe des nouveaux membres (o_default_user_group). */
 	defaultUserGroup: number;
 	registration: {
-		/** o_regs_verify : mot de passe envoyé par e-mail, compte à valider à la première connexion. */
-		verify: boolean;
 		/** o_regs_report : prévenir la liste d'administration (o_mailing_list) de chaque inscription. */
 		report: boolean;
 		mailingList: string;

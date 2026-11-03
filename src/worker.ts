@@ -214,6 +214,7 @@ async function createApp(env: Env, services: Services, locale: Locale): Promise<
 		...(env.SEARCH_LIMITER !== undefined ? { searchRateLimiter: env.SEARCH_LIMITER } : {}),
 		mailTemplates: { load: async (name) => mail[name] },
 		mailer: createMailer(config),
+		mailConfigured: config.mail !== null,
 		profiles: users,
 		profileStore: new ProfileRepository(db),
 		topics,

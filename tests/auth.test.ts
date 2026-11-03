@@ -10,7 +10,7 @@ import type { RateLimiter } from '../src/controllers/AuthController.ts';
 import { GroupId } from '../src/domain/models.ts';
 import { csrfToken } from '../src/http/csrf.ts';
 import { readSessionCookie } from '../src/services/session.ts';
-import { COOKIE_SECRET, type FakeData, fakeDeps, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
+import { boardConfig, COOKIE_SECRET, type FakeData, fakeDeps, guest, NOW, sessionCookie, viewer } from './fixtures.ts';
 import { type InjectResponse, inject } from './inject.ts';
 
 const HOST = 'forum.test';
@@ -79,6 +79,35 @@ describe('départ vers le fournisseur', () => {
 });
 
 describe('retour du fournisseur', () => {
+	it('inscriptions fermées : pas de nouveau compte, sauf administrateur désigné ; membre existant accepté', async () => {
+		const fake = data({ config: { registrationsAllowed: false } });
+		const app = await buildApp(fakeDeps(fake));
+		const tessy = await start(app);
+		const refused = await callback(app, `code=code-tessy&state=${tessy.state}`, tessy.cookie);
+		expect(refused.statusCode).toBe(403);
+		expect(refused.body).toContain('Les inscriptions sont fermées');
+		expect(fake.accountLog ?? []).toEqual([]);
+		const admin = await start(app);
+		expect((await callback(app, `code=code-admin&state=${admin.state}`, admin.cookie)).statusCode).toBe(302);
+		expect(fake.accountLog).toHaveLength(1);
+	});
+
+	it('nouveau compte signalé par e-mail à la liste de diffusion (option « Prévenir des nouveaux comptes »)', async () => {
+		const fake = data({ config: { registration: { ...boardConfig.registration, report: true } } });
+		const app = await buildApp(fakeDeps(fake));
+		const { state, cookie } = await start(app);
+		await callback(app, `code=code-tessy&state=${state}`, cookie);
+		await new Promise((resolve) => setTimeout(resolve, 10));
+		expect(fake.sentMails?.map((mail) => `${mail.to} ${mail.subject}`)).toEqual(['liste@forum.test Sujet new_user']);
+		// Sans l'option : aucun e-mail.
+		const quiet = data();
+		const other = await buildApp(fakeDeps(quiet));
+		const again = await start(other);
+		await callback(other, `code=code-tessy&state=${again.state}`, again.cookie);
+		await new Promise((resolve) => setTimeout(resolve, 10));
+		expect(quiet.sentMails).toBeUndefined();
+	});
+
 	it('crée le compte (administrateur initial), ouvre la session et revient à la page demandée', async () => {
 		const fake = data();
 		const app = await buildApp(fakeDeps(fake));

@@ -497,6 +497,7 @@ describe('viewtopic de bout en bout', () => {
 			manualTranslations: new TranslationRepository(db),
 			translationJob: null,
 			push: null,
+			mailConfigured: false,
 			usersInfo: new UsersInfoLoader(new StatsRepository(db), () => NOW),
 			avatars: { urlFor: async () => null },
 			avatarStore: { save: async () => undefined, delete: async () => undefined },

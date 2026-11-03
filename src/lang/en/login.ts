@@ -19,6 +19,7 @@ export const login: typeof frLogin = {
 	privacyInfo: 'What we receive from this account is described in the',
 	privacyLink: 'privacy policy',
 	ssoCancelled: 'Sign-in cancelled.',
+	registrationsClosed: 'Registrations are closed: only existing members can sign in.',
 	ssoExpired: 'The sign-in attempt has expired or did not come from this browser. Start again from the sign-in page.',
 	ssoFailed: (provider: string) => `Signing in with ${provider} failed. Please try again in a moment.`,
 	tooManyAttempts: 'Too many sign-in attempts. Please try again in a minute.',

@@ -1,6 +1,6 @@
 /**
  * Règles d'admin_options.php (services/adminOptions.ts) : bornes, valeurs de repli, messages par
- * défaut, URL de base, mot de passe SMTP, clés modifiées seulement.
+ * défaut, URL de base, options retirées, clés modifiées seulement.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -70,13 +70,17 @@ describe('readOptionsForm', () => {
 		expect(values({ base_url: 'http://pilote-virtuél.fr/forum' }).get('o_base_url')).toBe('http://xn--pilote-virtul-mhb.fr/forum');
 	});
 
-	it('mot de passe SMTP seulement si « modifier » est coché, et confirmé', () => {
-		expect(values({ smtp_pass1: 'x' }).has('o_smtp_pass')).toBe(false);
-		expect(values({ smtp_change_pass: '1', smtp_pass1: 'secret', smtp_pass2: 'secret' }).get('o_smtp_pass')).toBe('secret');
-		expect(readOptionsForm(read(optionsForm({ smtp_change_pass: '1', smtp_pass1: 'a', smtp_pass2: 'b' })), DEFAULTS)).toEqual({
-			kind: 'invalid',
-			errors: ['smtpMismatch'],
+	it('options sans effet ignorées (cache des flux, SMTP, vérification des inscriptions) ; renommée réglable', () => {
+		const result = values({
+			smtp_change_pass: '1',
+			smtp_pass1: 'x',
+			smtp_pass2: 'x',
+			feed_ttl: '5',
+			regs_verify: '1',
+			reputation_enabled: '0',
 		});
+		for (const key of ['o_smtp_pass', 'o_smtp_host', 'o_feed_ttl', 'o_regs_verify']) expect(result.has(key)).toBe(false);
+		expect(result.get('o_reputation_enabled')).toBe('0');
 	});
 
 	it('erreurs de saisie et requêtes invalides', () => {

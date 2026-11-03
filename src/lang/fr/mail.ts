@@ -143,4 +143,14 @@ Le lire, y répondre ou le déplacer vers le forum public :
 
 ${signature}`,
 	},
+	/** Nouveau compte (option « Prévenir des nouveaux comptes »). */
+	new_user: {
+		subject: 'Nouveau membre : <username>',
+		body: `<username> vient de créer un compte avec <provider>.
+
+Son profil :
+<profile_url>
+
+${signature}`,
+	},
 };

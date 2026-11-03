@@ -1,9 +1,6 @@
 /**
- * Contrôleur d'extern.php : flux RSS, XML ou liste HTML des discussions récentes ou d'une
+ * Flux (/flux, ancien extern.php) : RSS, XML ou liste HTML des discussions récentes ou d'une
  * discussion, et fragments HTML « membres en ligne » et « statistiques » pour d'autres sites.
- *
- * Écarts assumés : pas d'authentification HTTP Basic (lot Authentification) ni de cache des flux
- * dans cache/ (o_feed_ttl, qui écrirait des fichiers PHP).
  */
 
 import type { AppReply, AppRequest } from '../http/context.ts';

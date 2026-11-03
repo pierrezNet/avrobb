@@ -26,21 +26,13 @@
 	{% for section in view.sections %}
 	<fieldset class="form__fieldset">
 		<legend class="form__legend">{{ section.legend }}</legend>
+		{% if section.note %}<p class="form__help">{{ section.note }}</p>{% endif %}
 		{% for f in section.fields %}
 		{% set c = f.control %}
 		{% if c.kind == 'yesno' %}
 		{{ radios(f, [{ value: '1', label: lang.adminOptions.yes, selected: c.checked }, { value: '0', label: lang.adminOptions.no, selected: not c.checked }]) }}
 		{% elif c.kind == 'radio' %}
 		{{ radios(f, c.choices) }}
-		{% elif c.kind == 'smtpPass' %}
-		<div class="form__field">
-			<label class="form__choice"><input type="checkbox" name="form[smtp_change_pass]" value="1"> {{ lang.adminOptions.smtpChangePass }}</label>
-			<label for="smtp_pass1">{{ f.label }}</label>
-			<input type="password" id="smtp_pass1" name="form[smtp_pass1]" maxlength="50" autocomplete="new-password" aria-describedby="help-{{ f.key }}">
-			<label for="smtp_pass2">{{ lang.adminOptions.smtpPassConfirm }}</label>
-			<input type="password" id="smtp_pass2" name="form[smtp_pass2]" maxlength="50" autocomplete="new-password">
-			<span id="help-{{ f.key }}" class="form__help">{{ f.help }}</span>
-		</div>
 		{% else %}
 		<p class="form__field">
 			<label for="opt-{{ f.key }}">{{ f.label }}</label>

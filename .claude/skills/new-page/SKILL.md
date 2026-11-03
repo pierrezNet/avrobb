@@ -12,11 +12,11 @@ AvroBB descend de FluxBB : quand une fonction existe dans FluxBB 1.5.4, son comp
 
 1. Écrire la liste des comportements attendus : paramètres GET et POST et leur validation, droits (groupe, propriétaire, modérateur du forum…), données lues et écrites, effets de bord (compteurs, index de recherche, présence, notifications), redirections, textes.
 2. Vérifier la compatibilité avec la cible Cloudflare (`CLAUDE.md`, « Limites Cloudflare ») : pas de transaction interactive, pas d'API Node absente des Workers, pas de cookie sur une page publique.
-3. Noter les choix qui s'écartent de FluxBB : ils iront dans le README (« Différences avec FluxBB »).
+3. Noter ce qui est nouveau pour un utilisateur : il ira dans le README (« Fonctionnalités »).
 
 ## 2. Implémenter, de l'intérieur vers l'extérieur
 
-1. **Schéma** : tables et colonnes dans `src/db/schema.ts` (et, à partir du lot 3, migration SQL numérotée dans `migrations/`).
+1. **Schéma** : tables et colonnes dans `src/db/schema.ts`, migration SQL numérotée dans `migrations/`.
 2. **Domaine** : types dans `src/domain/` (booléens plutôt que 0/1, noms explicites en camelCase).
 3. **Repository** : interface `XxxReader` / `XxxWriter` + implémentation Kysely. Les écritures liées forment un lot atomique et reproduisent tous les effets de bord relevés à l'étape 1.
 4. **Services purs** : règles de droits (`services/permissions.ts` ou fichier dédié), calculs, formatage.
@@ -37,4 +37,4 @@ AvroBB descend de FluxBB : quand une fonction existe dans FluxBB 1.5.4, son comp
 
 - `npm run check` et `npm run test:db` passent.
 - Passer le skill `mvc-review`.
-- Cocher la ligne dans `TODO.md` et mettre à jour le README si un comportement diffère de FluxBB.
+- Cocher la ligne dans `TODO.md` et mettre à jour le README (« Fonctionnalités ») si la page apporte quelque chose de nouveau.

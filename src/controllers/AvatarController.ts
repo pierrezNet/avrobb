@@ -2,10 +2,7 @@
  * Avatar du profil (profile.php?action=upload_avatar, upload_avatar2, delete_avatar) : envoi
  * contrôlé (type réel, poids, dimensions) et effacement.
  *
- * Écarts assumés : l'effacement demande une confirmation en POST (le PHP effaçait sur un simple
- * lien GET) ; les droits sont ceux de la modification du profil (le PHP laissait tout modérateur
- * changer l'avatar de n'importe qui, administrateurs compris) ; le type est lu dans le contenu,
- * jamais dans l'en-tête envoyé par le navigateur.
+ * Type lu dans le contenu, jamais dans l'en-tête envoyé par le navigateur.
  */
 
 import type { AppReply, AppRequest } from '../http/context.ts';

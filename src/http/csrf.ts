@@ -1,5 +1,5 @@
 /**
- * Jeton CSRF commun à tous les formulaires POST (le PHP de FluxBB ne se fiait qu'au Referer).
+ * Jeton CSRF commun à tous les formulaires POST.
  *
  * Double soumission : un cookie aléatoire propre au navigateur (avrobb_csrf), et dans chaque
  * formulaire un HMAC de ce cookie lié au visiteur. Un site tiers ne peut ni lire le cookie ni

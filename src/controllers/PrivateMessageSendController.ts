@@ -4,7 +4,7 @@
  * (?edit=), prévisualisation, et alertes par e-mail (new_pm.tpl, new_pm_full.tpl).
  *
  * Écarts assumés : on ne répond qu'à une conversation qu'on détient, et on ne modifie ou ne cite
- * qu'un message de sa propre boîte (le PHP ne vérifiait pas l'appartenance) ; le formulaire montre
+ * qu'un message de sa propre boîte ; le formulaire montre
  * le texte d'origine, non censuré (comme edit.php) ; après l'envoi d'une réponse ou d'une
  * modification, on revient au message dans la conversation.
  */

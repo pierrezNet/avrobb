@@ -10,7 +10,7 @@ Passer chaque point sur le diff. Corriger directement ce qui est simple, signale
 
 ## Couches
 
-- [ ] Du SQL (et, à partir du lot 4, des accès R2) n'apparaît **que** dans `src/repositories/`.
+- [ ] Du SQL et des accès R2 n'apparaissent **que** dans `src/repositories/`.
 - [ ] Les contrôleurs ne contiennent ni SQL, ni HTML, ni règle métier : ils orchestrent seulement.
 - [ ] Les presenters et services sont **purs** : pas d'`await` sur la base, pas de réponse HTTP, pas de `fetch`, pas de `Date.now()` (l'horloge est injectée).
 - [ ] Les vues ne calculent rien ; les conditions portent sur des champs déjà préparés par le presenter.

@@ -324,8 +324,8 @@ export interface ModControl {
 }
 
 /**
- * Liens de modération du pied de page (#modcontrols). Écart assumé : fermer ou épingler passe par un bouton POST avec
- * jeton CSRF (le PHP écrivait sur un lien GET, vérifié par le seul Referer).
+ * Liens de modération du pied de page (#modcontrols) : fermer ou épingler passe par un bouton POST
+ * avec jeton CSRF, jamais par un simple lien.
  */
 function buildModControls(footer: FooterContext, viewer: Viewer, lang: Lang): ModControl[] {
 	const t = lang.common;

@@ -3,11 +3,10 @@
  * modérer, messages d'un sujet à modérer, et leurs actions (déplacer, fusionner, supprimer, ouvrir,
  * fermer, épingler, scinder).
  *
- * Écarts assumés : toutes les actions écrivent en POST avec jeton CSRF ; les anciens liens GET du
- * PHP (fermer, épingler) mènent à une confirmation ; un modérateur ne peut pas
- * supprimer les messages d'un administrateur, en sujet comme en message isolé (le PHP vérifiait
- * seulement le second cas en partie) ; le premier message d'un sujet n'est jamais supprimé ni
- * scindé, même par une requête forgée ; les erreurs s'affichent dans la page.
+ * Choix d'AvroBB : toutes les actions écrivent en POST avec jeton CSRF ; un ancien lien GET
+ * (fermer, épingler) mène à une confirmation ; un modérateur ne peut pas supprimer les messages
+ * d'un administrateur, en sujet comme en message isolé ; le premier message d'un sujet n'est jamais
+ * supprimé ni scindé, même par une requête forgée ; les erreurs s'affichent dans la page.
  */
 
 import type { ForumInfo } from '../domain/models.ts';

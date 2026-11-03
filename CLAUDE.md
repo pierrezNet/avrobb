@@ -6,7 +6,7 @@ Guide pour Claude Code dans ce dépôt. À lire avant toute action.
 
 **AvroBB** : forum personnel d'Emmanuel Pierrez, un lieu d'échange autour de ses projets personnels. Lecture publique, écriture réservée aux membres, comptes créés par **SSO uniquement** (GitHub, Google en option).
 
-Le code part d'un clone de **pv-forum**, la réécriture Node.js/TypeScript du forum Pilote-Virtuel (FluxBB 1.5.4). AvroBB en est **indépendant** : pas de cohabitation avec un PHP, pas de base partagée, pas de compatibilité de schéma FluxBB. Le remote `pv` pointe vers pv-forum. On y récupère des corrections au cas par cas (`git fetch pv` puis `git cherry-pick`), en les adaptant : ce qui touche à la base, à la session ou au PHP ne s'applique pas tel quel.
+AvroBB descend de FluxBB 1.5.4 et prolonge le travail d'Emmanuel sur le forum de Pilote-Virtuel (migration vers FluxBB 1.5.4, thème responsive, réécriture Node.js/TypeScript **pv-forum**). AvroBB en est **indépendant** : pas de cohabitation avec un PHP, pas de base partagée, pas de compatibilité de schéma FluxBB. Le remote `pv` pointe vers pv-forum. On y récupère des corrections au cas par cas (`git fetch pv` puis `git cherry-pick`), en les adaptant : ce qui touche à la base, à la session ou au PHP ne s'applique pas tel quel.
 
 Cible : **100 % Cloudflare**. Un Worker (Hono), D1 (SQLite), R2 (fichiers), Static Assets (CSS, JS, icônes), déploiement par GitHub Actions et Wrangler, cache en bordure pour les visiteurs non connectés. Budget de 7 €/mois au plus : **Workers Paid à 5 $/mois** (voir « Limites Cloudflare »).
 
@@ -115,7 +115,7 @@ Principes :
 ## Style de code
 
 - Indentation par **tabulations**, apostrophes simples, points-virgules, `const` par défaut.
-- **Commentaires et textes en français**, comme dans le code existant : un en-tête `/** … */` par fichier qui explique son rôle, des commentaires sur le _pourquoi_ (surtout les choix imposés par Workers ou D1), pas sur le _quoi_.
+- **Commentaires réduits au minimum**, en français : un en-tête `/** … */` court par fichier, puis seulement le _pourquoi_ non évident (contrainte Workers ou D1, choix surprenant) ; des noms explicites plutôt qu'un commentaire. Jamais de comparaison avec le PHP de Pilote-Virtuel qui décrirait une faille de ce forum, toujours en ligne.
 - TypeScript strict (`noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`) : pas de `any`, pas de `!` sans justification.
 - Fonctions courtes, noms explicites. Une règle reprise de FluxBB peut citer la fonction PHP d'origine (`paginate()`…) quand cela aide à comprendre.
 - Tests : chaque service pur a ses tests unitaires ; chaque page a au moins un test d'intégration via `inject()` (`tests/inject.ts`, sur `app.fetch`) avec des doublures ; chaque repository a ses tests `test:db`.

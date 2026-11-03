@@ -1,12 +1,6 @@
 /**
- * Contrôleur de reputation.php (mod Reputation de PV) : historique des votes reçus par un membre
- * (?uid=), formulaire de vote (?pid=&uid=&method=1|2), enregistrement, et suppression de votes par
- * les administrateurs et modérateurs.
- *
- * Écarts assumés : le vote vise un message identifié par son numéro (le PHP recherchait aussi
- * l'auteur par son pseudo, reçu d'un champ caché et inséré tel quel dans la requête SQL) ; la
- * suppression de votes ne déclenche plus l'e-mail codé en dur à l'administrateur ; erreurs
- * réaffichées dans le formulaire.
+ * reputation.php : votes reçus par un membre (?uid=), vote sur un message (?pid=&uid=&method=1|2)
+ * et suppression de votes par les modérateurs.
  */
 
 import type { AppReply, AppRequest } from '../http/context.ts';

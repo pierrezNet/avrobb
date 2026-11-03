@@ -3,10 +3,8 @@
  * suppression d'un message (pms_view.php).
  *
  * Écarts assumés : actions et suppressions en POST avec jeton CSRF ; un message ne se supprime que
- * dans un exemplaire qu'on détient, « pour tous » réservé aux modérateurs (le PHP laissait un
- * modérateur supprimer n'importe quel message par son numéro, et sa suppression « pour tous »
- * cherchait les messages au texte identique dans toute la base) ; quitter une conversation retire
- * tous ses messages de sa boîte (le PHP ne retirait que la première ligne).
+ * dans un exemplaire qu'on détient, « pour tous » réservé aux modérateurs ; quitter une
+ * conversation retire tous ses messages de sa boîte.
  */
 
 import type { AppReply, AppRequest } from '../http/context.ts';

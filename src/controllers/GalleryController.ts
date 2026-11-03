@@ -2,10 +2,6 @@
  * Contrôleur de gallery.php : consultation (toutes les images ou « Mes images », ?mine=1), envoi
  * d'une image (?info=new), suppression (?info=modo&option=del&id=…) et sélecteur d'images à
  * insérer dans un message (?info=pick, ouvert depuis les formulaires de rédaction).
- *
- * Écarts assumés : suppression en POST après confirmation (le PHP supprimait sur un lien GET) ;
- * l'auteur et les administrateurs peuvent aussi supprimer (le PHP ne le permettait qu'au groupe des
- * modérateurs) ; les erreurs réaffichent le formulaire.
  */
 
 import type { AppReply, AppRequest } from '../http/context.ts';

@@ -8,9 +8,9 @@
  *   privée », messagerie désactivée) ou reputation_enable (« Affichage », renommée désactivée)
  *   faute de case dans le formulaire ;
  * - les erreurs réaffichent le formulaire au lieu d'une page de message ;
- * - longueurs maximales vérifiées par le serveur (le PHP se fiait à l'attribut maxlength) ;
- * - pour un simple membre, l'adresse e-mail modifiée dans « Principal » suit les règles de
- *   changement d'adresse (adresse bannie, déjà utilisée) ; le PHP ne les vérifiait pas ici.
+ * - longueurs maximales vérifiées par le serveur, pas seulement par l'attribut maxlength ;
+ * - l'adresse e-mail : celle du fournisseur SSO, qu'un simple membre peut effacer mais pas
+ *   remplacer ; un modérateur qui la corrige suit les règles (adresse bannie, déjà utilisée).
  */
 
 import type { ProfileChanges } from '../domain/models.ts';

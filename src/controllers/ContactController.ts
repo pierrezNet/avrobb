@@ -4,7 +4,7 @@
  *
  * Écarts assumés : les erreurs réaffichent le formulaire au lieu d'une page de message (la saisie
  * n'est pas perdue) ; l'adresse de retour de l'e-mail est limitée aux pages du forum ; un
- * signalement exige de pouvoir lire le message (le PHP ne le vérifiait qu'à l'affichage).
+ * signalement exige de pouvoir lire le message, vérifié aussi à l'envoi.
  */
 
 import type { Mailer } from '../adapters/mailer.ts';

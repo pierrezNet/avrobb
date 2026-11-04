@@ -17,6 +17,7 @@ export const topic: typeof frTopic = {
 		donneTonPoint: 'Accept: publish in the Donne Ton Point forum',
 		horlogeUtc: 'Accept: publish in the UTC clock forum',
 		selcal: 'Accept: publish in the SELCAL forum',
+		reglages: 'Accept: publish in the Settings Workshop forum',
 	},
 	postReply: 'Post reply',
 	topicClosed: 'Topic closed',

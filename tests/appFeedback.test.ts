@@ -138,6 +138,35 @@ describe('parseAppFeedback (Horloge UTC et SELCAL)', () => {
 	});
 });
 
+describe('parseAppFeedback (Atelier réglages)', () => {
+	const reglages = FEEDBACK_SOURCES.reglages;
+	const base = { type: 'Question', message: 'Le diagnostic reste indéterminé.', lang: 'fr' };
+
+	it('simulateur et étape du parcours en champs propres, facultatifs', () => {
+		expect(parseAppFeedback(reglages, { ...base, simulateur: '2024', etape: 'diagnostic' })).toMatchObject({
+			source: 'reglages',
+			details: [
+				{ name: 'simulateur', value: '2024' },
+				{ name: 'etape', value: 'diagnostic' },
+			],
+		});
+		expect(parseAppFeedback(reglages, base)).toMatchObject({ details: [{ value: '' }, { value: '' }] });
+	});
+
+	it('refuse un simulateur ou une étape inconnus', () => {
+		expect(parseAppFeedback(reglages, { ...base, simulateur: '2004' })).toBeNull();
+		expect(parseAppFeedback(reglages, { ...base, etape: 'ailleurs' })).toBeNull();
+	});
+
+	it('message : simulateur et étape dans le contexte, balise dans le sujet', () => {
+		const feedback = parseAppFeedback(reglages, { ...base, simulateur: '2020', etape: 'ia' })!;
+		const message = appFeedbackMessage(feedback, allTexts.reglages);
+		expect(message).toContain('[b]Simulateur :[/b] 2020');
+		expect(message).toContain('[b]Étape :[/b] ia');
+		expect(appFeedbackSubject(feedback, allTexts.reglages)).toBe('[Atelier réglages] Question : Le diagnostic reste indéterminé.');
+	});
+});
+
 describe('sujet et message (Phraséo)', () => {
 	const feedback = parseAppFeedback(phraseo, valid)!;
 
@@ -202,6 +231,7 @@ describe('AppFeedbackController', () => {
 		donneTonPoint: { forumId: 11, userId: 8, targetForumId: 3 },
 		horlogeUtc: null,
 		selcal: null,
+		reglages: null,
 	};
 	const setup = (source: FeedbackSourceId = 'phraseo', config: BoardConfig = { ...boardConfig, appFeedback: destinations }) => {
 		const topics: NewTopic[] = [];

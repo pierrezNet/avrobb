@@ -134,7 +134,7 @@ export const adminOptions = {
 		},
 		mailing_list: {
 			label: 'Liste de diffusion',
-			help: "Une liste d'abonnés séparés par une virgule. Les personnes dans cette liste sont les destinataires des signalements et des retours des applications Phraséo, Donne Ton Point, Horloge UTC et SELCAL.",
+			help: "Une liste d'abonnés séparés par une virgule. Les personnes dans cette liste sont les destinataires des signalements et des retours des applications Phraséo, Donne Ton Point, Horloge UTC, SELCAL et Atelier réglages.",
 		},
 		phraseo_feedback_target: {
 			label: 'Forum des retours Phraséo acceptés',
@@ -151,6 +151,10 @@ export const adminOptions = {
 		selcal_feedback_target: {
 			label: 'Forum des retours SELCAL acceptés',
 			help: 'Numéro du forum public où le bouton « Accepter » publie un retour du forum privé « Retours SELCAL (à trier) ». 0 : bouton masqué.',
+		},
+		reglages_feedback_target: {
+			label: 'Forum des retours Atelier réglages acceptés',
+			help: 'Numéro du forum public où le bouton « Accepter » publie un retour du forum privé « Retours Atelier réglages (à trier) ». 0 : bouton masqué.',
 		},
 		avatars: {
 			label: 'Utiliser des avatars',

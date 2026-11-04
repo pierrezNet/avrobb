@@ -179,7 +179,7 @@ export type FeedType = 'none' | 'rss';
 /** Réglages du forum (table config) utiles à l'affichage. */
 /** Pages d'information d'AvroBB (pied de page). */
 /** Applications dont les retours (formulaire sans compte) arrivent par liaison de service (worker.ts). */
-export type FeedbackSourceId = 'phraseo' | 'donneTonPoint' | 'horlogeUtc' | 'selcal';
+export type FeedbackSourceId = 'phraseo' | 'donneTonPoint' | 'horlogeUtc' | 'selcal' | 'reglages';
 
 /** Où arrivent les retours d'une application : forum privé, compte système, forum public des retours acceptés. */
 export interface FeedbackDestination {

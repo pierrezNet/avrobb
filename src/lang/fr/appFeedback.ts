@@ -1,5 +1,5 @@
 /**
- * Textes des retours des applications sources (Phraséo, Donne Ton Point, Horloge UTC, SELCAL) : sujets créés dans le
+ * Textes des retours des applications sources (Phraséo, Donne Ton Point, Horloge UTC, SELCAL, Atelier réglages) : sujets créés dans le
  * forum privé « à trier » de chaque application à partir de son formulaire « J'ai un retour » (sans
  * compte), reçus de son relais (worker.ts).
  */
@@ -78,6 +78,21 @@ export const appFeedback: Readonly<Record<FeedbackSourceId, FeedbackTexts>> = {
 		header:
 			"Retour envoyé depuis l'application SELCAL d'aeronautique.xyz, sans compte. Le contact éventuel de l'auteur a été envoyé par e-mail aux administrateurs ; il ne figure pas ici.",
 		publicHeader: "Retour d'un utilisateur de l'application SELCAL d'aeronautique.xyz, envoyé sans compte.",
+		anonymous,
+		noContact,
+	},
+	reglages: {
+		appName: 'Atelier réglages MSFS',
+		/** Compte système de la migration 0015 (même nom qu'en base). */
+		authorName: 'Retours Atelier réglages',
+		subjectTag: '[Atelier réglages]',
+		subjectSeparator,
+		fields,
+		details: { simulateur: 'Simulateur', etape: 'Étape' },
+		none,
+		header:
+			"Retour envoyé depuis l'Atelier réglages MSFS d'aeronautique.xyz, sans compte. Le contact éventuel de l'auteur a été envoyé par e-mail aux administrateurs ; il ne figure pas ici.",
+		publicHeader: "Retour d'un utilisateur de l'Atelier réglages MSFS d'aeronautique.xyz, envoyé sans compte.",
 		anonymous,
 		noContact,
 	},

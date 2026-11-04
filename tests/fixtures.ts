@@ -248,7 +248,7 @@ export const boardConfig: BoardConfig = {
 	registrationsAllowed: true,
 	additionalNavlinks: '',
 	reportsByEmail: false,
-	appFeedback: { phraseo: null, donneTonPoint: null, horlogeUtc: null, selcal: null },
+	appFeedback: { phraseo: null, donneTonPoint: null, horlogeUtc: null, selcal: null, reglages: null },
 	reportsByBoard: true,
 	maintenance: false,
 	maintenanceMessage: 'Le forum est fermé pour <b>maintenance</b>.',

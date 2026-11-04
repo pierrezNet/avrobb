@@ -1,5 +1,5 @@
 /**
- * Retours des applications sources (Phraséo, Donne Ton Point, Horloge UTC et SELCAL d'aeronautique.xyz :
+ * Retours des applications sources (Phraséo, Donne Ton Point, Horloge UTC, SELCAL et Atelier réglages d'aeronautique.xyz :
  * formulaire « J'ai un retour », sans
  * compte) : profil de chaque application, validation de ce qu'envoie son relais, sujet et message du
  * forum. Fonctions pures.
@@ -67,6 +67,21 @@ export const FEEDBACK_SOURCES: Readonly<Record<FeedbackSourceId, FeedbackSource>
 		// Code SELCAL affiché au moment de l'envoi (« AB-CD »), vide s'il était invalide
 		details: [{ name: 'code', maxLength: 5 }],
 		configPrefix: 'o_selcal_feedback',
+		mailTemplate: 'app_feedback',
+	},
+	reglages: {
+		id: 'reglages',
+		types: ['Bug', 'Suggestion / idée', 'Question', 'Autre'],
+		// Simulateur choisi et étape du parcours d'où le retour a été envoyé (vides si inconnus)
+		details: [
+			{ name: 'simulateur', maxLength: 4, values: ['2020', '2024', ''] },
+			{
+				name: 'etape',
+				maxLength: 13,
+				values: ['configuration', 'mesures', 'constats', 'diagnostic', 'reglages', 'challenge', 'journal', 'ia', ''],
+			},
+		],
+		configPrefix: 'o_reglages_feedback',
 		mailTemplate: 'app_feedback',
 	},
 };

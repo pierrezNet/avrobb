@@ -16,6 +16,7 @@ export const topic = {
 		donneTonPoint: 'Accepter : publier dans le forum Donne ton point',
 		horlogeUtc: "Accepter : publier dans le forum de l'horloge UTC",
 		selcal: 'Accepter : publier dans le forum SELCAL',
+		reglages: "Accepter : publier dans le forum de l'Atelier réglages",
 	},
 	postReply: 'Répondre',
 	topicClosed: 'Discussion fermée',

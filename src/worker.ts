@@ -359,6 +359,13 @@ export class SelcalFeedback extends WorkerEntrypoint<Env> {
 	}
 }
 
+/** Retours de l'Atelier réglages MSFS d'aeronautique.xyz, par le même relais : `"entrypoint": "ReglagesFeedback"`. */
+export class ReglagesFeedback extends WorkerEntrypoint<Env> {
+	async submit(input: unknown): Promise<AppFeedbackResult> {
+		return submitAppFeedback(this.env, 'reglages', input);
+	}
+}
+
 export default {
 	async fetch(request: Request, env: Env, ctx: ExecutionContextLike): Promise<Response> {
 		const url = new URL(request.url);

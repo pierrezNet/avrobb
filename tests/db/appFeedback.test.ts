@@ -1,6 +1,6 @@
 /**
  * Migrations des retours d'applications rejouées sur le jeu de données : Phraséo (0005 à 0007),
- * Donne Ton Point (0008), Horloge UTC et SELCAL (0012). Compte système, forum privé « à trier » et réglages, puis création d'un
+ * Donne Ton Point (0008), Horloge UTC et SELCAL (0012), Atelier réglages (0015). Compte système, forum privé « à trier » et réglages, puis création d'un
  * sujet dans ce forum.
  */
 
@@ -203,6 +203,29 @@ describe('migration 0012 : retours Horloge UTC et SELCAL', () => {
 				for (const groupId of [2, 3, 4]) expect(await posting.findTarget({ forumId }, { id: 2, groupId })).toBeNull();
 				expect(await posting.findTarget({ forumId }, { id: 2, groupId: 1 })).not.toBeNull();
 			}
+		});
+	});
+});
+
+describe('migration 0015 : retours Atelier réglages', () => {
+	it('compte système, forum privé et réglages propres, sans toucher aux autres applications', async () => {
+		await inRollback(async (trx) => {
+			await runScript(await migration('0012_aeronautique_feedback.sql'));
+			await runScript(await migration('0015_reglages_feedback.sql'));
+			const { reglages, horlogeUtc, selcal } = toBoardConfig(await new ConfigRepository(trx).loadValues()).appFeedback;
+			expect(reglages).not.toBeNull();
+			expect(new Set([reglages!.forumId, horlogeUtc!.forumId, selcal!.forumId]).size).toBe(3);
+
+			const user = await trx
+				.selectFrom('users')
+				.select(['username', 'provider', 'group_id', 'use_pm', 'reputation_enable'])
+				.where('id', '=', reglages!.userId)
+				.executeTakeFirstOrThrow();
+			expect(user).toEqual({ username: 'Retours Atelier réglages', provider: null, group_id: 4, use_pm: 0, reputation_enable: 0 });
+
+			const posting = new PostingRepository(trx);
+			for (const groupId of [2, 3, 4]) expect(await posting.findTarget({ forumId: reglages!.forumId }, { id: 2, groupId })).toBeNull();
+			expect(await posting.findTarget({ forumId: reglages!.forumId }, { id: 2, groupId: 1 })).not.toBeNull();
 		});
 	});
 });

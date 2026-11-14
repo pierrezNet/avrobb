@@ -110,13 +110,8 @@ describe('GET /index.php', () => {
 		expect(res.body).toContain('<title>Forum de test</title>');
 		expect(res.body).toContain('Simulateurs &lt;FS&gt;');
 		expect(res.body).toContain('<div class="forum-row__desc"><em>Réglages</em></div>');
-		expect(res.body).toContain(
-			'<a class="project-links__link" href="https://www.avrobb.example/" rel="external noopener">Site du projet <span class="project-links__host">avrobb.example</span></a>',
-		);
-		expect(res.body).toContain(
-			'href="https://github.com/x/avrobb" rel="external noopener">Dépôt <span class="project-links__host">github.com</span>',
-		);
-		expect(res.body.match(/class="project-links"/g)).toHaveLength(1);
+		// Liens de projet réservés à la page de chaque forum : l'accueil reste une liste sobre.
+		expect(res.body).not.toContain('project-links__link');
 		expect(res.body).toContain('<a href="/membre/5">MaxDUO</a>');
 		expect(res.body).toContain('<span class="forum-row__redirect">Lien vers :</span> <a href="https://example.test">Forum 2</a>');
 		expect(res.body).toContain('<dd>12.3 k</dd>');

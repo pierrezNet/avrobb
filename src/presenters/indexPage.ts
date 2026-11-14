@@ -15,7 +15,6 @@ import { niceNumber } from '../services/numberFormat.ts';
 import { forumPath } from '../services/routes.ts';
 import { readableOn, type SubjectSegment, subjectSegments } from '../services/subjectTags.ts';
 import { forumHasNewPosts, type TrackedTopics } from '../services/trackedTopics.ts';
-import { type ProjectLinkView, projectLinkViews } from './projectLinks.ts';
 import { topicUrl } from './topicPage.ts';
 
 export interface PersonLink {
@@ -32,7 +31,6 @@ export interface ForumRowView {
 	isRedirect: boolean;
 	/** HTML de forums.forum_desc (saisi par l'administrateur). */
 	descriptionHtml: string;
-	links: ProjectLinkView[];
 	moderators: PersonLink[];
 	/** Lien « Nouveaux messages » ; null s'il n'y en a pas (ou pour un invité). */
 	newPostsUrl: string | null;
@@ -111,7 +109,6 @@ export function buildIndexPage(input: IndexPageInput): IndexPageView {
 				href: forum.redirectUrl ?? forumPath(forum.id, forum.name),
 				isRedirect,
 				descriptionHtml: forum.descriptionHtml,
-				links: projectLinkViews(forum.links, lang),
 				moderators: [...forum.moderators].map(([username, id]) => person(id, username)),
 				newPostsUrl: hasNew ? `search.php?action=show_new&fid=${forum.id}` : null,
 				numTopics: isRedirect ? '-' : niceNumber(forum.numTopics),

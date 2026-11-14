@@ -1,4 +1,26 @@
 {#- Message affiché avec son auteur (viewtopic, conversation privée). `post` : PostView (presenters/topicPage.ts). -#}
+{#- Résumé des réactions, « J'aime » et palette « Réagir » (presenters/reactions.ts). La palette est un <details> : elle s'ouvre sans JavaScript. -#}
+{% macro reactionBar(bar, lang, layout) %}
+<div class="reaction-bar" data-reaction-bar>
+	<a class="reaction-summary" href="{{ url(bar.reactorsHref) }}" data-reactors data-close="{{ lang.reactions.close }}"{% if not bar.summary %} hidden{% endif %}><span class="reaction-summary__emojis" aria-hidden="true">{{ bar.summary.emojis if bar.summary }}</span> <span class="reaction-summary__names">{{ bar.summary.text if bar.summary }}</span></a>
+	{% if bar.like or bar.picker %}
+	<form class="reaction-bar__form" method="post" action="{{ url(bar.formAction) }}" aria-label="{{ lang.topic.reactionsLabel }}" data-reactions>
+		<input type="hidden" name="csrf_token" value="{{ layout.csrfToken }}">
+		<input type="hidden" name="pid" value="{{ bar.postId }}">
+		{% if bar.like %}<button class="reaction-button" type="submit" name="value" value="like" aria-pressed="{{ 'true' if bar.like.pressed else 'false' }}"><span aria-hidden="true">👍</span> {{ bar.like.label }}</button>{% endif %}
+		{% if bar.picker %}
+		<details class="reaction-picker">
+			<summary class="reaction-button" data-pressed="{{ 'true' if bar.picker.pressed else 'false' }}"><span class="reaction-picker__current" aria-hidden="true">{{ bar.picker.emoji }}</span> {{ bar.picker.label }}</summary>
+			<div class="reaction-picker__menu">
+				{% for choice in bar.picker.choices %}<button class="reaction-picker__choice" type="submit" name="value" value="{{ choice.value }}" aria-pressed="{{ 'true' if choice.pressed else 'false' }}" title="{{ choice.label }}"><span aria-hidden="true">{{ choice.emoji }}</span><span class="visually-hidden">{{ choice.label }}</span></button>{% endfor %}
+			</div>
+		</details>
+		{% endif %}
+	</form>
+	{% endif %}
+</div>
+{% endmacro %}
+
 {% macro article(post, subject, lang, layout) %}
 <article id="p{{ post.id }}" class="post{% if post.isFirstPost %} post--first{% endif %}" aria-labelledby="p{{ post.id }}-title">
 	<h2 class="post__meta" id="p{{ post.id }}-title">
@@ -53,17 +75,7 @@
 	</div>
 
 	<footer class="post__footer">
-		{% if post.reactions and post.reactions.canReact %}
-		<form class="reactions" method="post" action="{{ url(post.reactions.formAction) }}" aria-label="{{ lang.topic.reactionsLabel }}" data-reactions>
-			<input type="hidden" name="csrf_token" value="{{ layout.csrfToken }}">
-			<input type="hidden" name="pid" value="{{ post.reactions.postId }}">
-			{% for button in post.reactions.buttons %}<button class="reaction" type="submit" name="value" value="{{ button.value }}" aria-pressed="{{ 'true' if button.pressed else 'false' }}" title="{{ button.label }}"><span aria-hidden="true">{{ button.emoji }}</span><span class="visually-hidden">{{ button.label }}</span><span class="reaction__count">{{ button.count or '' }}</span></button>{% endfor %}
-		</form>
-		{% elif post.reactions %}
-		<ul class="reactions" aria-label="{{ lang.topic.reactionsLabel }}">
-			{% for button in post.reactions.buttons %}<li class="reaction" title="{{ button.label }}"><span aria-hidden="true">{{ button.emoji }}</span><span class="visually-hidden">{{ button.label }}</span><span class="reaction__count">{{ button.count }}</span></li>{% endfor %}
-		</ul>
-		{% endif %}
+		{% if post.reactions %}{{ reactionBar(post.reactions, lang, layout) }}{% endif %}
 		{% if post.isOnline !== null %}<p class="post__presence{% if post.isOnline %} post__presence--online{% endif %}">{% if post.isOnline %}{{ lang.topic.online }}{% else %}{{ lang.topic.offline }}{% endif %}</p>{% endif %}
 		{% if post.actions.length %}
 		<ul class="post__actions">

@@ -130,7 +130,7 @@ export const adminOptions = {
 		},
 		post_reactions: {
 			label: 'Réactions',
-			help: 'Cinq réactions (❤️ 😂 😮 🙏 🎉) sous les messages, une seule par membre et par message, avec leurs compteurs. Les « J’aime » et réactions de la semaine classent les « Messages les plus appréciés » de l’accueil.',
+			help: 'Six réactions (❤️ 😂 😮 😢 🙏 🎉) sous les messages, une seule par membre et par message, avec leurs compteurs. Les « J’aime » et réactions de la semaine classent les « Messages les plus appréciés » de l’accueil.',
 		},
 		feed_type: {
 			label: 'Type de flux par défaut',

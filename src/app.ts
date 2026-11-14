@@ -40,7 +40,7 @@ import { PrivateMessageController, type PrivateMessageQuery } from './controller
 import { PrivateMessageSendController, type PrivateMessageSendQuery } from './controllers/PrivateMessageSendController.ts';
 import { ProfileController, type ProfileQuery } from './controllers/ProfileController.ts';
 import { PushController, type PushQuery } from './controllers/PushController.ts';
-import { ReactionController } from './controllers/ReactionController.ts';
+import { ReactionController, type ReactionsQuery } from './controllers/ReactionController.ts';
 import { ReputationController, type ReputationQuery } from './controllers/ReputationController.ts';
 import { SearchController, type SearchQuery } from './controllers/SearchController.ts';
 import { SeoController } from './controllers/SeoController.ts';
@@ -450,7 +450,9 @@ export async function buildApp(input: AppDeps): Promise<ForumApp> {
 	const reputation = new ReputationController(deps);
 	router.get<{ Querystring: ReputationQuery }>('/reputation.php', [authenticate], reputation.show);
 	router.post<{ Querystring: ReputationQuery; Body: FormBody }>('/reputation.php', [authenticate, verifyCsrf], reputation.submit);
-	router.post<{ Body: FormBody }>('/react.php', [authenticate, verifyCsrf, writeLimit], new ReactionController(deps).submit);
+	const reactions = new ReactionController(deps);
+	router.post<{ Body: FormBody }>('/react.php', [authenticate, verifyCsrf, writeLimit], reactions.submit);
+	router.get<{ Querystring: ReactionsQuery }>('/reactions.php', [authenticate], reactions.show);
 
 	const pms = new PrivateMessageController(deps);
 	router.get<{ Querystring: PrivateMessageQuery }>('/pms_inbox.php', [authenticate], (request, reply) => pms.inbox(request, reply));

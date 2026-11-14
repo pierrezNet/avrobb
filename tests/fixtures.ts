@@ -59,7 +59,7 @@ import type { Ban } from '../src/services/bans.ts';
 import type { CensoredWord } from '../src/services/censor.ts';
 import type { GroupForumPermissionRow } from '../src/services/forumPermissions.ts';
 import type { MailMessage } from '../src/services/mail.ts';
-import { NO_REACTIONS, type PostReactions, type ReactionKey } from '../src/services/reactions.ts';
+import type { PostReactions, ReactionKey } from '../src/services/reactions.ts';
 import { buildSessionCookie } from '../src/services/session.ts';
 import type { TranslationKind } from '../src/services/translation.ts';
 import type { UserSearchCriteria } from '../src/services/userSearch.ts';
@@ -1109,23 +1109,44 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 		postReactions: {
 			forPosts: async (postIds, viewerId) => {
 				const found = new Map<number, PostReactions>();
-				for (const row of data.reactions ?? []) {
-					if (!postIds.includes(row.postId)) continue;
-					const entry = found.get(row.postId) ?? { ...NO_REACTIONS, reactions: {} };
-					const mine = row.userId === viewerId;
-					const key = row.reaction as ReactionKey;
-					found.set(
-						row.postId,
-						row.slot === 'like'
-							? { ...entry, likes: entry.likes + 1, liked: entry.liked || mine }
-							: {
-									...entry,
-									reactions: { ...entry.reactions, [key]: (entry.reactions[key] ?? 0) + 1 },
-									reaction: mine ? key : entry.reaction,
-								},
-					);
+				for (const postId of postIds) {
+					const rows = (data.reactions ?? []).filter((row) => row.postId === postId);
+					if (rows.length === 0) continue;
+					const reactions: Partial<Record<ReactionKey, number>> = {};
+					for (const row of rows)
+						if (row.slot === 'emoji') reactions[row.reaction as ReactionKey] = (reactions[row.reaction as ReactionKey] ?? 0) + 1;
+					// Lignes dans l'ordre d'enregistrement : les dernières sont les plus récentes.
+					const latestFirst = [...new Set(rows.map((row) => row.userId).reverse())];
+					found.set(postId, {
+						likes: rows.filter((row) => row.slot === 'like').length,
+						reactions,
+						liked: rows.some((row) => row.slot === 'like' && row.userId === viewerId),
+						reaction: (rows.find((row) => row.slot === 'emoji' && row.userId === viewerId)?.reaction as ReactionKey | undefined) ?? null,
+						reactors: latestFirst.length,
+						recent: latestFirst
+							.filter((id) => id !== viewerId)
+							.slice(0, 3)
+							.map((id) => data.users.find((user) => user.viewer.id === id)?.viewer.username ?? `#${id}`),
+					});
 				}
 				return found;
+			},
+			listReactors: async (postId, filter, offset, limit) => {
+				const rows = (data.reactions ?? []).filter((row) => row.postId === postId);
+				return [...new Set(rows.map((row) => row.userId).reverse())]
+					.map((userId) => {
+						const own = rows.filter((row) => row.userId === userId);
+						const reaction = own.find((row) => row.slot === 'emoji')?.reaction as ReactionKey | undefined;
+						return {
+							userId,
+							username: data.users.find((user) => user.viewer.id === userId)?.viewer.username ?? `#${userId}`,
+							liked: own.some((row) => row.slot === 'like'),
+							reaction: reaction ?? null,
+							reactedAt: NOW - 60,
+						};
+					})
+					.filter((reactor) => (filter === null ? true : filter.kind === 'like' ? reactor.liked : reactor.reaction === filter.reaction))
+					.slice(offset, offset + limit);
 			},
 			listAppreciated: async (_groupId, _since, limit) => (data.appreciatedPosts ?? []).slice(0, limit),
 			purgeOrphans: async () => undefined,

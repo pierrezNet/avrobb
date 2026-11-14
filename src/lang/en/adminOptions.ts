@@ -132,7 +132,7 @@ export const adminOptions: typeof frAdminOptions = {
 		},
 		post_reactions: {
 			label: 'Reactions',
-			help: 'Five reactions (❤️ 😂 😮 🙏 🎉) below posts, one per member and post, with their counts. This week’s likes and reactions rank the “Most appreciated posts” on the home page.',
+			help: 'Six reactions (❤️ 😂 😮 😢 🙏 🎉) below posts, one per member and post, with their counts. This week’s likes and reactions rank the “Most appreciated posts” on the home page.',
 		},
 		feed_type: {
 			label: 'Default feed type',

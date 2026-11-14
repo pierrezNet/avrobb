@@ -1,16 +1,24 @@
 /*
- * « J'aime » et réactions sans recharger la page : le formulaire part en arrière-plan et les
- * compteurs renvoyés par react.php remplacent ceux du message. Sans JavaScript, ou en cas
- * d'échec, le formulaire est envoyé normalement.
+ * « J'aime » et réactions sans recharger la page : le formulaire part en arrière-plan et la barre
+ * renvoyée par react.php (presenters/reactions.ts) remplace l'état affiché. La liste des membres
+ * ayant réagi s'ouvre dans une fenêtre, avec le contenu de la page reactions.php. Sans JavaScript,
+ * ou en cas d'échec, formulaire et lien fonctionnent normalement.
  */
 (() => {
-	function update(form, counts) {
-		for (const button of form.querySelectorAll('button[name="value"]')) {
-			const like = button.value === 'like';
-			const count = like ? counts.likes : (counts.reactions[button.value] ?? 0);
-			const pressed = like ? counts.liked : counts.reaction === button.value;
-			button.setAttribute('aria-pressed', String(pressed));
-			button.querySelector('.reaction__count').textContent = count > 0 ? String(count) : '';
+	function update(bar, view) {
+		const summary = bar.querySelector('[data-reactors]');
+		summary.hidden = view?.summary == null;
+		summary.querySelector('.reaction-summary__emojis').textContent = view?.summary?.emojis ?? '';
+		summary.querySelector('.reaction-summary__names').textContent = view?.summary?.text ?? '';
+		const like = bar.querySelector('button[value="like"]');
+		if (like && view?.like) like.setAttribute('aria-pressed', String(view.like.pressed));
+		const picker = bar.querySelector('.reaction-picker');
+		if (picker && view?.picker) {
+			picker.open = false;
+			picker.querySelector('summary').dataset.pressed = String(view.picker.pressed);
+			picker.querySelector('.reaction-picker__current').textContent = view.picker.emoji;
+			for (const choice of view.picker.choices)
+				picker.querySelector(`button[value="${choice.value}"]`)?.setAttribute('aria-pressed', String(choice.pressed));
 		}
 	}
 
@@ -31,12 +39,67 @@
 				credentials: 'same-origin',
 			});
 			if (!response.ok) throw new Error(String(response.status));
-			update(form, await response.json());
+			update(form.closest('[data-reaction-bar]'), await response.json());
 		} catch {
 			form.dataset.fallback = '1';
 			form.requestSubmit(button);
 		} finally {
 			form.removeAttribute('aria-busy');
 		}
+	});
+
+	// Palette ouverte : un clic ailleurs ou Échap la referme.
+	document.addEventListener('click', (event) => {
+		for (const picker of document.querySelectorAll('.reaction-picker[open]')) if (!picker.contains(event.target)) picker.open = false;
+	});
+	document.addEventListener('keydown', (event) => {
+		if (event.key !== 'Escape') return;
+		for (const picker of document.querySelectorAll('.reaction-picker[open]')) {
+			picker.open = false;
+			picker.querySelector('summary').focus();
+		}
+	});
+
+	let dialog = null;
+
+	async function showReactors(href, closeLabel) {
+		const response = await fetch(href, { credentials: 'same-origin' });
+		if (!response.ok) throw new Error(String(response.status));
+		const content = new DOMParser().parseFromString(await response.text(), 'text/html').getElementById('reactors');
+		if (content === null) throw new Error('liste absente');
+		if (dialog === null) {
+			dialog = document.createElement('dialog');
+			dialog.className = 'reactors-dialog';
+			dialog.addEventListener('click', (event) => {
+				if (event.target === dialog) dialog.close();
+				const tab = event.target instanceof Element ? event.target.closest('.reactors__tab, .pagination a') : null;
+				if (tab === null) return;
+				event.preventDefault();
+				showReactors(tab.href, closeLabel).catch(() => {
+					location.href = tab.href;
+				});
+			});
+			document.body.append(dialog);
+		}
+		const close = document.createElement('button');
+		close.type = 'button';
+		close.className = 'reactors-dialog__close';
+		close.setAttribute('aria-label', closeLabel);
+		close.textContent = '×';
+		close.addEventListener('click', () => dialog.close());
+		dialog.replaceChildren(close, content);
+		dialog.setAttribute('aria-labelledby', 'reactors-dialog-title');
+		content.querySelector('.reactors__title')?.setAttribute('id', 'reactors-dialog-title');
+		if (!dialog.open) dialog.showModal();
+	}
+
+	document.addEventListener('click', (event) => {
+		const link = event.target instanceof Element ? event.target.closest('a[data-reactors]') : null;
+		if (link === null || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || typeof HTMLDialogElement !== 'function')
+			return;
+		event.preventDefault();
+		showReactors(link.href, link.dataset.close ?? '×').catch(() => {
+			location.href = link.href;
+		});
 	});
 })();

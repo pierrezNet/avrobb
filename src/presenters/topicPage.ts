@@ -24,7 +24,7 @@ import {
 	type PostActionRights,
 	postActions,
 } from '../services/permissions.ts';
-import { canReact, LIKE_EMOJI, NO_REACTIONS, type PostReactions, REACTION_EMOJIS, REACTIONS } from '../services/reactions.ts';
+import { NO_REACTIONS, type PostReactions } from '../services/reactions.ts';
 import { forumPath, topicPath } from '../services/routes.ts';
 import { type SubjectSegment, subjectSegments } from '../services/subjectTags.ts';
 import type { ToolbarSettings } from '../services/toolbar.ts';
@@ -33,6 +33,7 @@ import { userTitle } from '../services/userTitle.ts';
 import { type Crumb, crumbs, type PaginationLink, paginationLinks } from './navigation.ts';
 import { bbcodeLabels, messageParserOptions } from './parserOptions.ts';
 import { type BbcodeStatus, bbcodeStatus, type ToolbarView, toolbarView } from './postPage.ts';
+import { type ReactionsView, reactionsView } from './reactions.ts';
 
 /** Lien d'action sous un message ; `kind` sert aussi de classe CSS (postreport…, comme FluxBB). */
 export interface PostAction {
@@ -86,23 +87,6 @@ export interface PostView {
 	edited: { by: string; at: string } | null;
 	actions: PostAction[];
 	reactions: ReactionsView | null;
-}
-
-/** Un bouton « J'aime » ou une réaction : `value` envoyé à react.php. */
-export interface ReactionButtonView {
-	value: string;
-	emoji: string;
-	label: string;
-	count: number;
-	pressed: boolean;
-}
-
-/** Boutons sous le message (membre autre que l'auteur), ou seulement les compteurs non nuls. */
-export interface ReactionsView {
-	formAction: string;
-	postId: number;
-	canReact: boolean;
-	buttons: ReactionButtonView[];
 }
 
 export interface TopicPageView {
@@ -171,30 +155,6 @@ export interface TopicPageInput {
 	translations?: ContentTranslations;
 	/** « J'aime » et réactions des messages de la page ; aucun par défaut. */
 	reactions?: ReadonlyMap<number, PostReactions>;
-}
-
-export function reactionsView(
-	postId: number,
-	authorId: number | null,
-	counts: PostReactions,
-	input: Pick<TopicPageInput, 'viewer' | 'config' | 'lang'>,
-): ReactionsView | null {
-	const { config, lang } = input;
-	const buttons: ReactionButtonView[] = [];
-	if (config.postLikes)
-		buttons.push({ value: 'like', emoji: LIKE_EMOJI, label: lang.topic.like, count: counts.likes, pressed: counts.liked });
-	if (config.postReactions)
-		for (const key of REACTIONS)
-			buttons.push({
-				value: key,
-				emoji: REACTION_EMOJIS[key],
-				label: lang.topic.reactions[key],
-				count: counts.reactions[key] ?? 0,
-				pressed: counts.reaction === key,
-			});
-	const allowed = canReact(input.viewer, authorId);
-	const shown = allowed ? buttons : buttons.filter((button) => button.count > 0);
-	return shown.length > 0 ? { formAction: 'react.php', postId, canReact: allowed, buttons: shown } : null;
 }
 
 /** URL d'une page du sujet (la page 1 n'a pas de paramètre p, comme dans FluxBB). */

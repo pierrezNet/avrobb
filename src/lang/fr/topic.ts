@@ -42,7 +42,14 @@ export const topic = {
 	/** « J'aime » et réactions sous un message. */
 	reactionsLabel: 'Réactions au message',
 	like: 'J’aime',
-	reactions: { heart: 'J’adore', laugh: 'Drôle', wow: 'Étonnant', thanks: 'Merci', party: 'Bravo' },
+	reactions: { heart: 'J’adore', laugh: 'Drôle', wow: 'Étonnant', sad: 'Triste', thanks: 'Merci', party: 'Bravo' },
+	react: 'Réagir',
+	you: 'Vous',
+	/** « A, B, C et 5 autres » : noms des membres ayant réagi, lien vers la liste. */
+	reactorsSummary: (names: readonly string[], others: number): string => {
+		if (others > 0) return `${names.join(', ')} et ${others === 1 ? '1 autre' : `${others} autres`}`;
+		return names.length > 1 ? `${names.slice(0, -1).join(', ')} et ${names[names.length - 1]}` : (names[0] ?? '');
+	},
 
 	/** Préfixes du sujet (PV) : page propre à Node, ouverte depuis viewtopic. */
 	subjectPrefixes: 'Balises du sujet',

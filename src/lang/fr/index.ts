@@ -32,6 +32,7 @@ import { pms } from './pms.ts';
 import { post } from './post.ts';
 import { profile } from './profile.ts';
 import { push } from './push.ts';
+import { reactions } from './reactions.ts';
 import { reputation } from './reputation.ts';
 import { search } from './search.ts';
 import { staticPages } from './staticPages.ts';
@@ -58,6 +59,7 @@ export const fr = {
 	toolbar,
 	delete: deletePage,
 	drafts,
+	reactions,
 	reputation,
 	moderate,
 	admin,

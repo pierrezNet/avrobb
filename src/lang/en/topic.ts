@@ -43,7 +43,14 @@ export const topic: typeof frTopic = {
 	/** Likes and reactions below a post. */
 	reactionsLabel: 'Reactions to this post',
 	like: 'Like',
-	reactions: { heart: 'Love', laugh: 'Funny', wow: 'Wow', thanks: 'Thanks', party: 'Congrats' },
+	reactions: { heart: 'Love', laugh: 'Funny', wow: 'Wow', sad: 'Sad', thanks: 'Thanks', party: 'Congrats' },
+	react: 'React',
+	you: 'You',
+	/** “A, B, C and 5 others”: members who reacted, link to the list. */
+	reactorsSummary: (names: readonly string[], others: number): string => {
+		if (others > 0) return `${names.join(', ')} and ${others === 1 ? '1 other' : `${others} others`}`;
+		return names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : (names[0] ?? '');
+	},
 
 	/** Subject prefixes (PV): Node-only page, opened from viewtopic. */
 	subjectPrefixes: 'Subject tags',

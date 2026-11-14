@@ -1,13 +1,14 @@
 /**
- * « J'aime » et réactions : effet d'un clic (services/reactions.ts), boutons sous les messages,
- * enregistrement par react.php (formulaire et JSON), droits et options.
+ * « J'aime » et réactions : effet d'un clic et résumé (services/reactions.ts), barre sous les
+ * messages, enregistrement par react.php (formulaire et JSON), liste reactions.php, droits et options.
  */
 
 import { describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.ts';
 import { csrfToken } from '../src/http/csrf.ts';
-import { NO_REACTIONS, nextReaction, readReactionChoice } from '../src/services/reactions.ts';
-import { type FakeData, fakeDeps, guest, post, sessionCookie, topic, viewer } from './fixtures.ts';
+import { fr } from '../src/lang/fr/index.ts';
+import { NO_REACTIONS, nextReaction, reactorNames, readReactionChoice, topEmojis } from '../src/services/reactions.ts';
+import { boardConfig, type FakeData, fakeDeps, guest, post, sessionCookie, topic, viewer } from './fixtures.ts';
 import { inject } from './inject.ts';
 
 const SEED = 'graine-de-test';
@@ -27,15 +28,36 @@ describe('nextReaction()', () => {
 		expect(nextReaction(loved, party)).toEqual({ liked: true, reaction: 'party' });
 		expect(nextReaction(loved, heart)).toEqual({ liked: true, reaction: null });
 	});
+
+	it('résumé : émojis les plus fréquents, « vous » d’abord, trois noms puis le nombre restant', () => {
+		const counts = {
+			...NO_REACTIONS,
+			likes: 7,
+			reactions: { heart: 1, sad: 2 },
+			reaction: 'sad' as const,
+			reactors: 9,
+			recent: ['A', 'B', 'C'],
+		};
+		expect(topEmojis(counts, boardConfig)).toEqual(['👍', '😢', '❤️']);
+		expect(topEmojis(counts, { ...boardConfig, postLikes: false })).toEqual(['😢', '❤️']);
+		const { names, others } = reactorNames(counts, 'Vous');
+		expect(fr.topic.reactorsSummary(names, others)).toBe('Vous, A, B et 6 autres');
+		expect(fr.topic.reactorsSummary(['A', 'B'], 0)).toBe('A et B');
+		expect(fr.topic.reactorsSummary(['A'], 1)).toBe('A et 1 autre');
+	});
 });
 
 function start(config: NonNullable<FakeData['config']> = {}) {
 	const fake: FakeData = {
-		users: [{ viewer: guest }, { viewer: viewer() }, { viewer: max }],
+		users: [{ viewer: guest }, { viewer: viewer() }, { viewer: max }, { viewer: viewer({ id: 6, username: 'Sam' }) }],
 		topics: [topic({ id: 4 })],
 		// Message 40 de Tessy (n° 3).
 		posts: new Map([[4, [post(40)]]]),
-		reactions: [{ postId: 40, userId: 3, slot: 'emoji', reaction: 'laugh' }],
+		// Tessy rit de son propre message (donnée de test : l'application le refuse), Sam aime.
+		reactions: [
+			{ postId: 40, userId: 3, slot: 'emoji', reaction: 'laugh' },
+			{ postId: 40, userId: 6, slot: 'like', reaction: 'like' },
+		],
 		config,
 	};
 	return { fake, app: buildApp(fakeDeps(fake)) };
@@ -54,29 +76,35 @@ const react = async (app: ReturnType<typeof start>['app'], userId: number, field
 	});
 
 describe('react.php', () => {
-	it('boutons pour un autre membre ; compteurs seuls pour l’invité et l’auteur', async () => {
+	it('barre : résumé et boutons pour un autre membre ; résumé seul pour l’invité et l’auteur', async () => {
 		const { app } = start();
-		const member = await inject(await app, { url: '/sujet/4', headers: { cookie: sessionCookie(5) } });
-		expect(member.body).toContain('<form class="reactions" method="post" action="/reagir"');
-		expect(member.body).toContain('name="value" value="like" aria-pressed="false" title="J’aime"');
-		expect(member.body).toMatch(/value="laugh" aria-pressed="false" title="Drôle">.*<span class="reaction__count">1<\/span>/);
+		const member = (await inject(await app, { url: '/sujet/4', headers: { cookie: sessionCookie(5) } })).body;
+		expect(member).toContain('<a class="reaction-summary" href="/reactions?pid=40" data-reactors');
+		expect(member).toContain(
+			'<span class="reaction-summary__emojis" aria-hidden="true">👍😂</span> <span class="reaction-summary__names">Sam et Tessy</span>',
+		);
+		expect(member).toContain('<form class="reaction-bar__form" method="post" action="/reagir"');
+		expect(member).toContain('name="value" value="like" aria-pressed="false"><span aria-hidden="true">👍</span> J’aime</button>');
+		expect(member).toContain('<span class="reaction-picker__current" aria-hidden="true">😊</span> Réagir</summary>');
+		expect(member).toContain('value="sad" aria-pressed="false" title="Triste"');
 		for (const cookie of [undefined, sessionCookie(3)]) {
-			const page = await inject(await app, { url: '/sujet/4', headers: cookie !== undefined ? { cookie } : {} });
-			expect(page.body).not.toContain('<form class="reactions"');
-			expect(page.body).toContain('<li class="reaction" title="Drôle">');
-			expect(page.body).not.toContain('title="J’aime"');
+			const page = (await inject(await app, { url: '/sujet/4', headers: cookie !== undefined ? { cookie } : {} })).body;
+			expect(page).not.toContain('reaction-bar__form');
+			expect(page).toContain('reaction-summary__names');
 		}
 	});
 
-	it('sans JavaScript : enregistré, retour au message ; avec : compteurs en JSON', async () => {
+	it('sans JavaScript : enregistré, retour au message ; avec : barre recalculée en JSON', async () => {
 		const { app, fake } = start();
 		const res = await react(app, 5, { pid: '40', value: 'like' });
 		expect(res.statusCode).toBe(302);
 		expect(res.headers.location).toMatch(/^\/[^.]+#p40$/);
-		const json = await react(app, 5, { pid: '40', value: 'laugh' }, 'application/json');
-		expect(JSON.parse(json.body)).toEqual({ likes: 1, reactions: { laugh: 2 }, liked: true, reaction: 'laugh' });
+		const view = JSON.parse((await react(app, 5, { pid: '40', value: 'sad' }, 'application/json')).body);
+		expect(view.summary).toEqual({ emojis: '👍😂😢', text: 'Vous, Sam et Tessy' });
+		expect(view.like).toEqual({ label: 'J’aime', pressed: true });
+		expect(view.picker).toMatchObject({ emoji: '😢', pressed: true });
 		// Même réaction : retirée ; autre réaction : remplace la précédente.
-		await react(app, 5, { pid: '40', value: 'laugh' });
+		await react(app, 5, { pid: '40', value: 'sad' });
 		await react(app, 5, { pid: '40', value: 'party' });
 		expect(fake.reactions?.filter((row) => row.userId === 5)).toEqual([
 			{ postId: 40, userId: 5, slot: 'like', reaction: 'like' },
@@ -91,11 +119,32 @@ describe('react.php', () => {
 		expect((await react(app, 5, { pid: '99', value: 'like' })).statusCode).toBe(404);
 		expect((await react(app, 5, { pid: '40', value: 'poop' })).statusCode).toBe(400);
 		expect((await react(app, 5, { pid: '40', value: 'heart' })).statusCode).toBe(400);
-		expect(fake.reactions).toHaveLength(1);
-		// Réactions désactivées : plus de compteur de réaction affiché.
+		expect(fake.reactions).toHaveLength(2);
+		// Réactions désactivées : ni palette ni réaction dans le résumé.
 		const page = await inject(await app, { url: '/sujet/4', headers: { cookie: sessionCookie(5) } });
 		expect(page.body).toContain('value="like"');
-		expect(page.body).not.toContain('value="laugh"');
+		expect(page.body).not.toContain('reaction-picker');
+		expect(page.body).toContain('aria-hidden="true">👍</span> <span class="reaction-summary__names">');
+	});
+});
+
+describe('reactions.php', () => {
+	it('onglets par émoji, une ligne par membre, filtre ; lisible par un invité', async () => {
+		const { app } = start();
+		const page = await inject(await app, '/reactions?pid=40');
+		expect(page.statusCode).toBe(200);
+		expect(page.body).toContain('<h1 class="page-title reactors__title">Réactions au message de Tessy</h1>');
+		expect(page.body).toContain(
+			'<a class="reactors__tab" href="/reactions?pid=40" aria-current="page">Tous <span class="reactors__count">2</span></a>',
+		);
+		expect(page.body).toContain('href="/reactions?pid=40&amp;r=laugh"><span aria-hidden="true">😂</span>');
+		expect(page.body.match(/class="reactors__row"/g)).toHaveLength(2);
+		const likes = (await inject(await app, '/reactions?pid=40&r=like')).body;
+		expect(likes.match(/class="reactors__row"/g)).toHaveLength(1);
+		expect(likes).toContain('<a href="/membre/6">Sam</a>');
+		expect(likes).toContain('<a class="reactors__tab" href="/reactions?pid=40&amp;r=like" aria-current="page">');
+		expect((await inject(await app, '/reactions?pid=40&r=poop')).statusCode).toBe(404);
+		expect((await inject(await app, '/reactions?pid=99')).statusCode).toBe(404);
 	});
 });
 

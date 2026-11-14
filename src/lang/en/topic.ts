@@ -35,15 +35,16 @@ export const topic: typeof frTopic = {
 	delete: 'Delete',
 	edit: 'Edit',
 	quote: 'Quote',
+	share: 'Share',
+	linkCopied: 'Link to the post copied to the clipboard.',
 	re: 'Re:',
 	/** lang/French/reputation.php */
 	reputation: 'Reputation',
 	reputationPlus: 'Increase reputation',
 	reputationMinus: 'Decrease reputation',
-	/** Likes and reactions below a post. */
+	/** Reactions below a post (👍 “Like” included). */
 	reactionsLabel: 'Reactions to this post',
-	like: 'Like',
-	reactions: { heart: 'Love', laugh: 'Funny', wow: 'Wow', sad: 'Sad', thanks: 'Thanks', party: 'Congrats' },
+	reactions: { like: 'Like', heart: 'Love', laugh: 'Funny', wow: 'Wow', sad: 'Sad', thanks: 'Thanks', party: 'Congrats' },
 	react: 'React',
 	you: 'You',
 	/** “A, B, C and 5 others”: members who reacted, link to the list. */

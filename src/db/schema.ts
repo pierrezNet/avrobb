@@ -334,7 +334,6 @@ export interface PushSubscriptionsTable {
 export interface PostReactionsTable {
 	post_id: number;
 	user_id: number;
-	slot: 'like' | 'emoji';
 	reaction: string;
 	created: number;
 }

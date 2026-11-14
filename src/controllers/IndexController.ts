@@ -54,9 +54,7 @@ export class IndexController {
 			this.deps.homeActivity.listHotTopics(viewer.group.id, weekStart, HOT_TOPICS),
 			this.deps.homeActivity.listNewMembers(weekStart, NEW_MEMBERS),
 			this.deps.homeActivity.listActiveSubjects(viewer.group.id, weekStart),
-			config.postLikes || config.postReactions
-				? this.deps.postReactions.listAppreciated(viewer.group.id, weekStart, APPRECIATED_POSTS)
-				: [],
+			config.postReactions ? this.deps.postReactions.listAppreciated(viewer.group.id, weekStart, APPRECIATED_POSTS) : [],
 		]);
 		const { locale } = this.deps.page;
 		const [forums, hotTopics, appreciatedPosts, censoredWords] = await Promise.all([

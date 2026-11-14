@@ -335,7 +335,6 @@ export interface BoardConfig {
 	indentSpaces: number;
 	reputationEnabled: boolean;
 	/** « J'aime » et réactions émoji sur les messages (o_post_likes, o_post_reactions). */
-	postLikes: boolean;
 	postReactions: boolean;
 	/** Délai entre deux votes d'un membre pour un même autre membre, en minutes (o_reputation_timeout). */
 	reputationTimeout: number;

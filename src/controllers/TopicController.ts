@@ -103,7 +103,7 @@ export class TopicController {
 		const censor = config.censoring ? buildCensor(censoredWords) : null;
 		const [translations, reactions] = await Promise.all([
 			this.#translations(topic, posts),
-			config.postLikes || config.postReactions
+			config.postReactions
 				? this.deps.postReactions.forPosts(
 						posts.map((post) => post.id),
 						viewer.id,

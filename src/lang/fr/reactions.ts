@@ -3,7 +3,7 @@
  */
 
 export const reactions = {
-	title: (poster: string) => `Réactions au message de ${poster}`,
+	title: (number: number) => `Membres ayant réagi au message #${number}`,
 	all: 'Tous',
 	/** Onglet : émoji, libellé caché et nombre. */
 	tabLabel: (label: string, count: number) => `${label} (${count})`,

@@ -300,7 +300,6 @@ export const boardConfig: BoardConfig = {
 	baseUrl: 'http://forum.test',
 	indentSpaces: 4,
 	reputationEnabled: false,
-	postLikes: true,
 	postReactions: true,
 	reputationTimeout: 0,
 	usersOnline: true,
@@ -400,8 +399,8 @@ export interface FakeData {
 	reputationTargets?: ReputationTarget[];
 	addedVotes?: NewVote[];
 	deletedVotes?: { userId: number; ids: number[] }[];
-	/** « J'aime » et réactions : lignes de post_reactions ; messages de la colonne de l'accueil. */
-	reactions?: { postId: number; userId: number; slot: 'like' | 'emoji'; reaction: string }[];
+	/** Réactions (lignes de post_reactions, de la plus ancienne à la plus récente) ; messages de la colonne de l'accueil. */
+	reactions?: { postId: number; userId: number; reaction: ReactionKey }[];
 	appreciatedPosts?: AppreciatedPost[];
 	/** Modération : sujets modérables, forums de destination, actions consignées. */
 	moderatedTopics?: ModeratedTopic[];
@@ -1108,55 +1107,42 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 		stopwords: { load: async () => new Set(['les', 'pour']) },
 		postReactions: {
 			forPosts: async (postIds, viewerId) => {
+				const name = (id: number) => data.users.find((user) => user.viewer.id === id)?.viewer.username ?? `#${id}`;
 				const found = new Map<number, PostReactions>();
 				for (const postId of postIds) {
 					const rows = (data.reactions ?? []).filter((row) => row.postId === postId);
 					if (rows.length === 0) continue;
-					const reactions: Partial<Record<ReactionKey, number>> = {};
-					for (const row of rows)
-						if (row.slot === 'emoji') reactions[row.reaction as ReactionKey] = (reactions[row.reaction as ReactionKey] ?? 0) + 1;
-					// Lignes dans l'ordre d'enregistrement : les dernières sont les plus récentes.
-					const latestFirst = [...new Set(rows.map((row) => row.userId).reverse())];
+					const counts: Partial<Record<ReactionKey, number>> = {};
+					for (const row of rows) counts[row.reaction] = (counts[row.reaction] ?? 0) + 1;
 					found.set(postId, {
-						likes: rows.filter((row) => row.slot === 'like').length,
-						reactions,
-						liked: rows.some((row) => row.slot === 'like' && row.userId === viewerId),
-						reaction: (rows.find((row) => row.slot === 'emoji' && row.userId === viewerId)?.reaction as ReactionKey | undefined) ?? null,
-						reactors: latestFirst.length,
-						recent: latestFirst
-							.filter((id) => id !== viewerId)
+						counts,
+						mine: rows.find((row) => row.userId === viewerId)?.reaction ?? null,
+						reactors: rows.length,
+						recent: rows
+							.filter((row) => row.userId !== viewerId)
+							.reverse()
 							.slice(0, 3)
-							.map((id) => data.users.find((user) => user.viewer.id === id)?.viewer.username ?? `#${id}`),
+							.map((row) => name(row.userId)),
 					});
 				}
 				return found;
 			},
-			listReactors: async (postId, filter, offset, limit) => {
-				const rows = (data.reactions ?? []).filter((row) => row.postId === postId);
-				return [...new Set(rows.map((row) => row.userId).reverse())]
-					.map((userId) => {
-						const own = rows.filter((row) => row.userId === userId);
-						const reaction = own.find((row) => row.slot === 'emoji')?.reaction as ReactionKey | undefined;
-						return {
-							userId,
-							username: data.users.find((user) => user.viewer.id === userId)?.viewer.username ?? `#${userId}`,
-							liked: own.some((row) => row.slot === 'like'),
-							reaction: reaction ?? null,
-							reactedAt: NOW - 60,
-						};
-					})
-					.filter((reactor) => (filter === null ? true : filter.kind === 'like' ? reactor.liked : reactor.reaction === filter.reaction))
-					.slice(offset, offset + limit);
-			},
+			listReactors: async (postId, filter, offset, limit) =>
+				(data.reactions ?? [])
+					.filter((row) => row.postId === postId && (filter === null || row.reaction === filter))
+					.reverse()
+					.slice(offset, offset + limit)
+					.map((row) => ({
+						userId: row.userId,
+						username: data.users.find((user) => user.viewer.id === row.userId)?.viewer.username ?? `#${row.userId}`,
+						reaction: row.reaction,
+						reactedAt: NOW - 60,
+					})),
 			listAppreciated: async (_groupId, _since, limit) => (data.appreciatedPosts ?? []).slice(0, limit),
 			purgeOrphans: async () => undefined,
-			save: async (postId, userId, choice) => {
+			save: async (postId, userId, reaction) => {
 				const others = (data.reactions ?? []).filter((row) => row.postId !== postId || row.userId !== userId);
-				data.reactions = [
-					...others,
-					...(choice.liked ? [{ postId, userId, slot: 'like' as const, reaction: 'like' }] : []),
-					...(choice.reaction !== null ? [{ postId, userId, slot: 'emoji' as const, reaction: choice.reaction }] : []),
-				];
+				data.reactions = reaction !== null ? [...others, { postId, userId, reaction }] : others;
 			},
 		},
 		translations: {

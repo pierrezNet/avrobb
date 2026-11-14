@@ -14,7 +14,7 @@
 		<li class="reactors__row">
 			{% if reactor.avatarUrl %}<img class="reactors__avatar" src="{{ reactor.avatarUrl }}" alt="" loading="lazy">{% else %}<span class="reactors__avatar reactors__avatar--initial" aria-hidden="true">{{ reactor.initial }}</span>{% endif %}
 			<span class="reactors__name">{% if reactor.profileUrl %}<a href="{{ url(reactor.profileUrl) }}">{{ reactor.username }}</a>{% else %}{{ reactor.username }}{% endif %}</span>
-			<span class="reactors__emojis" title="{{ reactor.labels }}"><span aria-hidden="true">{{ reactor.emojis }}</span><span class="visually-hidden">{{ reactor.labels }}</span></span>
+			<span class="reactors__emojis" title="{{ reactor.label }}"><span aria-hidden="true">{{ reactor.emoji }}</span><span class="visually-hidden">{{ reactor.label }}</span></span>
 			<span class="reactors__at">{{ reactor.at }}</span>
 		</li>
 		{% endfor %}

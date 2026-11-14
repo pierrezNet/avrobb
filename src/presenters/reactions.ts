@@ -1,7 +1,6 @@
 /**
- * « J'aime » et réactions d'un message : barre sous le message (résumé, bouton « J'aime », palette
- * « Réagir »), réponse de react.php pour reactions.js, et liste des membres (reactions.php).
- * Fonctions pures.
+ * Réactions d'un message : barre sous le message (résumé, palette « Réagir »), réponse de react.php
+ * pour reactions.js, et liste des membres ayant réagi (reactions.php). Fonctions pures.
  */
 
 import type { BoardConfig, Viewer } from '../domain/models.ts';
@@ -9,11 +8,10 @@ import type { Lang } from '../lang/fr/index.ts';
 import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
 import {
 	canReact,
-	LIKE_EMOJI,
 	type PostReactions,
 	REACTION_EMOJIS,
 	REACTIONS,
-	type ReactionChoice,
+	type ReactionKey,
 	type Reactor,
 	reactorNames,
 	topEmojis,
@@ -31,12 +29,10 @@ export interface ReactionChoiceView {
 export interface ReactionsView {
 	formAction: string;
 	postId: number;
-	/** Bouton « J'aime » ; null si désactivé ou si le lecteur ne peut pas réagir. */
-	like: { label: string; pressed: boolean } | null;
-	/** Palette « Réagir » : émoji de la réaction choisie, ou 😊. */
-	picker: { label: string; emoji: string; pressed: boolean; choices: ReactionChoiceView[] } | null;
 	/** Liste des membres ayant réagi (lien du résumé). */
 	reactorsHref: string;
+	/** Palette « Réagir » : le bouton montre la réaction du lecteur, ou 😊 ; null s'il ne peut pas réagir. */
+	picker: { label: string; emoji: string; pressed: boolean; choices: ReactionChoiceView[] } | null;
 	/** « 👍❤️ A, B et 5 autres » ; null si personne n'a réagi. */
 	summary: { emojis: string; text: string } | null;
 }
@@ -45,37 +41,42 @@ const PICKER_EMOJI = '😊';
 
 type ReactionsInput = { viewer: Viewer; config: BoardConfig; lang: Lang };
 
-export function reactionsView(postId: number, authorId: number | null, counts: PostReactions, input: ReactionsInput): ReactionsView | null {
+export function reactionsView(
+	postId: number,
+	authorId: number | null,
+	reactions: PostReactions,
+	input: ReactionsInput,
+): ReactionsView | null {
 	const { config, lang } = input;
-	if (!config.postLikes && !config.postReactions) return null;
-	const allowed = canReact(input.viewer, authorId);
-	const emojis = topEmojis(counts, config);
-	const { names, others } = reactorNames(counts, lang.topic.you);
+	if (!config.postReactions) return null;
+	const { mine } = reactions;
+	const { names, others } = reactorNames(reactions, lang.topic.you);
 	const view: ReactionsView = {
 		formAction: 'react.php',
 		postId,
 		reactorsHref: `reactions.php?pid=${postId}`,
-		like: allowed && config.postLikes ? { label: lang.topic.like, pressed: counts.liked } : null,
-		picker:
-			allowed && config.postReactions
-				? {
-						label: lang.topic.react,
-						emoji: counts.reaction !== null ? REACTION_EMOJIS[counts.reaction] : PICKER_EMOJI,
-						pressed: counts.reaction !== null,
-						choices: REACTIONS.map((key) => ({
-							value: key,
-							emoji: REACTION_EMOJIS[key],
-							label: lang.topic.reactions[key],
-							pressed: counts.reaction === key,
-						})),
-					}
+		picker: canReact(input.viewer, authorId)
+			? {
+					label: mine !== null ? lang.topic.reactions[mine] : lang.topic.react,
+					emoji: mine !== null ? REACTION_EMOJIS[mine] : PICKER_EMOJI,
+					pressed: mine !== null,
+					choices: REACTIONS.map((key) => ({
+						value: key,
+						emoji: REACTION_EMOJIS[key],
+						label: lang.topic.reactions[key],
+						pressed: mine === key,
+					})),
+				}
+			: null,
+		summary:
+			reactions.reactors > 0 && names.length > 0
+				? { emojis: topEmojis(reactions).join(''), text: lang.topic.reactorsSummary(names, others) }
 				: null,
-		summary: emojis.length > 0 && names.length > 0 ? { emojis: emojis.join(''), text: lang.topic.reactorsSummary(names, others) } : null,
 	};
-	return view.like !== null || view.picker !== null || view.summary !== null ? view : null;
+	return view.picker !== null || view.summary !== null ? view : null;
 }
 
-/** Onglet de la liste : « Tous », le « J'aime » ou une réaction reçue. */
+/** Onglet de la liste : « Tous » ou une réaction reçue. */
 export interface ReactorTabView {
 	href: string;
 	emoji: string | null;
@@ -89,10 +90,8 @@ export interface ReactorView {
 	profileUrl: string | null;
 	avatarUrl: string | null;
 	initial: string;
-	/** Émojis donnés : 👍 et la réaction. */
-	emojis: string;
-	/** Libellés des émojis, pour les lecteurs d'écran. */
-	labels: string;
+	emoji: string;
+	label: string;
 	at: string;
 }
 
@@ -105,9 +104,9 @@ export interface ReactionsPageView {
 }
 
 export interface ReactionsPageInput extends ReactionsInput {
-	post: { id: number; poster: string };
-	counts: PostReactions;
-	filter: ReactionChoice | null;
+	post: { id: number; number: number };
+	reactions: PostReactions;
+	filter: ReactionKey | null;
 	reactors: readonly Reactor[];
 	avatars: ReadonlyMap<number, string | null>;
 	page: number;
@@ -116,53 +115,35 @@ export interface ReactionsPageInput extends ReactionsInput {
 	now: number;
 }
 
-/** Valeur du paramètre `r` d'un filtre. */
-const filterValue = (filter: ReactionChoice | null): string | null =>
-	filter === null ? null : filter.kind === 'like' ? 'like' : filter.reaction;
-
 export function buildReactionsPage(input: ReactionsPageInput): ReactionsPageView {
-	const { viewer, config, lang, counts, post } = input;
+	const { viewer, lang, reactions, post, filter } = input;
 	const time = viewerTimeSettings(viewer);
 	const base = `reactions.php?pid=${post.id}`;
-	const current = filterValue(input.filter);
-	const tab = (value: string | null, emoji: string | null, label: string, count: number): ReactorTabView => ({
-		href: value === null ? base : `${base}&r=${value}`,
-		emoji,
-		label,
+	const filtered = filter !== null ? `${base}&r=${filter}` : base;
+	const tab = (key: ReactionKey | null, count: number): ReactorTabView => ({
+		href: key !== null ? `${base}&r=${key}` : base,
+		emoji: key !== null ? REACTION_EMOJIS[key] : null,
+		label: key !== null ? lang.topic.reactions[key] : lang.reactions.all,
 		count,
-		current: value === current,
+		current: key === filter,
 	});
-	const tabs = [tab(null, null, lang.reactions.all, counts.reactors)];
-	if (config.postLikes && counts.likes > 0) tabs.push(tab('like', LIKE_EMOJI, lang.topic.like, counts.likes));
-	if (config.postReactions)
-		for (const key of REACTIONS) {
-			const count = counts.reactions[key] ?? 0;
-			if (count > 0) tabs.push(tab(key, REACTION_EMOJIS[key], lang.topic.reactions[key], count));
-		}
 
 	return {
-		title: lang.reactions.title(post.poster),
+		title: lang.reactions.title(post.number),
 		postUrl: `viewtopic.php?pid=${post.id}#p${post.id}`,
-		tabs,
-		reactors: input.reactors.map((reactor) => {
-			const given = [
-				...(reactor.liked && config.postLikes ? [{ emoji: LIKE_EMOJI, label: lang.topic.like }] : []),
-				...(reactor.reaction !== null && config.postReactions
-					? [{ emoji: REACTION_EMOJIS[reactor.reaction], label: lang.topic.reactions[reactor.reaction] }]
-					: []),
-			];
-			return {
-				username: reactor.username,
-				profileUrl: viewer.group.canViewUsers ? `profile.php?id=${reactor.userId}` : null,
-				avatarUrl: input.avatars.get(reactor.userId) ?? null,
-				initial: [...reactor.username][0]?.toUpperCase() ?? '?',
-				emojis: given.map((item) => item.emoji).join(''),
-				labels: given.map((item) => item.label).join(', '),
-				at: formatTime(reactor.reactedAt, time, input.dateWords, input.now),
-			};
-		}),
-		pagination: paginationLinks(input.numPages, input.page, (page) =>
-			page > 1 ? `${base}${current !== null ? `&r=${current}` : ''}&p=${page}` : current !== null ? `${base}&r=${current}` : base,
-		),
+		tabs: [
+			tab(null, reactions.reactors),
+			...REACTIONS.filter((key) => (reactions.counts[key] ?? 0) > 0).map((key) => tab(key, reactions.counts[key] ?? 0)),
+		],
+		reactors: input.reactors.map((reactor) => ({
+			username: reactor.username,
+			profileUrl: viewer.group.canViewUsers ? `profile.php?id=${reactor.userId}` : null,
+			avatarUrl: input.avatars.get(reactor.userId) ?? null,
+			initial: [...reactor.username][0]?.toUpperCase() ?? '?',
+			emoji: REACTION_EMOJIS[reactor.reaction],
+			label: lang.topic.reactions[reactor.reaction],
+			at: formatTime(reactor.reactedAt, time, input.dateWords, input.now),
+		})),
+		pagination: paginationLinks(input.numPages, input.page, (page) => (page > 1 ? `${filtered}&p=${page}` : filtered)),
 	};
 }

@@ -37,7 +37,7 @@ import { type ReactionsView, reactionsView } from './reactions.ts';
 
 /** Lien d'action sous un message ; `kind` sert aussi de classe CSS (postreport…, comme FluxBB). */
 export interface PostAction {
-	kind: 'postreport' | 'postdelete' | 'postedit' | 'postquote';
+	kind: 'postreport' | 'postdelete' | 'postedit' | 'postquote' | 'postshare';
 	href: string;
 	label: string;
 }
@@ -175,6 +175,8 @@ function actionLinks(rights: PostActionRights, postId: number, topicId: number, 
 	if (rights.delete) links.push({ kind: 'postdelete', href: `delete.php?id=${postId}`, label: t.delete });
 	if (rights.edit) links.push({ kind: 'postedit', href: `edit.php?id=${postId}`, label: t.edit });
 	if (rights.quote) links.push({ kind: 'postquote', href: `post.php?tid=${topicId}&qid=${postId}`, label: t.quote });
+	// Lien du message ; share.js le copie dans le presse-papiers.
+	links.push({ kind: 'postshare', href: `viewtopic.php?pid=${postId}#p${postId}`, label: t.share });
 	return links;
 }
 

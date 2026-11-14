@@ -124,13 +124,9 @@ export const adminOptions = {
 			label: 'Renommée',
 			help: "Votes « + » et « − » des membres sur l'auteur d'un message, et score affiché sous son nom. Désactivée, ni vote ni score ne sont affichés ; les votes déjà donnés sont conservés.",
 		},
-		post_likes: {
-			label: 'J’aime',
-			help: "Bouton « 👍 J'aime » sous les messages, pour les membres (pas sur leurs propres messages), et son compteur. Désactivé, ni bouton ni compteur ; les « J'aime » déjà donnés sont conservés.",
-		},
 		post_reactions: {
-			label: 'Réactions',
-			help: 'Six réactions (❤️ 😂 😮 😢 🙏 🎉) sous les messages, une seule par membre et par message, avec leurs compteurs. Les « J’aime » et réactions de la semaine classent les « Messages les plus appréciés » de l’accueil.',
+			label: 'Réactions aux messages',
+			help: 'Réactions sous les messages (👍 J’aime, ❤️ 😂 😮 😢 🙏 🎉), une seule par membre et par message, et la liste des membres ayant réagi. Les réactions de la semaine classent les « Messages les plus appréciés » de l’accueil. Désactivées, rien n’est affiché ; les réactions déjà données sont conservées.',
 		},
 		feed_type: {
 			label: 'Type de flux par défaut',

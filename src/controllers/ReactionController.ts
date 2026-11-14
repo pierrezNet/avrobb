@@ -1,7 +1,7 @@
 /**
- * react.php : « J'aime » ou réaction d'un membre sur un message. Formulaire sans JavaScript (retour
+ * react.php : réaction d'un membre sur un message (👍 « J'aime » compris). Formulaire sans JavaScript (retour
  * au message), ou réponse JSON (barre recalculée) pour reactions.js.
- * reactions.php : membres ayant réagi à un message, par « J'aime » ou par réaction.
+ * reactions.php : membres ayant réagi à un message, toutes réactions ou une seule.
  */
 
 import type { AppReply, AppRequest } from '../http/context.ts';
@@ -11,15 +11,16 @@ import { buildReactionsPage, reactionsView } from '../presenters/reactions.ts';
 import type { AvatarLocator } from '../repositories/AvatarFiles.ts';
 import type { PostEditStore } from '../repositories/PostEditRepository.ts';
 import type { PostReactionReader, PostReactionWriter } from '../repositories/PostReactionRepository.ts';
+import type { TopicReader } from '../repositories/TopicRepository.ts';
 import { pageCount } from '../services/pagination.ts';
 import {
 	canReact,
 	NO_REACTIONS,
 	nextReaction,
 	type PostReactions,
-	type ReactionChoice,
-	reactionEnabled,
-	readReactionChoice,
+	type ReactionKey,
+	reactionsEnabled,
+	readReaction,
 } from '../services/reactions.ts';
 import { positiveInt } from './params.ts';
 
@@ -27,6 +28,7 @@ export interface ReactionControllerDeps extends LayoutDeps {
 	postEdits: Pick<PostEditStore, 'findPost'>;
 	postReactions: PostReactionReader & PostReactionWriter;
 	avatars: AvatarLocator;
+	topics: Pick<TopicReader, 'locatePost'>;
 }
 
 export interface ReactionsQuery {
@@ -44,15 +46,15 @@ export class ReactionController {
 		const { viewer, board: config } = request;
 		const { lang } = this.deps.page;
 		const postId = positiveInt(field(request.body, 'pid'));
-		const choice = readReactionChoice(field(request.body, 'value'));
-		if (choice === null || postId === 0 || !reactionEnabled(config, choice))
+		const chosen = readReaction(field(request.body, 'value'));
+		if (chosen === null || postId === 0 || !reactionsEnabled(config))
 			return renderMessage(request, reply, this.deps, 400, lang.common.badRequest);
 		const post = await this.deps.postEdits.findPost(postId, viewer.group.id);
 		if (post === null) return renderMessage(request, reply, this.deps, 404, lang.common.badRequest);
 		if (!canReact(viewer, post.posterId)) return renderMessage(request, reply, this.deps, 403, lang.common.noPermission);
 
 		const current = (await this.deps.postReactions.forPosts([postId], viewer.id)).get(postId) ?? NO_REACTIONS;
-		await this.deps.postReactions.save(postId, viewer.id, nextReaction(current, choice), this.deps.page.clock());
+		await this.deps.postReactions.save(postId, viewer.id, nextReaction(current.mine, chosen), this.deps.page.clock());
 		if (!(request.headers.accept ?? '').includes('application/json')) return reply.redirect(`viewtopic.php?pid=${postId}#p${postId}`);
 		const counts = (await this.deps.postReactions.forPosts([postId], viewer.id)).get(postId) ?? NO_REACTIONS;
 		return reply.header('cache-control', 'no-store').json(reactionsView(postId, post.posterId, counts, { viewer, config, lang }));
@@ -63,11 +65,14 @@ export class ReactionController {
 		const { lang } = this.deps.page;
 		if (!viewer.group.canReadBoard) return renderMessage(request, reply, this.deps, 403, lang.common.noView);
 		const postId = positiveInt(request.query.pid);
-		const filter = request.query.r !== undefined ? readReactionChoice(request.query.r) : null;
-		if (postId === 0 || (request.query.r !== undefined && filter === null) || (!config.postLikes && !config.postReactions))
+		const filter = request.query.r !== undefined ? readReaction(request.query.r) : null;
+		if (postId === 0 || (request.query.r !== undefined && filter === null) || !reactionsEnabled(config))
 			return renderMessage(request, reply, this.deps, 404, lang.common.badRequest);
-		const post = await this.deps.postEdits.findPost(postId, viewer.group.id);
-		if (post === null) return renderMessage(request, reply, this.deps, 404, lang.common.badRequest);
+		const [post, location] = await Promise.all([
+			this.deps.postEdits.findPost(postId, viewer.group.id),
+			this.deps.topics.locatePost(postId),
+		]);
+		if (post === null || location === null) return renderMessage(request, reply, this.deps, 404, lang.common.badRequest);
 
 		const counts = (await this.deps.postReactions.forPosts([postId], viewer.id)).get(postId) ?? NO_REACTIONS;
 		const numPages = pageCount(filteredCount(counts, filter), REACTORS_PER_PAGE);
@@ -81,8 +86,8 @@ export class ReactionController {
 			viewer,
 			config,
 			lang,
-			post: { id: post.id, poster: post.poster },
-			counts,
+			post: { id: post.id, number: location.position },
+			reactions: counts,
 			filter,
 			reactors,
 			avatars: new Map(reactors.map((reactor, index) => [reactor.userId, avatarUrls[index] ?? null])),
@@ -102,7 +107,6 @@ export class ReactionController {
 	};
 }
 
-function filteredCount(counts: PostReactions, filter: ReactionChoice | null): number {
-	if (filter === null) return counts.reactors;
-	return filter.kind === 'like' ? counts.likes : (counts.reactions[filter.reaction] ?? 0);
+function filteredCount(reactions: PostReactions, filter: ReactionKey | null): number {
+	return filter === null ? reactions.reactors : (reactions.counts[filter] ?? 0);
 }

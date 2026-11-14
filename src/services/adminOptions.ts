@@ -97,7 +97,6 @@ export const OPTION_SECTIONS: readonly OptionSection<OptionSectionId>[] = [
 				'quickjump',
 				'search_all_forums',
 				'reputation_enabled',
-				'post_likes',
 				'post_reactions',
 			),
 			field('additional_navlinks', { kind: 'textarea', rows: 3 }),

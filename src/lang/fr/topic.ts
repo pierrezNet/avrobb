@@ -34,15 +34,16 @@ export const topic = {
 	delete: 'Supprimer',
 	edit: 'Modifier',
 	quote: 'Citer',
+	share: 'Partager',
+	linkCopied: 'Lien du message copié dans le presse-papiers.',
 	re: 'Re\u00a0:',
 	/** lang/French/reputation.php */
 	reputation: 'Renommée',
 	reputationPlus: 'Augmentation de renommée',
 	reputationMinus: 'Réduction de renommée',
-	/** « J'aime » et réactions sous un message. */
+	/** Réactions sous un message (👍 « J'aime » compris). */
 	reactionsLabel: 'Réactions au message',
-	like: 'J’aime',
-	reactions: { heart: 'J’adore', laugh: 'Drôle', wow: 'Étonnant', sad: 'Triste', thanks: 'Merci', party: 'Bravo' },
+	reactions: { like: 'J’aime', heart: 'J’adore', laugh: 'Drôle', wow: 'Étonnant', sad: 'Triste', thanks: 'Merci', party: 'Bravo' },
 	react: 'Réagir',
 	you: 'Vous',
 	/** « A, B, C et 5 autres » : noms des membres ayant réagi, lien vers la liste. */

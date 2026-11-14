@@ -5,7 +5,7 @@
 import type { reactions as frReactions } from '../fr/reactions.ts';
 
 export const reactions: typeof frReactions = {
-	title: (poster: string) => `Reactions to ${poster}’s post`,
+	title: (number: number) => `Members who reacted to post #${number}`,
 	all: 'All',
 	tabLabel: (label: string, count: number) => `${label} (${count})`,
 	backToPost: 'Back to the post',

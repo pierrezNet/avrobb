@@ -1,5 +1,5 @@
 /*
- * « J'aime » et réactions sans recharger la page : le formulaire part en arrière-plan et la barre
+ * Réactions sans recharger la page : le formulaire part en arrière-plan et la barre
  * renvoyée par react.php (presenters/reactions.ts) remplace l'état affiché. La liste des membres
  * ayant réagi s'ouvre dans une fenêtre, avec le contenu de la page reactions.php. Sans JavaScript,
  * ou en cas d'échec, formulaire et lien fonctionnent normalement.
@@ -10,13 +10,12 @@
 		summary.hidden = view?.summary == null;
 		summary.querySelector('.reaction-summary__emojis').textContent = view?.summary?.emojis ?? '';
 		summary.querySelector('.reaction-summary__names').textContent = view?.summary?.text ?? '';
-		const like = bar.querySelector('button[value="like"]');
-		if (like && view?.like) like.setAttribute('aria-pressed', String(view.like.pressed));
 		const picker = bar.querySelector('.reaction-picker');
 		if (picker && view?.picker) {
 			picker.open = false;
 			picker.querySelector('summary').dataset.pressed = String(view.picker.pressed);
 			picker.querySelector('.reaction-picker__current').textContent = view.picker.emoji;
+			picker.querySelector('.reaction-picker__label').textContent = view.picker.label;
 			for (const choice of view.picker.choices)
 				picker.querySelector(`button[value="${choice.value}"]`)?.setAttribute('aria-pressed', String(choice.pressed));
 		}

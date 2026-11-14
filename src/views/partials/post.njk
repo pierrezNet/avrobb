@@ -1,21 +1,18 @@
 {#- Message affiché avec son auteur (viewtopic, conversation privée). `post` : PostView (presenters/topicPage.ts). -#}
-{#- Résumé des réactions, « J'aime » et palette « Réagir » (presenters/reactions.ts). La palette est un <details> : elle s'ouvre sans JavaScript. -#}
+{#- Résumé des réactions et palette « Réagir » (presenters/reactions.ts). La palette est un <details> : elle s'ouvre sans JavaScript. -#}
 {% macro reactionBar(bar, lang, layout) %}
 <div class="reaction-bar" data-reaction-bar>
 	<a class="reaction-summary" href="{{ url(bar.reactorsHref) }}" data-reactors data-close="{{ lang.reactions.close }}"{% if not bar.summary %} hidden{% endif %}><span class="reaction-summary__emojis" aria-hidden="true">{{ bar.summary.emojis if bar.summary }}</span> <span class="reaction-summary__names">{{ bar.summary.text if bar.summary }}</span></a>
-	{% if bar.like or bar.picker %}
+	{% if bar.picker %}
 	<form class="reaction-bar__form" method="post" action="{{ url(bar.formAction) }}" aria-label="{{ lang.topic.reactionsLabel }}" data-reactions>
 		<input type="hidden" name="csrf_token" value="{{ layout.csrfToken }}">
 		<input type="hidden" name="pid" value="{{ bar.postId }}">
-		{% if bar.like %}<button class="reaction-button" type="submit" name="value" value="like" aria-pressed="{{ 'true' if bar.like.pressed else 'false' }}"><span aria-hidden="true">👍</span> {{ bar.like.label }}</button>{% endif %}
-		{% if bar.picker %}
 		<details class="reaction-picker">
-			<summary class="reaction-button" data-pressed="{{ 'true' if bar.picker.pressed else 'false' }}"><span class="reaction-picker__current" aria-hidden="true">{{ bar.picker.emoji }}</span> {{ bar.picker.label }}</summary>
+			<summary class="reaction-button" data-pressed="{{ 'true' if bar.picker.pressed else 'false' }}"><span class="reaction-picker__current" aria-hidden="true">{{ bar.picker.emoji }}</span> <span class="reaction-picker__label">{{ bar.picker.label }}</span></summary>
 			<div class="reaction-picker__menu">
 				{% for choice in bar.picker.choices %}<button class="reaction-picker__choice" type="submit" name="value" value="{{ choice.value }}" aria-pressed="{{ 'true' if choice.pressed else 'false' }}" title="{{ choice.label }}"><span aria-hidden="true">{{ choice.emoji }}</span><span class="visually-hidden">{{ choice.label }}</span></button>{% endfor %}
 			</div>
 		</details>
-		{% endif %}
 	</form>
 	{% endif %}
 </div>
@@ -79,7 +76,7 @@
 		{% if post.isOnline !== null %}<p class="post__presence{% if post.isOnline %} post__presence--online{% endif %}">{% if post.isOnline %}{{ lang.topic.online }}{% else %}{{ lang.topic.offline }}{% endif %}</p>{% endif %}
 		{% if post.actions.length %}
 		<ul class="post__actions">
-			{% for action in post.actions %}<li class="{{ action.kind }}"><a href="{{ url(action.href) }}">{{ action.label }}</a></li>{% endfor %}
+			{% for action in post.actions %}<li class="{{ action.kind }}"><a href="{{ url(action.href) }}"{% if action.kind == 'postshare' %} data-share data-copied="{{ lang.topic.linkCopied }}"{% endif %}>{{ action.label }}</a></li>{% endfor %}
 		</ul>
 		{% endif %}
 	</footer>

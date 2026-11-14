@@ -40,6 +40,7 @@ import { PrivateMessageController, type PrivateMessageQuery } from './controller
 import { PrivateMessageSendController, type PrivateMessageSendQuery } from './controllers/PrivateMessageSendController.ts';
 import { ProfileController, type ProfileQuery } from './controllers/ProfileController.ts';
 import { PushController, type PushQuery } from './controllers/PushController.ts';
+import { ReactionController } from './controllers/ReactionController.ts';
 import { ReputationController, type ReputationQuery } from './controllers/ReputationController.ts';
 import { SearchController, type SearchQuery } from './controllers/SearchController.ts';
 import { SeoController } from './controllers/SeoController.ts';
@@ -82,6 +83,7 @@ import type { MemberSuggestReader } from './repositories/MemberSuggestRepository
 import type { ModerationStore } from './repositories/ModerationRepository.ts';
 import type { PostEditStore } from './repositories/PostEditRepository.ts';
 import type { PostingStore } from './repositories/PostingRepository.ts';
+import type { PostReactionReader, PostReactionWriter } from './repositories/PostReactionRepository.ts';
 import type { PostReader } from './repositories/PostRepository.ts';
 import type { PrivateMessageStore } from './repositories/PrivateMessageRepository.ts';
 import type { ProfileStore } from './repositories/ProfileRepository.ts';
@@ -144,6 +146,7 @@ export interface AppDeps extends Omit<LayoutDeps, 'views'>, SessionDeps {
 	privateMessageStore: PrivateMessageStore;
 	subscriptions: SubscriptionStore;
 	reputation: ReputationStore;
+	postReactions: PostReactionReader & PostReactionWriter;
 	/** Modération des sujets et messages (moderate.php) et résolution inverse des IP. */
 	moderation: ModerationStore;
 	hostResolver: HostResolver;
@@ -447,6 +450,7 @@ export async function buildApp(input: AppDeps): Promise<ForumApp> {
 	const reputation = new ReputationController(deps);
 	router.get<{ Querystring: ReputationQuery }>('/reputation.php', [authenticate], reputation.show);
 	router.post<{ Querystring: ReputationQuery; Body: FormBody }>('/reputation.php', [authenticate, verifyCsrf], reputation.submit);
+	router.post<{ Body: FormBody }>('/react.php', [authenticate, verifyCsrf, writeLimit], new ReactionController(deps).submit);
 
 	const pms = new PrivateMessageController(deps);
 	router.get<{ Querystring: PrivateMessageQuery }>('/pms_inbox.php', [authenticate], (request, reply) => pms.inbox(request, reply));

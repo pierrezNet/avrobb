@@ -119,6 +119,7 @@ describe('fichiers orphelins', () => {
 		const logged: string[] = [];
 		const tasks = new ScheduledTasks({
 			translation: null,
+			postReactions: { purgeOrphans: async () => undefined },
 			config: { load: async () => boardConfig },
 			online: {
 				listStale: async () => [{ userId: 1, ident: '192.0.2.1', logged: 0, idle: false }],
@@ -146,6 +147,7 @@ describe('fichiers orphelins', () => {
 		const errors: unknown[] = [];
 		const tasks = new ScheduledTasks({
 			translation: null,
+			postReactions: { purgeOrphans: async () => undefined },
 			config: { load: async () => boardConfig },
 			online: {
 				listStale: async () => {

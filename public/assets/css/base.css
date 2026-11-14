@@ -765,6 +765,55 @@ a.site-status__alert {
 	padding: 0 0.625rem;
 }
 
+/* « J'aime » et réactions : une ligne entière en tête du pied du message. */
+.reactions {
+	display: flex;
+	flex-basis: 100%;
+	flex-wrap: wrap;
+	gap: 0.375rem;
+	margin: 0;
+	padding: 0.5rem 0 0;
+	list-style: none;
+}
+
+.reaction {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.25rem;
+	min-width: 2.75rem;
+	min-height: 2.75rem;
+	padding: 0 0.625rem;
+	border: 1px solid var(--color-border);
+	border-radius: 1.375rem;
+	background: var(--color-surface);
+	color: var(--color-text);
+	font: inherit;
+	justify-content: center;
+}
+
+li.reaction {
+	min-height: 2rem;
+	min-width: 0;
+}
+
+button.reaction {
+	cursor: pointer;
+}
+
+button.reaction:hover {
+	border-color: var(--color-accent);
+}
+
+.reaction[aria-pressed="true"] {
+	border-color: var(--color-accent);
+	background: var(--color-surface-alt);
+	font-weight: 700;
+}
+
+.reaction__count:empty {
+	display: none;
+}
+
 /* ---------- Contenu BBCode (services/bbcode.ts) ---------- */
 
 .bbcode p {
@@ -1367,6 +1416,30 @@ a.site-status__alert {
 
 .project-shares {
 	max-width: 40rem;
+}
+
+.appreciated-posts {
+	display: grid;
+	gap: 0.75rem;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.appreciated-posts__item {
+	display: grid;
+	gap: 0.125rem;
+}
+
+.appreciated-posts__excerpt {
+	overflow-wrap: anywhere;
+}
+
+.appreciated-posts__meta,
+.appreciated-posts__score {
+	color: var(--color-muted);
+	font-size: 0.875rem;
+	overflow-wrap: anywhere;
 }
 
 /* ---------- Profil ---------- */

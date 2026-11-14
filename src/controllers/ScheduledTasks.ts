@@ -16,6 +16,7 @@ import type { FileReferenceReader } from '../repositories/FileReferenceRepositor
 import type { FileStore } from '../repositories/FileStore.ts';
 import { GALLERY_DIR } from '../repositories/GalleryFiles.ts';
 import type { OnlineWriter } from '../repositories/OnlineRepository.ts';
+import type { PostReactionWriter } from '../repositories/PostReactionRepository.ts';
 import type { TranslationWriter } from '../repositories/TranslationRepository.ts';
 import { avatarOwner, orphanAvatarKeys, orphanGalleryKeys } from '../services/fileCleanup.ts';
 import { planOnlinePurge } from '../services/presence.ts';
@@ -26,6 +27,7 @@ export interface ScheduledTasksDeps {
 	online: Pick<OnlineWriter, 'listStale' | 'applyPurge'>;
 	files: FileStore;
 	fileReferences: FileReferenceReader;
+	postReactions: Pick<PostReactionWriter, 'purgeOrphans'>;
 	/** Null sans liaison Workers AI (développement, tests) : rien n'est traduit. */
 	translation: (TranslationJobDeps & { translations: TranslationWriter }) | null;
 	clock: () => number;
@@ -44,6 +46,7 @@ export class ScheduledTasks {
 			['online', () => this.purgeOnline()],
 			['files', () => this.removeOrphanFiles()],
 			['translations', async () => this.deps.translation?.translations.purgeStale()],
+			['reactions', () => this.deps.postReactions.purgeOrphans()],
 		]);
 	}
 

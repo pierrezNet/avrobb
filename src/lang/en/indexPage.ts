@@ -35,5 +35,8 @@ export const indexPage: typeof frIndexPage = {
 	newMembers: 'Welcome to',
 	newMembersInfo: 'Joined this week: a quick hello is always appreciated.',
 	projects: 'Projects this week',
+	appreciatedPosts: 'Most appreciated posts',
+	appreciatedScore: (n: number) => (n === 1 ? '1 like or reaction this week' : `${n} likes and reactions this week`),
+	appreciatedNoText: '(image)',
 	projectShare: (name: string, count: number) => (count === 1 ? `${name}: 1 topic` : `${name}: ${count} topics`),
 };

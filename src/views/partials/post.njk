@@ -1,5 +1,5 @@
 {#- Message affiché avec son auteur (viewtopic, conversation privée). `post` : PostView (presenters/topicPage.ts). -#}
-{% macro article(post, subject, lang) %}
+{% macro article(post, subject, lang, layout) %}
 <article id="p{{ post.id }}" class="post{% if post.isFirstPost %} post--first{% endif %}" aria-labelledby="p{{ post.id }}-title">
 	<h2 class="post__meta" id="p{{ post.id }}-title">
 		<a class="post__date" href="{{ url(post.permalink) }}">{{ post.postedAt }}</a>
@@ -53,6 +53,17 @@
 	</div>
 
 	<footer class="post__footer">
+		{% if post.reactions and post.reactions.canReact %}
+		<form class="reactions" method="post" action="{{ url(post.reactions.formAction) }}" aria-label="{{ lang.topic.reactionsLabel }}" data-reactions>
+			<input type="hidden" name="csrf_token" value="{{ layout.csrfToken }}">
+			<input type="hidden" name="pid" value="{{ post.reactions.postId }}">
+			{% for button in post.reactions.buttons %}<button class="reaction" type="submit" name="value" value="{{ button.value }}" aria-pressed="{{ 'true' if button.pressed else 'false' }}" title="{{ button.label }}"><span aria-hidden="true">{{ button.emoji }}</span><span class="visually-hidden">{{ button.label }}</span><span class="reaction__count">{{ button.count or '' }}</span></button>{% endfor %}
+		</form>
+		{% elif post.reactions %}
+		<ul class="reactions" aria-label="{{ lang.topic.reactionsLabel }}">
+			{% for button in post.reactions.buttons %}<li class="reaction" title="{{ button.label }}"><span aria-hidden="true">{{ button.emoji }}</span><span class="visually-hidden">{{ button.label }}</span><span class="reaction__count">{{ button.count }}</span></li>{% endfor %}
+		</ul>
+		{% endif %}
 		{% if post.isOnline !== null %}<p class="post__presence{% if post.isOnline %} post__presence--online{% endif %}">{% if post.isOnline %}{{ lang.topic.online }}{% else %}{{ lang.topic.offline }}{% endif %}</p>{% endif %}
 		{% if post.actions.length %}
 		<ul class="post__actions">

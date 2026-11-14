@@ -109,6 +109,8 @@ export function toBoardConfig(values: ReadonlyMap<string, string>): BoardConfig 
 		baseUrl: text('o_base_url').replace(/\/$/, ''),
 		indentSpaces: Number(text('o_indent_num_spaces', '4')) || 0,
 		reputationEnabled: flag('o_reputation_enabled'),
+		postLikes: flag('o_post_likes'),
+		postReactions: flag('o_post_reactions'),
 		reputationTimeout: int('o_reputation_timeout', 0),
 		usersOnline: flag('o_users_online'),
 	};

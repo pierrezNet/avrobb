@@ -39,6 +39,10 @@ export const topic = {
 	reputation: 'Renommée',
 	reputationPlus: 'Augmentation de renommée',
 	reputationMinus: 'Réduction de renommée',
+	/** « J'aime » et réactions sous un message. */
+	reactionsLabel: 'Réactions au message',
+	like: 'J’aime',
+	reactions: { heart: 'J’adore', laugh: 'Drôle', wow: 'Étonnant', thanks: 'Merci', party: 'Bravo' },
 
 	/** Préfixes du sujet (PV) : page propre à Node, ouverte depuis viewtopic. */
 	subjectPrefixes: 'Balises du sujet',

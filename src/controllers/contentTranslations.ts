@@ -48,3 +48,29 @@ export async function withTranslatedForums<T extends { id: number; name: string;
 		descriptionHtml: descriptions.get(forum.id) ?? forum.descriptionHtml,
 	}));
 }
+
+/** Messages appréciés de l'accueil avec leur texte et le titre de leur discussion traduits. */
+export async function withTranslatedPosts<T extends { postId: number; topicId: number; subject: string; message: string }>(
+	translations: TranslationReader,
+	posts: readonly T[],
+	locale: ContentLocale,
+): Promise<T[]> {
+	if (posts.length === 0) return [...posts];
+	const [messages, subjects] = await Promise.all([
+		translations.find(
+			'post',
+			posts.map((post) => ({ id: post.postId, text: post.message })),
+			locale,
+		),
+		translations.find(
+			'subject',
+			posts.map((post) => ({ id: post.topicId, text: post.subject })),
+			locale,
+		),
+	]);
+	return posts.map((post) => ({
+		...post,
+		message: messages.get(post.postId) ?? post.message,
+		subject: subjects.get(post.topicId) ?? post.subject,
+	}));
+}

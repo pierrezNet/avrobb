@@ -21,7 +21,7 @@
 {{ sideMenu.notice(view.notice) }}
 {{ bar(view, lang) }}
 <div class="post-list">
-{% for post in view.posts %}{{ postView.article(post, view.subject, lang) }}{% endfor %}
+{% for post in view.posts %}{{ postView.article(post, view.subject, lang, layout) }}{% endfor %}
 </div>
 {{ bar(view, lang) }}
 

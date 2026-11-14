@@ -101,6 +101,7 @@
 	{% endif %}
 </section>
 
+<div class="home-row">
 {% if view.projects.length %}
 <section class="home-block home-block--projects" aria-labelledby="projects-title">
 	<h2 class="home-block__title" id="projects-title">{{ lang.index.projects }}</h2>
@@ -115,5 +116,21 @@
 	</ul>
 </section>
 {% endif %}
+
+{% if view.appreciatedPosts.length %}
+<section class="home-block home-block--appreciated" aria-labelledby="appreciated-title">
+	<h2 class="home-block__title" id="appreciated-title">{{ lang.index.appreciatedPosts }}</h2>
+	<ol class="appreciated-posts">
+		{% for post in view.appreciatedPosts %}
+		<li class="appreciated-posts__item">
+			<a class="appreciated-posts__excerpt" href="{{ url(post.href) }}">{{ post.excerpt }}</a>
+			<span class="appreciated-posts__meta">{{ post.poster }} · {{ post.subject }}</span>
+			<span class="appreciated-posts__score">{{ post.score }}</span>
+		</li>
+		{% endfor %}
+	</ol>
+</section>
+{% endif %}
+</div>
 </div>
 {% endblock %}

@@ -8,11 +8,14 @@
 import type { BoardConfig, IndexCategory, OnlineVisitor, RecentTopic, Viewer } from '../domain/models.ts';
 import type { Lang } from '../lang/fr/index.ts';
 import type { HotTopic, NewMember } from '../repositories/HomeActivityRepository.ts';
+import type { AppreciatedPost } from '../repositories/PostReactionRepository.ts';
+import type { Censor } from '../services/censor.ts';
 import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
 import { lastImageUrl, projectShares } from '../services/homeActivity.ts';
 import { mobileVariantUrl } from '../services/imageVariants.ts';
 import { niceNumber } from '../services/numberFormat.ts';
 import { forumPath } from '../services/routes.ts';
+import { plainExcerpt } from '../services/seo.ts';
 import { readableOn, type SubjectSegment, subjectSegments } from '../services/subjectTags.ts';
 import { forumHasNewPosts, type TrackedTopics } from '../services/trackedTopics.ts';
 import { topicUrl } from './topicPage.ts';
@@ -50,6 +53,8 @@ export interface IndexPageView {
 	/** Discussions les plus commentées de la semaine, avec leur dernière image. */
 	hotTopics: HotTopicView[];
 	newMembers: PersonLink[];
+	/** Messages qui ont reçu le plus de « J'aime » et de réactions cette semaine. */
+	appreciatedPosts: { href: string; excerpt: string; subject: string; poster: string; score: string }[];
 	/** Projets les plus discutés de la semaine (balises des discussions actives). */
 	projects: { name: string; count: number; percent: number; background: string; foreground: string; label: string }[];
 }
@@ -83,10 +88,16 @@ export interface IndexPageInput {
 	hotTopicImages: ReadonlyMap<number, string>;
 	newMembers: readonly NewMember[];
 	activeSubjects: readonly string[];
+	appreciatedPosts: readonly AppreciatedPost[];
+	/** Censure (o_censoring) des extraits de messages, ou null. */
+	censor: Censor | null;
 	lang: Lang;
 	dateWords: DateWords;
 	now: number;
 }
+
+/** Longueur des extraits de « Messages les plus appréciés ». */
+const APPRECIATED_EXCERPT = 140;
 
 export function buildIndexPage(input: IndexPageInput): IndexPageView {
 	const { viewer, lang } = input;
@@ -161,6 +172,16 @@ export function buildIndexPage(input: IndexPageInput): IndexPageView {
 			};
 		}),
 		newMembers: input.newMembers.map((member) => person(member.id, member.username)),
+		appreciatedPosts: input.appreciatedPosts.map((post) => {
+			const censored = (text: string): string => (input.censor !== null ? input.censor(text) : text);
+			return {
+				href: `viewtopic.php?pid=${post.postId}#p${post.postId}`,
+				excerpt: plainExcerpt(censored(post.message), APPRECIATED_EXCERPT) ?? t.appreciatedNoText,
+				subject: censored(post.subject),
+				poster: post.poster,
+				score: t.appreciatedScore(post.score),
+			};
+		}),
 		projects: projectShares(input.activeSubjects, config.subjectTags).map((share) => ({
 			name: share.tag.name,
 			count: share.count,

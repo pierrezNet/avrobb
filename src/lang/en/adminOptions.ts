@@ -126,6 +126,14 @@ export const adminOptions: typeof frAdminOptions = {
 			label: 'Reputation',
 			help: "Members' “+” and “−” votes on the author of a post, and the score shown under their name. When disabled, neither votes nor scores are shown; votes already cast are kept.",
 		},
+		post_likes: {
+			label: 'Likes',
+			help: '“👍 Like” button below posts, for members (not on their own posts), with its count. When disabled, neither button nor count is shown; likes already given are kept.',
+		},
+		post_reactions: {
+			label: 'Reactions',
+			help: 'Five reactions (❤️ 😂 😮 🙏 🎉) below posts, one per member and post, with their counts. This week’s likes and reactions rank the “Most appreciated posts” on the home page.',
+		},
 		feed_type: {
 			label: 'Default feed type',
 			help: 'The type of feed subscription to display. Note: choosing “None” does not disable the feed, it only hides it by default.',

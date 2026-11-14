@@ -33,5 +33,8 @@ export const indexPage = {
 	newMembers: 'Bienvenue à',
 	newMembersInfo: 'Inscrits cette semaine : un petit mot d’accueil fait toujours plaisir.',
 	projects: 'Projets de la semaine',
+	appreciatedPosts: 'Messages les plus appréciés',
+	appreciatedScore: (n: number) => (n === 1 ? '1 J’aime ou réaction cette semaine' : `${n} J’aime et réactions cette semaine`),
+	appreciatedNoText: '(image)',
 	projectShare: (name: string, count: number) => (count === 1 ? `${name} : 1 discussion` : `${name} : ${count} discussions`),
 };

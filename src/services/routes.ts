@@ -47,6 +47,7 @@ const PAGES: readonly (readonly [legacy: string, fr: string, en: string])[] = [
 	['draft_list.php', '/brouillons', '/drafts'],
 	['draft_edit.php', '/brouillons/modifier', '/drafts/edit'],
 	['reputation.php', '/renommee', '/reputation'],
+	['react.php', '/reagir', '/react'],
 	['topic_prefixes.php', '/balises', '/tags'],
 	['push.php', '/notifications', '/notifications'],
 	['member_suggest.php', '/membres/suggestions', '/members/suggestions'],

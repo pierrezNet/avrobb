@@ -330,6 +330,15 @@ export interface PushSubscriptionsTable {
 	created: number;
 }
 
+/** « J'aime » et réactions émoji sur les messages (migration 0016). */
+export interface PostReactionsTable {
+	post_id: number;
+	user_id: number;
+	slot: 'like' | 'emoji';
+	reaction: string;
+	created: number;
+}
+
 export interface Database {
 	bans: BansTable;
 	brouillons: BrouillonsTable;
@@ -343,6 +352,7 @@ export interface Database {
 	groups: GroupsTable;
 	messages: MessagesTable;
 	online: OnlineTable;
+	post_reactions: PostReactionsTable;
 	posts: PostsTable;
 	push_subscriptions: PushSubscriptionsTable;
 	reports: ReportsTable;
@@ -369,6 +379,7 @@ export const TABLE_NAMES: readonly (keyof Database)[] = [
 	'groups',
 	'messages',
 	'online',
+	'post_reactions',
 	'posts',
 	'push_subscriptions',
 	'reports',

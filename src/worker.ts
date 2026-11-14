@@ -57,6 +57,7 @@ import { ModerationRepository } from './repositories/ModerationRepository.ts';
 import { OnlineRepository } from './repositories/OnlineRepository.ts';
 import { PostEditRepository } from './repositories/PostEditRepository.ts';
 import { PostingRepository } from './repositories/PostingRepository.ts';
+import { PostReactionRepository } from './repositories/PostReactionRepository.ts';
 import { PostRepository } from './repositories/PostRepository.ts';
 import { PrivateMessageRepository } from './repositories/PrivateMessageRepository.ts';
 import { ProfileRepository } from './repositories/ProfileRepository.ts';
@@ -225,6 +226,7 @@ async function createApp(env: Env, services: Services, locale: Locale): Promise<
 		drafts: new DraftRepository(db),
 		subscriptions: new SubscriptionRepository(db),
 		reputation: new ReputationRepository(db),
+		postReactions: new PostReactionRepository(db),
 		moderation: new ModerationRepository(db),
 		hostResolver: new DohHostResolver(),
 		contacts: new ContactRepository(db),
@@ -401,6 +403,7 @@ export default {
 			online,
 			files,
 			fileReferences: new FileReferenceRepository(db),
+			postReactions: new PostReactionRepository(db),
 			translation: createTranslation(env, db),
 			clock,
 			logger: consoleLogger,

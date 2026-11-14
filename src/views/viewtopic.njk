@@ -20,7 +20,7 @@
 </div>
 {% endmacro %}
 
-{% block head %}{% if view.quickPost and view.quickPost.toolbar %}<script src="{{ asset('js/toolbar.js') }}" defer></script>{% endif %}<script src="{{ asset('js/quote-selection.js') }}" defer></script>{% endblock %}
+{% block head %}{% if view.quickPost and view.quickPost.toolbar %}<script src="{{ asset('js/toolbar.js') }}" defer></script>{% endif %}<script src="{{ asset('js/quote-selection.js') }}" defer></script><script src="{{ asset('js/reactions.js') }}" defer></script>{% endblock %}
 
 {% block main %}
 {{ navigation.breadcrumbs(view.crumbs, lang) }}
@@ -29,7 +29,7 @@
 
 <div class="post-list">
 {% for post in view.posts %}
-{{ postView.article(post, view.topic.subject, lang) }}
+{{ postView.article(post, view.topic.subject, lang, layout) }}
 {% endfor %}
 </div>
 

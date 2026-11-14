@@ -47,6 +47,7 @@ import type { ModerationStore } from '../src/repositories/ModerationRepository.t
 import type { OnlineWriter } from '../src/repositories/OnlineRepository.ts';
 import type { PostEditStore, PostUpdate } from '../src/repositories/PostEditRepository.ts';
 import type { NewReply, NewTopic, PostingStore } from '../src/repositories/PostingRepository.ts';
+import type { AppreciatedPost } from '../src/repositories/PostReactionRepository.ts';
 import type { ProfileStore } from '../src/repositories/ProfileRepository.ts';
 import type { ReportTarget } from '../src/repositories/ReportRepository.ts';
 import type { NewVote } from '../src/repositories/ReputationRepository.ts';
@@ -58,6 +59,7 @@ import type { Ban } from '../src/services/bans.ts';
 import type { CensoredWord } from '../src/services/censor.ts';
 import type { GroupForumPermissionRow } from '../src/services/forumPermissions.ts';
 import type { MailMessage } from '../src/services/mail.ts';
+import { NO_REACTIONS, type PostReactions, type ReactionKey } from '../src/services/reactions.ts';
 import { buildSessionCookie } from '../src/services/session.ts';
 import type { TranslationKind } from '../src/services/translation.ts';
 import type { UserSearchCriteria } from '../src/services/userSearch.ts';
@@ -298,6 +300,8 @@ export const boardConfig: BoardConfig = {
 	baseUrl: 'http://forum.test',
 	indentSpaces: 4,
 	reputationEnabled: false,
+	postLikes: true,
+	postReactions: true,
 	reputationTimeout: 0,
 	usersOnline: true,
 };
@@ -396,6 +400,9 @@ export interface FakeData {
 	reputationTargets?: ReputationTarget[];
 	addedVotes?: NewVote[];
 	deletedVotes?: { userId: number; ids: number[] }[];
+	/** « J'aime » et réactions : lignes de post_reactions ; messages de la colonne de l'accueil. */
+	reactions?: { postId: number; userId: number; slot: 'like' | 'emoji'; reaction: string }[];
+	appreciatedPosts?: AppreciatedPost[];
 	/** Modération : sujets modérables, forums de destination, actions consignées. */
 	moderatedTopics?: ModeratedTopic[];
 	targetForums?: ForumTarget[];
@@ -1099,6 +1106,38 @@ export function fakeDeps(data: FakeData, overrides: Partial<AppDeps> = {}): AppD
 			},
 		},
 		stopwords: { load: async () => new Set(['les', 'pour']) },
+		postReactions: {
+			forPosts: async (postIds, viewerId) => {
+				const found = new Map<number, PostReactions>();
+				for (const row of data.reactions ?? []) {
+					if (!postIds.includes(row.postId)) continue;
+					const entry = found.get(row.postId) ?? { ...NO_REACTIONS, reactions: {} };
+					const mine = row.userId === viewerId;
+					const key = row.reaction as ReactionKey;
+					found.set(
+						row.postId,
+						row.slot === 'like'
+							? { ...entry, likes: entry.likes + 1, liked: entry.liked || mine }
+							: {
+									...entry,
+									reactions: { ...entry.reactions, [key]: (entry.reactions[key] ?? 0) + 1 },
+									reaction: mine ? key : entry.reaction,
+								},
+					);
+				}
+				return found;
+			},
+			listAppreciated: async (_groupId, _since, limit) => (data.appreciatedPosts ?? []).slice(0, limit),
+			purgeOrphans: async () => undefined,
+			save: async (postId, userId, choice) => {
+				const others = (data.reactions ?? []).filter((row) => row.postId !== postId || row.userId !== userId);
+				data.reactions = [
+					...others,
+					...(choice.liked ? [{ postId, userId, slot: 'like' as const, reaction: 'like' }] : []),
+					...(choice.reaction !== null ? [{ postId, userId, slot: 'emoji' as const, reaction: choice.reaction }] : []),
+				];
+			},
+		},
 		translations: {
 			find: async (kind, items, lang) =>
 				new Map(

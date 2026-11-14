@@ -6,14 +6,17 @@ import type { AppReply, AppRequest } from '../http/context.ts';
 import { type LayoutDeps, renderMessage, renderPage } from '../http/layout.ts';
 import { buildIndexPage } from '../presenters/indexPage.ts';
 import type { AvatarLocator } from '../repositories/AvatarFiles.ts';
+import type { CensorReader } from '../repositories/CensorRepository.ts';
 import type { ForumReader } from '../repositories/ForumRepository.ts';
 import type { HomeActivityReader } from '../repositories/HomeActivityRepository.ts';
+import type { PostReactionReader } from '../repositories/PostReactionRepository.ts';
 import type { StatsReader } from '../repositories/StatsRepository.ts';
 import type { TopicReader } from '../repositories/TopicRepository.ts';
 import type { TranslationReader } from '../repositories/TranslationRepository.ts';
+import { buildCensor } from '../services/censor.ts';
 import { HOME_WEEK } from '../services/homeActivity.ts';
 import { parseTrackedTopics } from '../services/trackedTopics.ts';
-import { withTranslatedForums, withTranslatedSubjects } from './contentTranslations.ts';
+import { withTranslatedForums, withTranslatedPosts, withTranslatedSubjects } from './contentTranslations.ts';
 
 export interface IndexControllerDeps extends LayoutDeps {
 	forums: ForumReader;
@@ -21,13 +24,16 @@ export interface IndexControllerDeps extends LayoutDeps {
 	topics: TopicReader;
 	stats: StatsReader;
 	homeActivity: HomeActivityReader;
+	postReactions: PostReactionReader;
+	censorship: CensorReader;
 	avatars: AvatarLocator;
 	/** Nom du cookie de suivi des sujets lus (<cookie_name>_track). */
 	trackCookieName: string;
 }
 
-/** Discussions de « Ça discute cette semaine », nouveaux membres et avatars affichés au plus. */
+/** Discussions de « Ça discute cette semaine », messages appréciés, nouveaux membres et avatars affichés au plus. */
 const HOT_TOPICS = 4;
+const APPRECIATED_POSTS = 4;
 const NEW_MEMBERS = 12;
 const ONLINE_AVATARS = 40;
 
@@ -41,22 +47,27 @@ export class IndexController {
 		if (!viewer.group.canReadBoard) return renderMessage(request, reply, this.deps, 403, lang.common.noView);
 
 		const weekStart = this.deps.page.clock() - HOME_WEEK;
-		const [indexCategories, recentTopics, online, indexHotTopics, newMembers, activeSubjects] = await Promise.all([
+		const [indexCategories, recentTopics, online, indexHotTopics, newMembers, activeSubjects, sourceAppreciated] = await Promise.all([
 			this.deps.forums.listIndex(viewer.group.id),
 			viewer.isGuest ? [] : this.deps.topics.listUpdatedSince(viewer.group.id, viewer.lastVisit),
 			config.usersOnline ? this.deps.stats.listOnline() : null,
 			this.deps.homeActivity.listHotTopics(viewer.group.id, weekStart, HOT_TOPICS),
 			this.deps.homeActivity.listNewMembers(weekStart, NEW_MEMBERS),
 			this.deps.homeActivity.listActiveSubjects(viewer.group.id, weekStart),
+			config.postLikes || config.postReactions
+				? this.deps.postReactions.listAppreciated(viewer.group.id, weekStart, APPRECIATED_POSTS)
+				: [],
 		]);
 		const { locale } = this.deps.page;
-		const [forums, hotTopics] = await Promise.all([
+		const [forums, hotTopics, appreciatedPosts, censoredWords] = await Promise.all([
 			withTranslatedForums(
 				this.deps.translations,
 				indexCategories.flatMap((category) => category.forums),
 				locale,
 			),
 			withTranslatedSubjects(this.deps.translations, indexHotTopics, locale),
+			withTranslatedPosts(this.deps.translations, sourceAppreciated, locale),
+			config.censoring && sourceAppreciated.length > 0 ? this.deps.censorship.listWords() : [],
 		]);
 		const shownForums = new Map(forums.map((forum) => [forum.id, forum]));
 		const categories = indexCategories.map((category) => ({
@@ -82,6 +93,8 @@ export class IndexController {
 			hotTopicImages,
 			newMembers,
 			activeSubjects,
+			appreciatedPosts,
+			censor: config.censoring ? buildCensor(censoredWords) : null,
 			lang,
 			dateWords: this.deps.page.dateWords,
 			now: this.deps.page.clock(),

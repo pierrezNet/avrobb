@@ -12,6 +12,7 @@ import { buildTopicPage, displaySubject, topicUrl } from '../presenters/topicPag
 import type { AvatarLocator } from '../repositories/AvatarFiles.ts';
 import type { BanReader } from '../repositories/BanRepository.ts';
 import type { CensorReader } from '../repositories/CensorRepository.ts';
+import type { PostReactionReader } from '../repositories/PostReactionRepository.ts';
 import type { PostReader } from '../repositories/PostRepository.ts';
 import type { TopicReader, TopicWriter } from '../repositories/TopicRepository.ts';
 import type { TranslationReader } from '../repositories/TranslationRepository.ts';
@@ -27,6 +28,7 @@ export interface TopicControllerDeps extends LayoutDeps {
 	topics: TopicReader;
 	translations: TranslationReader;
 	posts: PostReader;
+	postReactions: PostReactionReader;
 	avatars: AvatarLocator;
 	bans: BanReader;
 	censorship: CensorReader;
@@ -99,7 +101,15 @@ export class TopicController {
 		await this.recordVisit(request, reply, topic.id);
 
 		const censor = config.censoring ? buildCensor(censoredWords) : null;
-		const translations = await this.#translations(topic, posts);
+		const [translations, reactions] = await Promise.all([
+			this.#translations(topic, posts),
+			config.postLikes || config.postReactions
+				? this.deps.postReactions.forPosts(
+						posts.map((post) => post.id),
+						viewer.id,
+					)
+				: undefined,
+		]);
 		const firstMessage = translations.posts.get(posts[0]?.id ?? 0) ?? posts[0]?.message ?? '';
 		const view = buildTopicPage({
 			viewer,
@@ -117,6 +127,7 @@ export class TopicController {
 			dateWords: this.deps.page.dateWords,
 			now: this.deps.page.clock(),
 			translations,
+			...(reactions !== undefined ? { reactions } : {}),
 		});
 
 		return renderPage(

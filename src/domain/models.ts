@@ -334,6 +334,9 @@ export interface BoardConfig {
 	/** o_indent_num_spaces : espaces remplaçant une tabulation hors [code]. */
 	indentSpaces: number;
 	reputationEnabled: boolean;
+	/** « J'aime » et réactions émoji sur les messages (o_post_likes, o_post_reactions). */
+	postLikes: boolean;
+	postReactions: boolean;
 	/** Délai entre deux votes d'un membre pour un même autre membre, en minutes (o_reputation_timeout). */
 	reputationTimeout: number;
 	/** Liste des membres en ligne en bas de l'index (o_users_online). */

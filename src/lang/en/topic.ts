@@ -40,6 +40,10 @@ export const topic: typeof frTopic = {
 	reputation: 'Reputation',
 	reputationPlus: 'Increase reputation',
 	reputationMinus: 'Decrease reputation',
+	/** Likes and reactions below a post. */
+	reactionsLabel: 'Reactions to this post',
+	like: 'Like',
+	reactions: { heart: 'Love', laugh: 'Funny', wow: 'Wow', thanks: 'Thanks', party: 'Congrats' },
 
 	/** Subject prefixes (PV): Node-only page, opened from viewtopic. */
 	subjectPrefixes: 'Subject tags',

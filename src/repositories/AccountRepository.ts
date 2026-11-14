@@ -92,6 +92,7 @@ export class AccountRepository implements AccountStore {
 			...(await removeFromModeratorsWrites(this.db, [userId])),
 			this.db.deleteFrom('topic_subscriptions').where('user_id', '=', userId),
 			this.db.deleteFrom('push_subscriptions').where('user_id', '=', userId),
+			this.db.deleteFrom('post_reactions').where('user_id', '=', userId),
 			this.db.deleteFrom('forum_subscriptions').where('user_id', '=', userId),
 			this.db.deleteFrom('online').where('user_id', '=', userId),
 			this.db.deleteFrom('brouillons').where('poster_id', '=', userId),

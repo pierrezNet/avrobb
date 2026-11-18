@@ -32,6 +32,45 @@ describe('toolbarButtons (generate_ftb_cache())', () => {
 		expect(byName.get('color')?.action).toEqual({ kind: 'color' });
 	});
 
+	it('fenêtres : tous les champs d’un bouton, libellés, préremplissage par la sélection', () => {
+		const byName = new Map(toolbarButtons(TOOLBAR, 'form', all, fr.toolbar)?.buttons.map((b) => [b.name, b.action]));
+		const link = byName.get('link');
+		if (link?.kind !== 'pair') throw new Error('lien attendu');
+		expect(link.dialog).toMatchObject({ title: 'Insérer un lien', submit: 'Insérer', cancel: 'Annuler' });
+		expect(link.dialog.fields).toMatchObject([
+			{ kind: 'url', label: 'Adresse du lien', required: true, fill: 'url' },
+			{ kind: 'text', label: 'Texte affiché', required: false, fill: 'text' },
+		]);
+		const list = byName.get('list');
+		if (list?.kind !== 'argument') throw new Error('liste attendue');
+		expect(list.dialog.fields[0]).toMatchObject({
+			kind: 'choice',
+			choices: [
+				{ value: '*', label: 'À puces (•)' },
+				{ value: '1', label: 'Numérotée (1, 2, 3)' },
+				{ value: 'a', label: 'Alphabétique (a, b, c)' },
+			],
+		});
+		const quote = byName.get('quote');
+		expect(quote?.kind === 'argument' && quote.dialog.fields[0]?.kind).toBe('member');
+		const img = byName.get('img');
+		expect(img?.kind === 'pair' && img.dialog.fields[0]).toMatchObject({ preview: true });
+	});
+
+	it('vidéo : adresses reconnues par le BBCode, message sinon', () => {
+		const video = toolbarButtons(TOOLBAR, 'form', all, fr.toolbar)?.buttons.find((b) => b.name === 'video')?.action;
+		if (video?.kind !== 'inside') throw new Error('vidéo attendue');
+		const field = video.dialog.fields[0];
+		if (field === undefined || field.kind === 'choice') throw new Error('champ attendu');
+		const known = (url: string) => field.patterns.some((source) => new RegExp(source).test(url));
+		expect(known('https://www.youtube.com/watch?v=dQw4w9WgXcQ')).toBe(true);
+		expect(known('https://youtu.be/dQw4w9WgXcQ')).toBe(true);
+		expect(known('https://www.dailymotion.com/video/x8abc12')).toBe(true);
+		expect(known('https://vimeo.com/123456')).toBe(true);
+		expect(known('https://example.test/film.mp4')).toBe(false);
+		expect(field.invalid).toContain('YouTube, Dailymotion et Vimeo');
+	});
+
 	it('suit o_smilies, p_message_img_tag et p_message_bbcode', () => {
 		expect(names(TOOLBAR, { ...all, smilies: false })).not.toContain('smilies');
 		expect(names(TOOLBAR, { ...all, imgTag: false })).not.toContain('img');

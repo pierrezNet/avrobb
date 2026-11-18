@@ -171,19 +171,17 @@ function listTag(type: string, content: string): string {
 	return `</p><ul>${items}</ul><p>`;
 }
 
+/** Vidéos intégrées : adresse reconnue (identifiant en premier groupe) et lecteur. Reprises par la barre d'outils. */
+export const VIDEO_PLAYERS: readonly (readonly [RegExp, (id: string) => string])[] = [
+	[/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|v\/)|youtu\.be\/)([\w-]{6,20})/, (id) => `https://www.youtube-nocookie.com/embed/${id}`],
+	[/dailymotion\.com\/(?:embed\/)?video\/([a-zA-Z0-9]{4,20})/, (id) => `https://www.dailymotion.com/embed/video/${id}`],
+	[/vimeo\.com\/(?:video\/)?(\d{3,12})/, (id) => `https://player.vimeo.com/video/${id}`],
+];
+
 /** Lecteur intégré pour une URL de vidéo connue, construit uniquement à partir de l'identifiant. */
 function videoTag(escapedUrl: string, options: BbcodeOptions): string {
 	const url = decodeHtml(escapedUrl).trim();
-	const players: [RegExp, (id: string) => string][] = [
-		[
-			/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|v\/)|youtu\.be\/)([\w-]{6,20})/,
-			(id) => `https://www.youtube-nocookie.com/embed/${id}`,
-		],
-		[/dailymotion\.com\/(?:embed\/)?video\/([a-zA-Z0-9]{4,20})/, (id) => `https://www.dailymotion.com/embed/video/${id}`],
-		[/vimeo\.com\/(?:video\/)?(\d{3,12})/, (id) => `https://player.vimeo.com/video/${id}`],
-	];
-
-	for (const [pattern, embed] of players) {
+	for (const [pattern, embed] of VIDEO_PLAYERS) {
 		const id = pattern.exec(url)?.[1];
 		if (id !== undefined)
 			return `</p><div class="video"><iframe src="${embed(id)}" title="${options.labels.video}" loading="lazy" allow="fullscreen; picture-in-picture" allowfullscreen></iframe></div><p>`;

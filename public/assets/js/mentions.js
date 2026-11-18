@@ -2,8 +2,8 @@
  * Amélioration progressive : complètement des noms de membres.
  * - Zones de message [data-mentions] : « @ » suivi du début d'un nom propose des membres ; le choix
  *   insère [url=<profil>]@Nom[/url], lien que le PHP comme Node affichent déjà.
- * - Champs de destinataires [data-member-list] (noms séparés par des virgules) : le dernier nom saisi
- *   est complété.
+ * - Champs de noms [data-member-list] (destinataires séparés par des virgules, auteur d'une
+ *   citation) : le dernier nom saisi est complété, y compris dans un champ ajouté plus tard.
  * Clavier : flèches pour parcourir, Entrée ou Tab pour choisir, Échap pour fermer.
  * Sans JavaScript, les champs restent de simples zones de saisie.
  */
@@ -21,13 +21,18 @@
 			const match = /(^|\s)@([^\s@[\]]{1,25})$/.exec(before);
 			return match ? { text: match[2], start: before.length - match[2].length - 1 } : null;
 		}
-		const start = before.lastIndexOf(',') + 1;
+		const start = mode === 'single' ? 0 : before.lastIndexOf(',') + 1;
 		// Un « @ » de tête est toléré : on complète le nom qui suit.
 		const text = before.slice(start).trim().replace(/^@/, '');
 		return text !== '' && text.length <= 25 ? { text, start } : null;
 	}
 
+	/** data-member-list="single" : un seul nom (auteur d'une citation), sinon une liste séparée par des virgules. */
+	const listMode = (field) => (field.dataset.memberList === 'single' ? 'single' : 'list');
+
 	function attach(field, mode) {
+		if (field.dataset.memberSuggest) return;
+		field.dataset.memberSuggest = 'on';
 		const list = document.createElement('ul');
 		list.id = `member-suggest-${++counter}`;
 		list.className = 'member-suggest';
@@ -67,8 +72,9 @@
 			const end = field.selectionStart ?? value.length;
 			let insert;
 			if (mode === 'mention') insert = `[url=${profileBase}${member.id}]@${member.username}[/url] `;
+			else if (mode === 'single') insert = member.username;
 			else insert = `${query.start > 0 ? ' ' : ''}${member.username}, `;
-			field.value = value.slice(0, query.start) + insert + value.slice(end);
+			field.value = value.slice(0, query.start) + insert + (mode === 'single' ? '' : value.slice(end));
 			const caret = query.start + insert.length;
 			field.setSelectionRange(caret, caret);
 			field.dispatchEvent(new Event('input', { bubbles: true }));
@@ -137,6 +143,11 @@
 
 	document.addEventListener('DOMContentLoaded', () => {
 		for (const field of document.querySelectorAll('textarea[data-mentions]')) attach(field, 'mention');
-		for (const field of document.querySelectorAll('input[data-member-list]')) attach(field, 'list');
+		for (const field of document.querySelectorAll('input[data-member-list]')) attach(field, listMode(field));
+	});
+	// Champs ajoutés après le chargement (fenêtre « Citation » de la barre d'outils).
+	document.addEventListener('focusin', (event) => {
+		if (event.target instanceof HTMLInputElement && event.target.matches('input[data-member-list]'))
+			attach(event.target, listMode(event.target));
 	});
 })();

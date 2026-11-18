@@ -1,6 +1,6 @@
 /**
  * Textes de la barre d'outils BBCode. Source : lang/French/fluxtoolbar.php (mod FluxToolBar).
- * Les bulles reprennent la syntaxe de la balise ; les questions sont posées par le navigateur.
+ * Les bulles reprennent la syntaxe de la balise ; les questions sont posées dans une fenêtre (js/toolbar.js).
  */
 
 export const toolbar = {
@@ -30,15 +30,40 @@ export const toolbar = {
 		justify: 'Justifier : [justify]texte[/justify]',
 		video: 'Vidéo : [video]vidéo[/video]',
 	} as Readonly<Record<string, string>>,
-	prompts: {
-		quote: ["Veuillez entrer le nom de l'utilisateur cité (ou laissez vide) :"],
-		link: ["Veuillez entrer l'URL de votre lien :", 'Veuillez entrer un nom descriptif de votre lien :'],
-		img: ["Veuillez entrer l'URL de votre image :", 'Veuillez entrer une description pour votre image (attribut alt) :'],
-		email: ['Veuillez entrer une adresse mail valide :', 'Veuillez entrer un nom descriptif de votre courriel :'],
-		list: ['Veuillez entrer le type de liste : * = liste à puce, 1 = liste ordonnée numériquement, a = liste ordonnée alphabétiquement'],
-		acronym: ["Désignation complète de l'acronyme :"],
-		video: ["Veuillez entrer l'URL de votre vidéo youtube (watch ou embed) ou dailymotion (URL ou lien d'intégration)"],
-	} as Readonly<Record<string, readonly string[]>>,
+	/** Fenêtres des boutons qui posent des questions (js/toolbar.js), champs dans l'ordre de services/toolbar.ts. */
+	dialogs: {
+		submit: 'Insérer',
+		cancel: 'Annuler',
+		byButton: {
+			link: {
+				title: 'Insérer un lien',
+				fields: [{ label: 'Adresse du lien' }, { label: 'Texte affiché', hint: 'Facultatif : l’adresse est affichée sinon.' }],
+			},
+			email: {
+				title: 'Insérer une adresse e-mail',
+				fields: [{ label: 'Adresse e-mail' }, { label: 'Texte affiché', hint: 'Facultatif : l’adresse est affichée sinon.' }],
+			},
+			img: {
+				title: 'Insérer une image par son adresse',
+				fields: [
+					{ label: 'Adresse de l’image' },
+					{ label: 'Description de l’image', hint: 'Facultatif : lue à la place de l’image par les lecteurs d’écran.' },
+				],
+			},
+			quote: { title: 'Insérer une citation', fields: [{ label: 'Auteur cité', hint: 'Facultatif.' }] },
+			list: {
+				title: 'Insérer une liste',
+				fields: [{ label: 'Type de liste', hint: 'Chaque ligne sélectionnée devient un élément.' }],
+				choices: { '*': 'À puces (•)', '1': 'Numérotée (1, 2, 3)', a: 'Alphabétique (a, b, c)' },
+			},
+			acronym: { title: 'Insérer un acronyme', fields: [{ label: 'Signification', hint: 'Par exemple : World Wide Web Consortium.' }] },
+			video: {
+				title: 'Insérer une vidéo',
+				fields: [{ label: 'Adresse de la vidéo', hint: 'YouTube, Dailymotion ou Vimeo.' }],
+				invalid: 'Adresse non reconnue : seules les vidéos YouTube, Dailymotion et Vimeo sont intégrées.',
+			},
+		},
+	},
 
 	/** Bouton image : choix de la source (absent de FluxToolBar). */
 	imageChooser: {

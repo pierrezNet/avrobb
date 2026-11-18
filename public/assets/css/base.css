@@ -1934,6 +1934,74 @@ a.site-status__alert {
 	}
 }
 
+/* Fenêtre des questions de la barre d'outils (js/toolbar.js) : en bas de l'écran sur mobile, centrée ensuite. */
+.toolbar-dialog {
+	width: 100%;
+	max-width: 100%;
+	margin: auto 0 0;
+	padding: 1rem;
+	border: 1px solid var(--color-border);
+	border-radius: 0.75rem 0.75rem 0 0;
+	background: var(--color-surface);
+	color: var(--color-text);
+}
+
+.toolbar-dialog::backdrop {
+	background: rgb(0 0 0 / 0.45);
+}
+
+.toolbar-dialog form {
+	display: grid;
+	gap: 0.75rem;
+}
+
+.toolbar-dialog__title {
+	margin: 0;
+	font-size: 1.125rem;
+}
+
+.toolbar-dialog__field {
+	min-width: 0;
+	padding: 0;
+	border: 0;
+}
+
+.toolbar-dialog__field legend {
+	margin-bottom: 0.25rem;
+	padding: 0;
+}
+
+.toolbar-dialog__hint {
+	margin: 0;
+	color: var(--color-muted);
+	font-size: 0.875rem;
+}
+
+.toolbar-dialog__preview {
+	max-width: 100%;
+	max-height: 10rem;
+	margin-top: 0.25rem;
+	border: 1px solid var(--color-border);
+	border-radius: 0.25rem;
+	object-fit: contain;
+	align-self: flex-start;
+}
+
+.toolbar-dialog__actions {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+	gap: 0.5rem;
+}
+
+@media (min-width: 40rem) {
+	.toolbar-dialog {
+		width: min(30rem, 92vw);
+		margin: auto;
+		border-radius: 0.5rem;
+	}
+}
+
 /* ---------- Aide ---------- */
 
 .help-section {

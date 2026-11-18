@@ -1,7 +1,7 @@
 /*
  * Barre d'outils BBCode (mod FluxToolBar), en amélioration progressive : sans JavaScript, le champ
- * de message reste utilisable tel quel. Comportement des boutons repris de include/toolbar_func.js :
- * la balise entoure la sélection, des questions sont posées pour les liens, images, citations…
+ * de message reste utilisable tel quel. La balise entoure la sélection ; pour les liens, images,
+ * citations… les questions sont posées dans une fenêtre décrite par services/toolbar.ts.
  *
  * Configuration : attribut data-toolbar (JSON préparé par presenters/postPage.ts), dossier des
  * icônes dans data-toolbar-images, champ visé dans data-toolbar-for.
@@ -28,29 +28,203 @@
 		textarea.focus();
 	}
 
-	const selectionOf = (textarea) => textarea.value.substring(textarea.selectionStart, textarea.selectionEnd);
+	const looksLikeUrl = (text) => /^(?:https?:\/\/|www\.)\S+$/i.test(text);
+	const looksLikeEmail = (text) => /^[^\s@]+@[^\s@]+$/.test(text);
+	let dialogCount = 0;
+
+	/** Valeurs de départ des champs : la sélection va au premier champ qui l'accepte. */
+	function initialValues(fields, selection) {
+		let used = false;
+		return fields.map((field) => {
+			if (used || field.kind === 'choice' || selection === '') return '';
+			const fits =
+				(field.fill === 'url' && looksLikeUrl(selection)) || (field.fill === 'email' && looksLikeEmail(selection)) || field.fill === 'text';
+			if (!fits) return '';
+			used = true;
+			return selection;
+		});
+	}
+
+	/** Adresse saisie sans protocole (« www.… ») : https:// est ajouté. */
+	const withScheme = (value) => (/^www\./i.test(value) ? `https://${value}` : value);
+
+	/** Champ de la fenêtre ; renvoie l'élément à placer et une fonction qui lit sa valeur. */
+	function fieldElement(field, initial, id) {
+		const wrapper = document.createElement(field.kind === 'choice' ? 'fieldset' : 'div');
+		wrapper.className = 'form__field toolbar-dialog__field';
+		const hintId = `${id}-hint`;
+		const hint = () => {
+			if (!field.hint) return null;
+			const element = document.createElement('p');
+			element.className = 'toolbar-dialog__hint';
+			element.id = hintId;
+			element.textContent = field.hint;
+			return element;
+		};
+
+		if (field.kind === 'choice') {
+			const legend = document.createElement('legend');
+			legend.className = 'form__label';
+			legend.textContent = field.label;
+			wrapper.append(legend);
+			const radios = field.choices.map((choice, i) => {
+				const label = document.createElement('label');
+				label.className = 'form__choice';
+				const radio = document.createElement('input');
+				radio.type = 'radio';
+				radio.name = id;
+				radio.value = choice.value;
+				radio.checked = i === 0;
+				label.append(radio, ` ${choice.label}`);
+				wrapper.append(label);
+				return radio;
+			});
+			const help = hint();
+			if (help) {
+				wrapper.setAttribute('aria-describedby', hintId);
+				wrapper.append(help);
+			}
+			return { element: wrapper, focus: radios[0], read: () => radios.find((radio) => radio.checked)?.value ?? '' };
+		}
+
+		const label = document.createElement('label');
+		label.className = 'form__label';
+		label.htmlFor = id;
+		label.textContent = field.label;
+		const input = document.createElement('input');
+		input.id = id;
+		input.type = field.kind === 'url' ? 'url' : field.kind === 'email' ? 'email' : 'text';
+		input.required = field.required;
+		input.value = initial;
+		input.autocomplete = 'off';
+		input.spellcheck = field.kind === 'text';
+		if (field.kind === 'member') input.dataset.memberList = 'single';
+		wrapper.append(label, input);
+		const help = hint();
+		if (help) {
+			input.setAttribute('aria-describedby', hintId);
+			wrapper.append(help);
+		}
+
+		const check = () => {
+			if (field.kind === 'url') input.value = withScheme(input.value.trim());
+			const value = input.value.trim();
+			const known = value === '' || field.patterns.length === 0 || field.patterns.some((source) => new RegExp(source).test(value));
+			input.setCustomValidity(known ? '' : (field.invalid ?? ''));
+		};
+		input.addEventListener('input', () => input.setCustomValidity(''));
+
+		if (field.preview) {
+			const preview = document.createElement('img');
+			preview.className = 'toolbar-dialog__preview';
+			preview.alt = '';
+			preview.hidden = true;
+			preview.addEventListener('load', () => {
+				preview.hidden = false;
+			});
+			preview.addEventListener('error', () => {
+				preview.hidden = true;
+			});
+			const show = () => {
+				const value = withScheme(input.value.trim());
+				preview.hidden = true;
+				if (/^https?:\/\/\S+$/i.test(value)) preview.src = value;
+			};
+			input.addEventListener('change', show);
+			wrapper.append(preview);
+			if (initial !== '') show();
+		}
+		return { element: wrapper, focus: input, check, read: () => input.value.trim() };
+	}
+
+	/**
+	 * Questions d'un bouton dans une fenêtre <dialog> : tous les champs ensemble, vérifiés par le
+	 * navigateur. Résout avec les réponses, ou null si on annule. Sans <dialog>, window.prompt().
+	 */
+	function ask(dialogSpec, selection) {
+		const initial = initialValues(dialogSpec.fields, selection);
+		if (typeof HTMLDialogElement !== 'function')
+			return Promise.resolve(
+				dialogSpec.fields.map((field, i) =>
+					field.kind === 'choice' ? (field.choices[0]?.value ?? '') : (window.prompt(field.label, initial[i]) ?? ''),
+				),
+			);
+
+		return new Promise((resolve) => {
+			const prefix = `toolbar-dialog-${++dialogCount}`;
+			const dialog = document.createElement('dialog');
+			dialog.className = 'toolbar-dialog';
+			dialog.setAttribute('aria-labelledby', `${prefix}-title`);
+			const form = document.createElement('form');
+			form.method = 'dialog';
+			form.noValidate = true;
+			const title = document.createElement('h2');
+			title.className = 'toolbar-dialog__title';
+			title.id = `${prefix}-title`;
+			title.textContent = dialogSpec.title;
+			const fields = dialogSpec.fields.map((field, i) => fieldElement(field, initial[i], `${prefix}-${i}`));
+			const actions = document.createElement('div');
+			actions.className = 'toolbar-dialog__actions';
+			const cancel = document.createElement('button');
+			cancel.type = 'button';
+			cancel.className = 'button';
+			cancel.textContent = dialogSpec.cancel;
+			const submit = document.createElement('button');
+			submit.type = 'submit';
+			submit.className = 'button button--primary';
+			submit.textContent = dialogSpec.submit;
+			actions.append(cancel, submit);
+			form.append(title, ...fields.map((field) => field.element), actions);
+			dialog.append(form);
+			document.body.append(dialog);
+
+			let answers = null;
+			form.addEventListener('submit', (event) => {
+				for (const field of fields) field.check?.();
+				if (!form.reportValidity()) {
+					event.preventDefault();
+					return;
+				}
+				answers = fields.map((field) => field.read());
+			});
+			cancel.addEventListener('click', () => dialog.close());
+			dialog.addEventListener('close', () => {
+				dialog.remove();
+				resolve(answers);
+			});
+			dialog.showModal();
+			// Premier champ vide, sinon le premier : on complète plutôt que de retaper.
+			(fields.find((field, i) => initial[i] === '' && field.focus.type !== 'radio') ?? fields[0])?.focus.focus();
+		});
+	}
 
 	/** Exécute l'action d'un bouton (voir services/toolbar.ts). */
-	function run(action, textarea) {
+	async function run(action, textarea) {
 		const tag = action.tag;
-		const ask = (i, initial = '') => window.prompt(action.prompts[i] ?? '', initial);
+		if (action.kind === 'wrap') return enclose(textarea, `[${tag}]`, `[/${tag}]`);
+
+		// La fenêtre prend le focus : la sélection est remise en place avant d'écrire.
+		const start = textarea.selectionStart;
+		const end = textarea.selectionEnd;
+		const raw = textarea.value.substring(start, end);
+		const selection = raw.trim();
+		const answers = await ask(action.dialog, selection);
+		textarea.focus();
+		textarea.setSelectionRange(start, end);
+		if (answers === null) return;
+		const [first = '', second = ''] = answers;
+		const consumed = initialValues(action.dialog.fields, selection).some((value) => value !== '');
+		// Sélection reprise dans une réponse : les espaces autour restent hors de la balise.
+		// Sinon, elle est gardée et la balise est insérée après elle.
+		if (consumed) textarea.setSelectionRange(start + raw.length - raw.trimStart().length, end - raw.length + raw.trimEnd().length);
+		else if (action.kind !== 'argument') textarea.setSelectionRange(end, end);
 		switch (action.kind) {
-			case 'wrap':
-				return enclose(textarea, `[${tag}]`, `[/${tag}]`);
-			case 'argument': {
-				const value = ask(0);
-				return value ? enclose(textarea, `[${tag}=${value}]`, `[/${tag}]`) : enclose(textarea, `[${tag}]`, `[/${tag}]`);
-			}
-			case 'inside': {
-				const value = ask(0);
-				if (value) enclose(textarea, `[${tag}]`, `[/${tag}]`, value);
-				else textarea.focus();
-				return;
-			}
+			case 'argument':
+				return first ? enclose(textarea, `[${tag}=${first}]`, `[/${tag}]`) : enclose(textarea, `[${tag}]`, `[/${tag}]`);
+			case 'inside':
+				return first ? enclose(textarea, `[${tag}]`, `[/${tag}]`, first) : undefined;
 			case 'pair': {
-				const first = ask(0);
-				if (!first) return textarea.focus();
-				const second = ask(1, selectionOf(textarea));
+				if (!first) return;
 				if (!second) return enclose(textarea, `[${tag}]`, `[/${tag}]`, first);
 				return action.reverse
 					? enclose(textarea, `[${tag}=${second}]`, `[/${tag}]`, first)

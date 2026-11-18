@@ -1,6 +1,6 @@
 /**
  * English translation of src/lang/fr/toolbar.ts: BBCode toolbar texts. Tooltips show the tag syntax;
- * prompts are asked by the browser.
+ * questions are asked in a dialog (js/toolbar.js).
  */
 
 import type { toolbar as frToolbar } from '../fr/toolbar.ts';
@@ -32,15 +32,40 @@ export const toolbar: typeof frToolbar = {
 		justify: 'Justify: [justify]text[/justify]',
 		video: 'Video: [video]video[/video]',
 	} as Readonly<Record<string, string>>,
-	prompts: {
-		quote: ['Enter the name of the quoted user (or leave empty):'],
-		link: ['Enter the URL of your link:', 'Enter a descriptive name for your link:'],
-		img: ['Enter the URL of your image:', 'Enter a description for your image (alt attribute):'],
-		email: ['Enter a valid e-mail address:', 'Enter a descriptive name for your e-mail link:'],
-		list: ['Enter the list type: * = bulleted list, 1 = numbered list, a = alphabetical list'],
-		acronym: ['Full meaning of the acronym:'],
-		video: ['Enter the URL of your YouTube video (watch or embed) or Dailymotion video (URL or embed link)'],
-	} as Readonly<Record<string, readonly string[]>>,
+	/** Dialogs of the buttons that ask questions (js/toolbar.js), fields in the order of services/toolbar.ts. */
+	dialogs: {
+		submit: 'Insert',
+		cancel: 'Cancel',
+		byButton: {
+			link: {
+				title: 'Insert a link',
+				fields: [{ label: 'Link address' }, { label: 'Text shown', hint: 'Optional: the address is shown otherwise.' }],
+			},
+			email: {
+				title: 'Insert an e-mail address',
+				fields: [{ label: 'E-mail address' }, { label: 'Text shown', hint: 'Optional: the address is shown otherwise.' }],
+			},
+			img: {
+				title: 'Insert an image from its address',
+				fields: [
+					{ label: 'Image address' },
+					{ label: 'Image description', hint: 'Optional: read instead of the image by screen readers.' },
+				],
+			},
+			quote: { title: 'Insert a quote', fields: [{ label: 'Quoted author', hint: 'Optional.' }] },
+			list: {
+				title: 'Insert a list',
+				fields: [{ label: 'List type', hint: 'Each selected line becomes an item.' }],
+				choices: { '*': 'Bulleted (•)', '1': 'Numbered (1, 2, 3)', a: 'Alphabetical (a, b, c)' },
+			},
+			acronym: { title: 'Insert an acronym', fields: [{ label: 'Meaning', hint: 'For example: World Wide Web Consortium.' }] },
+			video: {
+				title: 'Insert a video',
+				fields: [{ label: 'Video address', hint: 'YouTube, Dailymotion or Vimeo.' }],
+				invalid: 'Address not recognised: only YouTube, Dailymotion and Vimeo videos are embedded.',
+			},
+		},
+	},
 
 	/** Image button: choice of source (not in FluxToolBar). */
 	imageChooser: {

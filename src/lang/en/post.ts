@@ -87,6 +87,8 @@ export const post: typeof frPost = {
 	// Form
 	postErrors: 'Post errors',
 	noTagTitle: 'No project tag',
+	/** Reply in an application's “to sort” forum, by a member who can accept. */
+	replyAcceptsFeedback: 'Replying to this feedback accepts it: the topic and your reply will be published in the public forum.',
 	noTagInfo:
 		'Your topic does not say which project it is about. Add a tag with the buttons below the title: it helps find the discussions of each project. If none fits, click “Submit” again to post as is.',
 	postErrorsInfo: 'The following errors must be corrected before the post can be sent:',

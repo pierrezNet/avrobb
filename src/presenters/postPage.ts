@@ -8,6 +8,7 @@ import type { Lang } from '../lang/fr/index.ts';
 import { parseMessage } from '../services/bbcode.ts';
 import type { Censor } from '../services/censor.ts';
 import { type DateWords, formatTime, viewerTimeSettings } from '../services/dateFormat.ts';
+import { acceptableAppFeedback } from '../services/permissions.ts';
 import { forumPath, publicPath } from '../services/routes.ts';
 import { SMILIES } from '../services/smilies.ts';
 import { type TagColors, tagColors } from '../services/subjectTags.ts';
@@ -92,6 +93,8 @@ export interface PostPageView {
 	/** Lien vers les brouillons du membre (draft_list.php), à côté de la case « brouillon ». */
 	draftsUrl: string | null;
 	review: { poster: string; postedAt: string; messageHtml: string }[];
+	/** Réponse qui acceptera un retour d'application (PostController), annoncée au-dessus du formulaire. */
+	acceptNotice: string | null;
 }
 
 function checkboxes(input: PostPageInput, isNewTopic: boolean): Checkbox[] {
@@ -211,6 +214,7 @@ export function buildPostPage(input: PostPageInput): PostPageView {
 			postedAt: formatTime(post.posted, time, input.dateWords, input.now),
 			messageHtml: parseMessage(post.message, messageParserOptions(config, viewer, lang, censor, post.hideSmilies)),
 		})),
+		acceptNotice: topic !== null && acceptableAppFeedback(viewer, target.forum.id, config) !== null ? t.replyAcceptsFeedback : null,
 	};
 }
 
@@ -262,5 +266,6 @@ export function buildEditPage(input: EditPageInput): PostPageView {
 		checkboxes,
 		draftsUrl: null,
 		review: [],
+		acceptNotice: null,
 	};
 }

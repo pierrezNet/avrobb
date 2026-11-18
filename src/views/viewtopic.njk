@@ -48,6 +48,7 @@
 {% if view.quickPost %}
 <form id="quickpostform" class="form-box form post-form" method="post" action="{{ url(view.quickPost.formAction) }}" aria-labelledby="quickpost-title">
 	<h2 id="quickpost-title" class="form-box__title">{{ lang.topic.quickPost }}</h2>
+	{% if view.quickPost.acceptNotice %}<p class="form__notice">{{ view.quickPost.acceptNotice }}</p>{% endif %}
 	{{ forms.csrf(layout) }}
 	<input type="hidden" name="form_sent" value="1">
 	{% if view.quickPost.keepSubscribed %}<input type="hidden" name="subscribe" value="1">{% endif %}

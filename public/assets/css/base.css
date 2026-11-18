@@ -2170,6 +2170,13 @@ h2.form__legend {
 	margin: 0 0 0.5rem;
 }
 
+.form__notice {
+	margin: 0 0 0.75rem;
+	padding: 0.5rem 0.75rem;
+	border-left: 4px solid var(--color-accent);
+	background: var(--color-surface-alt);
+}
+
 .form__help {
 	margin: 0.75rem 0 0;
 	color: var(--color-muted);

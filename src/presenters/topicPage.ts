@@ -116,6 +116,8 @@ export interface QuickPostView {
 	keepSubscribed: boolean;
 	bbcodeStatus: BbcodeStatus;
 	toolbar: ToolbarView | null;
+	/** La réponse acceptera ce retour d'application (PostController). */
+	acceptNotice: string | null;
 }
 
 function quickPost(input: TopicPageInput): QuickPostView | null {
@@ -129,6 +131,7 @@ function quickPost(input: TopicPageInput): QuickPostView | null {
 		keepSubscribed: !viewer.isGuest && config.topicSubscriptions && (viewer.autoNotify || topic.isSubscribed),
 		bbcodeStatus: bbcodeStatus(config, viewer, lang),
 		toolbar: toolbarView(input.toolbar, 'quickform', config, lang, !viewer.isGuest),
+		acceptNotice: acceptableAppFeedback(viewer, topic.forum.id, config) !== null ? lang.post.replyAcceptsFeedback : null,
 	};
 }
 

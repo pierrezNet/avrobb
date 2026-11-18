@@ -119,5 +119,6 @@ export function buildDraftEditPage(input: DraftEditInput): PostPageView {
 		checkboxes: [],
 		draftsUrl: null,
 		review: [],
+		acceptNotice: null,
 	};
 }

@@ -28,7 +28,7 @@ import { bbcodeToEmail } from '../services/bbcodeEmail.ts';
 import { buildCensor, type Censor } from '../services/censor.ts';
 import type { MailMessage, MailTemplateReader } from '../services/mail.ts';
 import { bannedEmailAlert, notifySubscribers, type PostLinks, replyValues, topicValues } from '../services/notifications.ts';
-import { canPostIn, isAnyModerator, isForumModerator } from '../services/permissions.ts';
+import { acceptableAppFeedback, canPostIn, isAnyModerator, isForumModerator } from '../services/permissions.ts';
 import { type PostForm, promotionGroup, quoteText, subscriptionChange, type ValidatedPost, validatePost } from '../services/posting.ts';
 import { privateMessagePush, replyPush } from '../services/push.ts';
 import { localizePath, publicPath } from '../services/routes.ts';
@@ -36,6 +36,7 @@ import { indexWords } from '../services/searchIndex.ts';
 import { needsProjectTagWarning } from '../services/subjectPrefixes.ts';
 import { TOOLBAR } from '../services/toolbar.ts';
 import { markRead, parseTrackedTopics, serializeTrackedTopics } from '../services/trackedTopics.ts';
+import { type AppFeedbackAcceptDeps, acceptAppFeedback } from './AppFeedbackAcceptController.ts';
 import { type MentionNotifierDeps, notifyMentions } from './mentionNotifier.ts';
 import { positiveInt } from './params.ts';
 import { type TranslationJobDeps, translateInBackground } from './translationJob.ts';
@@ -56,6 +57,9 @@ export interface PostControllerDeps extends LayoutDeps {
 	drafts: DraftStore;
 	privateMessageStore: MentionNotifierDeps['privateMessageStore'];
 	topics: MentionNotifierDeps['topics'];
+	/** Réponse dans le forum « à trier » d'une application : le retour est accepté (acceptAppFeedback()). */
+	moderation: AppFeedbackAcceptDeps['moderation'];
+	postEdits: AppFeedbackAcceptDeps['postEdits'];
 }
 
 /** Longueur maximale d'un passage cité par sélection. */
@@ -224,6 +228,9 @@ export class PostController {
 		}
 
 		const { topicId, postId } = await this.save(request, target, post, now);
+		// Répondre à un retour d'application, c'est l'accepter : il rejoint le forum public avec la réponse.
+		const feedbackSource = target.topic !== null ? acceptableAppFeedback(viewer, target.forum.id, config) : null;
+		if (feedbackSource !== null) await acceptAppFeedback(this.deps, { viewer, config, lang }, feedbackSource, topicId);
 		// Traduction après la réponse : le message s'affiche tout de suite, dans sa langue.
 		translateInBackground(request, this.deps.translationJob, [
 			{ kind: 'post', id: postId, text: post.message },

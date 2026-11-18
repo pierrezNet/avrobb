@@ -89,6 +89,8 @@ export const post = {
 	// Formulaire
 	postErrors: 'Erreurs dans le message',
 	noTagTitle: 'Aucune balise de projet',
+	/** Réponse dans le forum « à trier » d'une application, par un membre qui peut accepter. */
+	replyAcceptsFeedback: 'Répondre à ce retour l’accepte : la discussion et votre réponse seront publiées dans le forum public.',
 	noTagInfo:
 		'Votre discussion ne précise pas le projet concerné. Ajoutez une balise avec les boutons sous le titre : elle aide à retrouver les échanges de chaque projet. Si aucune ne convient, cliquez à nouveau sur « Valider » pour publier tel quel.',
 	postErrorsInfo: 'Les erreurs suivantes doivent être corrigées pour que le message puisse être envoyé :',

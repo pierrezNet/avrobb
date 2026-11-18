@@ -241,3 +241,36 @@ describe('feedback_accept.php : Donne Ton Point', () => {
 		expect((await postForm(noTarget.server, 2, '/retours/accepter?app=donneTonPoint&id=30')).statusCode).toBe(400);
 	});
 });
+
+describe('réponse à un retour', () => {
+	const reply = (server: ForumApp, userId: number, topicId: number) =>
+		inject(server, {
+			method: 'POST',
+			url: `/ecrire?action=post&tid=${topicId}`,
+			headers: { cookie: cookies(userId), 'content-type': 'application/x-www-form-urlencoded' },
+			payload: new URLSearchParams({
+				csrf_token: csrfToken(CSRF_SECRET, SEED, userId),
+				form_sent: '1',
+				req_message: 'Merci, corrigé dans la prochaine version.',
+			}).toString(),
+		});
+
+	it('l’administrateur qui répond accepte le retour, annoncé au-dessus des formulaires de réponse', async () => {
+		const { server, fake } = await start();
+		const notice = '<p class="form__notice">Répondre à ce retour l’accepte';
+		expect((await get(server, 2, '/viewtopic.php?id=20')).body).toContain(notice);
+		expect((await get(server, 2, '/ecrire?tid=20')).body).toContain(notice);
+		expect((await get(server, 2, '/viewtopic.php?id=10')).body).not.toContain(notice);
+
+		expect((await reply(server, 2, 20)).statusCode).toBe(302);
+		expect(fake.postUpdates?.[0]?.message).toContain(texts.publicHeader);
+		expect(fake.moderationLog).toEqual(['move 20 -> 4']);
+	});
+
+	it('réponse ailleurs, ou par un membre qui ne peut pas accepter : rien n’est déplacé', async () => {
+		const { server, fake } = await start();
+		expect((await reply(server, 2, 10)).statusCode).toBe(302);
+		await reply(server, member.id, 20);
+		expect(fake.moderationLog ?? []).toEqual([]);
+	});
+});

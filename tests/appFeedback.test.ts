@@ -5,6 +5,7 @@
 
 import { describe, expect, it } from 'vitest';
 import type { Mailer } from '../src/adapters/mailer.ts';
+import type { TextModel } from '../src/adapters/textModel.ts';
 import { AppFeedbackController } from '../src/controllers/AppFeedbackController.ts';
 import type { BoardConfig, FeedbackSourceId } from '../src/domain/models.ts';
 import { appFeedback as allTexts } from '../src/lang/fr/appFeedback.ts';
@@ -249,7 +250,16 @@ describe('AppFeedbackController', () => {
 		const updates: PostUpdate[] = [];
 		const tasks: Promise<unknown>[] = [];
 		const prompts: string[] = [];
+		const translated: string[] = [];
 		const mails: MailMessage[] = [];
+		// Le titre reçoit `modelReply` ; une traduction, une réponse anglaise.
+		const model: TextModel = {
+			complete: async (instructions, text) => {
+				if (!instructions.includes('{"title"')) return JSON.stringify({ source: 'fr', translation: `${text} (EN)` });
+				prompts.push(instructions, text);
+				return modelReply ?? null;
+			},
+		};
 		const mailer: Mailer = {
 			send: async (message) => {
 				mails.push(message);
@@ -269,21 +279,25 @@ describe('AppFeedbackController', () => {
 			texts: allTexts,
 			clock: () => 1_800_000_000,
 			logger: { error: () => {}, info: () => {} },
-			title:
+			ai:
 				modelReply === undefined
 					? null
 					: {
-							model: {
-								complete: async (instructions, text) => {
-									prompts.push(instructions, text);
-									return modelReply;
-								},
-							},
+							model,
 							postEdits: { updatePost: async (update) => void updates.push(update) },
+							translation: {
+								model,
+								translations: {
+									save: async (item, lang) => void translated.push(`${item.kind}:${item.id}:${lang}:${item.text}`),
+								},
+								keepNames: async () => [],
+								clock: () => 1_800_000_000,
+								logger: { error: () => {}, info: () => {} },
+							},
 							background: (task) => void tasks.push(task),
 						},
 		});
-		return { controller, topics, mails, updates, tasks, prompts };
+		return { controller, topics, mails, updates, tasks, prompts, translated };
 	};
 
 	it('crée le sujet dans le forum privé, signé par le compte système, sans le contact', async () => {
@@ -366,7 +380,11 @@ describe('AppFeedbackController', () => {
 			{ name: 'Bug', group: 'other' as const, color: '#b91c1c' },
 		];
 		const config = { ...boardConfig, appFeedback: destinations, subjectTags: tags };
-		const { controller, topics, updates, tasks, prompts } = setup('phraseo', config, '{"title": "« La voix de l\'ATC se répète. »"}');
+		const { controller, topics, updates, tasks, prompts, translated } = setup(
+			'phraseo',
+			config,
+			'{"title": "« La voix de l\'ATC se répète. »"}',
+		);
 		await controller.submit(valid);
 		expect(topics[0]?.subject).toBe("[Phraséo] [Bug] La voix de l'ATC se répète après ma réponse.");
 		await Promise.all(tasks);
@@ -380,14 +398,17 @@ describe('AppFeedbackController', () => {
 			topic: { subject: "[Phraséo] [Bug] La voix de l'ATC se répète", sticky: false },
 		});
 		expect(updates[0]?.message).toBe(topics[0]?.message);
+		// Puis traduits aussitôt : le message, et le sujet dans sa version définitive.
+		expect(translated).toEqual([`post:314:en:${topics[0]?.message}`, "subject:42:en:[Phraséo] [Bug] La voix de l'ATC se répète"]);
 	});
 
-	it('réponse du modèle inutilisable ou absente : le sujet reste tel quel', async () => {
+	it('réponse du modèle inutilisable ou absente : le sujet reste tel quel, et il est traduit', async () => {
 		for (const reply of ['pas du JSON', '{"title": ""}', null]) {
-			const { controller, updates, tasks } = setup('phraseo', undefined, reply);
+			const { controller, topics, updates, tasks, translated } = setup('phraseo', undefined, reply);
 			await controller.submit(valid);
 			await Promise.all(tasks);
 			expect(updates).toEqual([]);
+			expect(translated.at(-1)).toBe(`subject:42:en:${topics[0]?.subject}`);
 		}
 	});
 });

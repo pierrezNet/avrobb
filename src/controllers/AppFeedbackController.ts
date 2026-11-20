@@ -9,7 +9,8 @@
  * ScheduledTasks.
  *
  * Le sujet est créé avec le début du message ; un modèle de langue (Workers AI) propose ensuite un
- * titre, en arrière-plan : le relais n'attend pas le modèle, et sans réponse le sujet reste tel quel.
+ * titre, puis le message et le titre sont traduits, en arrière-plan : le relais n'attend pas le
+ * modèle. Sans réponse, le sujet reste tel quel et la tâche horaire rattrape la traduction.
  */
 
 import type { Mailer } from '../adapters/mailer.ts';
@@ -33,6 +34,7 @@ import {
 import { fillTemplate, type MailTemplateReader } from '../services/mail.ts';
 import { absoluteUrl, postPath } from '../services/routes.ts';
 import { indexWords } from '../services/searchIndex.ts';
+import { type TranslationJobDeps, translateSources } from './translationJob.ts';
 
 export interface AppFeedbackDeps {
 	config: ConfigReader;
@@ -44,8 +46,13 @@ export interface AppFeedbackDeps {
 	texts: Readonly<Record<FeedbackSourceId, FeedbackTexts>>;
 	clock: () => number;
 	logger: Logger;
-	/** Titre proposé par un modèle de langue, après la réponse au relais ; null sans Workers AI. */
-	title: { model: TextModel; postEdits: Pick<PostEditStore, 'updatePost'>; background: (task: Promise<unknown>) => void } | null;
+	/** Titre proposé par un modèle de langue et traduction, après la réponse au relais ; null sans Workers AI. */
+	ai: {
+		model: TextModel;
+		postEdits: Pick<PostEditStore, 'updatePost'>;
+		translation: TranslationJobDeps;
+		background: (task: Promise<unknown>) => void;
+	} | null;
 }
 
 /** Début du message envoyé au modèle : de quoi titrer, sans dépenser pour un long texte. */
@@ -112,19 +119,27 @@ export class AppFeedbackController {
 				deps.logger.error({ err: error, topicId, source: this.sourceId }, "Échec de l'e-mail d'un retour d'application");
 			}
 		}
-		if (deps.title !== null)
-			deps.title.background(this.retitle(deps.title, feedback, texts, config.subjectTags, { topicId, postId, message }));
+		const { ai } = deps;
+		if (ai !== null)
+			ai.background(
+				this.retitle(ai, feedback, texts, config.subjectTags, { topicId, postId, message }).then((title) =>
+					translateSources(ai.translation, [
+						{ kind: 'post', id: postId, text: message },
+						{ kind: 'subject', id: topicId, text: title ?? subject },
+					]),
+				),
+			);
 		return { ok: true, topicId };
 	}
 
-	/** Remplace le début du message par le titre du modèle (modification silencieuse, réindexée). */
+	/** Remplace le début du message par le titre du modèle (modification silencieuse, réindexée) ; renvoie le sujet, ou null. */
 	private async retitle(
-		title: NonNullable<AppFeedbackDeps['title']>,
+		title: NonNullable<AppFeedbackDeps['ai']>,
 		feedback: AppFeedback,
 		texts: FeedbackTexts,
 		tags: Parameters<typeof appFeedbackSubject>[2],
 		created: { topicId: number; postId: number; message: string },
-	): Promise<void> {
+	): Promise<string | null> {
 		try {
 			const reply = await title.model.complete(
 				feedbackTitleInstructions(texts.appName),
@@ -132,7 +147,7 @@ export class AppFeedbackController {
 				60,
 			);
 			const proposed = reply !== null ? parseFeedbackTitle(reply) : null;
-			if (proposed === null) return;
+			if (proposed === null) return null;
 			const subject = appFeedbackSubject(feedback, texts, tags, proposed);
 			await title.postEdits.updatePost({
 				postId: created.postId,
@@ -143,8 +158,10 @@ export class AppFeedbackController {
 				topic: { subject, sticky: false },
 				words: indexWords(created.message, subject, await this.deps.stopwords.load()),
 			});
+			return subject;
 		} catch (error) {
 			this.deps.logger.error({ err: error, topicId: created.topicId, source: this.sourceId }, "Échec du titre d'un retour d'application");
+			return null;
 		}
 	}
 }

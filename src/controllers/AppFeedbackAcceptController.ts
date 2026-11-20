@@ -18,15 +18,19 @@ import type { Lang } from '../lang/fr/index.ts';
 import type { ModerationStore } from '../repositories/ModerationRepository.ts';
 import type { PostEditStore } from '../repositories/PostEditRepository.ts';
 import type { StopwordsReader } from '../repositories/StopwordsLoader.ts';
+import type { TranslationSource } from '../repositories/TranslationRepository.ts';
 import { isFeedbackSourceId, publicAppFeedbackMessage } from '../services/appFeedback.ts';
 import { canAcceptAppFeedback } from '../services/permissions.ts';
 import { indexWords } from '../services/searchIndex.ts';
 import { positiveInt } from './params.ts';
+import { type TranslationJobDeps, translateInBackground } from './translationJob.ts';
 
 export interface AppFeedbackAcceptDeps extends LayoutDeps {
 	moderation: Pick<ModerationStore, 'findTopic' | 'moveTopics'>;
 	postEdits: Pick<PostEditStore, 'findPost' | 'updatePost'>;
 	stopwords: StopwordsReader;
+	/** Le premier message réécrit est retraduit aussitôt : l'ancienne traduction ne vaut plus. */
+	translationJob: TranslationJobDeps | null;
 }
 
 export interface AppFeedbackAcceptQuery {
@@ -51,7 +55,8 @@ export class AppFeedbackAcceptController {
 		if (!canAcceptAppFeedback(viewer, source, feedback.forumId, config))
 			return renderMessage(request, reply, deps, 403, lang.common.noPermission);
 
-		const result = await acceptAppFeedback(deps, { viewer, config, lang }, source, topicId);
+		const translate = (sources: readonly TranslationSource[]) => translateInBackground(request, deps.translationJob, sources);
+		const result = await acceptAppFeedback(deps, { viewer, config, lang, translate }, source, topicId);
 		if (result === 'notFound') return renderMessage(request, reply, deps, 404, lang.common.badRequest);
 		if (result === 'notMoved') return renderMessage(request, reply, deps, 409, lang.common.badRequest);
 		return reply.redirect(`viewtopic.php?id=${topicId}`, 303);
@@ -65,7 +70,12 @@ export class AppFeedbackAcceptController {
  */
 export async function acceptAppFeedback(
 	deps: Pick<AppFeedbackAcceptDeps, 'moderation' | 'postEdits' | 'stopwords'>,
-	{ viewer, config, lang }: { viewer: Viewer; config: BoardConfig; lang: Lang },
+	{
+		viewer,
+		config,
+		lang,
+		translate,
+	}: { viewer: Viewer; config: BoardConfig; lang: Lang; translate: (sources: readonly TranslationSource[]) => void },
 	source: FeedbackSourceId,
 	topicId: number,
 ): Promise<'accepted' | 'notFound' | 'notMoved'> {
@@ -89,6 +99,7 @@ export async function acceptAppFeedback(
 				topic: null,
 				words: indexWords(message, topic.subject, stopwords),
 			});
+			translate([{ kind: 'post', id: post.id, text: message }]);
 		}
 	}
 

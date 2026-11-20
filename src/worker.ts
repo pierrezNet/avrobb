@@ -313,6 +313,7 @@ function submitAppFeedback(
 ): Promise<AppFeedbackResult> {
 	const config = loadConfig(env as unknown as Readonly<Record<string, unknown>>);
 	const { db, configLoader } = isolateServices(env);
+	const translation = createTranslation(env, db);
 	const controller = new AppFeedbackController(source, {
 		config: configLoader,
 		posting: new PostingRepository(db),
@@ -322,13 +323,9 @@ function submitAppFeedback(
 		texts: fr.appFeedback,
 		clock,
 		logger: consoleLogger,
-		title:
-			env.AI !== undefined
-				? {
-						model: new WorkersAiTextModel(env.AI, consoleLogger),
-						postEdits: new PostEditRepository(db),
-						background: (task) => ctx.waitUntil(task),
-					}
+		ai:
+			translation !== null
+				? { model: translation.model, postEdits: new PostEditRepository(db), translation, background: (task) => ctx.waitUntil(task) }
 				: null,
 	});
 	return controller.submit(input);

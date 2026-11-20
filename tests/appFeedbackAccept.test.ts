@@ -274,3 +274,23 @@ describe('réponse à un retour', () => {
 		expect(fake.moderationLog ?? []).toEqual([]);
 	});
 });
+
+describe('traduction après l’acceptation', () => {
+	it('le premier message réécrit est retraduit aussitôt : l’ancienne traduction ne vaut plus', async () => {
+		const saved: string[] = [];
+		const fake = data();
+		const server = await buildApp({
+			...fakeDeps(fake),
+			translationJob: {
+				model: { complete: async (_instructions, text) => JSON.stringify({ source: 'fr', translation: `${text} (EN)` }) },
+				translations: { save: async (source, lang) => void saved.push(`${source.kind}:${source.id}:${lang}:${source.text}`) },
+				keepNames: async () => [],
+				clock: () => NOW,
+				logger: { error: () => undefined, info: () => undefined },
+			},
+		});
+		expect((await postForm(server, 2, '/retours/accepter?app=phraseo&id=20')).statusCode).toBe(303);
+		await new Promise((resolve) => setTimeout(resolve, 10));
+		expect(saved).toEqual([`post:200:en:${publicAppFeedbackMessage(MESSAGE, texts)}`]);
+	});
+});

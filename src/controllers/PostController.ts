@@ -22,6 +22,7 @@ import type { CensorReader } from '../repositories/CensorRepository.ts';
 import type { DraftStore } from '../repositories/DraftRepository.ts';
 import type { NewPostAuthor, PostingStore } from '../repositories/PostingRepository.ts';
 import type { StopwordsReader } from '../repositories/StopwordsLoader.ts';
+import type { TranslationSource } from '../repositories/TranslationRepository.ts';
 import type { AccountLookup } from '../repositories/UserRepository.ts';
 import { normalizeUsername, usernameSkeleton } from '../services/accounts.ts';
 import { bbcodeToEmail } from '../services/bbcodeEmail.ts';
@@ -230,7 +231,10 @@ export class PostController {
 		const { topicId, postId } = await this.save(request, target, post, now);
 		// Répondre à un retour d'application, c'est l'accepter : il rejoint le forum public avec la réponse.
 		const feedbackSource = target.topic !== null ? acceptableAppFeedback(viewer, target.forum.id, config) : null;
-		if (feedbackSource !== null) await acceptAppFeedback(this.deps, { viewer, config, lang }, feedbackSource, topicId);
+		if (feedbackSource !== null) {
+			const translate = (sources: readonly TranslationSource[]) => translateInBackground(request, this.deps.translationJob, sources);
+			await acceptAppFeedback(this.deps, { viewer, config, lang, translate }, feedbackSource, topicId);
+		}
 		// Traduction après la réponse : le message s'affiche tout de suite, dans sa langue.
 		translateInBackground(request, this.deps.translationJob, [
 			{ kind: 'post', id: postId, text: post.message },

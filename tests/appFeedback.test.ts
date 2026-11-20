@@ -9,8 +9,15 @@ import { AppFeedbackController } from '../src/controllers/AppFeedbackController.
 import type { BoardConfig, FeedbackSourceId } from '../src/domain/models.ts';
 import { appFeedback as allTexts } from '../src/lang/fr/appFeedback.ts';
 import { mail } from '../src/lang/fr/mail.ts';
+import type { PostUpdate } from '../src/repositories/PostEditRepository.ts';
 import type { NewTopic } from '../src/repositories/PostingRepository.ts';
-import { appFeedbackMessage, appFeedbackSubject, FEEDBACK_SOURCES, parseAppFeedback } from '../src/services/appFeedback.ts';
+import {
+	appFeedbackMessage,
+	appFeedbackSubject,
+	FEEDBACK_SOURCES,
+	parseAppFeedback,
+	parseFeedbackTitle,
+} from '../src/services/appFeedback.ts';
 import { inertBbcode } from '../src/services/bbcode.ts';
 import type { MailMessage } from '../src/services/mail.ts';
 import { MAX_SUBJECT_LENGTH } from '../src/services/posting.ts';
@@ -233,8 +240,15 @@ describe('AppFeedbackController', () => {
 		selcal: null,
 		reglages: null,
 	};
-	const setup = (source: FeedbackSourceId = 'phraseo', config: BoardConfig = { ...boardConfig, appFeedback: destinations }) => {
+	const setup = (
+		source: FeedbackSourceId = 'phraseo',
+		config: BoardConfig = { ...boardConfig, appFeedback: destinations },
+		modelReply: string | null | undefined = undefined,
+	) => {
 		const topics: NewTopic[] = [];
+		const updates: PostUpdate[] = [];
+		const tasks: Promise<unknown>[] = [];
+		const prompts: string[] = [];
 		const mails: MailMessage[] = [];
 		const mailer: Mailer = {
 			send: async (message) => {
@@ -255,8 +269,21 @@ describe('AppFeedbackController', () => {
 			texts: allTexts,
 			clock: () => 1_800_000_000,
 			logger: { error: () => {}, info: () => {} },
+			title:
+				modelReply === undefined
+					? null
+					: {
+							model: {
+								complete: async (instructions, text) => {
+									prompts.push(instructions, text);
+									return modelReply;
+								},
+							},
+							postEdits: { updatePost: async (update) => void updates.push(update) },
+							background: (task) => void tasks.push(task),
+						},
 		});
-		return { controller, topics, mails };
+		return { controller, topics, mails, updates, tasks, prompts };
 	};
 
 	it('crée le sujet dans le forum privé, signé par le compte système, sans le contact', async () => {
@@ -331,5 +358,47 @@ describe('AppFeedbackController', () => {
 		});
 		expect(await controller.submit(validDtp)).toEqual({ ok: true, topicId: 42 });
 		expect(mails).toHaveLength(0);
+	});
+
+	it('balise du type quand elle existe dans le forum, puis titre du modèle en arrière-plan', async () => {
+		const tags = [
+			{ name: 'Phraséo', group: 'project' as const, color: '#1d4ed8' },
+			{ name: 'Bug', group: 'other' as const, color: '#b91c1c' },
+		];
+		const config = { ...boardConfig, appFeedback: destinations, subjectTags: tags };
+		const { controller, topics, updates, tasks, prompts } = setup('phraseo', config, '{"title": "« La voix de l\'ATC se répète. »"}');
+		await controller.submit(valid);
+		expect(topics[0]?.subject).toBe("[Phraséo] [Bug] La voix de l'ATC se répète après ma réponse.");
+		await Promise.all(tasks);
+		expect(prompts[0]).toContain('"Phraséo"');
+		expect(prompts[1]).toBe(valid.message);
+		expect(updates).toHaveLength(1);
+		expect(updates[0]).toMatchObject({
+			postId: 314,
+			topicId: 42,
+			edited: null,
+			topic: { subject: "[Phraséo] [Bug] La voix de l'ATC se répète", sticky: false },
+		});
+		expect(updates[0]?.message).toBe(topics[0]?.message);
+	});
+
+	it('réponse du modèle inutilisable ou absente : le sujet reste tel quel', async () => {
+		for (const reply of ['pas du JSON', '{"title": ""}', null]) {
+			const { controller, updates, tasks } = setup('phraseo', undefined, reply);
+			await controller.submit(valid);
+			await Promise.all(tasks);
+			expect(updates).toEqual([]);
+		}
+	});
+});
+
+describe('parseFeedbackTitle()', () => {
+	it('titre sur une ligne, sans crochets, guillemets ni point final ; refusé vide ou trop long', () => {
+		expect(parseFeedbackTitle('Voici : {"title": "« Le compteur\\nne bouge plus. »"}')).toBe('Le compteur ne bouge plus');
+		expect(parseFeedbackTitle('{"title": "[img]x[/img] Faux titre"}')).toBe('imgx/img Faux titre');
+		expect(parseFeedbackTitle('{"title": "Enthousiasme pour l’application"}')).toBe('Enthousiasme pour l’application');
+		expect(parseFeedbackTitle('{"title": "ok"}')).toBeNull();
+		expect(parseFeedbackTitle(`{"title": "${'a'.repeat(100)}"}`)).toBeNull();
+		expect(parseFeedbackTitle('{"titre": "Autre clé"}')).toBeNull();
 	});
 });

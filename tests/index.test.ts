@@ -166,3 +166,40 @@ describe('GET /index.php', () => {
 		expect((await inject(app, '/index.php')).statusCode).toBe(403);
 	});
 });
+
+describe('forums « à trier » des retours d’applications', () => {
+	it('masqués quand ils sont vides (catégorie comprise), teintés sinon', async () => {
+		const appFeedback = {
+			phraseo: { forumId: 6, userId: 4, targetForumId: 4 },
+			donneTonPoint: { forumId: 7, userId: 5, targetForumId: 3 },
+			horlogeUtc: null,
+			selcal: null,
+			reglages: null,
+		};
+		const triage: IndexCategory[] = [
+			...categories,
+			{
+				id: 9,
+				name: 'Retours',
+				forums: [forum(6, { name: 'Retours Phraséo (à trier)', numTopics: 2 }), forum(7, { name: 'Retours DTP (à trier)', numTopics: 0 })],
+			},
+			{ id: 10, name: 'Vide', forums: [forum(8, { name: 'Retours vides (à trier)', numTopics: 0 })] },
+		];
+		app = await buildApp(
+			fakeDeps({
+				users,
+				topics: [],
+				posts: new Map(),
+				indexCategories: triage,
+				config: { appFeedback: { ...appFeedback, selcal: { forumId: 8, userId: 6, targetForumId: 3 } } },
+			}),
+		);
+		const body = (await inject(app, '/index.php')).body;
+		expect(body).toContain('forum-row--triage');
+		expect(body).toContain('Retours Phraséo (à trier)');
+		expect(body).not.toContain('Retours DTP (à trier)');
+		expect(body).not.toContain('Retours vides (à trier)');
+		expect(body).not.toContain('>Vide</h2>');
+		expect(body.match(/forum-row--triage/g)).toHaveLength(1);
+	});
+});

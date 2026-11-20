@@ -15,7 +15,7 @@
 	</div>
 	<ul class="forum-list">
 	{% for forum in category.forums %}
-		<li class="forum-row{% if forum.newPostsUrl %} forum-row--new{% endif %}{% if forum.isRedirect %} forum-row--redirect{% endif %}">
+		<li class="forum-row{% if forum.newPostsUrl %} forum-row--new{% endif %}{% if forum.isRedirect %} forum-row--redirect{% endif %}{% if forum.isTriage %} forum-row--triage{% endif %}">
 			<div class="forum-row__main">
 				<h3 class="forum-row__name">
 					{%- if forum.isRedirect -%}

@@ -305,7 +305,12 @@ async function serveEnglish(request: Request, frPath: string, env: Env, ctx: Exe
 }
 
 /** Crée le sujet d'un retour reçu du relais d'une application source (AppFeedbackController). */
-function submitAppFeedback(env: Env, source: FeedbackSourceId, input: unknown): Promise<AppFeedbackResult> {
+function submitAppFeedback(
+	env: Env,
+	ctx: Pick<ExecutionContextLike, 'waitUntil'>,
+	source: FeedbackSourceId,
+	input: unknown,
+): Promise<AppFeedbackResult> {
 	const config = loadConfig(env as unknown as Readonly<Record<string, unknown>>);
 	const { db, configLoader } = isolateServices(env);
 	const controller = new AppFeedbackController(source, {
@@ -317,6 +322,14 @@ function submitAppFeedback(env: Env, source: FeedbackSourceId, input: unknown): 
 		texts: fr.appFeedback,
 		clock,
 		logger: consoleLogger,
+		title:
+			env.AI !== undefined
+				? {
+						model: new WorkersAiTextModel(env.AI, consoleLogger),
+						postEdits: new PostEditRepository(db),
+						background: (task) => ctx.waitUntil(task),
+					}
+				: null,
 	});
 	return controller.submit(input);
 }
@@ -328,7 +341,7 @@ function submitAppFeedback(env: Env, source: FeedbackSourceId, input: unknown): 
  */
 export class PhraseoFeedback extends WorkerEntrypoint<Env> {
 	async submit(input: unknown): Promise<AppFeedbackResult> {
-		return submitAppFeedback(this.env, 'phraseo', input);
+		return submitAppFeedback(this.env, this.ctx, 'phraseo', input);
 	}
 }
 
@@ -339,7 +352,7 @@ export class PhraseoFeedback extends WorkerEntrypoint<Env> {
  */
 export class DonneTonPointFeedback extends WorkerEntrypoint<Env> {
 	async submit(input: unknown): Promise<AppFeedbackResult> {
-		return submitAppFeedback(this.env, 'donneTonPoint', input);
+		return submitAppFeedback(this.env, this.ctx, 'donneTonPoint', input);
 	}
 }
 
@@ -351,20 +364,20 @@ export class DonneTonPointFeedback extends WorkerEntrypoint<Env> {
  */
 export class HorlogeUtcFeedback extends WorkerEntrypoint<Env> {
 	async submit(input: unknown): Promise<AppFeedbackResult> {
-		return submitAppFeedback(this.env, 'horlogeUtc', input);
+		return submitAppFeedback(this.env, this.ctx, 'horlogeUtc', input);
 	}
 }
 
 export class SelcalFeedback extends WorkerEntrypoint<Env> {
 	async submit(input: unknown): Promise<AppFeedbackResult> {
-		return submitAppFeedback(this.env, 'selcal', input);
+		return submitAppFeedback(this.env, this.ctx, 'selcal', input);
 	}
 }
 
 /** Retours de l'Atelier réglages MSFS d'aeronautique.xyz, par le même relais : `"entrypoint": "ReglagesFeedback"`. */
 export class ReglagesFeedback extends WorkerEntrypoint<Env> {
 	async submit(input: unknown): Promise<AppFeedbackResult> {
-		return submitAppFeedback(this.env, 'reglages', input);
+		return submitAppFeedback(this.env, this.ctx, 'reglages', input);
 	}
 }
 

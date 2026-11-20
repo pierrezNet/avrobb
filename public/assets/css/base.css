@@ -1222,6 +1222,11 @@ a.site-status__alert {
 	border-top: 0;
 }
 
+/* Forum privé « à trier » (retours d'applications) : légère teinte de l'accent du thème. */
+.forum-row--triage {
+	background: color-mix(in srgb, var(--color-accent) 8%, var(--color-surface));
+}
+
 /* Indicateur de nouveaux messages : barre colorée, doublée du badge texte. */
 .forum-row--new {
 	box-shadow: inset 4px 0 0 var(--color-active);

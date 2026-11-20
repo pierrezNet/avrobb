@@ -42,6 +42,8 @@ export interface ForumRowView {
 	lastPost: { href: string; at: string; by: string } | null;
 	/** Texte à la place du dernier message : « Jamais » ou « - - - » (redirection). */
 	lastPostPlaceholder: string;
+	/** Forum privé « à trier » d'une application : fond teinté (masqué quand il est vide). */
+	isTriage: boolean;
 }
 
 export interface IndexPageView {
@@ -104,38 +106,46 @@ export function buildIndexPage(input: IndexPageInput): IndexPageView {
 	const time = viewerTimeSettings(viewer);
 	const person = (id: number, label: string): PersonLink => ({ label, href: viewer.group.canViewUsers ? `profile.php?id=${id}` : null });
 
-	const categories = input.categories.map((category) => ({
-		id: category.id,
-		name: category.name,
-		forums: category.forums.map((forum): ForumRowView => {
-			const isRedirect = forum.redirectUrl !== null;
-			const hasNew =
-				!viewer.isGuest &&
-				!isRedirect &&
-				forumHasNewPosts(forum.id, forum.lastPost?.postedAt ?? null, viewer.lastVisit, input.recentTopics, input.tracked);
+	// Forums « à trier » des retours d'applications : rien à afficher tant qu'ils sont vides.
+	const triageForums = new Set(
+		Object.values(input.config.appFeedback).flatMap((feedback) => (feedback !== null ? [feedback.forumId] : [])),
+	);
+	const shownForums = (category: IndexCategory) => category.forums.filter((forum) => !triageForums.has(forum.id) || forum.numTopics > 0);
+	const categories = input.categories
+		.filter((category) => shownForums(category).length > 0)
+		.map((category) => ({
+			id: category.id,
+			name: category.name,
+			forums: shownForums(category).map((forum): ForumRowView => {
+				const isRedirect = forum.redirectUrl !== null;
+				const hasNew =
+					!viewer.isGuest &&
+					!isRedirect &&
+					forumHasNewPosts(forum.id, forum.lastPost?.postedAt ?? null, viewer.lastVisit, input.recentTopics, input.tracked);
 
-			return {
-				id: forum.id,
-				name: forum.name,
-				href: forum.redirectUrl ?? forumPath(forum.id, forum.name),
-				isRedirect,
-				descriptionHtml: forum.descriptionHtml,
-				moderators: [...forum.moderators].map(([username, id]) => person(id, username)),
-				newPostsUrl: hasNew ? `search.php?action=show_new&fid=${forum.id}` : null,
-				numTopics: isRedirect ? '-' : niceNumber(forum.numTopics),
-				numPosts: isRedirect ? '-' : niceNumber(forum.numPosts),
-				lastPost:
-					forum.lastPost !== null
-						? {
-								href: `viewtopic.php?pid=${forum.lastPost.postId}#p${forum.lastPost.postId}`,
-								at: formatTime(forum.lastPost.postedAt, time, input.dateWords, input.now),
-								by: forum.lastPost.poster,
-							}
-						: null,
-				lastPostPlaceholder: isRedirect ? '- - -' : lang.index.never,
-			};
-		}),
-	}));
+				return {
+					id: forum.id,
+					name: forum.name,
+					href: forum.redirectUrl ?? forumPath(forum.id, forum.name),
+					isRedirect,
+					descriptionHtml: forum.descriptionHtml,
+					moderators: [...forum.moderators].map(([username, id]) => person(id, username)),
+					newPostsUrl: hasNew ? `search.php?action=show_new&fid=${forum.id}` : null,
+					numTopics: isRedirect ? '-' : niceNumber(forum.numTopics),
+					numPosts: isRedirect ? '-' : niceNumber(forum.numPosts),
+					lastPost:
+						forum.lastPost !== null
+							? {
+									href: `viewtopic.php?pid=${forum.lastPost.postId}#p${forum.lastPost.postId}`,
+									at: formatTime(forum.lastPost.postedAt, time, input.dateWords, input.now),
+									by: forum.lastPost.poster,
+								}
+							: null,
+					lastPostPlaceholder: isRedirect ? '- - -' : lang.index.never,
+					isTriage: triageForums.has(forum.id),
+				};
+			}),
+		}));
 
 	const onlineUsers = input.online?.filter((visitor) => visitor.userId > 1) ?? [];
 	const numGuests = (input.online?.length ?? 0) - onlineUsers.length;
